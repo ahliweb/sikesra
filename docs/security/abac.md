@@ -136,7 +136,6 @@ order by name;
 | Blogs         | `tenant.blog.*`          | read, create, update, delete, restore, permanent_delete, publish |
 | Pages         | `tenant.page.*`          | read, create, update, delete, restore, permanent_delete, publish |
 | Visual Pages  | `tenant.visual_pages.*`  | read, create, update, delete, restore, permanent_delete          |
-| Portfolio     | `tenant.portfolio.*`     | read, create, update, delete, restore, permanent_delete          |
 | Testimonies   | `tenant.testimonies.*`   | read, create, update, delete, restore, permanent_delete          |
 | Announcements | `tenant.announcements.*` | read, create, update, delete, restore, permanent_delete          |
 | Promotions    | `tenant.promotions.*`    | read, create, update, delete, restore, permanent_delete          |
@@ -150,14 +149,6 @@ order by name;
 | Files (Lib)   | `tenant.files.*`         | read, create, update, delete, manage                    |
 | Photo Gallery | `tenant.photo_gallery.*` | read, create, update, delete, restore, permanent_delete |
 | Video Gallery | `tenant.video_gallery.*` | read, create, update, delete, restore, permanent_delete |
-
-#### Commerce Modules
-
-| Module        | Permission Prefix        | Actions                                                 |
-| :------------ | :----------------------- | :------------------------------------------------------ |
-| Products      | `tenant.products.*`      | read, create, update, delete, restore, permanent_delete |
-| Product Types | `tenant.product_types.*` | read, create, update, delete, restore, permanent_delete |
-| Orders        | `tenant.orders.*`        | read, create, update, delete, restore, permanent_delete |
 
 #### Navigation & Taxonomy
 
@@ -189,7 +180,6 @@ order by name;
 | SEO              | `tenant.seo.*`              | read, update                                            |
 | SSO              | `tenant.sso.*`              | read, update                                            |
 | Languages        | `tenant.languages.*`        | read, update                                            |
-| School Pages     | `tenant.school_pages.*`     | read, update                                            |
 | Backups          | `tenant.backups.*`          | read, create, delete                                    |
 
 #### Mobile, IoT & Platform Extensions

@@ -3,9 +3,7 @@
 
 import Code from 'astro/components/Code.astro';
 import LayoutSidebar from '../../app/LayoutSidebar.astro';
-import { getUsers, getProducts } from '../../services/index.js';
-
-const products = JSON.stringify(getProducts(), null, 2);
+import { getUsers } from '../../services/index.js';
 
 const users = JSON.stringify(getUsers(), null, 2);
 ---
@@ -26,13 +24,6 @@ const users = JSON.stringify(getUsers(), null, 2);
 			>
 		</div>
 
-		<div class="mb-16">
-			<a href="/api/products" target="_blank">
-				<h1 class="text-6xl font-bold mb-8 dark:text-slate-100">Products</h1>
-			</a>
-
-			<Code code={products} lang="json" />
-		</div>
 		<div class="mb-16">
 			<a href="/api/users" target="_blank">
 				<h1 class="text-6xl font-bold mb-8 dark:text-slate-100">Users</h1>

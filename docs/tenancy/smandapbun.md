@@ -32,23 +32,12 @@ Document the tenant-specific Astro implementation for **smandapbun**, including 
 
 ### Settings Keys (Supabase)
 
-The portal reads tenant settings and merges them with JSON defaults:
+The portal reads tenant settings and merges them with JSON defaults where applicable:
 
 - `seo_global`
 - `analytics_consent`
 - `site_info`
 - `contact_info`
-- `page_contact`
-- `page_profile`
-- `page_organization`
-- `page_services`
-- `page_finance`
-- `page_staff`
-- `page_achievements`
-- `page_alumni`
-- `page_agenda`
-- `page_gallery`
-- `page_school_info`
 
 ### Menus
 
@@ -99,8 +88,7 @@ The portal reads tenant settings and merges them with JSON defaults:
 ## Admin Management
 
 - Menus: `menus` table via Admin -> Menu Manager.
-- School pages: published `pages` rows for route-backed sections; legacy `page_*` settings remain as seed/fallback sources during transition.
-- Site images: `site_images` via Admin -> Site Images.
+- School-facing sections: published `pages` rows for route-backed sections.
 - Blogs: `blogs` table via Admin -> Blogs.
 - SEO/Branding/Contact: `seo_global`, `site_info`, `contact_info` via Admin settings.
 
@@ -125,7 +113,7 @@ The portal reads tenant settings and merges them with JSON defaults:
 
 ## Migration Path (Future)
 
-- Replace remaining school-page JSON fallbacks with fully DB-driven content (`settings`, `site_images`, or `pages` where appropriate).
+- Keep school-facing public content on supported `pages`, `blogs`, and shared settings sources only.
 - Add optional middleware only if SSR/runtime deployment is required.
 
 ## Migration Checklist (Analytics + Middleware)

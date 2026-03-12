@@ -39,7 +39,6 @@ Where route aliases exist, prefer the canonical `MainRouter.jsx` path noted in p
 - **Visual Pages** (`VisualPagesManager.jsx`)
 - **Widgets** (`WidgetsManager.jsx`)
 - **Templates** (`TemplatesManager.jsx`)
-- **Portfolio** (`PortfolioManager.jsx`)
 - **Testimonials** (`TestimonyManager.jsx`)
 - **Announcements** (`AnnouncementsManager.jsx`)
 - **Fun Facts** (`FunFactsManager.jsx`)
@@ -55,9 +54,6 @@ Where route aliases exist, prefer the canonical `MainRouter.jsx` path noted in p
 
 ### 3. Commerce
 
-- **Products** (`ProductsManager.jsx`)
-- **Product Types** (`ProductTypesManager.jsx`)
-- **Orders** (`OrdersManager.jsx`)
 - **Promotions** (`PromotionsManager.jsx`)
 
 ### 4. Navigation
@@ -85,8 +81,6 @@ Where route aliases exist, prefer the canonical `MainRouter.jsx` path noted in p
 - **Contacts** (`ContactsManager.jsx`)
 - **Contact Messages** (`ContactMessagesManager.jsx`)
 - **Themes** (`ThemesManager.jsx`)
-- **School Pages** (`SchoolPagesManager.jsx`)
-- **Site Images** (`SiteImagesManager.jsx`)
 
 ### 6. Platform & Plugins
 

@@ -161,7 +161,7 @@ if (document.getElementById('main-chart')) {
 	});
 }
 
-if (document.getElementById('new-products-chart')) {
+if (document.getElementById('new-items-chart')) {
 	const options = {
 		colors: ['#1A56DB', '#FDBA8C'],
 		series: [
@@ -245,7 +245,7 @@ if (document.getElementById('new-products-chart')) {
 	};
 
 	const chart = new ApexCharts(
-		document.getElementById('new-products-chart'),
+		document.getElementById('new-items-chart'),
 		options,
 	);
 	chart.render();

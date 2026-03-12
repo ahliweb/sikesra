@@ -247,7 +247,7 @@ $$;
 - Privileged server-side edge handlers are required for cross-tenant data operations (for example, Super Administrators managing global tenants).
 - Direct client SQL queries are automatically blocked or clipped to the scope of `current_tenant_id()`.
 - **Shared by default**: `settings`, `branding`, `modules` (descendants). Tenant admins and full-access roles have read/write access across levels based on `tenant_resource_rules`.
-- **Isolated by default**: `content` (blogs, pages), `media` (`media_objects`, `media_upload_sessions`), `users`, and `orders`. These resources are strictly scoped to a single `tenant_id`.
+- **Isolated by default**: `content` (blogs, pages), `media` (`media_objects`, `media_upload_sessions`), and `users`. These resources are strictly scoped to a single `tenant_id`.
 - **Rules Storage**: Configured in `tenant_resource_registry` and enforced via `tenant_resource_rules`.
 
 ## Security and Compliance Notes

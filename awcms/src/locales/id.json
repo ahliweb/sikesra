@@ -82,9 +82,6 @@
     "dashboard": "Dasbor",
     "blogs": "Blog",
     "pages": "Halaman",
-    "products": "Produk",
-    "product_types": "Jenis Produk",
-    "portfolio": "Portofolio",
     "announcements": "Pengumuman",
     "promotions": "Promosi",
     "photo_gallery": "Galeri Foto",
@@ -123,7 +120,6 @@
   "dashboard": {
     "total_blogs": "Total Blog",
     "active_users": "Pengguna Aktif",
-    "products": "Produk",
     "system_status": "Status Sistem",
     "online": "Online",
     "analytics_overview": "Ringkasan Analitik",
@@ -131,7 +127,6 @@
     "no_logs": "Tidak ada log sistem terbaru.",
     "traffic_data": "Visualisasi data lalu lintas segera hadir.",
     "total_pages": "Total Halaman",
-    "total_orders": "Total Pesanan",
     "storage_used": "Penyimpanan Terpakai",
     "no_activity": "Tidak ada aktivitas terbaru ditemukan.",
     "platform": {
@@ -403,33 +398,6 @@
     "visual_builder": "Pembangun Visual",
     "standard_editor": "Editor Standar"
   },
-  "products": {
-    "title": "Manajer Produk",
-    "subtitle": "Kelola inventaris dan katalog produk Anda.",
-    "price": "Harga",
-    "stock": "Stok",
-    "sku": "SKU",
-    "available": "Tersedia",
-    "discount_price": "Harga Diskon",
-    "weight": "Berat (kg)",
-    "dimensions": "Dimensi",
-    "product_name": "Nama Produk",
-    "type_name": "Nama Tipe",
-    "category_name": "Nama Kategori",
-    "shipping_cost": "Biaya Pengiriman",
-    "is_available": "Tersedia untuk Dibeli",
-    "launch_date": "Tanggal Peluncuran",
-    "main_image": "Gambar Utama",
-    "gallery": "Galeri",
-    "icon": "Ikon",
-    "out_of_stock": "Stok Habis",
-    "status_options": {
-      "draft": "Draf",
-      "active": "Aktif",
-      "out_of_stock": "Stok Habis",
-      "archived": "Diarsipkan"
-    }
-  },
   "users": {
     "title": "Manajemen Pengguna",
     "subtitle": "Kelola akses sistem dan peran pengguna.",
@@ -618,13 +586,6 @@
       }
     }
   },
-  "portfolio": {
-    "title": "Manajer Portofolio",
-    "subtitle": "Tampilkan karya dan proyek Anda.",
-    "project": "Proyek",
-    "client": "Klien",
-    "year": "Tahun"
-  },
   "gallery": {
     "title": "Galeri",
     "photo": "Galeri Foto",
@@ -713,7 +674,6 @@
       "brand": "Merek",
       "nav": {
         "home": "Beranda",
-        "products": "Produk",
         "about": "Tentang",
         "login": "Masuk",
         "get_started": "Mulai"
@@ -832,9 +792,8 @@
   },
   "public": {
     "hero_title": "Selamat Datang di AhliWeb",
-    "hero_subtitle": "Temukan pembaruan terbaru, penawaran spesial, dan portofolio kreatif kami.",
+    "hero_subtitle": "Temukan pembaruan dan pengumuman terbaru kami.",
     "latest_blogs": "Blog Terbaru",
-    "view_portfolio": "Lihat Portofolio",
     "contact_us": "Hubungi Kami",
     "privacy_policy": "Kebijakan Privasi",
     "terms_of_service": "Ketentuan Layanan",

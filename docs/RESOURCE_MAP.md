@@ -28,7 +28,6 @@ Provide a cleaned-up reference for the AWCMS `resources_registry` without repeat
 | `visual_builder` | Tenant | `tenant.visual_pages` | Visual Builder | `visual_pages` | Visual page builder resources |
 | `themes` | Tenant | `tenant.theme` | Themes | `themes` | Tenant theme management |
 | `widgets` | Tenant | `tenant.widgets` | Widgets | `widgets` | Widget registry and placement |
-| `portfolio` | Tenant | `tenant.portfolio` | Portfolio | `portfolio` | Public portfolio content |
 | `testimonials` | Tenant | `tenant.testimonies` | Testimonials | `testimonies` | Resource key remains `testimonials`; backing content uses `testimonies` |
 | `announcements` | Tenant | `tenant.announcements` | Announcements | `announcements` | Tenant-scoped notice content |
 | `promotions` | Tenant | `tenant.promotions` | Promotions | `promotions` | Commerce/content promotions |
@@ -37,9 +36,6 @@ Provide a cleaned-up reference for the AWCMS `resources_registry` without repeat
 | `files` | Tenant | `tenant.files` | Media Library | `media_objects` | Media library is backed by `media_objects`, not `files` |
 | `photo_gallery` | Tenant | `tenant.photo_gallery` | Photo Gallery | `photo_gallery` | Gallery records after parity fix |
 | `video_gallery` | Tenant | `tenant.video_gallery` | Video Gallery | `video_gallery` | Gallery records after parity fix |
-| `products` | Tenant | `tenant.products` | Products | `products` | Commerce catalog |
-| `product_types` | Tenant | `tenant.product_types` | Product Types | `product_types` | Commerce taxonomy |
-| `orders` | Tenant | `tenant.orders` | Orders | `orders` | Commerce orders |
 | `menus` | Tenant | `tenant.menu` | Menu Manager | `menus` | Navigation menus |
 | `categories` | Tenant | `tenant.categories` | Categories | `categories` | Tenant taxonomy; `content` scope is shared across blogs and pages |
 | `tags` | Tenant | `tenant.tag` | Tags | `tags` | Tenant-scoped shared tags reused across supported modules |
@@ -66,8 +62,6 @@ These resource keys are valid, but they are grouped here because they reuse the 
 
 | Resource Key | Permission Prefix | Admin Surface | Backing Table | Grouping Reason |
 | --- | --- | --- | --- | --- |
-| `school_pages` | `tenant.school_pages` | School Website | `settings` | Same settings store as site-level tenant configuration |
-| `site_images` | `tenant.school_pages` | Site Images | `settings` | Same permission family and settings-backed storage as `school_pages` |
 | `settings_general` | `tenant.setting` | General Settings | `settings` | Shared settings resource family |
 | `settings_branding` | `tenant.setting` | Branding | `settings` | Shared settings resource family |
 | `email_settings` | `tenant.setting` | Email Settings | `settings` | Shared settings resource family; remains visible with activation guidance when Mailketing is inactive |

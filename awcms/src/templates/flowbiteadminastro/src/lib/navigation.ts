@@ -29,7 +29,6 @@ export const navigation: NavItem[] = [
         title: 'CRUD',
         icon: 'table',
         children: [
-            { title: 'Products', href: 'crud/products' },
             { title: 'Users', href: 'crud/users' },
         ],
     },

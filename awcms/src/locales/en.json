@@ -82,9 +82,6 @@
     "dashboard": "Dashboard",
     "blogs": "Blogs",
     "pages": "Pages",
-    "products": "Products",
-    "product_types": "Product Types",
-    "portfolio": "Portfolio",
     "announcements": "Announcements",
     "promotions": "Promotions",
     "photo_gallery": "Photo Gallery",
@@ -123,7 +120,6 @@
   "dashboard": {
     "total_blogs": "Total Blogs",
     "active_users": "Active Users",
-    "products": "Products",
     "system_status": "System Status",
     "online": "Online",
     "analytics_overview": "Analytics Overview",
@@ -131,7 +127,6 @@
     "no_logs": "No recent system logs found.",
     "traffic_data": "Traffic data visualization coming soon.",
     "total_pages": "Total Pages",
-    "total_orders": "Total Orders",
     "storage_used": "Storage Used",
     "no_activity": "No recent activity found.",
     "platform": {
@@ -403,33 +398,6 @@
     "visual_builder": "Visual Builder",
     "standard_editor": "Standard Editor"
   },
-  "products": {
-    "title": "Products Manager",
-    "subtitle": "Manage your inventory and product catalog.",
-    "price": "Price",
-    "stock": "Stock",
-    "sku": "SKU",
-    "available": "Available",
-    "discount_price": "Discount Price",
-    "weight": "Weight (kg)",
-    "dimensions": "Dimensions",
-    "product_name": "Product Name",
-    "type_name": "Type Name",
-    "category_name": "Category Name",
-    "shipping_cost": "Shipping Cost",
-    "is_available": "Available for Purchase",
-    "launch_date": "Launch Date",
-    "main_image": "Main Image",
-    "gallery": "Gallery",
-    "icon": "Icon",
-    "out_of_stock": "Out of Stock",
-    "status_options": {
-      "draft": "Draft",
-      "active": "Active",
-      "out_of_stock": "Out of Stock",
-      "archived": "Archived"
-    }
-  },
   "users": {
     "title": "User Management",
     "subtitle": "Manage system access and user roles.",
@@ -618,13 +586,6 @@
       }
     }
   },
-  "portfolio": {
-    "title": "Portfolio Manager",
-    "subtitle": "Showcase your work and projects.",
-    "project": "Project",
-    "client": "Client",
-    "year": "Year"
-  },
   "gallery": {
     "title": "Gallery",
     "photo": "Photo Gallery",
@@ -713,7 +674,6 @@
       "brand": "Brand",
       "nav": {
         "home": "Home",
-        "products": "Products",
         "about": "About",
         "login": "Log in",
         "get_started": "Get Started"
@@ -832,9 +792,8 @@
   },
   "public": {
     "hero_title": "Welcome to AhliWeb",
-    "hero_subtitle": "Discover our latest updates, special offers, and creative portfolio.",
+    "hero_subtitle": "Discover our latest updates and announcements.",
     "latest_blogs": "Latest Blogs",
-    "view_portfolio": "View Portfolio",
     "contact_us": "Contact Us",
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",

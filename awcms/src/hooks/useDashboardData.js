@@ -9,7 +9,6 @@ export function useDashboardData() {
     overview: {
       blogs: 0,
       pages: 0,
-      products: 0,
       users: 0,
       storage: '0 MB'
     },
@@ -37,18 +36,14 @@ export function useDashboardData() {
       const results = await Promise.allSettled([
         supabase.from('blogs').select('*', { count: 'exact', head: true }).is('deleted_at', null),
         supabase.from('pages').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('products').select('*', { count: 'exact', head: true }).is('deleted_at', null),
         supabase.from('users').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('orders').select('*', { count: 'exact', head: true }),
         supabase.from('media_objects').select('size_bytes').is('deleted_at', null)
       ]);
 
       const [
         blogsRes,
         pagesRes,
-        productsRes,
         usersRes,
-        ordersRes,
         filesRes
       ] = results;
 
@@ -63,9 +58,7 @@ export function useDashboardData() {
 
       const blogCount = blogsRes.status === 'fulfilled' ? blogsRes.value.count : 0;
       const pagesCount = pagesRes.status === 'fulfilled' ? pagesRes.value.count : 0;
-      const productsCount = productsRes.status === 'fulfilled' ? productsRes.value.count : 0;
       const usersCount = usersRes.status === 'fulfilled' ? usersRes.value.count : 0;
-      const ordersCount = ordersRes.status === 'fulfilled' ? ordersRes.value.count : 0;
       const files = filesRes.status === 'fulfilled' ? filesRes.value.data : [];
 
       // Calculate storage usage
@@ -113,8 +106,6 @@ export function useDashboardData() {
         overview: {
           blogs: blogCount || 0,
           pages: pagesCount || 0,
-          products: productsCount || 0,
-          orders: ordersCount || 0,
           users: usersCount || 0,
           storage: `${storageMB} MB`
         },

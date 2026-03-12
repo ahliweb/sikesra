@@ -10,15 +10,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 // Defined Resource Categories for better organization
 const RESOURCE_CATEGORIES = {
     'Content': [
-        'blogs', 'pages', 'visual_pages', 'portfolio', 'testimonies',
-        'announcements', 'promotions', 'products', 'product_types',
+        'blogs', 'pages', 'visual_pages', 'testimonies',
+        'announcements', 'promotions',
         'themes', 'widgets', 'templates', 'contact_messages'
     ],
     'Media': [
         'files', 'media', 'media_objects', 'galleries'
-    ],
-    'Commerce': [
-        'orders', 'products', 'product_types'
     ],
     'System': [
         'users', 'roles', 'role', 'permissions', 'policies', 'policy', 'settings', 'setting',

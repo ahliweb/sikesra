@@ -31,16 +31,6 @@ export const PUBLIC_MODULES = [
     { key: 'blogs', label: 'Blogs', url: '/blogs', icon: 'FileText', group: 'Content', order: 100, requiredModuleSlugs: ['blogs'] },
     { key: 'search', label: 'Search', url: '/search', icon: 'Search', group: 'Discovery', order: 110, portalVariants: ['primary'] },
     { key: 'visitor_stats', label: 'Visitor Statistics', url: '/visitor-stats', icon: 'LineChart', group: 'Discovery', order: 120 },
-    { key: 'school_profile', label: 'School Profile', url: '/profil', icon: 'Building2', group: 'School', order: 200, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_organization', label: 'Organization', url: '/profil/struktur-organisasi', icon: 'Users', group: 'School', order: 210, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_staff', label: 'Staff', url: '/profil/tenaga-pendidik', icon: 'UserCheck', group: 'School', order: 220, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_services', label: 'Services', url: '/layanan', icon: 'Settings', group: 'School', order: 230, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_finance', label: 'Finance', url: '/keuangan', icon: 'Wallet', group: 'School', order: 240, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_achievements', label: 'Achievements', url: '/prestasi', icon: 'Trophy', group: 'School', order: 250, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_alumni', label: 'Alumni', url: '/alumni', icon: 'GraduationCap', group: 'School', order: 260, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
-    { key: 'school_agenda', label: 'Agenda', url: '/blogs/agenda', icon: 'CalendarDays', group: 'School', order: 270, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages', 'blogs'] },
-    { key: 'school_gallery', label: 'Gallery', url: '/blogs/galeri', icon: 'Image', group: 'School', order: 280, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages', 'blogs'] },
-    { key: 'school_contact', label: 'School Contact', url: '/kontak', icon: 'Phone', group: 'School', order: 290, portalVariants: ['smandapbun'], requiredModuleSlugs: ['school_pages'] },
 ];
 
 export function getPublicPortalVariant(tenant) {

@@ -15,8 +15,6 @@ BEGIN
 
     -- 2. Normalize Permissions
     FOR r IN SELECT * FROM (VALUES 
-        ('view_orders', 'tenant.orders.read', 'orders', 'orders', 'read'),
-        ('tenant.orders.view', 'tenant.orders.read', 'orders', 'orders', 'read'), 
         ('edit_articles', 'tenant.blog.update', 'blog', 'blog', 'update'),
         ('delete_articles', 'tenant.blog.delete', 'blog', 'blog', 'delete'),
         ('restore_articles', 'tenant.blog.restore', 'blog', 'blog', 'restore'),
@@ -29,7 +27,6 @@ BEGIN
         ('edit_themes', 'tenant.themes.update', 'themes', 'themes', 'update'),
         ('edit_visual_pages', 'tenant.visual_pages.update', 'visual_pages', 'visual_pages', 'update'),
         ('edit_galleries', 'tenant.galleries.update', 'galleries', 'galleries', 'update'),
-        ('permanent_delete_product_types', 'tenant.product_types.permanent_delete', 'product_types', 'product_types', 'permanent_delete'),
         ('Read Regions', 'tenant.regions.read', 'regions', 'regions', 'read')
     ) AS t(legacy_name, standard_name, mod, res, act)
     LOOP
@@ -77,7 +74,6 @@ BEGIN
     
     -- 3. Fix Module Names (Robust Update)
     UPDATE permissions SET module = 'reporting' WHERE name LIKE 'platform.reporting.%';
-    UPDATE permissions SET module = 'school_pages' WHERE name LIKE 'tenant.school_pages.%';
     UPDATE permissions SET module = 'blog' WHERE module = 'blogs';
     
     -- 4. Cleanup others

@@ -3,8 +3,6 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import PublicPageDetail from '@/pages/public/PublicPageDetail';
 import PublicBlogDetail from '@/pages/public/PublicBlogDetail';
-import PublicProductDetail from '@/pages/public/PublicProductDetail';
-import PublicPortfolioDetail from '@/pages/public/PublicPortfolioDetail';
 import PublicPromotionDetail from '@/pages/public/PublicPromotionDetail';
 import { FileQuestion, Loader2 } from 'lucide-react';
 import SeoHelmet from '@/components/public/SeoHelmet';
@@ -56,33 +54,7 @@ const PublicPageResolver = () => {
                     return;
                 }
 
-                // Priority 3: Products
-                const { data: product } = await supabase
-                    .from('products')
-                    .select('id, status')
-                    .eq('slug', slug)
-                    .in('status', statusFilter)
-                    .maybeSingle();
-
-                if (product) {
-                    setContentType('product');
-                    return;
-                }
-
-                // Priority 4: Portfolio
-                const { data: portfolio } = await supabase
-                    .from('portfolio')
-                    .select('id, status')
-                    .eq('slug', slug)
-                    .in('status', statusFilter)
-                    .maybeSingle();
-
-                if (portfolio) {
-                    setContentType('portfolio');
-                    return;
-                }
-
-                // Priority 5: Promotions
+                // Priority 3: Promotions
                 // Promotions usually use 'active' vs 'inactive', but we'll check if they support 'draft' too
                 // For now, assuming permissions allows seeing everything if needed, but keeping simple
                 const promotionStatus = canViewDrafts ? ['active', 'draft', 'inactive'] : ['active'];
@@ -126,10 +98,6 @@ const PublicPageResolver = () => {
             return <PublicPageDetail />;
         case 'blog':
             return <PublicBlogDetail />;
-        case 'product':
-            return <PublicProductDetail />;
-        case 'portfolio':
-            return <PublicPortfolioDetail />;
         case 'promotion':
             return <PublicPromotionDetail />;
         case 'not_found':

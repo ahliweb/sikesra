@@ -26,7 +26,7 @@ function AdminDashboard() {
     const columnSpacing = 'space-y-6 lg:space-y-8';
     const roleLabel = userRole?.replace('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase()) || 'User';
     const lastUpdatedLabel = lastUpdated instanceof Date ? lastUpdated.toLocaleTimeString() : '-';
-    const contentTotal = Number(data?.overview?.blogs || 0) + Number(data?.overview?.pages || 0) + Number(data?.overview?.products || 0);
+    const contentTotal = Number(data?.overview?.blogs || 0) + Number(data?.overview?.pages || 0);
     const teamSize = Number(data?.overview?.users || 0);
     const activityItems = Number(data?.activity?.length || 0);
     const isHealthy = data?.systemHealth?.database === 'connected' && data?.systemHealth?.api === 'operational';
@@ -42,7 +42,7 @@ function AdminDashboard() {
         {
             label: 'Team Members',
             value: teamSize,
-            hint: `${data?.overview?.orders || 0} orders in tracking`,
+            hint: `${activityItems} recent activity events`,
             icon: Users2,
             iconClassName: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
         },

@@ -1,6 +1,6 @@
 
 import { useTranslation } from 'react-i18next';
-import { FileText, Layers, ShoppingBag, Users, HardDrive } from 'lucide-react';
+import { FileText, Layers, Users, HardDrive } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -22,25 +22,11 @@ export function StatCards({ data, loading, className = '' }) {
       iconWrapper: "bg-purple-100/80 text-purple-600 dark:bg-purple-500/20 dark:text-purple-200",
     },
     {
-      title: t('dashboard.products'),
-      value: data?.products,
-      icon: ShoppingBag,
-      accent: "bg-orange-500",
-      iconWrapper: "bg-orange-100/80 text-orange-600 dark:bg-orange-500/20 dark:text-orange-200",
-    },
-    {
       title: t('dashboard.active_users'),
       value: data?.users,
       icon: Users,
       accent: "bg-emerald-500",
       iconWrapper: "bg-emerald-100/80 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200",
-    },
-    {
-      title: t('dashboard.total_orders'),
-      value: data?.orders,
-      icon: ShoppingBag,
-      accent: "bg-teal-500",
-      iconWrapper: "bg-teal-100/80 text-teal-600 dark:bg-teal-500/20 dark:text-teal-200",
     },
     {
       title: t('dashboard.storage_used'),
@@ -53,8 +39,8 @@ export function StatCards({ data, loading, className = '' }) {
 
   if (loading) {
     return (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 ${className}`}>
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 ${className}`}>
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="dashboard-surface dashboard-surface-hover overflow-hidden">
             <div className="h-1 w-full bg-slate-200/60 dark:bg-slate-700/60" />
             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100/80 px-6 pt-4 pb-3 dark:border-slate-700/60">
@@ -71,7 +57,7 @@ export function StatCards({ data, loading, className = '' }) {
   }
 
   return (
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 ${className}`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 ${className}`}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const value = stat.value ?? 0;

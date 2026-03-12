@@ -7,8 +7,6 @@ import Header from '@/components/dashboard/Header';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import BlogsManager from '@/components/dashboard/BlogsManager';
 import PagesManager from '@/components/dashboard/PagesManager';
-import ProductsManager from '@/components/dashboard/ProductsManager';
-import PortfolioManager from '@/components/dashboard/PortfolioManager';
 import AnnouncementsManager from '@/components/dashboard/AnnouncementsManager';
 import PromotionsManager from '@/components/dashboard/PromotionsManager';
 import UsersManager from '@/components/dashboard/UsersManager';
@@ -31,10 +29,6 @@ function Dashboard() {
         return <BlogsManager />;
       case 'pages':
         return <PagesManager />;
-      case 'products':
-        return <ProductsManager />;
-      case 'portfolio':
-        return <PortfolioManager />;
       case 'announcements':
         return <AnnouncementsManager />;
       case 'promotions':

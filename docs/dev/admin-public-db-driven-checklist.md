@@ -47,12 +47,12 @@ This checklist aligns `docs/security/abac.md`, `docs/RESOURCE_MAP.md`, and `docs
 - [ ] **Public (primary)**: `src/lib/content.ts` already fetches `blogs`; add routes/widgets for announcements/promotions as needed.
 - [x] **Public (smandapbun)**: replace `src/data/blogs/*.json` with DB-backed reads (blogs/announcements). Production reads are DB-backed; local JSON fallback is development-only.
 
-## 4) Media & Galleries (tenant.files.*, tenant.photo_gallery.*, tenant.video_gallery.*, tenant.school_pages.*)
+## 4) Media & Galleries (tenant.files.*, tenant.photo_gallery.*, tenant.video_gallery.*)
 
-- [ ] **DB**: Standardize `site_images` settings key and gallery tables.
-- [ ] **Admin**: Add schema for `site_images`, `photo_gallery`, `video_gallery`.
-- [ ] **Public (primary)**: wire widgets to `site_images` + gallery tables (remove hardcoded URLs).
-- [ ] **Public (smandapbun)**: replace `src/data/images.json` with `site_images` settings.
+- [ ] **DB**: Standardize gallery tables and related public media settings.
+- [ ] **Admin**: Add schema for `photo_gallery` and `video_gallery`.
+- [ ] **Public (primary)**: wire widgets to gallery-backed media sources.
+- [ ] **Public (smandapbun)**: replace remaining image fallbacks with supported media sources.
 
 ## 5) Settings, Branding & SEO (tenant.setting.*, tenant.seo.*, tenant.languages.*)
 
@@ -61,24 +61,12 @@ This checklist aligns `docs/security/abac.md`, `docs/RESOURCE_MAP.md`, and `docs
 - [x] **Public (primary)**: load branding/contact settings at build time via `publicSettings`.
 - [x] **Public (smandapbun)**: replace `src/data/site.json` and `contact.json` with settings data.
 
-## 6) School Pages (smandapbun-specific)
-
-- [ ] **DB**: add settings keys for `page_profile`, `page_services`, `page_finance`, `page_staff`, `page_achievements`, `page_alumni`, `page_gallery`, `page_agenda`, `page_contact`, `page_school_info`.
-- [ ] **Admin**: create `ui_configs` per `page_*` key and map to `settings` table.
-- [x] **Public (smandapbun)**: route-backed school pages now render from `pages` records, with legacy `page_*` keys kept only for transition/seed support.
-
-## 7) Commerce (tenant.products.*, tenant.product_types.*, tenant.orders.*)
-
-- [ ] **DB**: confirm commerce tables are tenant-scoped and published.
-- [ ] **Admin**: add `ui_configs` for products/orders.
-- [ ] **Public**: add storefront routes if required (not currently in public templates).
-
-## 8) Public Tenant Resolution (multi-tenant)
+## 6) Public Tenant Resolution (multi-tenant)
 
 - [x] **Public (primary)**: static builds resolve tenant via `PUBLIC_TENANT_ID` or `VITE_PUBLIC_TENANT_ID`.
 - [x] **Public (smandapbun)**: fixed `TENANT_SLUG` in `src/lib/api.ts`.
 
-## 9) Documentation Sync
+## 7) Documentation Sync
 
 - [x] Update `docs/RESOURCE_MAP.md` if new resources/settings keys are added.
 - [x] Update `docs/dev/public.md` with DB-driven menu/page notes.

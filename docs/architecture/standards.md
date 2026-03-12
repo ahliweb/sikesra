@@ -36,7 +36,7 @@ Define the non-negotiable architecture and implementation standards for AWCMS ac
   - Context: `awcms/src/contexts/TenantContext.jsx`
   - Hooks: `useTenant()`, `usePublicTenant()`, `useTenantTheme()`
   - Policy: All database queries must be scoped by `tenant_id`
-- **Modules**: Feature toggles managed via `modules` table (e.g., Blog, Shop, Portfolio).
+- **Modules**: Feature toggles managed via `modules` table for supported tenant capabilities.
   - Permission: `tenant.modules.read` required to view available modules.
   - Context: `TenantContext` generally handles active module states.
 - **Authentication**:

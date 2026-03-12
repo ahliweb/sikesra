@@ -125,7 +125,6 @@ function LanguageSwitcher() {
 For complex examples involving dynamic column headers, form labels, and tab translations, refer to:
 
 - **`BlogsManager.jsx`**: Demonstrates full i18n for a content module with categories and tags.
-- **`ProductsManager.jsx`**: Demonstrates i18n for commerce products with tabs and status options.
 - **`GenericContentManager.jsx`**: Demonstrates shared i18n patterns for search, deletion, and common actions.
 
 ---

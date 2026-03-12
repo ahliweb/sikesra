@@ -7,7 +7,6 @@ export function ContentDistribution({ data }) {
   const chartData = [
     { name: 'Blogs', value: data?.blogs || 0, color: '#3b82f6' },
     { name: 'Pages', value: data?.pages || 0, color: '#a855f7' },
-    { name: 'Products', value: data?.products || 0, color: '#f97316' },
     { name: 'Users', value: data?.users || 0, color: '#22c55e' },
   ].filter(item => item.value > 0);
 

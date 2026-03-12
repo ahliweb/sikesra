@@ -26,7 +26,6 @@ function ThemeEditorPreview({ t, previewMode, colorMode }) {
               <div className="font-heading text-xl font-bold text-primary">{t('theme_editor.preview.brand')}</div>
               <nav className="hidden gap-6 text-sm font-medium text-muted-foreground md:flex">
                 <button className="cursor-default text-foreground transition-colors hover:text-primary">{t('theme_editor.preview.nav.home')}</button>
-                <button className="cursor-default transition-colors hover:text-primary">{t('theme_editor.preview.nav.products')}</button>
                 <button className="cursor-default transition-colors hover:text-primary">{t('theme_editor.preview.nav.about')}</button>
               </nav>
               <div className="flex gap-2">

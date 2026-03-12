@@ -7,9 +7,8 @@
 export const TIER_FEATURES = {
     free: [
         'home', 'blogs', 'pages', 'visual_builder',
-        'categories', 'tags', 'files', 'portfolio', 'testimonials',
-        'announcements', 'promotions', 'contact_messages', 'contacts', 'menus', 'products',
-        'product_types', 'orders', 'users'
+        'categories', 'tags', 'files', 'testimonials',
+        'announcements', 'promotions', 'contact_messages', 'contacts', 'menus', 'users'
     ],
     pro: [
         // Includes all Free features

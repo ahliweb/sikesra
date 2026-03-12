@@ -42,11 +42,7 @@ const RoleEditor = lazy(() => import('@/components/dashboard/RoleEditor'));
 const PermissionsManager = lazy(() => import('@/components/dashboard/PermissionsManager'));
 const PolicyManager = lazy(() => import('@/components/dashboard/PolicyManager'));
 const MenusManager = lazy(() => import('@/components/dashboard/MenusManager'));
-const ProductsManager = lazy(() => import('@/components/dashboard/ProductsManager'));
-const OrdersManager = lazy(() => import('@/components/dashboard/OrdersManager'));
-const ProductTypesManager = lazy(() => import('@/components/dashboard/ProductTypesManager'));
 const PromotionsManager = lazy(() => import('@/components/dashboard/PromotionsManager'));
-const PortfolioManager = lazy(() => import('@/components/dashboard/PortfolioManager'));
 const ServicesManager = lazy(() => import('@/components/dashboard/ServicesManager'));
 const TeamManager = lazy(() => import('@/components/dashboard/TeamManager'));
 const PartnersManager = lazy(() => import('@/components/dashboard/PartnersManager'));
@@ -77,8 +73,6 @@ const SettingsManager = lazy(() => import('@/components/dashboard/SettingsManage
 const PlatformSettingsManager = lazy(() => import('@/components/dashboard/PlatformSettingsManager'));
 const PlatformDashboard = lazy(() => import('@/components/dashboard/PlatformDashboard'));
 
-const SiteImagesManager = lazy(() => import('@/components/dashboard/SiteImagesManager'));
-const SchoolPagesManager = lazy(() => import('@/components/dashboard/SchoolPagesManager'));
 const AuditLogsManager = lazy(() => import('@/components/dashboard/AuditLogsManager'));
 const VisitorStatisticsManager = lazy(() => import('@/components/dashboard/VisitorStatisticsManager'));
 const TenantsManager = lazy(() => import('@/components/dashboard/TenantsManager'));
@@ -219,12 +213,7 @@ const MainRouter = () => {
           <Route path="policies" element={<PolicyManager />} />
 
           <Route path="menus" element={<MenusManager />} />
-          <Route path="products/*" element={<ProductsManager />} />
-          <Route path="product-types/*" element={<ProductTypesManager />} />
-          <Route path="orders/*" element={<OrdersManager />} />
-
           <Route path="promotions/*" element={<PromotionsManager />} />
-          <Route path="portfolio/*" element={<PortfolioManager />} />
           <Route path="services/*" element={<ServicesManager />} />
           <Route path="team/*" element={<TeamManager />} />
           <Route path="partners/*" element={<PartnersManager />} />
@@ -248,9 +237,6 @@ const MainRouter = () => {
           <Route path="seo" element={<SeoManager />} />
           <Route path="seo-manager" element={<SeoManager />} />
 
-
-          <Route path="site-images" element={<SiteImagesManager />} />
-          <Route path="school-pages/*" element={<SchoolPagesManager />} />
 
           <Route path="extensions" element={<ExtensionsManager />} />
           <Route path="extensions/marketplace" element={<ExtensionMarketplace />} />

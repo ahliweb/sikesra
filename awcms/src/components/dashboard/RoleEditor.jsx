@@ -169,8 +169,8 @@ const RoleEditor = ({ role, onClose, onSave }) => {
         }
         if (templateName === 'Editor') {
           // Editor: Full content management (CRUD + publish) for content modules
-          const contentResources = ['blogs', 'pages', 'products', 'files',
-            'portfolio', 'announcements', 'testimonies', 'promotions', 'galleries',
+          const contentResources = ['blogs', 'pages', 'files',
+            'announcements', 'testimonies', 'promotions', 'galleries',
             'menus', 'categories', 'tags', 'visual_pages'];
           return ['read', 'view', 'create', 'update', 'edit', 'publish', 'delete', 'restore'].includes(p.action)
             && contentResources.includes(p.resource);
@@ -179,7 +179,7 @@ const RoleEditor = ({ role, onClose, onSave }) => {
           // Manager: Full admin access (197 permissions)
           // Excludes: system/platform resources and specialized actions
           const excludedActions = ['permanent_delete', 'delete_permanent', 'view_public', 'soft_delete', 'manage', 'configure', 'comment', 'send', 'like', 'view_logs', 'view_readers'];
-          const excludedResources = ['platform', 'tenant', 'tenants', 'system', '2fa', 'dashboard', 'content', 'tenant.region', 'orders'];
+          const excludedResources = ['platform', 'tenant', 'tenants', 'system', '2fa', 'dashboard', 'content', 'tenant.region'];
           return !excludedActions.includes(p.action) && !excludedResources.includes(p.resource);
         }
         return false;

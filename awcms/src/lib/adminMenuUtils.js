@@ -46,8 +46,6 @@ const RESOURCE_PATH_MAP = {
   sidebar_manager: 'admin-navigation',
   settings_general: 'settings/general',
   settings_branding: 'settings/branding',
-  school_pages: 'school-pages',
-  site_images: 'site-images',
   email_settings: 'email-settings',
   email_logs: 'email-logs',
   mobile_config: 'mobile/config',
@@ -112,12 +110,7 @@ export const filterMenuItemsForSidebar = ({
     }
 
     if (item.permission) {
-      // Special handling for School Modules to allow Platform access
-      // This acts as a shim for existing DB rows that only have the tenant permission
       let requiredPerms = item.permission;
-      if (requiredPerms === 'tenant.school_pages.read') {
-        requiredPerms = ['tenant.school_pages.read', 'platform.school_pages.read'];
-      }
 
       if (Array.isArray(requiredPerms)) {
         // If hasAnyPermission is provided, use it. Otherwise fallback to checking if SOME permission is held.

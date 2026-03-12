@@ -303,60 +303,6 @@ export const servicesPageTemplate = {
     }
 };
 
-// Portfolio Template
-export const portfolioPageTemplate = {
-    content: [
-        {
-            type: 'Hero',
-            props: {
-                id: 'hero-portfolio',
-                title: 'Featured Works',
-                subtitle: 'A selection of projects that showcase our expertise.',
-                alignment: 'center',
-                height: 'small',
-                overlay: true,
-                backgroundImage: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop'
-            }
-        },
-        { type: 'Spacer', props: { id: 'sp-1', height: 40 } },
-        {
-            type: 'Gallery',
-            props: {
-                id: 'gallery-main',
-                columns: 3,
-                gap: 16,
-                aspectRatio: 'square',
-                lightbox: true,
-                borderRadius: 'lg',
-                images: [
-                    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=2070&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=2070&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2015&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop'
-                ]
-            }
-        },
-        { type: 'Spacer', props: { id: 'sp-2', height: 40 } },
-        {
-            type: 'Hero',
-            props: {
-                id: 'cta-portfolio',
-                title: 'Have a project in mind?',
-                subtitle: 'Let\'s collaborate and bring your vision to life.',
-                buttonText: 'Contact Us',
-                buttonLink: '/contact',
-                height: 'small',
-                overlay: true,
-                backgroundImage: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2084&auto=format&fit=crop'
-            }
-        }
-    ],
-    root: { props: { backgroundColor: '#ffffff', maxWidth: '1200px' } },
-    zones: {}
-};
-
 // Contact Page
 export const contactPageTemplate = {
     content: [
@@ -552,14 +498,6 @@ export const pageTemplates = [
         icon: '💼',
         category: 'Business',
         data: servicesPageTemplate
-    },
-    {
-        id: 'portfolio',
-        name: 'Portfolio/Gallery',
-        description: 'Showcase your work with elegant galleries',
-        icon: '🖼️',
-        category: 'Creative',
-        data: portfolioPageTemplate
     },
     {
         id: 'contact',

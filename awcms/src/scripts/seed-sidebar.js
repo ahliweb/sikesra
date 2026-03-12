@@ -144,7 +144,6 @@ const DEFAULT_MENU_CONFIG = [
     { id: 'visual_builder', key: 'visual_builder', label: 'Visual Builder', path: 'visual-pages', icon: 'Layout', permission: 'tenant.visual_pages.read', group_label: 'CONTENT', group_order: 10, order: 35, is_visible: true },
     { id: 'themes', key: 'themes', label: 'Themes', path: 'themes', icon: 'Palette', permission: 'tenant.theme.read', group_label: 'SYSTEM', group_order: 60, order: 40, is_visible: true },
     { id: 'widgets', key: 'widgets', label: 'Widgets', path: 'widgets', icon: 'Layers', permission: 'tenant.widgets.read', group_label: 'SYSTEM', group_order: 60, order: 45, is_visible: true },
-    { id: 'portfolio', key: 'portfolio', label: 'Portfolio', path: 'portfolio', icon: 'Briefcase', permission: 'tenant.portfolio.read', group_label: 'CONTENT', group_order: 10, order: 50, is_visible: true },
     { id: 'testimonials', key: 'testimonials', label: 'Testimonials', path: 'testimonials', icon: 'MessageSquareQuote', permission: 'tenant.testimonies.read', group_label: 'CONTENT', group_order: 10, order: 60, is_visible: true },
     { id: 'announcements', key: 'announcements', label: 'Announcements', path: 'announcements', icon: 'Megaphone', permission: 'tenant.announcements.read', group_label: 'CONTENT', group_order: 10, order: 70, is_visible: true },
     { id: 'promotions', key: 'promotions', label: 'Promotions', path: 'promotions', icon: 'Tag', permission: 'tenant.promotions.read', group_label: 'CONTENT', group_order: 10, order: 80, is_visible: true },
@@ -155,10 +154,6 @@ const DEFAULT_MENU_CONFIG = [
     { id: 'files', key: 'files', label: 'Media Library', path: 'files', icon: 'FolderOpen', permission: 'tenant.files.read', group_label: 'MEDIA', group_order: 20, order: 10, is_visible: true },
 
     // COMMERCE Group
-    { id: 'products', key: 'products', label: 'Products', path: 'products', icon: 'Package', permission: 'tenant.products.read', group_label: 'COMMERCE', group_order: 30, order: 10, is_visible: true },
-    { id: 'product_types', key: 'product_types', label: 'Product Types', path: 'product-types', icon: 'Box', permission: 'tenant.product_types.read', group_label: 'COMMERCE', group_order: 30, order: 20, is_visible: true },
-    { id: 'orders', key: 'orders', label: 'Orders', path: 'orders', icon: 'ShoppingCart', permission: 'tenant.orders.read', group_label: 'COMMERCE', group_order: 30, order: 30, is_visible: true },
-
     // NAVIGATION Group
     { id: 'menus', key: 'menus', label: 'Menu Manager', path: 'menus', icon: 'Menu', permission: 'tenant.menu.read', group_label: 'NAVIGATION', group_order: 40, order: 10, is_visible: true },
     { id: 'categories', key: 'categories', label: 'Categories', path: 'categories', icon: 'FolderTree', permission: 'tenant.categories.read', group_label: 'NAVIGATION', group_order: 40, order: 20, is_visible: true },
