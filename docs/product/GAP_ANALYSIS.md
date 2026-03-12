@@ -3,24 +3,26 @@
 # SIKESRA MVP Gap Analysis
 
 > This document compares the expanded SIKESRA MVP PRD to the current repository state after the AWCMS baseline import and subsequent cleanup work.
+> 
+> **Last Updated:** 2026-03-12
 
 ## 1. Executive Summary
 
-The current codebase provides a strong **AWCMS platform foundation**, but it is still largely a **generic CMS baseline** rather than a SIKESRA-specific product implementation.
+The current codebase provides a strong **AWCMS platform foundation** with **SIKESRA core schema now implemented**.
 
 ### 1.1 Overall Assessment
 
-- **Platform foundation:** largely present
-- **SIKESRA domain model:** mostly missing
-- **20D identity model:** missing in implementation
-- **Multi-tier SIKESRA workflow:** mostly missing
-- **Document governance foundation:** partially present
-- **Public-safe split:** partially present
+- **Platform foundation:** present
+- **SIKESRA domain model:** schema implemented, UI pending
+- **20D identity model:** implemented
+- **Multi-tier SIKESRA workflow:** schema ready, UI pending
+- **Document governance foundation:** schema ready, UI pending
+- **Public-safe split:** pending
 - **DTSEN readiness:** conceptual only
 
 ### 1.2 Main Conclusion
 
-The repository is ready to support SIKESRA implementation, but the product-specific schema, permissions, workflows, dashboards, and public-safe data model described in `docs/product/PRD.md` have not yet been implemented as first-class SIKESRA features.
+The repository has the SIKESRA core schema, 20D identity functions, permission family, and RLS policies in place. The remaining work focuses on admin UI modules, dashboards, and public-safe views.
 
 ## 2. What Already Exists
 
@@ -44,52 +46,43 @@ Some platform-level foundations align with the PRD direction:
 
 ## 3. Major Gaps Against the Expanded PRD
 
-## 3.1 SIKESRA Core Schema Is Missing
+## 3.1 SIKESRA Core Schema (IMPLEMENTED)
 
 The expanded PRD expects a SIKESRA-specific core registry and related tables such as:
 
-- `sikesra_entities`
-- `sikesra_documents`
-- `sikesra_submissions`
-- `sikesra_verifications`
-- `sikesra_approvals`
-- `sikesra_audit_events`
-- `sikesra_micro_regions`
+- `sikesra_entities` (implemented)
+- `sikesra_documents` (implemented)
+- `sikesra_submissions` (implemented)
+- `sikesra_verifications` (implemented)
+- `sikesra_approvals` (implemented)
+- `sikesra_audit_events` (implemented)
+- `sikesra_micro_regions` (implemented)
+- `sikesra_entity_types` (reference table, implemented)
 
-Current gap:
+Current status:
+- SIKESRA schema migration created: `20260312150000_sikesra_core_schema.sql`
+- RLS policies created: `20260312150100_sikesra_rls_policies.sql`
+- All tables have tenant isolation and soft delete support
 
-- No SIKESRA-specific table or migration naming appears in active schema implementation under `supabase/migrations/`
-- No `sikesra_` tables or resources are present in current code or migrations from repo search
-
-Impact:
-
-- The repo cannot yet model the PRD's core registry, domain extensions, evidence chain, or multi-stage approval flow in a dedicated SIKESRA structure.
-
-## 3.2 20-Digit SIKESRA ID Logic Is Not Implemented
+## 3.2 20-Digit SIKESRA ID Logic (IMPLEMENTED)
 
 The PRD requires a stable 20D business identifier and explicit separation from technical UUID keys.
 
-Current gap:
+Current status:
+- `generate_sikesra_id()` function implemented
+- `validate_sikesra_id()` function implemented
+- `parse_sikesra_id()` function implemented
+- `issue_sikesra_id()` function implemented
+- Format: `[10-digit village code][2-digit entity type][2-digit subtype][6-digit sequence]`
 
-- No implementation hits for SIKESRA 20D generation or `tenant.sikesra_*` permissions were found outside the product docs
-- The current product docs mention the 20D model, but code and migrations do not yet implement generation, validation, or persistence rules
-
-Impact:
-
-- The most important business identity rule in the PRD is not yet enforced by code or schema.
-
-## 3.3 Micro-Region Modeling Is Not Yet SIKESRA-Specific
+## 3.3 Micro-Region Modeling (IMPLEMENTED)
 
 The PRD requires micro-regions such as RT, RW, and Dusun to exist as operational attributes, not as part of identity.
 
-Current gap:
-
-- Administrative region support exists in the platform, but no SIKESRA-specific micro-region design or tables are in place
-- No active SIKESRA forms or workflows currently bind official village context and micro-region context together in a SIKESRA-specific way
-
-Impact:
-
-- Region precision is not yet modeled in the way required for field operations and social targeting.
+Current status:
+- `sikesra_micro_regions` table created
+- Supports RT, RW, Dusun, Lingkungan, and other types
+- Linked to `administrative_regions` for official village context
 
 ## 3.4 SIKESRA Workflow States and Review Queues Are Missing
 
@@ -104,7 +97,7 @@ Impact:
 
 - The repository does not yet implement the central business workflow that defines the SIKESRA MVP.
 
-## 3.5 SIKESRA Permission Family Is Missing
+## 3.5 SIKESRA Permission Family (IMPLEMENTED)
 
 The PRD expects permissions such as:
 
@@ -113,14 +106,10 @@ The PRD expects permissions such as:
 - `tenant.sikesra_verification.verify_kecamatan`
 - `tenant.sikesra_verification.verify_kabupaten`
 
-Current gap:
-
-- Current permission and resource files remain generic platform-oriented rather than SIKESRA-specific
-- No active permission family for `tenant.sikesra_*` exists in code or migrations
-
-Impact:
-
-- The system cannot yet enforce the PRD's role and stage-specific workflow model with first-class SIKESRA permission keys.
+Current status:
+- SIKESRA permission family created: `20260312150200_sikesra_permissions.sql`
+- Permission groups implemented: entity, micro_region, document, submission, verification, approval, audit, report, dashboard
+- Role assignments configured for owner, super_admin, admin, editor, author
 
 ## 3.6 SIKESRA Dashboards and Reporting Are Missing
 

@@ -51,6 +51,13 @@ Provide a cleaned-up reference for the AWCMS `resources_registry` without repeat
 | `iot_devices` | Tenant | `tenant.iot` | IoT Devices | `devices` | Registry parity fixed from legacy `iot_devices` mapping |
 | `mobile_users` | Tenant | `tenant.mobile_users` | Mobile Users | `mobile_users` | Mobile account management |
 | `push_notifications` | Tenant | `tenant.push_notifications` | Push Notifications | `push_notifications` | Mobile notification surface |
+| `sikesra_entities` | Tenant | `tenant.sikesra_entity` | SIKESRA Entities | `sikesra_entities` | Core SIKESRA entity registry with 20D ID |
+| `sikesra_micro_regions` | Tenant | `tenant.sikesra_micro_region` | SIKESRA Micro Regions | `sikesra_micro_regions` | RT/RW/Dusun operational regions |
+| `sikesra_documents` | Tenant | `tenant.sikesra_document` | SIKESRA Documents | `sikesra_documents` | Entity document/evidence attachments |
+| `sikesra_submissions` | Tenant | `tenant.sikesra_submission` | SIKESRA Submissions | `sikesra_submissions` | Entity submission records |
+| `sikesra_verifications` | Tenant | `tenant.sikesra_verification` | SIKESRA Verifications | `sikesra_verifications` | Multi-tier verification records |
+| `sikesra_approvals` | Tenant | `tenant.sikesra_approval` | SIKESRA Approvals | `sikesra_approvals` | Kabupaten-level approval records |
+| `sikesra_audit_events` | Tenant | `tenant.sikesra_audit` | SIKESRA Audit | `sikesra_audit_events` | Append-only audit trail |
 | `extensions` | Platform | `platform.extensions` | Extensions | `extensions` | Platform extension lifecycle |
 | `modules` | Platform | `platform.module` | Modules | `modules` | Platform module lifecycle |
 | `sidebar_manager` | Platform | `platform.sidebar` | Sidebar Manager | `admin_menus` | Platform navigation configuration |
