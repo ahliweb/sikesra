@@ -1,0 +1,64 @@
+---
+import { createClientFromEnv } from "~/lib/supabase";
+import { getPublicTenantId } from "~/lib/publicTenant";
+import { getLocale, t } from "~/utils/i18n";
+import Testimonials from "~/components/widgets/Testimonials.astro";
+import type { Testimonial } from "~/types";
+
+interface Props {
+    count?: number;
+    title?: string;
+    subtitle?: string;
+    tagline?: string;
+}
+
+const { count = 6, title, subtitle, tagline } = Astro.props;
+
+const tenantId = getPublicTenantId();
+const supabase = createClientFromEnv(import.meta.env);
+const locale = getLocale(Astro.url);
+
+let testimonials: Testimonial[] = [];
+
+if (tenantId && supabase) {
+    try {
+        const { data: testData } = await supabase
+            .from("testimonies")
+            .select("*")
+            .eq("tenant_id", tenantId)
+            .eq("status", "published")
+            .is("deleted_at", null)
+            .order("display_order", { ascending: true })
+            .limit(count);
+
+        if (testData) {
+            testimonials = testData.map((t) => ({
+                name: t.author_name || t.name,
+                job: t.author_title || t.title,
+                testimonial: t.content || t.quote,
+                image: t.author_image || t.image,
+            }));
+        }
+    } catch (e) {
+        console.error(
+            "[TestimonialsListBlock] Error fetching testimonials:",
+            e,
+        );
+    }
+}
+---
+
+{
+    testimonials.length > 0 ? (
+        <Testimonials
+            title={title || t("home.testimonials.title", locale)}
+            subtitle={subtitle || t("home.testimonials.subtitle", locale)}
+            tagline={tagline || t("home.testimonials.tagline", locale)}
+            testimonials={testimonials}
+        />
+    ) : (
+        <div class="text-center p-8 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+            No testimonials found.
+        </div>
+    )
+}

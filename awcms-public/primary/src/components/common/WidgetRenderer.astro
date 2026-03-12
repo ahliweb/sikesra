@@ -1,0 +1,274 @@
+---
+/**
+ * WidgetRenderer.astro - Server-side renderer for dynamic widgets from Supabase.
+ *
+ * Renders widgets based on their type and configuration.
+ * Supports common widget types with Tailwind styling.
+ */
+import type { WidgetData } from "~/lib/widgets";
+
+export interface Props {
+  /** Widget data object */
+  widget: WidgetData;
+  /** Optional CSS class for the container */
+  class?: string;
+}
+
+const { widget, class: className = "" } = Astro.props;
+
+const { type, name, config, content, show_title, custom_classes } = widget;
+
+// Prepare typed data for specific widgets to avoid casting in template
+const linkItems =
+  type === "links" && Array.isArray(config?.items)
+    ? (config.items as Array<{ title: string; url: string; icon?: string }>)
+    : [];
+
+const socialLinks =
+  type === "social" && Array.isArray(config?.links)
+    ? (config.links as Array<{ platform: string; url: string }>)
+    : [];
+
+/**
+ * Get widget container classes based on type
+ */
+function getContainerClasses(widgetType: string): string {
+  const baseClasses =
+    "widget p-4 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700";
+
+  switch (widgetType) {
+    case "featured":
+      return `${baseClasses} bg-gradient-to-br from-primary/5 to-primary/10`;
+    case "cta":
+      return `${baseClasses} bg-primary text-white`;
+    case "minimal":
+      return "widget py-2";
+    default:
+      return baseClasses;
+  }
+}
+---
+
+<div class:list={[getContainerClasses(type), custom_classes, className]}>
+  {
+    show_title && name && (
+      <h3 class="text-lg font-semibold mb-3 text-slate-800 dark:text-slate-200">
+        {name}
+      </h3>
+    )
+  }
+
+  <div class="widget-content">
+    {
+      type === "text" && (
+        <div
+          class="prose prose-sm dark:prose-invert max-w-none"
+          set:html={content || ""}
+        />
+      )
+    }
+
+    {type === "html" && <div set:html={content || ""} />}
+
+    {
+      type === "image" && config?.src && (
+        <figure>
+          <img
+            src={config.src as string}
+            alt={(config.alt as string) || ""}
+            class="w-full rounded-lg"
+            loading="lazy"
+          />
+          {config.caption && (
+            <figcaption class="mt-2 text-sm text-slate-500 dark:text-slate-400 text-center">
+              {config.caption}
+            </figcaption>
+          )}
+        </figure>
+      )
+    }
+
+    {
+      type === "links" && linkItems.length > 0 && (
+        <ul class="space-y-2">
+          {linkItems.map((item) => (
+            <li>
+              <a
+                href={item.url}
+                class="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
+              >
+                {item.icon && <span class="w-4 h-4">{item.icon}</span>}
+                <span>{item.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      type === "recent_posts" && (
+        <div class="space-y-3">
+          <p class="text-sm text-slate-500 dark:text-slate-400 italic">
+            Recent posts will load dynamically...
+          </p>
+        </div>
+      )
+    }
+
+    {
+      type === "categories" && (
+        <div class="flex flex-wrap gap-2">
+          <p class="text-sm text-slate-500 dark:text-slate-400 italic">
+            Categories will load dynamically...
+          </p>
+        </div>
+      )
+    }
+
+    {
+      type === "tags" && (
+        <div class="flex flex-wrap gap-2">
+          <p class="text-sm text-slate-500 dark:text-slate-400 italic">
+            Tags will load dynamically...
+          </p>
+        </div>
+      )
+    }
+
+    {
+      type === "social" && socialLinks.length > 0 && (
+        <div class="flex gap-3">
+          {socialLinks.map((social) => (
+            <a
+              href={social.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors"
+              aria-label={social.platform}
+            >
+              <span class="text-sm font-medium uppercase">
+                {social.platform.charAt(0)}
+              </span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+
+    {
+      type === "cta" && (
+        <div class="text-center">
+          {config?.description && (
+            <p class="mb-4 text-white/90">{config.description}</p>
+          )}
+          {config?.button_text && config?.button_url && (
+            <a
+              href={config.button_url as string}
+              class="inline-block px-6 py-2 bg-white text-primary font-semibold rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {config.button_text}
+            </a>
+          )}
+        </div>
+      )
+    }
+
+    {
+      type === "newsletter" && (
+        <form class="space-y-3">
+          {config?.description && (
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              {config.description}
+            </p>
+          )}
+          <div class="flex gap-2">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              class="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              type="submit"
+              class="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            >
+              Subscribe
+            </button>
+          </div>
+        </form>
+      )
+    }
+
+    {
+      type === "map" && config?.embed_url && (
+        <div class="aspect-video rounded-lg overflow-hidden">
+          <iframe
+            src={config.embed_url as string}
+            class="w-full h-full border-0"
+            loading="lazy"
+            allowfullscreen
+          />
+        </div>
+      )
+    }
+
+    {
+      type === "contact" && (
+        <div class="space-y-3 text-sm">
+          {config?.address && (
+            <div class="flex items-start gap-2">
+              <span class="text-slate-400">📍</span>
+              <span class="text-slate-600 dark:text-slate-400">
+                {config.address}
+              </span>
+            </div>
+          )}
+          {config?.phone && (
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400">📞</span>
+              <a
+                href={`tel:${config.phone}`}
+                class="text-slate-600 dark:text-slate-400 hover:text-primary"
+              >
+                {config.phone}
+              </a>
+            </div>
+          )}
+          {config?.email && (
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400">✉️</span>
+              <a
+                href={`mailto:${config.email}`}
+                class="text-slate-600 dark:text-slate-400 hover:text-primary"
+              >
+                {config.email}
+              </a>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    {/* Fallback for unknown types */}
+    {
+      ![
+        "text",
+        "html",
+        "image",
+        "links",
+        "recent_posts",
+        "categories",
+        "tags",
+        "social",
+        "cta",
+        "newsletter",
+        "map",
+        "contact",
+      ].includes(type) && (
+        <div class="text-sm text-slate-500 dark:text-slate-400 italic">
+          Widget type "{type}" - Content rendering available soon.
+        </div>
+      )
+    }
+  </div>
+</div>

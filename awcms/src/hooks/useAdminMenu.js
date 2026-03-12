@@ -1,0 +1,624 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/customSupabaseClient';
+import { hooks } from '@/lib/hooks';
+import { normalizeMenuPath, resolveGroupMeta, resolveResourcePath } from '@/lib/adminMenuUtils';
+import { usePermissions } from '@/contexts/PermissionContext';
+
+const DEFAULT_MENU_CONFIG = [];
+const REMOVED_RESOURCE_KEYS = new Set();
+const LEGACY_MENU_KEY_MAP = new Map([
+  ['modules_management', 'modules']
+]);
+
+const getCanonicalMenuKey = (item) => {
+  const rawKey = item?.key || item?.feature_key || item?.id || '';
+  return LEGACY_MENU_KEY_MAP.get(rawKey) || rawKey;
+};
+
+const getMenuIdentityKeys = (item) => {
+  const identityKeys = [];
+  const canonicalKey = getCanonicalMenuKey(item);
+  const normalizedPath = normalizeMenuPath(item?.path);
+
+  if (canonicalKey) identityKeys.push(`key:${canonicalKey}`);
+  if (normalizedPath) identityKeys.push(`path:${normalizedPath}`);
+
+  return identityKeys;
+};
+
+const getMenuItemPriority = (item) => {
+  let score = 0;
+
+  if (item?.source === 'plugin') score += 100;
+  if (item?.source === 'extension') score += 200;
+  if (item?.source === 'resource') score += 300;
+  if (!item?.source || item?.source === 'core') score += 400;
+
+  if (item?.tenant_id) score += 80;
+  if (item?.resource_id) score += 25;
+  if (item?.permission) score += 10;
+  if (item?.is_resource_fallback) score -= 40;
+  if (item?.key && getCanonicalMenuKey(item) === item.key) score += 5;
+
+  return score;
+};
+
+const isPreferredMenuItem = (candidate, current) => {
+  if (!current) return true;
+
+  const candidatePriority = getMenuItemPriority(candidate);
+  const currentPriority = getMenuItemPriority(current);
+
+  if (candidatePriority !== currentPriority) {
+    return candidatePriority > currentPriority;
+  }
+
+  const candidateOrder = (candidate?.group_order || 0) * 1000 + (candidate?.order || 0);
+  const currentOrder = (current?.group_order || 0) * 1000 + (current?.order || 0);
+
+  if (candidateOrder !== currentOrder) {
+    return candidateOrder < currentOrder;
+  }
+
+  return false;
+};
+
+const dedupeMenuItems = (items) => {
+  const dedupedItems = [];
+  const identityMap = new Map();
+
+  (items || []).forEach((item) => {
+    const identityKeys = getMenuIdentityKeys(item);
+    if (identityKeys.length === 0) {
+      dedupedItems.push(item);
+      return;
+    }
+
+    const matchedIndexes = [...new Set(identityKeys
+      .map((identityKey) => identityMap.get(identityKey))
+      .filter((value) => value !== undefined))];
+
+    if (matchedIndexes.length === 0) {
+      const nextIndex = dedupedItems.length;
+      dedupedItems.push(item);
+      identityKeys.forEach((identityKey) => identityMap.set(identityKey, nextIndex));
+      return;
+    }
+
+    const targetIndex = matchedIndexes[0];
+    const currentItem = matchedIndexes
+      .map((index) => dedupedItems[index])
+      .filter(Boolean)
+      .reduce((preferred, candidate) => {
+        if (!preferred) return candidate;
+        return isPreferredMenuItem(candidate, preferred) ? candidate : preferred;
+      }, null);
+    const nextItem = isPreferredMenuItem(item, currentItem) ? item : currentItem;
+
+    matchedIndexes.slice(1).forEach((index) => {
+      dedupedItems[index] = null;
+    });
+
+    dedupedItems[targetIndex] = nextItem;
+    getMenuIdentityKeys(nextItem).forEach((identityKey) => identityMap.set(identityKey, targetIndex));
+  });
+
+  return dedupedItems.filter(Boolean);
+};
+
+
+
+export function useAdminMenu() {
+  const [menuItems, setMenuItems] = useState([]);
+  const { isPlatformAdmin } = usePermissions();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchMenu = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch Core Admin Menus
+      const { data: coreMenus, error: coreError } = await supabase
+        .from('admin_menus')
+        .select('*')
+        .order('group_order', { ascending: true })
+        .order('order', { ascending: true });
+
+      if (coreError) throw coreError;
+
+      // 2. Fetch System Resources (New Source of Truth)
+      const { data: resources, error: resError } = await supabase
+        .from('resources_registry')
+        .select('*')
+        .eq('active', true);
+
+      if (resError) console.warn('Error fetching system resources:', resError);
+
+      // 3. Fetch Extension Menus (if any)
+      // We join with extensions to get the group label (extension name)
+      const { data: extMenus, error: extError } = await supabase
+        .from('extension_menu_items')
+        .select('*, extension:extensions(name, slug, manifest, is_active, deleted_at)')
+        .is('deleted_at', null);
+
+      if (extError) {
+        console.warn('Error fetching extension menus:', extError);
+        // Don't fail completely if extensions table issue
+      }
+
+      // 4. Merge and Normalize
+      const normalizedExtMenus = (extMenus || [])
+        .filter(item => item.extension?.is_active && !item.extension?.deleted_at) // Double check extension is active
+        .map(item => {
+          const extManifest = item.extension?.manifest;
+          const extMenuGroup = extManifest?.menu?.group || extManifest?.menu?.parent;
+          const groupSource = extMenuGroup || item.extension?.name || 'Extensions';
+          const { label: groupLabel, order: groupOrder } = resolveGroupMeta(
+            groupSource,
+            900
+          );
+          const extensionKey = item.extension?.slug || `ext-${item.id}`;
+          return {
+            id: `ext-${item.id}`, // specific ID format
+            original_id: item.id,
+            label: item.label,
+            key: extensionKey,
+            feature_key: 'extensions',
+            icon: item.icon,
+            path: normalizeMenuPath(item.path),
+            group_label: groupLabel,
+            group_order: groupOrder,
+            order: item.order,
+            is_visible: item.is_active,
+            permission: null, // Extensions handle their own route perms usually, or we can add map
+            source: 'extension'
+          };
+        });
+
+      // Combine
+      // If coreMenus is empty, use default config. Extensions still merge.
+      let baseMenus = (coreMenus && coreMenus.length > 0) ? coreMenus : DEFAULT_MENU_CONFIG;
+      let resourceFallbackItems = [];
+
+      // ENRICH baseMenus with Resource details
+      if (resources && resources.length > 0) {
+        const resourceMap = new Map(resources.map(r => [r.key, r]));
+
+        // Track which resources already have menu entries
+        const menuResourceKeys = new Set();
+        baseMenus.forEach(menu => {
+          if (menu.key) menuResourceKeys.add(menu.key);
+          if (menu.resource_id) {
+            const res = resources.find(r => r.id === menu.resource_id);
+            if (res) menuResourceKeys.add(res.key);
+          }
+        });
+
+        // Add missing resources as menu items (resources without admin_menus entries)
+        const missingResources = resources.filter(r => !menuResourceKeys.has(r.key) && !REMOVED_RESOURCE_KEYS.has(r.key));
+        resourceFallbackItems = missingResources.map(res => {
+          const { label: groupLabel, order: groupOrder } = resolveGroupMeta(
+            res.scope?.toUpperCase() || 'SYSTEM',
+            60
+          );
+          return {
+            id: `resource-${res.key}`,
+            key: res.key,
+            label: res.label,
+            icon: res.icon || 'FileText',
+            path: resolveResourcePath(res.key, res.key),
+            group_label: groupLabel,
+            group_order: groupOrder,
+            order: 999, // Put at end
+            is_visible: true, // Default to visible
+            permission: res.permission_prefix ? `${res.permission_prefix}.read` : null,
+            permission_prefix: res.permission_prefix,
+            resource_id: res.id,
+            resource_type: res.type,
+            source: 'resource',
+            is_resource_fallback: true
+          };
+        });
+
+        baseMenus = baseMenus.map(menu => {
+          // Find matching resource by direct ID link or Key match
+          const matchedRes = resources.find(r => r.id === menu.resource_id) || resourceMap.get(menu.key);
+          if (matchedRes) {
+            const resolvedPermission = menu.permission || (matchedRes.permission_prefix ? `${matchedRes.permission_prefix}.read` : null);
+            const { label: groupLabel, order: groupOrder } = resolveGroupMeta(
+              menu.group_label,
+              menu.group_order
+            );
+            return {
+              ...menu,
+              // If menu label/icon is null (strict DB mode), fallback to Resource
+              label: menu.label || matchedRes.label,
+              icon: menu.icon || matchedRes.icon,
+              path: resolveResourcePath(matchedRes.key || menu.key, menu.path),
+              resource_id: matchedRes.id,
+              resource_type: matchedRes.type, // passed for UI to know if it's a Table or Form
+              permission: resolvedPermission,
+              permission_prefix: matchedRes.permission_prefix,
+              group_label: groupLabel,
+              group_order: groupOrder
+            };
+          }
+          const { label: groupLabel, order: groupOrder } = resolveGroupMeta(
+            menu.group_label,
+            menu.group_order
+          );
+            return {
+              ...menu,
+              path: resolveResourcePath(menu.key, menu.path),
+              group_label: groupLabel,
+              group_order: groupOrder
+            };
+        });
+      }
+
+      let combined = [...baseMenus, ...normalizedExtMenus, ...resourceFallbackItems].filter(
+        (item) => !REMOVED_RESOURCE_KEYS.has(item.key)
+      );
+
+      // Scope-aware filtering based on platform vs tenant
+      combined = combined.filter(item => {
+        if (item.scope === 'platform') return isPlatformAdmin;
+        return true; // tenant + shared visible to all authenticated
+      });
+
+      // 5. Merge Plugin-registered menu items (via filters)
+      try {
+        const pluginMenuItems = hooks.applyFilters('admin_menu_items', []);
+        const existingMenuKeys = new Set(
+          combined.map(item => item.key || item.id).filter(Boolean)
+        );
+        const existingMenuPaths = new Set(
+          combined.map(item => normalizeMenuPath(item.path)).filter(Boolean)
+        );
+        const normalizedPluginMenus = (pluginMenuItems || [])
+          .map(item => {
+            const normalizedKey = item.key || item.id;
+            const { label: groupLabel, order: groupOrder } = resolveGroupMeta(
+              item.group || item.parent || 'PLUGINS',
+              item.groupOrder
+            );
+            return {
+              id: `plugin-${normalizedKey}`,
+              original_id: item.id,
+              label: item.label,
+              key: normalizedKey,
+              feature_key: item.feature_key || normalizedKey,
+              icon: item.icon || 'Puzzle',
+              path: normalizeMenuPath(item.path),
+              group_label: groupLabel,
+              group_order: groupOrder,
+              order: item.order || 10,
+              is_visible: true,
+              permission: item.permission || null,
+              source: 'plugin',
+              plugin_type: item.plugin_type || 'extension' // Default to extension if not specified
+            };
+          })
+          .filter(item => {
+            const key = item.key || item.id;
+            const pathKey = item.path;
+            if (key && existingMenuKeys.has(key)) return false;
+            if (pathKey && existingMenuPaths.has(pathKey)) return false;
+            if (key) existingMenuKeys.add(key);
+            if (pathKey) existingMenuPaths.add(pathKey);
+            return true;
+          });
+        combined = [...combined, ...normalizedPluginMenus];
+      } catch (pluginErr) {
+        console.warn('Error loading plugin menu items:', pluginErr);
+      }
+
+      combined = dedupeMenuItems(combined);
+
+      // Re-sort after adding plugin items
+      combined.sort((a, b) => {
+        if ((a.group_order || 0) !== (b.group_order || 0)) {
+          return (a.group_order || 0) - (b.group_order || 0);
+        }
+        return (a.order || 0) - (b.order || 0);
+      });
+
+      setMenuItems(combined);
+    } catch (err) {
+      console.error('Error fetching admin menu:', err);
+      setError(err);
+      // Even on error, fallback to default config so UI isn't broken
+      setMenuItems(DEFAULT_MENU_CONFIG);
+    } finally {
+      setLoading(false);
+    }
+  }, [isPlatformAdmin]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchMenu();
+  }, [fetchMenu]);
+
+  const updateMenuOrder = async (newOrderItems) => {
+    try {
+      const coreUpdates = [];
+      const extUpdates = [];
+      const newInserts = []; // For items from DEFAULT_MENU_CONFIG that don't exist in DB
+
+      newOrderItems.forEach((item, index) => {
+        const newOrder = (index + 1) * 10;
+
+        if (item.source === 'extension') {
+          extUpdates.push({
+            id: item.original_id,
+            order: newOrder,
+            updated_at: new Date().toISOString()
+          });
+        } else {
+          // Check if this is a fallback item (string ID) vs database item (UUID)
+          const isUUID = typeof item.id === 'string' &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+
+          if (isUUID) {
+            // Existing database row - just update order
+            coreUpdates.push({
+              id: item.id,
+              order: newOrder,
+              updated_at: new Date().toISOString()
+            });
+          } else {
+            // Fallback item - needs full insert 
+            newInserts.push({
+              key: item.key || item.id,
+              label: item.label,
+              path: item.path || '',
+              icon: item.icon || 'FolderOpen',
+              permission: item.permission,
+              group_label: item.group_label || 'General',
+              group_order: item.group_order || 100,
+              order: newOrder,
+              is_visible: item.is_visible !== false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+      });
+
+      // Insert new items from fallback config
+      if (newInserts.length > 0) {
+        // Try to insert - if key constraint exists, use upsert; otherwise insert
+        try {
+          const { error: insertError } = await supabase
+            .from('admin_menus')
+            .insert(newInserts)
+            .select();
+
+          if (insertError) {
+            // If insert failed due to constraint, try one by one
+            console.warn('Batch insert failed, trying individually:', insertError);
+            for (const item of newInserts) {
+              await supabase.from('admin_menus').insert(item);
+            }
+          }
+        } catch (e) {
+          console.error('Error inserting new items:', e);
+        }
+
+        // After inserting, we need to refresh to get proper UUIDs
+        await fetchMenu();
+        return true;
+      }
+
+      // Update Core Menus - use individual updates instead of upsert to avoid NOT NULL constraint issues
+      if (coreUpdates.length > 0) {
+        const updatePromises = coreUpdates.map(update =>
+          supabase
+            .from('admin_menus')
+            .update({ order: update.order, updated_at: update.updated_at })
+            .eq('id', update.id)
+        );
+
+        const results = await Promise.all(updatePromises);
+        const errors = results.filter(r => r.error);
+        if (errors.length > 0) {
+          console.error('Some updates failed:', errors);
+          throw errors[0].error;
+        }
+      }
+
+      // Update Extension Menus - same approach
+      if (extUpdates.length > 0) {
+        const updatePromises = extUpdates.map(update =>
+          supabase
+            .from('extension_menu_items')
+            .update({ order: update.order, updated_at: update.updated_at })
+            .eq('id', update.id)
+        );
+
+        const results = await Promise.all(updatePromises);
+        const errors = results.filter(r => r.error);
+        if (errors.length > 0) {
+          console.error('Some extension updates failed:', errors);
+          throw errors[0].error;
+        }
+      }
+
+
+      setMenuItems(prev => {
+        const itemsMap = new Map(prev.map(i => [i.id, i]));
+        return newOrderItems.map(item => ({ ...itemsMap.get(item.id), ...item }));
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Error updating menu order:', err);
+      throw err;
+    }
+  };
+
+
+  const toggleVisibility = async (id, currentVisibility) => {
+    try {
+      // Check if it's an extension item (ext- prefix)
+      const isExtension = id.toString().startsWith('ext-');
+
+      // Check if it's a plugin item (plugin- prefix)
+      const isPlugin = id.toString().startsWith('plugin-');
+
+      // Check if this is a fallback item (not a UUID)
+      const isUUID = typeof id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      if (isExtension) {
+        const realId = id.replace('ext-', '');
+        const { error } = await supabase
+          .from('extension_menu_items')
+          .update({ is_active: !currentVisibility })
+          .eq('id', realId);
+        if (error) throw error;
+      } else if (isPlugin) {
+        // Plugin items are managed by plugins via hooks - cannot toggle directly
+        // Return success but don't persist - plugins manage their own visibility
+        setMenuItems(prev => prev.map(item =>
+          item.id === id ? { ...item, is_visible: !currentVisibility } : item
+        ));
+        return true;
+      } else if (isUUID) {
+        const { error } = await supabase
+          .from('admin_menus')
+          .update({ is_visible: !currentVisibility })
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        // Fallback item - find it and insert first, then update
+        const item = menuItems.find(i => i.id === id);
+        if (item) {
+          const { error } = await supabase
+            .from('admin_menus')
+            .upsert({
+              key: item.key || item.id,
+              label: item.label,
+              path: item.path || '',
+              icon: item.icon || 'FolderOpen',
+              permission: item.permission,
+              group_label: item.group_label || 'General',
+              group_order: item.group_order || 100,
+              order: item.order || 0,
+              is_visible: !currentVisibility,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'key' })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          // Refresh to get proper UUIDs
+          await fetchMenu();
+          return true;
+        }
+      }
+
+      setMenuItems(prev => prev.map(item =>
+        item.id === id ? { ...item, is_visible: !currentVisibility } : item
+      ));
+      return true;
+    } catch (err) {
+      console.error('Error toggling visibility:', err);
+      throw err;
+    }
+  };
+
+  const updateMenuItem = async (id, updates) => {
+    try {
+      // Check if this is a fallback item
+      const isUUID = typeof id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      if (isUUID) {
+        const { error } = await supabase
+          .from('admin_menus')
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        // Fallback item - find it and insert with updates
+        const item = menuItems.find(i => i.id === id);
+        if (item) {
+          const { error } = await supabase
+            .from('admin_menus')
+            .upsert({
+              key: item.key || item.id,
+              label: updates.label || item.label,
+              path: item.path || '',
+              icon: item.icon || 'FolderOpen',
+              permission: item.permission,
+              group_label: updates.group_label || item.group_label || 'General',
+              group_order: updates.group_order || item.group_order || 100,
+              order: item.order || 0,
+              is_visible: item.is_visible !== false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+
+          if (error) throw error;
+
+          await fetchMenu();
+          return true;
+        }
+      }
+
+      setMenuItems(prev => prev.map(item =>
+        item.id === id ? { ...item, ...updates } : item
+      ));
+      return true;
+    } catch (err) {
+      console.error('Error updating item:', err);
+      throw err;
+    }
+  };
+
+  const updateGroup = async (oldLabel, { newLabel, newOrder }) => {
+    try {
+      const updates = {};
+      if (newLabel !== undefined && newLabel !== oldLabel) {
+        updates.group_label = newLabel;
+      }
+      if (newOrder !== undefined) {
+        updates.group_order = newOrder;
+      }
+
+      if (Object.keys(updates).length === 0) return;
+
+      const { error } = await supabase
+        .from('admin_menus')
+        .update(updates)
+        .eq('group_label', oldLabel);
+
+      if (error) throw error;
+
+      setMenuItems(prev => prev.map(item => {
+        if (item.group_label === oldLabel) {
+          return { ...item, ...updates };
+        }
+        return item;
+      }));
+      return true;
+    } catch (err) {
+      console.error('Error updating group:', err);
+      throw err;
+    }
+  };
+
+  return {
+    menuItems,
+    loading,
+    error,
+    fetchMenu,
+    updateMenuOrder,
+    toggleVisibility,
+    updateMenuItem,
+    updateGroup
+  };
+}

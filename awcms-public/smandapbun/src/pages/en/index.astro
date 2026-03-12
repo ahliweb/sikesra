@@ -1,0 +1,406 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { Icon } from "astro-icon/components";
+import {
+  t,
+  getLocalizedValue,
+  getLocalizedPath,
+  type Locale,
+} from "../../utils/i18n";
+import { getAdminPageBySlug, getSiteData, getPosts, getProfilePageData } from "../../lib/api";
+
+const locale: Locale = "en";
+const site = await getSiteData();
+const posts = await getPosts(3, locale);
+const profileData = await getProfilePageData();
+const { principalMessage: principalMessageFallback } = profileData;
+const principalMessagePage = await getAdminPageBySlug("sambutan-kepala-sekolah", locale);
+const principalMessage = principalMessagePage
+  ? {
+      title: { id: principalMessagePage.title, en: principalMessagePage.title },
+      content: {
+        id:
+          principalMessagePage.content ||
+          getLocalizedValue(principalMessageFallback.content, "id"),
+        en:
+          principalMessagePage.content ||
+          getLocalizedValue(principalMessageFallback.content, "en"),
+      },
+      author: principalMessageFallback.author,
+      position: principalMessageFallback.position,
+      image: principalMessagePage.featured_image || principalMessageFallback.image,
+    }
+  : principalMessageFallback;
+const featuredBlogs = posts.filter((a) => a.featured).slice(0, 3);
+const siteName = getLocalizedValue<string>(site.site.name, locale) || "SMAN 2 Pangkalan Bun";
+const siteTagline = getLocalizedValue<string>(site.site.tagline, locale) || t("home.tagline", locale);
+const siteDescription = getLocalizedValue<string>(site.site.description, locale) || t("home.about_desc", locale);
+
+// Import assets
+import { HeroSlider } from "../../components/HeroSlider";
+import { sanitizeHTML } from "~/utils/sanitize";
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  "../../assets/foto-smandapbun/foto-campur-smanda/*.webp",
+  { eager: true },
+);
+const heroImages = Object.values(images).map((img) => img.default);
+---
+
+<Layout title={siteName}>
+  <!-- Hero Section -->
+  <section
+    class="text-white relative overflow-hidden"
+    data-testid="hero-section"
+  >
+    <HeroSlider client:load images={heroImages} />
+    <div class="absolute inset-0 opacity-10">
+      <div
+        class="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl"
+      >
+      </div>
+      <div
+        class="absolute bottom-20 right-10 w-96 h-96 bg-secondary-400 rounded-full blur-3xl"
+      >
+      </div>
+    </div>
+    <div class="container-custom py-20 md:py-32 relative z-30 drop-shadow-md">
+      <div class="max-w-3xl">
+        <p class="text-secondary-300 font-medium mb-4 animate-fade-in">
+          {t("home.welcome", locale)}
+        </p>
+        <h1
+          class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-heading animate-fade-in"
+          style="animation-delay: 0.1s;"
+        >
+          {siteName}
+        </h1>
+        <p
+          class="text-xl md:text-2xl text-blue-100 mb-8 animate-fade-in"
+          style="animation-delay: 0.2s;"
+        >
+          {siteTagline}
+        </p>
+        <div
+          class="flex flex-wrap gap-4 animate-fade-in"
+          style="animation-delay: 0.3s;"
+        >
+          <a
+            href={getLocalizedPath("/profil", locale)}
+            class="btn-secondary"
+            data-testid="hero-profile-btn"
+          >
+            <Icon name="tabler:building" class="w-5 h-5 mr-2" />
+            {t("profile.title", locale)}
+          </a>
+          <a
+            href={getLocalizedPath("/kontak", locale)}
+            class="btn-outline border-white text-white hover:bg-white hover:text-primary-600"
+            data-testid="hero-contact-btn"
+          >
+            <Icon name="tabler:phone" class="w-5 h-5 mr-2" />
+            {t("common.contact_us", locale)}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section
+    class="py-12 bg-white dark:bg-slate-800 relative -mt-8 z-20 transition-colors duration-200"
+  >
+    <div class="container-custom">
+      <div
+        class="bg-white dark:bg-slate-700 rounded-2xl shadow-2xl p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 transition-colors"
+      >
+        <div class="text-center">
+          <div
+            class="text-3xl md:text-4xl font-bold text-primary-600 dark:text-primary-400 mb-1"
+          >
+            {site.stats.students.toLocaleString()}+
+          </div>
+          <div class="text-gray-500 dark:text-gray-400 text-sm">
+            {t("home.stats_students", locale)}
+          </div>
+        </div>
+        <div class="text-center">
+          <div
+            class="text-3xl md:text-4xl font-bold text-primary-600 dark:text-primary-400 mb-1"
+          >
+            {site.stats.teachers}+
+          </div>
+          <div class="text-gray-500 dark:text-gray-400 text-sm">
+            {t("home.stats_teachers", locale)}
+          </div>
+        </div>
+        <div class="text-center">
+          <div
+            class="text-3xl md:text-4xl font-bold text-primary-600 dark:text-primary-400 mb-1"
+          >
+            {site.stats.alumni?.toLocaleString()}+
+          </div>
+          <div class="text-gray-500 dark:text-gray-400 text-sm">
+            {t("home.stats_alumni", locale)}
+          </div>
+        </div>
+        <div class="text-center">
+          <div
+            class="text-3xl md:text-4xl font-bold text-primary-600 dark:text-primary-400 mb-1"
+          >
+            {site.stats.achievements}+
+          </div>
+          <div class="text-gray-500 dark:text-gray-400 text-sm">
+            {t("home.stats_achievements", locale)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section
+    class="section-photo py-16 md:py-24 bg-gray-50 dark:bg-slate-900 transition-colors duration-200"
+    style="--section-image: url('/images/backgrounds/section-campus.webp');"
+  >
+    <div class="container-custom">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="text-primary-600 dark:text-primary-400 font-medium mb-2">
+            {t("home.about_title", locale)}
+          </p>
+          <h2 class="section-title text-gray-900 dark:text-white">
+            {siteName}
+          </h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            {siteDescription}
+          </p>
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div
+              class="bg-white dark:bg-slate-800 p-4 rounded-xl transition-colors"
+            >
+              <div
+                class="text-2xl font-bold text-primary-600 dark:text-primary-400"
+              >
+                {site.accreditation}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                Accreditation
+              </div>
+            </div>
+            <div
+              class="bg-white dark:bg-slate-800 p-4 rounded-xl transition-colors"
+            >
+              <div
+                class="text-2xl font-bold text-primary-600 dark:text-primary-400"
+              >
+                {site.established}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                Established
+              </div>
+            </div>
+          </div>
+          <a
+            href={getLocalizedPath("/profil/visi-misi", locale)}
+            class="btn-primary"
+          >
+            {t("common.learn_more", locale)}
+            <Icon name="tabler:arrow-right" class="w-5 h-5 ml-2" />
+          </a>
+        </div>
+        <div class="relative">
+          <div
+            class="aspect-video bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800 rounded-2xl overflow-hidden"
+          >
+            <img
+              src="/images/backgrounds/hero-profile.webp"
+              alt={t("home.school_alt", locale)}
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <div
+            class="absolute -bottom-6 -left-6 bg-secondary-500 text-white p-6 rounded-xl shadow-lg"
+          >
+            <div class="text-3xl font-bold">
+              {new Date().getFullYear() - parseInt(site.established)}+
+            </div>
+            <div class="text-sm">{t("home.years_of_experience", locale)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Principal Welcome Section -->
+  <section
+    class="py-16 md:py-24 bg-white dark:bg-slate-800 transition-colors duration-200"
+    data-testid="principal-section"
+  >
+    <div class="container-custom">
+      <div
+        class="bg-primary-50 dark:bg-slate-900 rounded-3xl p-8 md:p-12 shadow-sm border border-primary-100 dark:border-slate-700"
+      >
+        <div class="grid md:grid-cols-2 gap-10 items-center">
+          <div class="order-2 md:order-1">
+            <h2 class="section-title text-gray-900 dark:text-white mb-6">
+              {getLocalizedValue(principalMessage.title, locale)}
+            </h2>
+            <div
+              class="prose dark:prose-invert max-w-none mb-8 line-clamp-4 text-gray-600 dark:text-gray-300"
+            >
+              <div
+                set:html={sanitizeHTML(getLocalizedValue(principalMessage.content, locale))}
+              />
+            </div>
+            <div class="flex items-center gap-4 mb-6">
+              <div class="text-left">
+                <h3 class="font-bold text-gray-900 dark:text-white text-lg">
+                  {principalMessage.author}
+                </h3>
+                <p class="text-primary-600 dark:text-blue-400 text-sm">
+                  {principalMessage.position}
+                </p>
+              </div>
+            </div>
+            <a
+              href={getLocalizedPath("/profil/sambutan-kepala-sekolah", locale)}
+              class="btn-primary"
+            >
+              Read More
+              <Icon name="tabler:arrow-right" class="w-5 h-5 ml-2" />
+            </a>
+          </div>
+          <div
+            class="order-1 md:order-2 flex justify-center md:justify-end relative"
+          >
+            <div class="relative w-64 h-64 md:w-80 md:h-80">
+              <div
+                class="absolute inset-0 bg-primary-200 dark:bg-slate-700 rounded-full blur-2xl opacity-50 transform translate-y-4"
+              >
+              </div>
+              {
+                principalMessage.image ? (
+                  <div class="relative w-full h-full rounded-2xl overflow-hidden shadow-xl border-4 border-white dark:border-slate-800 rotate-3 transition-transform hover:rotate-0 duration-300">
+                    <img
+                      src={principalMessage.image}
+                      alt={principalMessage.author}
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div class="relative w-full h-full bg-gray-200 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-primary-600 dark:text-gray-400 shadow-xl border-4 border-white dark:border-slate-800 rotate-3">
+                    <Icon name="tabler:user" class="w-24 h-24" />
+                  </div>
+                )
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Blogs Section -->
+  <section
+    class="py-16 md:py-24 bg-gray-50 dark:bg-slate-800 transition-colors duration-200"
+  >
+    <div class="container-custom">
+      <div class="flex justify-between items-end mb-12">
+        <div>
+          <p class="text-primary-600 dark:text-primary-400 font-medium mb-2">
+            {t("blogs.title", locale)}
+          </p>
+          <h2 class="section-title mb-0 text-gray-900 dark:text-white">
+            {t("home.latest_blogs", locale)}
+          </h2>
+        </div>
+        <a
+          href={getLocalizedPath("/blogs", locale)}
+          class="hidden md:flex items-center text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300"
+          data-testid="blogs-view-all"
+        >
+          {t("common.view_all", locale)}
+          <Icon name="tabler:arrow-right" class="w-5 h-5 ml-1" />
+        </a>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {
+          featuredBlogs.map((blog: any) => (
+            <article class="bg-white dark:bg-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group h-full flex flex-col">
+              <div class="aspect-video bg-gray-200 dark:bg-slate-600 overflow-hidden relative">
+                <img
+                  src={blog.image}
+                  alt={getLocalizedValue(blog.title, locale)}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div class="absolute top-4 left-4">
+                  <span class="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {blog.category}
+                  </span>
+                </div>
+              </div>
+              <div class="p-6 flex flex-col flex-grow">
+                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  <Icon name="tabler:calendar" class="w-4 h-4 mr-1" />
+                  {new Date(blog.created_at).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
+                  {getLocalizedValue(blog.title, locale)}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 line-clamp-3 text-sm flex-grow">
+                  {getLocalizedValue(blog.excerpt, locale)}
+                </p>
+                <a
+                  href={getLocalizedPath(`/blogs/${blog.slug}`, locale)}
+                  class="text-primary-600 dark:text-primary-400 font-medium text-sm flex items-center hover:text-primary-700 dark:hover:text-primary-300"
+                >
+                  Read More
+                  <Icon name="tabler:arrow-right" class="w-4 h-4 ml-1" />
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <div class="mt-8 text-center md:hidden">
+        <a href={getLocalizedPath("/blogs", locale)} class="btn-primary">
+          {t("common.view_all", locale)}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section
+    class="py-16 md:py-24 hero-gradient text-white relative overflow-hidden"
+    style="--hero-image: url('/images/backgrounds/hero-activity.webp');"
+  >
+    <div class="absolute inset-0 bg-black/20"></div>
+    <div class="container-custom relative z-10 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-4">
+        {t("home.join_us", locale)}
+      </h2>
+      <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+        {t("home.join_us_desc", locale)}
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="#" class="btn-secondary">
+          <Icon name="tabler:file-text" class="w-5 h-5 mr-2" />
+          {t("home.ppdb", locale)}
+        </a>
+        <a
+          href={getLocalizedPath("/kontak", locale)}
+          class="btn-outline border-white text-white hover:bg-white hover:text-primary-600"
+        >
+          <Icon name="tabler:phone" class="w-5 h-5 mr-2" />
+          {t("common.contact_us", locale)}
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>

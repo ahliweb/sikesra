@@ -1,0 +1,70 @@
+> **Documentation Authority**: [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) Section 2.3 (Permissions) and Section 3 (Modules)
+
+# Admin Menu System
+
+## Purpose
+
+Describe how admin menus are stored, loaded, and extended.
+
+## Audience
+
+- Admin panel developers
+- Extension authors
+
+## Prerequisites
+
+- [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) - **Primary authority** for menu system and permissions
+- [AGENTS.md](../../AGENTS.md) - Implementation patterns and Context7 references
+- `docs/security/abac.md`
+
+## Core Concepts
+
+- Menu configuration is stored in `admin_menus`.
+- The UI falls back to `awcms/src/hooks/useAdminMenu.js` defaults.
+- Extensions and plugins can inject menu items at runtime.
+- Menu items are linked to `resources_registry` via `resource_id` for ABAC metadata.
+- `admin_menus` is global (no `tenant_id`); RLS restricts insert/update/delete to platform admins.
+- Grouping uses `group_label` and `group_order`, while `is_core` flags core items.
+
+## How It Works
+
+### Data Source Order
+
+1. `admin_menus` table (canonical)
+2. `DEFAULT_MENU_CONFIG` in `useAdminMenu.js` (fallback)
+3. Extension or plugin injections (`admin_menu_items` filter)
+4. Sidebar-level filter (`admin_sidebar_menu`) for last-mile customization
+
+### Extension Injection
+
+```javascript
+import { addFilter } from '@/lib/hooks';
+
+addFilter('admin_menu_items', 'my_plugin', items => [
+  ...items,
+  { label: 'My Feature', path: 'my-feature', icon: 'Star', permission: 'tenant.my_feature.read' }
+]);
+```
+
+## Implementation Patterns
+
+- Use `useAdminMenu()` to load and update menu items.
+- Menu items must include a permission key following `scope.resource.action`.
+- Prefer `resource_id` + `permission_prefix` when seeding `admin_menus` for consistent ABAC checks.
+
+## Permissions and Access
+
+- Each menu item has a `permission` field.
+- The sidebar hides items when `usePermissions().hasPermission()` fails.
+- Platform admin/full-access roles bypass standard checks and see all visible items (including `platform_admin_only`).
+- `resources_registry.permission_prefix` is used to validate ABAC alignment.
+
+## Security and Compliance Notes
+
+- Menu permissions must align with ABAC definitions.
+- Avoid hardcoded menu items outside the menu system.
+
+## References
+
+- `docs/security/abac.md`
+- `../../awcms/src/hooks/useAdminMenu.js`
