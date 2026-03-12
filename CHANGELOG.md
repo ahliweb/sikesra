@@ -143,7 +143,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
 - Added local Performance Advisor FK index troubleshooting runbook using `supabase/manual/check_advisors.sql`.
 - Added `scripts/verify_supabase_function_consistency.sh` to the setup runbook script matrix.
 - Standardized mobile/ESP32 package docs to `SUPABASE_PUBLISHABLE_KEY` naming.
-- Corrected root documentation links in `awcms-mobile-java/README.md`.
+- Corrected root documentation links in the retired Java mobile README before that workspace was removed.
 - Clarified user deletion docs to explicit soft-delete update workflow behavior.
 
 ### Removed

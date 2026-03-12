@@ -1,89 +1,88 @@
 > **Documentation Authority**: [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) -> [AGENTS.md](../../AGENTS.md) -> [PRD.md](PRD.md)
 
-# AWCMS - Acceptance Criteria
+# SIKESRA MVP Acceptance Criteria
 
-> This document mirrors the current PRD sections and turns them into testable checks.
+> This document mirrors the current SIKESRA MVP PRD and turns its requirements into testable checks.
 
-## 1. Requirements Baseline
-
-| ID | Criterion | Verification |
-| --- | --- | --- |
-| RB-1 | Tenant-scoped business tables use `tenant_id` and Row Level Security. | Schema review plus `pg_tables`/policy audit show tenant-scoped tables are protected. |
-| RB-2 | Business data uses soft delete rather than hard delete. | Application and migration review show `deleted_at` lifecycle usage for business entities. |
-| RB-3 | Permission keys follow `scope.resource.action` and are enforced in UI and DB layers. | Permission audit plus code review of `hasPermission()` and `public.has_permission()` usage. |
-| RB-4 | Public content delivery excludes draft and soft-deleted records. | Query review confirms `status = published` and `deleted_at IS NULL` filters. |
-| RB-5 | Tenant theming relies on semantic variables rather than hardcoded brand colors. | UI review finds semantic CSS variable usage and no tenant-facing hardcoded hex values. |
-| RB-6 | AI-assisted output is reviewable and does not bypass publication controls. | Workflow review shows AI-generated content lands in draft/review states instead of direct publish. |
-
-## 2. Platform and Tenant Management
+## 1. Product Foundation and Scope
 
 | ID | Criterion | Verification |
 | --- | --- | --- |
-| PT-1 | Tenant onboarding creates a usable isolated workspace. | Tenant create flow results in defaults, invite path, and tenant-scoped access on first login. |
-| PT-2 | Tenant admins can manage tenant settings without affecting other tenants. | Update tests confirm branding, language, settings, and role changes stay within the active tenant. |
-| PT-3 | Platform operators can manage platform-wide controls without exposing tenant data improperly. | Platform-only screens are permission-gated and cross-tenant visibility is limited to platform roles. |
-| PT-4 | Audit activity is visible at the right scope. | Tenant users see only their tenant logs; platform users can access broader operational review where allowed. |
+| PF-1 | SIKESRA runs on the AWCMS architecture baseline without introducing custom backend application servers. | Architecture review confirms Admin uses React/Vite, Public uses Astro, backend logic uses Supabase and Cloudflare Workers, and no custom Node.js business server is required. |
+| PF-2 | MVP scope covers the pre-DTSEN phase only. | Product documentation and implementation review confirm no direct DTSEN write integration exists in the MVP baseline. |
+| PF-3 | The system supports the defined MVP entity groups. | Form, schema, and workflow review confirm support for houses of worship, social or religious institutions, religious teachers or figures, orphans, and people with disabilities. |
 
-## 3. Content and Media Management
-
-| ID | Criterion | Verification |
-| --- | --- | --- |
-| CM-1 | Content creation saves tenant and author context correctly. | Insert/update tests show records include correct `tenant_id` and `author_id`. |
-| CM-2 | Visual and rich text editors use tenant-aware configuration and sanitization. | Review of editor flows confirms Puck/TipTap configuration and sanitized render/import paths. |
-| CM-3 | Media operations are tenant-scoped and validated. | Upload/read tests confirm file isolation, expected bucket rules, and file validation behavior. |
-| CM-4 | Tenant content modules map to permission-aware admin surfaces. | Admin route and menu review confirms enabled resources match permissions and visible modules. |
-
-## 4. Workflow and Access Control
+## 2. Identity and Data Standardization
 
 | ID | Criterion | Verification |
 | --- | --- | --- |
-| WA-1 | Draft, review, and publish transitions honor role permissions. | Workflow tests show unauthorized roles cannot publish or bypass review rules. |
-| WA-2 | Own-only permissions restrict edits to owned content. | Cross-user tests show authors with own-only access cannot modify others' records. |
-| WA-3 | Restricted personas remain restricted in both UI and DB access. | Auditor/member tests confirm read-only or self-service-only behavior with no hidden bypass path. |
-| WA-4 | Sensitive admin routes use secure route parameter patterns where required. | Route review confirms identifier routes use signed/secured parameter handling. |
+| ID-1 | Every registered entity can be assigned a single immutable 20-digit SIKESRA ID. | ID generation tests confirm the output follows the documented 20D format and remains unchanged after issuance. |
+| ID-2 | Micro-region data is treated as contextual metadata and not part of ID generation. | Data model and ID generation review confirm RT, RW, Dusun, and similar fields are stored separately from the canonical identifier. |
+| ID-3 | Duplicate entity creation is controlled by standardized identity and validation rules. | Insert and validation tests confirm duplicate detection or blocking rules are enforced consistently within the allowed scope. |
 
-## 5. Public Experience and Publishing
-
-| ID | Criterion | Verification |
-| --- | --- | --- |
-| PP-1 | Public builds resolve tenant context from build-time configuration. | Public portal config and build review confirm tenant resolution comes from expected environment variables. |
-| PP-2 | Public pages render only eligible tenant content. | Public portal tests show published, non-deleted, tenant-matched content only. |
-| PP-3 | Branding, locale, and SEO settings affect the public portal correctly. | Visual and configuration review confirm tenant settings are reflected in public output. |
-| PP-4 | Analytics and telemetry flows respect consent expectations. | Consent banner/config review confirms analytics behavior follows tenant/public consent rules. |
-
-## 6. Commerce, Communication, and Extensions
+## 3. Draft, Submission, and Verification Workflow
 
 | ID | Criterion | Verification |
 | --- | --- | --- |
-| CE-1 | Commerce records remain tenant-scoped and permission-aware. | Product/order/promotion/payment method flows are inaccessible outside the active tenant and role scope. |
-| CE-2 | Communication flows stay isolated and auditable. | Newsletter, subscriber, and contact/message data remain tenant-scoped with reviewable activity traces. |
-| CE-3 | Extensions and resource-driven menus honor permissions and route safety. | Extension route/menu review confirms only allowed items appear and secured routes stay protected. |
+| WF-1 | Village-level operators can save records as draft. | UI and database tests confirm draft records persist without requiring final submission. |
+| WF-2 | Submission is blocked until minimum required fields and mandatory documents are present. | Form and API validation tests confirm incomplete records cannot enter the review queue. |
+| WF-3 | Kecamatan verifiers can review, approve, reject, or request revision according to role permissions. | Permission and workflow tests confirm only authorized verifier roles can perform sub-district verification actions. |
+| WF-4 | Optional institutional validation can be inserted into the process without bypassing required checks. | Workflow configuration and status transition review confirm optional sectoral validation is supported when enabled. |
+| WF-5 | Regency admins control final approval into active master data. | Approval tests confirm only final approvers can move records into the active operational dataset. |
+| WF-6 | Rejections and revision requests require a reason and produce a timestamped workflow trail. | Audit and workflow history review confirm every negative decision includes reason, actor, and timestamp. |
 
-## 7. AI, Mobile, and Device Channels
-
-| ID | Criterion | Verification |
-| --- | --- | --- |
-| AMD-1 | AI-assisted workflows are tenant-isolated and human-governed. | AI request/output review confirms tenant-scoped routing and no auto-publish path. |
-| AMD-2 | Mobile access respects session, tenant, and publication boundaries. | Mobile data flow review confirms signed-in gating and tenant/published filtering where required. |
-| AMD-3 | Device registration and configuration stay tenant-scoped. | Device tests confirm registration, content push, and config actions do not cross tenant boundaries. |
-| AMD-4 | Device firmware/config secrets are not committed to source control. | Repository review confirms local device secrets remain gitignored and out of tracked source. |
-
-## 8. Architecture, Data, and Technical Constraints
+## 4. Document Security and Storage
 
 | ID | Criterion | Verification |
 | --- | --- | --- |
-| AT-1 | The admin app builds successfully on the current stack baseline. | `awcms` build completes successfully under the documented Node and dependency versions. |
-| AT-2 | The public app builds successfully on the current stack baseline. | `awcms-public/primary` build completes successfully under the documented Node and dependency versions. |
-| AT-3 | Core backend business logic does not rely on custom Node.js application servers. | Architecture review confirms Supabase and Cloudflare Workers remain the backend execution model. |
-| AT-4 | Canonical schema truth remains in `supabase/migrations/`. | Documentation and migration review confirm schema changes are represented through timestamped migrations. |
-| AT-5 | Product docs stay aligned across PRD, user stories, acceptance criteria, and index references. | Documentation review confirms shared terminology and linked scope across `docs/product/` and `DOCS_INDEX.md`. |
+| DS-1 | Mandatory supporting documents can be uploaded for relevant entity workflows. | Upload and validation tests confirm required document classes are accepted where the workflow demands them. |
+| DS-2 | Uploaded documents are private by default in storage. | Storage configuration and access tests confirm objects are not publicly readable. |
+| DS-3 | Reviewers access documents only through short-lived signed URLs after permission checks. | Worker and access-flow tests confirm signed document access is temporary, authorized, and not directly public. |
+| DS-4 | Document upload and access events are auditable. | Audit log review confirms uploads, permissioned reads, and workflow-linked file events are recorded. |
+
+## 5. Role-Based UI and Sensitive Data Protection
+
+| ID | Criterion | Verification |
+| --- | --- | --- |
+| RB-1 | Users only see features and data allowed by role and regional scope. | UI review and RLS tests confirm role-based menus, pages, and records are restricted correctly. |
+| RB-2 | Sensitive data is masked by default. | UI inspection confirms fields such as NIK and sensitive health or disability details are obscured for non-authorized views. |
+| RB-3 | Sensitive data reveal actions require appropriate authorization. | Permission tests confirm masked data can be revealed only by allowed roles and scopes. |
+| RB-4 | Dashboards are task-oriented and show operational bottlenecks, not only summary counts. | Dashboard review confirms pending verification, revisions, SLA indicators, and quality issues are surfaced prominently. |
+
+## 6. Security, Audit, and Data Lifecycle
+
+| ID | Criterion | Verification |
+| --- | --- | --- |
+| SA-1 | Tenant-scoped business tables enforce RLS and ABAC rules. | Policy audit and cross-role tests confirm unauthorized reads and writes are blocked at the database layer. |
+| SA-2 | Permission keys follow the `scope.resource.action` format. | Permission registry and code review confirm SIKESRA flows use standardized ABAC naming. |
+| SA-3 | Critical workflow events are written to an append-only audit trail. | Audit schema and behavior review confirm status changes, uploads, approvals, revisions, and deletions are logged without destructive overwrite patterns. |
+| SA-4 | Business data uses soft delete rather than hard delete in standard operations. | Application and database review confirm entity archival relies on `deleted_at`. |
+
+## 7. Public-Safe Data and DTSEN Readiness
+
+| ID | Criterion | Verification |
+| --- | --- | --- |
+| PV-1 | Public views expose only explicitly safe, approved information. | Public query and rendering review confirm sensitive internal data is excluded from public surfaces. |
+| PV-2 | Internal operational records remain separated from public-safe projections. | Data flow and route review confirm internal admin surfaces and public portals use distinct access patterns. |
+| PV-3 | Future DTSEN integration is modeled as read-only reference data. | Architecture and schema planning review confirm DTSEN-ready flows do not overwrite local master data directly. |
+| PV-4 | Discrepancies between local and future national reference data create reviewable operational proposals. | Workflow design review confirms mismatch handling produces explicit review items rather than silent sync behavior. |
+
+## 8. DevOps, Deployment, and Operations
+
+| ID | Criterion | Verification |
+| --- | --- | --- |
+| DO-1 | Local or Dev, Staging or UAT, and Production environments remain separated. | Deployment config review confirms isolated environment variables, secrets, and deployment targets. |
+| DO-2 | Secrets are managed outside source control. | Repository and deployment review confirm sensitive values are injected via secret managers and not committed. |
+| DO-3 | CI or CD pipelines include validation, testing, build, deployment, and post-deploy smoke checks. | GitHub Actions review confirms required stages exist for Admin, Public, and Worker surfaces. |
+| DO-4 | Database changes are shipped through timestamped SQL migrations only. | Migration review confirms schema changes are represented in `supabase/migrations/`. |
+| DO-5 | Backup, rotation, and observability expectations are documented and implementable. | Ops documentation review confirms daily logical backup flow, R2 rotation target, Prometheus or Grafana expectations, and Sentry coverage requirements. |
+| DO-6 | Product docs stay aligned across PRD, user stories, acceptance criteria, README, and DOCS_INDEX. | Documentation review confirms the SIKESRA MVP terminology and scope are consistent across the core docs set. |
 
 ## References
 
-- [PRD.md](PRD.md) - Product requirements and scope
-- [USER_STORY.md](USER_STORY.md) - Product-area stories by persona
-- [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) - Authoritative architecture and constraints
-- [README.md](../../README.md) - Current monorepo surfaces and stack snapshot
+- [PRD.md](PRD.md) - Product requirements and MVP scope
+- [USER_STORY.md](USER_STORY.md) - Persona and workflow-driven stories
+- [README.md](../../README.md) - Monorepo overview and SIKESRA baseline
+- [DOCS_INDEX.md](../../DOCS_INDEX.md) - Canonical documentation routing
 - [docs/security/abac.md](../security/abac.md) - ABAC model details
 - [docs/security/rls.md](../security/rls.md) - RLS policy details
-- [docs/architecture/database.md](../architecture/database.md) - Database orientation

@@ -1,72 +1,66 @@
 > **Documentation Authority**: [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) -> [AGENTS.md](../../AGENTS.md) -> [PRD.md](PRD.md)
 
-# AWCMS - User Stories
+# SIKESRA MVP User Stories
 
-> This document aligns to the current `docs/product/PRD.md` and groups stories by product area first, then by persona.
+> This document aligns to `docs/product/PRD.md` and groups MVP stories by workflow and operating role.
 
-## 1. Platform and Tenant Management
-
-| ID | Persona | Story | Expected Outcome |
-| --- | --- | --- | --- |
-| PT-1 | Platform Owner | As a Platform Owner, I can provision a new tenant so that each organization starts with an isolated workspace. | Tenant defaults are created, the first admin can be invited, and tenant isolation is active from first use. |
-| PT-2 | Platform Owner / Super Admin | As a platform operator, I can manage tenant-level modules and shared platform controls so that capabilities can be turned on safely per tenant. | Module visibility and shared resource behavior are configurable without exposing cross-tenant data. |
-| PT-3 | Tenant Admin | As a Tenant Admin, I can manage users, roles, branding, languages, and settings for my tenant so that my organization controls its own workspace. | Updates remain scoped to the active tenant and immediately affect allowed UI behavior. |
-| PT-4 | Tenant Admin / Auditor | As a tenant operator, I can review audit activity so that I can monitor changes and investigate incidents. | Audit views stay scoped to the correct tenant, with broader access reserved for platform roles only. |
-
-## 2. Content and Media Management
+## 1. Regional Data Entry and Registration
 
 | ID | Persona | Story | Expected Outcome |
 | --- | --- | --- | --- |
-| CM-1 | Author | As an Author, I can create and edit my own content so that I can contribute safely without affecting other users' work. | New content saves with the correct `tenant_id` and `author_id`, and own-only restrictions are respected. |
-| CM-2 | Editor | As an Editor, I can manage shared content and media so that published content has the right assets and quality. | Editors can update allowed content and media records within their tenant scope only. |
-| CM-3 | Author / Editor | As a content creator, I can use visual and rich text editors so that I can produce structured pages and posts efficiently. | Puck templates and TipTap content load and save using tenant-aware configuration and sanitization rules. |
-| CM-4 | Tenant Admin | As a Tenant Admin, I can configure templates, widgets, and import settings so that the content system fits my tenant's workflow. | Tenant-specific configuration drives available editing and import behavior. |
+| DE-1 | Village or Kelurahan Admin | As a village admin, I can register a new social welfare entity so that local data no longer depends on spreadsheets or ad hoc files. | The record is saved with the correct tenant, regional scope, and draft status. |
+| DE-2 | Village or Kelurahan Admin | As a village admin, I can assign a 20-digit SIKESRA ID to a verified registration candidate so that each entity has one canonical identifier. | The generated ID follows the 20D format and remains immutable after issuance. |
+| DE-3 | Village or Kelurahan Admin | As a village admin, I can capture micro-region details such as RT, RW, or Dusun as attributes so that location context is preserved without changing the entity ID. | Micro-region data is stored as contextual metadata and is excluded from ID generation. |
+| DE-4 | Village or Kelurahan Admin | As a village admin, I can create records for houses of worship, social or religious institutions, religious teachers or figures, orphans, and people with disabilities so that MVP target domains are covered. | The form surface supports the required entity groups with consistent validation rules. |
 
-## 3. Workflow and Access Control
-
-| ID | Persona | Story | Expected Outcome |
-| --- | --- | --- | --- |
-| WA-1 | Editor | As an Editor, I can move content through draft, review, and publish stages so that publication follows approval rules. | Status transitions are permission-aware and reflect the content workflow. |
-| WA-2 | Author | As an Author, I can submit content for review without being able to publish directly when my role does not allow it. | Authors can create and update eligible records but cannot bypass publish controls. |
-| WA-3 | Tenant Admin / Platform Owner | As an administrator, I can manage permissions and role behavior so that each user sees only allowed actions. | UI actions and database access remain aligned to ABAC permission keys. |
-| WA-4 | Auditor / Member | As a restricted user, I can access only the views intended for my role so that governance and self-service remain safe. | Auditors stay read-only, and members can manage only their own permitted account data. |
-
-## 4. Public Experience and Publishing
+## 2. Document Collection and Evidence Handling
 
 | ID | Persona | Story | Expected Outcome |
 | --- | --- | --- | --- |
-| PP-1 | Public User | As a Public User, I can browse published tenant content so that I can find current public information. | Only published, non-deleted content appears in the public portal. |
-| PP-2 | Public User | As a Public User, I can search and navigate branded tenant pages so that the site feels consistent and useful. | Search, menus, SEO, and branding stay aligned to the active tenant's public configuration. |
-| PP-3 | Public User | As a Public User, I can switch language when translations exist so that I can read content in my preferred locale. | Public routes expose enabled locales and fall back safely when a translation is unavailable. |
-| PP-4 | Tenant Admin | As a Tenant Admin, I can control public presentation settings so that branding, consent, and publishing behavior match my organization. | Public output respects tenant SEO, analytics consent, language, and theme settings. |
+| DC-1 | Village or Kelurahan Admin | As a data entry operator, I can upload required supporting documents so that every submission includes evidence for verification. | Required files are attached before submit and stored in private object storage. |
+| DC-2 | Kecamatan Verifier | As a sub-district verifier, I can review uploaded evidence for completeness and legibility so that poor submissions are stopped early. | Verifiers can inspect permitted files without exposing them publicly. |
+| DC-3 | Authorized Reviewer | As an authorized reviewer, I can access files through signed links so that private documents stay protected while still being reviewable. | File access is time-limited, permission-checked, and auditable. |
 
-## 5. Commerce, Communication, and Extensions
-
-| ID | Persona | Story | Expected Outcome |
-| --- | --- | --- | --- |
-| CE-1 | Tenant Admin | As a Tenant Admin, I can manage products, product types, orders, promotions, and payment methods so that tenant commerce operations remain centralized. | Commerce records are isolated by tenant and visible only to authorized roles. |
-| CE-2 | Tenant Admin | As a Tenant Admin, I can manage newsletter, subscriber, contact, and messaging flows so that I can communicate with my audience. | Communication data stays tenant-scoped and operational workflows remain auditable. |
-| CE-3 | Platform Owner / Tenant Admin | As an operator, I can enable extensions and resource-driven admin menus so that the platform can grow without custom rewrites. | Extension surfaces integrate with permission-aware routes and menu visibility rules. |
-
-## 6. AI, Mobile, and Device Channels
+## 3. Verification and Approval Workflow
 
 | ID | Persona | Story | Expected Outcome |
 | --- | --- | --- | --- |
-| AI-1 | Editor | As an Editor, I can use AI to generate or refine draft content so that content creation is faster. | AI output stays inside the tenant boundary and is saved as draft or reviewable work, not auto-published content. |
-| AI-2 | Editor / Tenant Admin | As a tenant operator, I can use AI-assisted translation or suggestion flows so that multilingual publishing is easier to manage. | AI suggestions remain attributable, tenant-scoped, and subject to human approval. |
-| MD-1 | Member / Subscriber | As a signed-in mobile user, I can access tenant content and features on mobile so that my experience extends beyond the web portal. | Mobile data access respects auth state, tenant scope, and published-content rules where applicable. |
-| MD-2 | Device Operator | As a Device Operator, I can register and manage tenant devices so that digital signage and device-linked experiences stay under control. | Device records, content pushes, and configuration actions remain isolated to the tenant. |
-| MD-3 | Device Operator | As a Device Operator, I can apply configuration and firmware updates so that devices stay current without manual rework. | Config delivery and OTA behavior are scoped, auditable, and safe for tenant-managed devices. |
+| WF-1 | Village or Kelurahan Admin | As a village admin, I can save incomplete work as draft so that I can finish registrations over multiple sessions. | Draft records remain editable and are not treated as active master data. |
+| WF-2 | Village or Kelurahan Admin | As a village admin, I can submit a completed record for review so that the next verification tier can process it. | Submission is blocked until minimum fields and mandatory evidence are complete. |
+| WF-3 | Kecamatan Verifier | As a sub-district verifier, I can approve, reject, or request revision on incoming submissions so that administrative quality is enforced before regency review. | The status changes are permission-gated and every decision includes timestamped tracking. |
+| WF-4 | Institutional Validator | As a sectoral validator, I can perform optional domain validation so that specialized agencies can contribute to data quality when required. | Optional validation steps can be inserted without bypassing the main approval chain. |
+| WF-5 | Regency Admin | As a regency admin, I can perform final approval so that validated records become active operational master data. | Only approved records become active and visible in operational master datasets. |
+| WF-6 | Any Reviewer | As a reviewer, I can provide a rejection or revision reason so that the submitter knows what must be corrected. | Every negative decision stores a reason and appears in the workflow audit trail. |
+
+## 4. Role-Based Operations and Sensitive Data Protection
+
+| ID | Persona | Story | Expected Outcome |
+| --- | --- | --- | --- |
+| RB-1 | All Internal Users | As an internal user, I see only records and actions allowed for my role and regional scope so that unauthorized operations are prevented by design. | Views, actions, and row access remain aligned to ABAC permissions and RLS policies. |
+| RB-2 | Authorized Officer | As an authorized officer, I can reveal masked sensitive fields only when my role allows it so that personal data is protected by default. | Sensitive values such as NIK are masked by default and revealed selectively. |
+| RB-3 | Auditor | As an auditor, I can review workflow and access history so that governance checks can be performed without changing business data. | Audit access is read-only and scoped to the correct operating region or tenant. |
+
+## 5. Task-Oriented Dashboard and Work Management
+
+| ID | Persona | Story | Expected Outcome |
+| --- | --- | --- | --- |
+| DB-1 | Village or Kelurahan Admin | As a local operator, I can see drafts, returned revisions, and pending submissions so that I know what requires action next. | The dashboard prioritizes work queues instead of only showing totals. |
+| DB-2 | Kecamatan Verifier | As a verifier, I can see pending reviews, overdue items, and quality issues so that I can focus on bottlenecks. | Dashboard widgets surface actionable queues and SLA-related indicators. |
+| DB-3 | Regency Admin | As a regency admin, I can see approval backlog and data quality summaries so that I can manage final operational throughput. | Approval workload and exception trends are visible in one place. |
+
+## 6. Public-Safe Views and Future DTSEN Readiness
+
+| ID | Persona | Story | Expected Outcome |
+| --- | --- | --- | --- |
+| PV-1 | Public User | As a public visitor, I can view safe, non-sensitive information so that public transparency is supported without exposing protected data. | Public views contain only approved, non-sensitive, explicitly publishable data. |
+| PV-2 | System Administrator | As a system administrator, I can keep internal operational data separate from public-safe projections so that security boundaries stay intact. | Internal and public data access paths are clearly separated. |
+| PV-3 | Regency Admin | As a future DTSEN-integrated operator, I can compare local records with national reference data so that discrepancies can become operational proposals instead of silent overwrites. | DTSEN-ready flows treat national data as read-only reference input. |
 
 ## References
 
-- [PRD.md](PRD.md) - Product requirements and scope
+- [PRD.md](PRD.md) - Product requirements and MVP scope
 - [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md) - Testable checks aligned to these stories
-- [README.md](../../README.md) - Monorepo overview and active surfaces
-- [docs/modules/MODULES_GUIDE.md](../modules/MODULES_GUIDE.md) - Current module surface and admin menu model
-- [docs/security/abac.md](../security/abac.md) - Permission system details
+- [README.md](../../README.md) - Monorepo overview and SIKESRA runtime baseline
+- [docs/security/abac.md](../security/abac.md) - Permission model details
 - [docs/security/rls.md](../security/rls.md) - Database enforcement details
-- [docs/tenancy/HIERARCHY.md](../tenancy/HIERARCHY.md) - Role hierarchy details
-- [docs/modules/INTERNATIONALIZATION.md](../modules/INTERNATIONALIZATION.md) - Multi-language module
-- [docs/modules/EMAIL_INTEGRATION.md](../modules/EMAIL_INTEGRATION.md) - Email and subscriber flows
-- [docs/dev/esp32.md](../dev/esp32.md) - IoT development guide
+- [docs/dev/edge-functions.md](../dev/edge-functions.md) - Cloudflare Worker patterns for signed access and privileged operations

@@ -1,10 +1,10 @@
-# AWCMS Documentation Index
+# SIKESRA Documentation Index
 
 > **Documentation Authority**: This index follows the hierarchy defined in `SYSTEM_MODEL.md` -> `AGENTS.md` -> `README.md` -> `DOCS_INDEX.md` -> Implementation Guides.
 
 ## Purpose
 
-Provide a single entry point for all AWCMS documentation across the monorepo and identify the canonical doc for each topic.
+Provide a single entry point for all SIKESRA documentation across the monorepo and identify the canonical doc for each topic. SIKESRA uses the AWCMS architecture as its platform foundation.
 
 ## Documentation Hierarchy (Context7 MCP Aligned)
 
@@ -33,7 +33,7 @@ All documentation follows this authority structure:
 |----------|----------|---------|-------------------|
 | **1** | [SYSTEM_MODEL.md](SYSTEM_MODEL.md) | Tech stack versions, architectural pillars, security mandates | Primary authority |
 | **2** | [AGENTS.md](AGENTS.md) | AI coding guidelines, Context7 library IDs, permission patterns | Agent operations |
-| **3** | [README.md](README.md) | Canonical monorepo overview and baseline commands | Runtime entrypoint |
+| **3** | [README.md](README.md) | Canonical SIKESRA monorepo overview and baseline commands | Runtime entrypoint |
 | **4** | [DOCS_INDEX.md](DOCS_INDEX.md) | Navigation and canonical references | This document |
 
 ### General
@@ -59,9 +59,9 @@ All documentation follows this authority structure:
 
 | Topic | Canonical Doc | Notes |
 | --- | --- | --- |
-| Product Requirements | [docs/product/PRD.md](docs/product/PRD.md) | Overview, requirements, feature scope, architecture, and constraints |
-| User Stories | [docs/product/USER_STORY.md](docs/product/USER_STORY.md) | Product-area stories grouped by persona |
-| Acceptance Criteria | [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Testable checks aligned to PRD sections |
+| Product Requirements | [docs/product/PRD.md](docs/product/PRD.md) | SIKESRA MVP vision, architecture baseline, workflow, and constraints |
+| User Stories | [docs/product/USER_STORY.md](docs/product/USER_STORY.md) | SIKESRA MVP stories grouped by workflow and role |
+| Acceptance Criteria | [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Testable checks aligned to the SIKESRA MVP PRD |
 
 ### Tenancy
 

@@ -1,11 +1,12 @@
-# AWCMS Monorepo
+# SIKESRA Monorepo
 
-Welcome to the AWCMS monorepo. AWCMS is a **multi-tenant CMS platform** with admin, public, mobile, and IoT clients backed by Supabase.
+Welcome to the SIKESRA monorepo. SIKESRA is a social welfare information system implemented on top of the AWCMS platform architecture, with admin, public, mobile, and IoT clients backed by Supabase and Cloudflare.
 
 ## Status Snapshot (2026-03-12)
 
 - Active Node runtime validated: `v22.22.0` (minimum remains `>=22.12.0`).
 - The 2026-03-12 documentation and repository-conflict planning refresh is tracked in `docs/dev/documentation-audit-plan.md` and `docs/dev/documentation-audit-tracker.md`.
+- Product docs now frame this repository as the SIKESRA MVP built on the AWCMS architecture baseline.
 - Public portal and edge-runtime docs are aligned to Astro static output plus Cloudflare Workers as the primary edge HTTP layer.
 - MCP topology from `mcp.json` currently includes `cloudflare`, `context7`, `github`, and `supabase`.
 - Supabase migration parity baseline is `131` root migrations and `131` mirrored admin/CI migrations.
@@ -23,12 +24,18 @@ This repository follows a strict documentation hierarchy aligned with the **Cont
 
 > **For AI Agents**: Always follow `AGENTS.md` and `SYSTEM_MODEL.md` as primary authorities.
 
+## Product Context
+
+- SIKESRA targets the pre-DTSEN phase of regional social welfare data governance.
+- The current MVP emphasizes structured entity registration, evidence-backed verification, secure document storage, and role-scoped operational dashboards.
+- AWCMS remains the underlying technical foundation, but this repository's product framing and documentation now prioritize SIKESRA-specific workflows.
+
 ## Project Structure
 
 | Directory | Description | Tech Stack |
 | --- | --- | --- |
-| `awcms/` | Admin Panel | React 19.2.4, Vite 7.2.7, Supabase |
-| `awcms-public/primary/` | Public Portal | Astro 5.17.1 (static), React 19.2.4 |
+| `awcms/` | SIKESRA Admin Panel foundation | React 19.2.4, Vite 7.2.7, Supabase |
+| `awcms-public/primary/` | SIKESRA Public Portal foundation | Astro 5.17.1 (static), React 19.2.4 |
 | `awcms-mobile/primary/` | Mobile App | Flutter 3.38.5 |
 | `awcms-esp32/primary/` | IoT Firmware | ESP32, PlatformIO |
 | `awcms-ext/` | External Extensions | JavaScript modules |
@@ -63,6 +70,7 @@ Notes:
 - Cloudflare Workers add an edge gateway layer; they do not replace Supabase Auth or move authorization truth out of PostgreSQL policies and permission functions.
 - Cloudflare R2 handles object storage flows, while metadata, ownership, tenant isolation, and policy enforcement remain in Supabase.
 - Client apps should continue to use Supabase Auth sessions, and Worker routes should validate those sessions before performing protected server-side work.
+- SIKESRA-specific workflows should model village, sub-district, institutional, and regency verification inside this architecture rather than outside it.
 
 ## Quick Start
 
@@ -71,6 +79,7 @@ Notes:
 1. Read **[SYSTEM_MODEL.md](SYSTEM_MODEL.md)** - Understand the architecture (5 min)
 2. Follow **[Developer Setup Guide](docs/dev/setup.md)** - Get running (10 min)
 3. Reference **[AGENTS.md](AGENTS.md)** - Coding standards and patterns
+4. Review **[docs/product/PRD.md](docs/product/PRD.md)** - SIKESRA MVP goals, workflow, and constraints
 
 ### Per-Component Guides
 
