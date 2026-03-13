@@ -94,9 +94,6 @@ export async function getStaticPaths() {
 
 - Missing `PUBLIC_TENANT_ID`: fail the build instead of silently rendering wrong-tenant or empty content.
 - Using runtime-only tenant resolution: static builds cannot access `Astro.locals`.
-- Draft leakage: always filter `status = 'published'` and `deleted_at is null`.
-
-
 
 ## 4. Environment Variables
 
