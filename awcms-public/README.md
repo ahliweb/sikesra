@@ -4,7 +4,6 @@ The public portal layer for tenant websites. The primary template lives in `awcm
 
 ## Where to Start
 
-- `primary/README.md` - Primary public portal template and env requirements.
-- `smandapbun/README.md` - Tenant-specific public portal package (SMAN 2 Pangkalan Bun).
+- `primary/README.md` - Primary public portal package.
 - `../docs/dev/public.md` - Architecture and development notes.
 - `../docs/modules/PUBLIC_PORTAL_ARCHITECTURE.md` - Rendering model and tenant strategy.

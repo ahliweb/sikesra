@@ -1,26 +1,6 @@
 SET client_min_messages TO warning;
 
-INSERT INTO public.settings (
-  tenant_id,
-  key,
-  value,
-  type,
-  description,
-  is_public,
-  updated_at
-)
-SELECT
-  id,
-  'public_rebuild_webhook_secret',
-  '',
-  'string',
-  'Shared secret for authenticated public rebuild webhooks.',
-  false,
-  now()
-FROM public.tenants
-WHERE slug = 'smandapbun'
-  AND deleted_at IS NULL
-ON CONFLICT (tenant_id, key) DO NOTHING;
+-- The public_rebuild_webhook_secret setting can be added to individual tenants as needed.
 
 CREATE OR REPLACE FUNCTION public.request_public_rebuild()
 RETURNS trigger

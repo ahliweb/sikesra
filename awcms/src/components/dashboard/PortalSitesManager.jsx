@@ -2,7 +2,7 @@
  * PortalSitesManager - Manage public portal site URLs per tenant.
  *
  * Allows tenant admins to add/edit/remove portal sites (e.g., primary,
- * smandapbun) so the PageEditor preview and other features can target
+ * documentation) so the PageEditor preview and other features can target
  * the correct portal.
  */
 import { useState } from 'react';
@@ -102,7 +102,7 @@ export default function PortalSitesManager() {
                             <Input
                                 value={portal.name}
                                 onChange={(e) => handleChange(idx, 'name', e.target.value)}
-                                placeholder="e.g., Primary, Smandapbun"
+                                placeholder="e.g., Primary, Documentation"
                                 className="h-9"
                             />
                         </div>

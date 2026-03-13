@@ -21,7 +21,6 @@ type Bindings = {
   GITHUB_REBUILD_OWNER?: string
   GITHUB_REBUILD_REPO?: string
   GITHUB_REBUILD_EVENT_TYPE?: string
-  SMANDAPBUN_REBUILD_WEBHOOK_SECRET?: string
   TURNSTILE_SECRET_KEY?: string
 }
 
@@ -532,66 +531,6 @@ app.get('/public/media/*', async (c) => {
 });
 
 // ---- MIGRATED ENDPOINTS ----
-
-app.post('/webhooks/public-rebuild/smandapbun', async (c) => {
-  const expectedSecret = c.env.SMANDAPBUN_REBUILD_WEBHOOK_SECRET?.trim()
-  const providedSecret = c.req.header('x-awcms-rebuild-secret')?.trim()
-
-  if (!expectedSecret) {
-    return c.json({ error: 'Webhook secret is not configured' }, 500)
-  }
-
-  if (!providedSecret || providedSecret !== expectedSecret) {
-    return c.json({ error: 'Unauthorized webhook request' }, 401)
-  }
-
-  const githubToken = c.env.GITHUB_REBUILD_TOKEN?.trim()
-  const githubOwner = c.env.GITHUB_REBUILD_OWNER?.trim()
-  const githubRepo = c.env.GITHUB_REBUILD_REPO?.trim()
-  const eventType = c.env.GITHUB_REBUILD_EVENT_TYPE?.trim() || 'smandapbun-content-changed'
-
-  if (!githubToken || !githubOwner || !githubRepo) {
-    return c.json({ error: 'GitHub rebuild integration is not configured' }, 500)
-  }
-
-  const payload = await getJsonBody(c.req.raw)
-  const dispatchResponse = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/dispatches`, {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/vnd.github+json',
-      'Authorization': `Bearer ${githubToken}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'awcms-edge-public-rebuild',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    body: JSON.stringify({
-      event_type: eventType,
-      client_payload: {
-        source: 'supabase-trigger',
-        tenant_slug: 'smandapbun',
-        tenant_id: payload?.tenant_id || null,
-        table: payload?.table || null,
-        operation: payload?.operation || null,
-        changed_at: payload?.changed_at || new Date().toISOString(),
-      },
-    }),
-  })
-
-  if (!dispatchResponse.ok) {
-    const responseText = await dispatchResponse.text()
-    return c.json({
-      error: 'Failed to dispatch GitHub deployment workflow',
-      details: responseText,
-      status: dispatchResponse.status,
-    }, 502)
-  }
-
-  return c.json({
-    ok: true,
-    eventType,
-    repository: `${githubOwner}/${githubRepo}`,
-  })
-})
 
 app.post('/api/public/rebuild', async (c) => {
   const user = c.get('user')

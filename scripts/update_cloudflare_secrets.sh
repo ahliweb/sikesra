@@ -105,7 +105,4 @@ update_project_secrets "awcms" "Admin Panel"
 # 2. Public Portal (Primary)
 update_project_secrets "awcms-public/primary" "Public Portal (Primary)"
 
-# 3. Public Portal (Smandapbun)
-update_project_secrets "awcms-public/smandapbun" "Public Portal (Smandapbun)"
-
 echo -e "\n${GREEN}All Done successfully!${NC}"

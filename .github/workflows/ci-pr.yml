@@ -242,12 +242,12 @@ jobs:
   # ============================================
   # Lint & Build - SMANDAPBUN Portal (Astro)
   # ============================================
-  lint-build-smandapbun:
+  lint-build-primary:
     name: Lint & Build (Smandapbun)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./awcms-public/smandapbun
+        working-directory: ./awcms-public/primary
 
     steps:
       - name: Checkout code
@@ -258,7 +258,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: './awcms-public/smandapbun/package-lock.json'
+          cache-dependency-path: './awcms-public/primary/package-lock.json'
 
       - name: Install dependencies
         run: npm ci

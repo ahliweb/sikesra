@@ -84,9 +84,9 @@ Describe how the public portal renders tenant content and enforces security cons
 
 ## Tenant Variants
 
-- `awcms-public/smandapbun` is a dedicated single-tenant static portal.
+- `awcms-public/primary` is a dedicated single-tenant static portal.
 - It uses a fixed slug fallback and JSON fallbacks for content.
-- See `docs/tenancy/smandapbun.md` for its data sources and migration path.
+- See `docs/tenancy/primary.md` for its data sources and migration path.
 
 ## References
 

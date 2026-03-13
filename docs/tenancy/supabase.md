@@ -66,7 +66,7 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 ### Public Portal Client
 
 - Static builds resolve tenant via `PUBLIC_TENANT_ID` (or `VITE_PUBLIC_TENANT_ID`).
-- `awcms-public/primary/src/lib/supabase.ts` and `awcms-public/smandapbun/src/lib/supabase.ts` both build on `@awcms/shared/supabase`; headers are set when scoped access is required.
+- `awcms-public/primary/src/lib/supabase.ts` and `awcms-public/primary/src/lib/supabase.ts` both build on `@awcms/shared/supabase`; headers are set when scoped access is required.
 - Canonical static deployments do not depend on middleware-based analytics logging.
 
 ### Edge Logic

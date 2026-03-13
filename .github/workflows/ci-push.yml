@@ -20,7 +20,7 @@ jobs:
       admin: ${{ steps.filter.outputs.admin }}
       public: ${{ steps.filter.outputs.public }}
       mobile: ${{ steps.filter.outputs.mobile }}
-      smandapbun: ${{ steps.filter.outputs.smandapbun }}
+      primary: ${{ steps.filter.outputs.primary }}
       edge: ${{ steps.filter.outputs.edge }}
       mcp: ${{ steps.filter.outputs.mcp }}
       ext: ${{ steps.filter.outputs.ext }}
@@ -37,8 +37,8 @@ jobs:
               - 'awcms-public/primary/**'
             mobile:
               - 'awcms-mobile/**'
-            smandapbun:
-              - 'awcms-public/smandapbun/**'
+            primary:
+              - 'awcms-public/primary/**'
             edge:
               - 'awcms-edge/**'
             mcp:
@@ -365,14 +365,14 @@ jobs:
   # ============================================
   # Lint & Build - SMANDAPBUN Portal (Astro)
   # ============================================
-  lint-build-smandapbun:
+  lint-build-primary:
     needs: paths-filter
-    if: ${{ needs.paths-filter.outputs.smandapbun == 'true' }}
+    if: ${{ needs.paths-filter.outputs.primary == 'true' }}
     name: Lint & Build (Smandapbun)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./awcms-public/smandapbun
+        working-directory: ./awcms-public/primary
 
     steps:
       - name: Checkout code
@@ -383,7 +383,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: './awcms-public/smandapbun/package-lock.json'
+          cache-dependency-path: './awcms-public/primary/package-lock.json'
 
       - name: Install dependencies
         run: npm ci

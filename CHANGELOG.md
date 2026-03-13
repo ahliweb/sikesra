@@ -36,7 +36,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
   extension workspace layout, and actual route-backed manager coverage.
 - Documentation: Closed the last high-confidence closure-pass drift in dev/deploy/compliance docs by
   correcting mirrored function path references, current CI branch/path behavior, PlatformIO-based
-  ESP32 versioning, SMANDAPBUN session wording, and public privacy/terms guidance.
+  ESP32 versioning, portal session wording, and public privacy/terms guidance.
 - Documentation: Closed the 2026-03-08 maintained-doc audit cycle by rerunning parity/validation
   gates, restoring local migration history parity, and carrying remaining dependency upgrades into a
   separate maintenance backlog.
@@ -75,7 +75,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
 ### Changed
 
 - Configuration: Renamed `awcms/wrangler.toml` project name from `awcms-public` to `awcms-admin` across all environments.
-- Configuration: Added `PUBLIC_TENANT_ID` to `awcms-public/primary/.env.example` and `awcms-public/smandapbun/.env.example`.
+- Configuration: Added `PUBLIC_TENANT_ID` to `awcms-public/primary/.env.example` and `awcms-public/primary/.env.example`.
 - Configuration: Added `temp_supabase/` to `.gitignore`.
 - Dependencies: Pinned the public Tailwind v4 toolchain in `awcms-public/primary/package.json` to `4.1.18` until Astro's current Vite typing surface is compatible with the newer `4.2.x` plugin release.
 - Documentation: Updated `AGENTS.md` workflow standards with 3 new agent rule references.
@@ -106,7 +106,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
 - Compliance: Created `docs/compliance/pdp-uu27-2022.md` (UU PDP data subject rights, incident reporting, deployer checklist).
 - Compliance: Created `docs/compliance/pp71-2019-pste.md` (PP 71/2019 PSE obligations, security governance, data localization).
 - Documentation: Added benchmark-ready sections for the ten Context7 benchmark prompts using a standard structure: Objective, Required Inputs, Workflow, Reference Implementation, Validation Checklist, and Failure Modes and Guardrails.
-- Documentation: Added maintained package README coverage for `awcms-public/smandapbun` and updated `awcms-public/README.md` routing.
+- Documentation: Added maintained package README coverage for `awcms-public/primary` and updated `awcms-public/README.md` routing.
 - Documentation: Added `WIKI_UPDATE_SUMMARY.md` detailing Context7-based 2026-Q1 full re-audit cycle documentation updates to the GitHub wiki.
 
 ### Changed
@@ -236,7 +236,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
 
 ### Security
 
-- Dependencies: Fixed high severity vulnerability in `wrangler` (and `undici`) by overriding version to `^4.61.1` in `awcms-public/smandapbun`.
+- Dependencies: Fixed high severity vulnerability in `wrangler` (and `undici`) by overriding version to `^4.61.1` in `awcms-public/primary`.
 
 ### Added
 
@@ -277,7 +277,7 @@ All notable changes to the **AWCMS** project will be documented in this file.
 
 ### Added
 
-- Contact Form Security: Implemented Cloudflare Turnstile with explicit rendering across tenants (`smandapbun`, `primary`) for stronger spam protection.
+- Contact Form Security: Implemented Cloudflare Turnstile with explicit rendering across tenants (`primary`, `primary`) for stronger spam protection.
 - Contact Form Security: Added callback polling so Turnstile renders reliably on slow connections.
 - User Experience: Integrated a global **Toast Notification System** (replacing native alerts) for immediate visual feedback on form submission success/failure.
 - Auditing: Added `ip_address` column to `contact_messages` table to track submission sources.
@@ -286,14 +286,14 @@ All notable changes to the **AWCMS** project will be documented in this file.
 
 ### Changed
 
-- Code Quality: Enforced stricter TypeScript checks in `smandapbun` forms.
+- Code Quality: Enforced stricter TypeScript checks in `primary` forms.
 - Code Quality: Standardized `turnstile` and `showToast` global type definitions.
 
 ### Fixed
 
 - Turnstile Stability: Resolved issues where the Turnstile widget would sometimes fail to render (invisible) by moving to explicit rendering mode.
 - Dependencies: Resolved "missing module" build errors for `@supabase/supabase-js` by fixing TypeScript module resolution.
-- Linting: Fixed various ESLint and Prettier issues in `smandapbun`.
+- Linting: Fixed various ESLint and Prettier issues in `primary`.
 
 ## [2.27.0] "Foundation" - 2026-02-01
 
@@ -327,9 +327,9 @@ All notable changes to the **AWCMS** project will be documented in this file.
 - Tenant Hierarchy: Added configurable resource sharing with registry and per-tenant rules.
 - Role Inheritance: Added auto vs linked inheritance mode and tenant role links.
 - Reporting Permissions: Added platform reporting permissions for read and bulk actions.
-- Public Portal (Smandapbun): Added bilingual support (Indonesian/English) for all pages in `src/pages/en`.
-- Public Portal (Smandapbun): Added category filtering for Gallery page.
-- Public Portal (Smandapbun): Added custom Vanilla JS Lightbox for Gallery with slide navigation and captions.
+- Public Portal (Portal): Added bilingual support (Indonesian/English) for all pages in `src/pages/en`.
+- Public Portal (Portal): Added category filtering for Gallery page.
+- Public Portal (Portal): Added custom Vanilla JS Lightbox for Gallery with slide navigation and captions.
 
 ### Changed
 
@@ -338,12 +338,12 @@ All notable changes to the **AWCMS** project will be documented in this file.
 - Access Control: Updated RLS policies to respect shared vs isolated resources across tenant levels.
 - Documentation: Synchronized numerous `docs/` guides (setup, CI/CD, deploy, tenancy, architecture, modules, i18n, security) with current paths, `VITE_*` env var usage, `npx supabase` commands, and the `blogs` table naming conventions.
 - Documentation: Normalized all cross-doc references to the new root `docs/` tree instead of legacy `awcms/docs` paths.
-- Public Portal (Smandapbun): Updated homepage hero image to `kegiatan-sekolah/IMG_6411.webp`.
-- Public Portal (Smandapbun): Updated site-wide phone number to `082254008080`.
-- Public Portal (Smandapbun): Removed Fax information from contact data and UI.
-- Public Portal (Smandapbun): Updated operational hours to "Senin - Jumat: 07:00 - 15:00 WIB".
-- Public Portal (Smandapbun): Updated default stats for alumni and achievements in `site.json` and `api.ts`.
-- Public Portal (Smandapbun): Refactored `galeri.astro` to flatten album structure and support filtering.
+- Public Portal (Portal): Updated homepage hero image to `kegiatan-sekolah/IMG_6411.webp`.
+- Public Portal (Portal): Updated site-wide phone number to `082254008080`.
+- Public Portal (Portal): Removed Fax information from contact data and UI.
+- Public Portal (Portal): Updated operational hours to "Senin - Jumat: 07:00 - 15:00 WIB".
+- Public Portal (Portal): Updated default stats for alumni and achievements in `site.json` and `api.ts`.
+- Public Portal (Portal): Refactored `galeri.astro` to flatten album structure and support filtering.
 
 ### Fixed
 
@@ -395,15 +395,15 @@ All notable changes to the **AWCMS** project will be documented in this file.
 ### Changed
 
 - Project-Wide Terminology Standardization: Renamed "News" and "Article" to "Blog" across all repositories (`awcms`, `awcms-public`, `awcms-mobile`).
-- Project-Wide Terminology Standardization: Updated Smandapbun template: renamed `/berita` routes to `/blogs`, updated translation keys, and standardized internal components.
+- Project-Wide Terminology Standardization: Updated Portal template: renamed `/berita` routes to `/blogs`, updated translation keys, and standardized internal components.
 - Project-Wide Terminology Standardization: Refactored Admin Panel: Renamed `ArticlesManager` to `BlogsManager`, updated `ArticleEditor` to `BlogEditor`, and standardized Visual Builder blocks.
 - Project-Wide Terminology Standardization: Updated Mobile App: Refactored DAOs and Services to use "blog" terminology (`BlogsDao`, `SyncService`).
 - Project-Wide Terminology Standardization: Standardized database conventions and localization resources (`en.json`, `id.json`, `app_en.arb`, `app_id.arb`).
 
 ### Fixed
 
-- Public Portal (Smandapbun): Fixed `SiteImages` type mismatch in `api.ts` with legacy mapping support.
-- Public Portal (Smandapbun): Resolved missing terminology in navigation and footer components.
+- Public Portal (Portal): Fixed `SiteImages` type mismatch in `api.ts` with legacy mapping support.
+- Public Portal (Portal): Resolved missing terminology in navigation and footer components.
 
 ### Added
 
@@ -425,11 +425,11 @@ All notable changes to the **AWCMS** project will be documented in this file.
 
 ### Fixed
 
-- Public Portal (smandapbun): Resolved all `astro check` errors and type mismatch issues.
-- Public Portal (smandapbun): Optimized localized list processing with explicit type casting in Astro templates.
-- Public Portal (smandapbun): Cleaned up unused imports and variables across the entire template.
-- Public Portal (smandapbun): Restored missing critical imports in financial, achievement, and service pages.
-- Public Portal (smandapbun): Resolved deployment build errors by adding `VITE_` prefix fallbacks for Supabase credentials in `src/lib/supabase.ts`.
+- Public Portal (primary): Resolved all `astro check` errors and type mismatch issues.
+- Public Portal (primary): Optimized localized list processing with explicit type casting in Astro templates.
+- Public Portal (primary): Cleaned up unused imports and variables across the entire template.
+- Public Portal (primary): Restored missing critical imports in financial, achievement, and service pages.
+- Public Portal (primary): Resolved deployment build errors by adding `VITE_` prefix fallbacks for Supabase credentials in `src/lib/supabase.ts`.
 
 ## [2.23.0] "Vortex" - 2026-01-21
 

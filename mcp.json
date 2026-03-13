@@ -22,7 +22,7 @@
     "github": {
       "command": "bash",
       "args": [
-        "/home/data/dev_react/awcms-dev/scripts/start_github_mcp.sh"
+        "/home/data/dev_react/sikesra/scripts/start_github_mcp.sh"
       ],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}",

@@ -64,13 +64,13 @@ Environment variables:
 
 **Runtime note**: Public portals are built as static sites; environment variables are resolved at build time via `import.meta.env`.
 
-### Public Portal (awcms-public/smandapbun)
+### Public Portal (awcms-public/primary)
 
 | Setting | Value |
 | --- | --- |
 | Project name | `awcms-smandapangkalanbun-web` |
 | Framework preset | Astro |
-| Root directory | `awcms-public/smandapbun` |
+| Root directory | `awcms-public/primary` |
 | Build command | `npm run build` |
 | Output directory | `dist` |
 | Node version | `22` (or `>=22.12.0`) |

@@ -96,12 +96,7 @@ export async function getStaticPaths() {
 - Using runtime-only tenant resolution: static builds cannot access `Astro.locals`.
 - Draft leakage: always filter `status = 'published'` and `deleted_at is null`.
 
-### Smandapbun Portal
 
-- `awcms-public/smandapbun` is a single-tenant Astro site.
-- Uses `src/lib/api.ts` + JSON fallbacks (see `docs/tenancy/smandapbun.md`).
-- Tenant resolution is fixed at build time.
-- All public portals standardize on React islands with Vite-based tooling.
 
 ## 4. Environment Variables
 

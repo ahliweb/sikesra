@@ -29,9 +29,9 @@ Describe deployment steps for the maintained AWCMS deploy surfaces in the monore
 - Required env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `PUBLIC_TENANT_ID` (supports `PUBLIC_SUPABASE_*` as a build fallback)
 - Static build; environment variables resolved via `import.meta.env` at build time.
 
-For `awcms-public/smandapbun`:
+For `awcms-public/primary`:
 
-- Root directory: `awcms-public/smandapbun`
+- Root directory: `awcms-public/primary`
 - Required env vars: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`
 - No KV bindings are currently required by the maintained repo baseline.
 - Middleware currently uses cookie-based identifiers/tracking rather than an in-repo KV-backed or in-memory session driver.

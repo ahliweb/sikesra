@@ -34,7 +34,7 @@ export const PUBLIC_MODULES = [
 ];
 
 export function getPublicPortalVariant(tenant) {
-    return tenant?.slug === 'smandapbun' ? 'smandapbun' : 'primary';
+    return 'primary';
 }
 
 export function getPublicModulesForTenant(tenant, activeModuleSlugs = []) {

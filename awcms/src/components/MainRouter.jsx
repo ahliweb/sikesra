@@ -69,6 +69,14 @@ const ExtensionLogs = lazy(() => import('@/components/dashboard/ExtensionLogs'))
 const SidebarMenuManager = lazy(() => import('@/components/dashboard/SidebarMenuManager'));
 const ModulesManager = lazy(() => import('@/pages/cmspanel/ModulesManager'));
 
+// SIKESRA Components
+const SikesraManager = lazy(() => import('@/components/dashboard/sikesra/SikesraManager'));
+const SikesraEntityDetail = lazy(() => import('@/components/dashboard/sikesra/SikesraEntityDetail'));
+const SikesraEntityEditor = lazy(() => import('@/components/dashboard/sikesra/SikesraEntityEditor'));
+
+// SIKESRA (Lazy Loaded)
+const SikesraManager = lazy(() => import('@/components/dashboard/sikesra/SikesraManager'));
+
 const SettingsManager = lazy(() => import('@/components/dashboard/SettingsManager'));
 const PlatformSettingsManager = lazy(() => import('@/components/dashboard/PlatformSettingsManager'));
 const PlatformDashboard = lazy(() => import('@/components/dashboard/PlatformDashboard'));

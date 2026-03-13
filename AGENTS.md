@@ -2189,7 +2189,6 @@ COMMENT ON COLUMN public.blogs.old_field IS
 | --- | --- | --- | --- |
 | Admin (`awcms/`) | `awcms/package.json` | Cloudflare Pages | `awcms/**` |
 | Public Primary (`awcms-public/primary/`) | `awcms-public/primary/package.json` | Cloudflare Pages | `awcms-public/primary/**` |
-| Public SMANDAPBUN | `awcms-public/smandapbun/package.json` | Cloudflare Pages | `awcms-public/smandapbun/**` |
 | Flutter Mobile | `awcms-flutter/pubspec.yaml` | App Store / Play Store | `awcms-flutter/**` |
 | ESP32 IoT | `awcms-esp32/platformio.ini` | PlatformIO OTA | `awcms-esp32/**` |
 

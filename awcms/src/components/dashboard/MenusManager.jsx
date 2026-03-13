@@ -270,8 +270,7 @@ function MenusManager() {
 
   const duplicateMenuIds = useMemo(() => getDuplicateMenuIds(flatMenus), [flatMenus]);
   const duplicateCount = duplicateMenuIds.size;
-  const portalVariant = getPublicPortalVariant(currentTenant);
-  const portalVariantLabel = portalVariant === 'smandapbun' ? 'Smandapbun portal' : 'Primary portal';
+  const portalVariantLabel = 'Primary portal';
   const availableModules = useMemo(
     () => getPublicModulesForTenant(currentTenant, activeModuleSlugs),
     [currentTenant, activeModuleSlugs],

@@ -43,9 +43,9 @@ Define how tenant isolation is resolved and enforced across AWCMS.
 
 #### Smandapbun Variant
 
-- `awcms-public/smandapbun` is a single-tenant static portal.
+- `awcms-public/primary` is a single-tenant static portal.
 - Tenant resolution is fixed at build time in `src/lib/api.ts`.
-- See `docs/tenancy/smandapbun.md` for tenant-specific behavior and migration status.
+- See `docs/tenancy/primary.md` for tenant-specific behavior and migration status.
 
 ### Data Layer (Supabase)
 

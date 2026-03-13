@@ -45,14 +45,14 @@ Admin styling uses TailwindCSS 4 with CSS-based configuration.
 | --- | --- | --- | --- |
 | Meta-framework | Astro | 5.17.1 | Static output + islands |
 | UI library | React | 19.2.4 | Island rendering |
-| Language | TypeScript | 5.8.3 (primary), 5.9.3 (smandapbun) | Typed components |
+| Language | TypeScript | 5.8.3 (primary), 5.9.3 (primary) | Typed components |
 | Styling | TailwindCSS | 4.1.18 | Utility-first CSS |
 | Supabase JS | @supabase/supabase-js | 2.93.3 | Public API client |
 | Node.js | Node.js | >=22.12.0 | Runtime (OpenClaw requires v22+) |
 
 Public styling uses TailwindCSS 4 via `@tailwindcss/vite`.
 
-Tenant-specific public portals may pin different TypeScript minor versions (for example `awcms-public/smandapbun` uses 5.9.3).
+Tenant-specific public portals may pin different TypeScript minor versions (for example `awcms-public/primary` uses 5.9.3).
 
 ### Backend and Edge
 

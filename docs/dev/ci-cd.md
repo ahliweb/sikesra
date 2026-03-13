@@ -43,14 +43,14 @@ Describe the GitHub Actions workflows used for AWCMS.
 | `lint-build-mcp` | Install dependencies, lint, and build the MCP server | `awcms-mcp/` | ci-push, ci-pr |
 | `build-ext-primary-analytics` | Install dependencies and run the extension SSR smoke build | `awcms-ext/primary-analytics/` | ci-push, ci-pr |
 | `typecheck-shared` | Install dependencies and run `@awcms/shared` TypeScript checks | `packages/awcms-shared/` | ci-push, ci-pr |
-| `lint-build-smandapbun` | Check and build the SMANDAPBUN public portal | `awcms-public/smandapbun/` | ci-push, ci-pr |
+| `lint-build-primary` | Check and build the SMANDAPBUN public portal | `awcms-public/primary/` | ci-push, ci-pr |
 | `db-check` | Supabase migration lint | `awcms/supabase` | ci-pr |
 | `deploy-production` | Cloudflare Pages deploy (admin panel artifact) | `awcms/` | ci-push |
 | `link-check` | Markdown link validation | repo root | docs-link-check |
 
 Current workflow coverage boundaries:
 
-- `ci-push` path filters now cover `awcms/`, `awcms-public/primary/`, `awcms-mobile/`, `awcms-public/smandapbun/`, `awcms-edge/`, `awcms-mcp/`, `awcms-ext/`, and `packages/awcms-shared/`.
+- `ci-push` path filters now cover `awcms/`, `awcms-public/primary/`, `awcms-mobile/`, `awcms-public/primary/`, `awcms-edge/`, `awcms-mcp/`, `awcms-ext/`, and `packages/awcms-shared/`.
 - `ci-pr` now includes dedicated jobs for `awcms-edge/`, `awcms-mcp/`, `awcms-ext/primary-analytics/`, and `packages/awcms-shared/`.
 - The current extension coverage is package-specific: only `awcms-ext/primary-analytics/` has a dedicated job. Add new jobs or a matrix when more maintained extension packages appear.
 
@@ -96,7 +96,7 @@ npm run check
 npm run build
 
 # Smandapbun portal
-cd ../smandapbun
+cd ../primary
 npm run check
 npm run lint
 npm run build
