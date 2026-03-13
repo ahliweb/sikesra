@@ -6,15 +6,7 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": ["ESNext"],
-    "baseUrl": ".",
-    "types": ["@cloudflare/workers-types"],
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@cloudflare"
-    ],
-    "paths": {
-      "@cloudflare/workers-types": ["./node_modules/@cloudflare/workers-types"]
-    }
+    "types": []
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "worker-configuration.d.ts"]
 }
