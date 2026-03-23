@@ -1,19 +1,37 @@
-MIT License
-# License
+# AW Non-Commercial License 1.0 
 
-MIT License
-
-Copyright (c) 2024 Ahliweb
+Copyright (c) 2026 ahliweb.com
+source https://github.com/ahliweb/aw-non-commercial-license
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+in the Software without restriction in non-commercial settings, including without limitation the rights to use, copy, modify, merge, publish, and distribute copies of the Software, strictly for NON-COMMERCIAL PURPOSES, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## 1. NON-COMMERCIAL USE ONLY
+
+The Software may not be used for any Commercial Purpose without prior written permission from the Copyright Holder.
+
+"Commercial Purpose" means any use of the Software that is intended for or directed toward commercial advantage, monetary compensation, or revenue generation. This includes, but is not limited to:
+
+- Selling, renting, sublicensing, or otherwise distributing the Software or modified variants for payment.
+- Using the Software as, or as part of, a paid software-as-a-service (SaaS) or hosted product.
+- Using the Software internally by a business or commercial entity to support revenue-generating operations or service delivery.
+- Using the Software to provide paid consulting, development, or support services.
+
+## 2. COMMERCIAL LICENSING
+
+To request prior written permission for commercial use or to obtain a commercial license, please contact:
+**[commercial@ahliweb.com](mailto:commercial@ahliweb.com)**
+
+## 3. TRADEMARKS
+
+This license does not grant permission to use the trade names, trademarks, service marks, or product names of the Copyright Holder, except as required for reasonable and customary use in describing the origin of the Software.
+
+## 4. ATTRIBUTION
+
+The above copyright notice and this permission notice (including the non-commercial restriction) shall be included in all copies or substantial portions of the Software.
+
+## DISCLAIMER OF WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
