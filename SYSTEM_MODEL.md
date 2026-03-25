@@ -1,9 +1,9 @@
-# AWCMS System Model (Authoritative Source of Truth)
+# SIKESRA System Model (AWCMS-Based Source of Truth)
 
 > **Status:** ACTIVE
-> **Last Updated:** 2026-03-12 (Audited against `package.json`, migration status, scripts, MCP topology, and current documentation planning refresh)
+> **Last Updated:** 2026-03-25 (Audited against current workspace manifests, scripts, MCP topology, and the active AWCMS-core alignment pass for SIKESRA)
 
-This document serves as the single source of truth for the AWCMS architecture, technology stack, and security mandates. All Agents (Coding, Communication, Public Experience) must adhere strictly to these definitions.
+This document serves as the single source of truth for the SIKESRA implementation built on the AWCMS architecture, technology stack, and security mandates. All Agents (Coding, Communication, Public Experience) must adhere strictly to these definitions.
 
 ---
 
@@ -77,11 +77,11 @@ Agents must respect these exact versions to ensure compatibility across the mono
 
 * **Primary Config (Repo):** `mcp.json`
 * **Runtime Config (OpenCode):** `~/.config/opencode/opencode.json`
-* **Connected Servers (authoritative baseline):**
-  * `context7` (remote)
-  * `supabase` (local `awcms-mcp` server)
-  * `github` (local Docker-backed `github/github-mcp-server`)
-  * Cloudflare managed remote MCPs: `cloudflare-api`, `cloudflare-docs`, `cloudflare-bindings`, `cloudflare-observability`, `cloudflare-builds`, `cloudflare-radar`, `cloudflare-browser`
+* **Connected Servers (authoritative baseline - matches `mcp.json`):**
+  * `context7` (remote: `https://mcp.context7.com/mcp`)
+  * `supabase` (local `awcms-mcp` server: `node awcms-mcp/dist/index.js`)
+  * `github` (local Docker-backed `github/github-mcp-server` via `scripts/start_github_mcp.sh`)
+  * `cloudflare` (local npx: `@cloudflare/mcp-server-cloudflare`)
 * **GitHub Auth Pattern:** token-based local runtime via `GITHUB_PERSONAL_ACCESS_TOKEN` (or equivalent mapped vars).
 
 ---
@@ -159,7 +159,7 @@ Agents must respect these exact versions to ensure compatibility across the mono
 * `src/hooks/`: Custom React hooks for data fetching and state.
 * `src/lib/`: Stateless utilities and configuration.
 * `supabase/migrations/`: canonical SQL migration files (timestamped).
-* `awcms/supabase/migrations/`: mirrored migration path used by CI/admin tooling; must remain synchronized with root migrations.
+* `awcms/supabase/migrations/`: mirrored migration path used by CI/admin tooling; must remain synchronized with root migrations and verified with `scripts/verify_supabase_migration_consistency.sh`.
 
 ---
 

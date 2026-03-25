@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Provide a single entry point for all SIKESRA documentation across the monorepo and identify the canonical doc for each topic. SIKESRA uses the AWCMS architecture as its platform foundation.
+Provide a single entry point for all SIKESRA documentation across the monorepo and identify the canonical doc for each topic. SIKESRA uses AWCMS as the main system-development foundation and layers product-specific documentation on top.
 
 ## Documentation Hierarchy (Context7 MCP Aligned)
 
@@ -33,7 +33,7 @@ All documentation follows this authority structure:
 |----------|----------|---------|-------------------|
 | **1** | [SYSTEM_MODEL.md](SYSTEM_MODEL.md) | Tech stack versions, architectural pillars, security mandates | Primary authority |
 | **2** | [AGENTS.md](AGENTS.md) | AI coding guidelines, Context7 library IDs, permission patterns | Agent operations |
-| **3** | [README.md](README.md) | Canonical SIKESRA monorepo overview and baseline commands | Runtime entrypoint |
+| **3** | [README.md](README.md) | Canonical SIKESRA monorepo overview, AWCMS-baseline framing, and baseline commands | Runtime entrypoint |
 | **4** | [DOCS_INDEX.md](DOCS_INDEX.md) | Navigation and canonical references | This document |
 
 ### General

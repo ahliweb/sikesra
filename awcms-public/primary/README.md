@@ -1,6 +1,6 @@
 # AWCMS Public Portal (Primary)
 
-The primary public portal template for AWCMS, built on Astro with React islands and Tailwind CSS v4.
+The primary public portal template for AWCMS, built on Astro with React islands and Tailwind CSS v4. In SIKESRA, this remains an AWCMS-core workspace and should follow AWCMS runtime patterns first, then apply SIKESRA-specific content and tenancy requirements.
 
 ## Stack
 
@@ -18,6 +18,8 @@ npm install
 # Create .env with the required keys below
 npm run dev
 ```
+
+For deployment-aligned checks and builds, this workspace routes `astro build` and `astro check` through `scripts/run-with-deployment-env.mjs` so Cloudflare Pages-style env fallbacks are applied consistently.
 
 ## Environment Variables
 
@@ -37,6 +39,11 @@ PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 VITE_PUBLIC_TENANT_ID=...
 VITE_TENANT_ID=...
 ```
+
+Notes:
+
+- `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_PUBLISHABLE_KEY` are supported deployment-safe fallbacks.
+- `@awcms/shared` provides the shared env resolution and tenant-aware Supabase client helpers used by maintained public portals.
 
 ## Tenant Resolution
 

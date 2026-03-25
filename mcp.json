@@ -3,7 +3,7 @@
     "supabase": {
       "command": "node",
       "args": [
-        "/home/data/dev_react/awcms-dev/awcms-mcp/dist/index.js"
+        "/home/data/dev_react/sikesra/awcms-mcp/dist/index.js"
       ],
       "env": {
         "SUPABASE_ACCESS_TOKEN": "{env:SUPABASE_ACCESS_TOKEN}",

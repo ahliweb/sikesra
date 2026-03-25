@@ -1,15 +1,15 @@
 # SIKESRA Monorepo
 
-Welcome to the SIKESRA monorepo. SIKESRA is a social welfare information system implemented on top of the AWCMS platform architecture, with admin, public, mobile, and IoT clients backed by Supabase and Cloudflare.
+Welcome to the SIKESRA monorepo. SIKESRA uses AWCMS as its main system-development foundation, with product-specific workflows built on the core admin, public, mobile, IoT, Supabase, and Cloudflare architecture.
 
-## Status Snapshot (2026-03-12)
+## Status Snapshot (2026-03-25)
 
 - Active Node runtime validated: `v22.22.0` (minimum remains `>=22.12.0`).
-- The 2026-03-12 documentation and repository-conflict planning refresh is tracked in `docs/dev/documentation-audit-plan.md` and `docs/dev/documentation-audit-tracker.md`.
-- Product docs now frame this repository as the SIKESRA MVP built on the AWCMS architecture baseline.
+- The active documentation and repository-conflict audit cycle is tracked in `docs/dev/documentation-audit-plan.md` and `docs/dev/documentation-audit-tracker.md`.
+- SIKESRA product docs treat AWCMS as the upstream system-development baseline and layer SIKESRA workflows on top of it.
 - Public portal and edge-runtime docs are aligned to Astro static output plus Cloudflare Workers as the primary edge HTTP layer.
 - MCP topology from `mcp.json` currently includes `cloudflare`, `context7`, `github`, and `supabase`.
-- Supabase migration parity baseline is `131` root migrations and `131` mirrored admin/CI migrations.
+- Migration parity should be verified with `scripts/verify_supabase_migration_consistency.sh` before relying on mirrored migration counts in docs or CI flows.
 - Repair and verification workflows are scripted via `scripts/repair_supabase_migration_history.sh` and `scripts/verify_supabase_migration_consistency.sh`.
 
 ## Documentation Authority
@@ -18,7 +18,7 @@ This repository follows a strict documentation hierarchy aligned with the **Cont
 
 1. **[SYSTEM_MODEL.md](SYSTEM_MODEL.md)** - **Single Source of Truth**: stack versions, architecture constraints, security mandates
 2. **[AGENTS.md](AGENTS.md)** - agent execution rules, Context7 references, implementation patterns
-3. **[README.md](README.md)** - canonical monorepo entrypoint and operational overview
+3. **[README.md](README.md)** - canonical monorepo entrypoint, AWCMS-baseline framing, and operational overview
 4. **[DOCS_INDEX.md](DOCS_INDEX.md)** - canonical documentation map and topic routing
 5. **Implementation Guides** - specific how-to documentation in `docs/`
 
@@ -28,7 +28,7 @@ This repository follows a strict documentation hierarchy aligned with the **Cont
 
 - SIKESRA targets the pre-DTSEN phase of regional social welfare data governance.
 - The current MVP emphasizes structured entity registration, evidence-backed verification, secure document storage, and role-scoped operational dashboards.
-- AWCMS remains the underlying technical foundation, but this repository's product framing and documentation now prioritize SIKESRA-specific workflows.
+- AWCMS is the main system-development baseline for shared runtime, tenancy, permission, and edge patterns; SIKESRA docs add product-specific constraints on top of that baseline.
 
 ## Project Structure
 

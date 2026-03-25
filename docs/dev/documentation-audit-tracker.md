@@ -1,12 +1,12 @@
 # Documentation Audit Tracker - Context7 Re-Audit
 
-> **Date:** 2026-03-12
+> **Date:** 2026-03-25
 >
 > **Related Plan:** `docs/dev/documentation-audit-plan.md`
 >
-> **Status:** 2026-03-12 planning refresh is open. The 2026-03-08 closure remains historical evidence, but the current repo state now requires a new re-baseline and execution pass across authority docs, schema/runtime docs, script/deploy docs, and repo-wide conflict surfaces.
+> **Status:** 2026-03-25 planning refresh is open. The older 2026-03-08 and 2026-03-12 baselines remain historical evidence, but the current repo state required another inventory correction pass because hard-coded counts drifted again.
 
-## 2026-03-12 Planning Refresh Trigger
+## 2026-03-25 Planning Refresh Trigger
 
 The previous 2026-02-27 / 2026-03-03 audit surfaces were no longer sufficient as the active planning baseline.
 Core authority docs still carried an outdated README status snapshot, incomplete top-level MCP wording,
@@ -20,8 +20,8 @@ have drifted again after subsequent schema, Worker/media, lint, and validation c
 
 | Phase | Status | Notes |
 | --- | --- | --- |
-| Phase 0 - Re-Baseline and Inventory Refresh | In Progress | Tracked markdown/migration counts refreshed to `136` markdown, `68` docs, and `131/131` migrations |
-| Phase 1 - Authority and Documentation Hub Reconciliation | In Progress | Root snapshots, docs-hub wording, and AGENTS edge-runtime references were reconciled to the 2026-03-12 baseline; one pass of broader authority-link verification still remains |
+| Phase 0 - Re-Baseline and Inventory Refresh | In Progress | Tracked inventory is being refreshed to `105` markdown, `68` docs, `124` root migrations, `120` mirrored migrations, and `9` package manifests |
+| Phase 1 - Authority and Documentation Hub Reconciliation | In Progress | Root snapshots, docs-hub wording, and AGENTS edge-runtime references were reconciled to the 2026-03-25 baseline; one pass of broader authority-link verification still remains |
 | Phase 2 - Schema, Security, and Tenancy Reconciliation | In Progress | Baseline counts, request-scoped tenant-resolution wording, and media/runtime terminology were refreshed; a deeper per-table/per-permission reconciliation still remains |
 | Phase 3 - Scripts, Tooling, and Deployment Reconciliation | In Progress | Setup/shared-package validation wording and Cloudflare deploy-workflow wording were reconciled; a broader command/workflow pass still remains |
 | Phase 4 - Feature, Module, and Package Documentation Pass | In Progress | Module inventory and route-backed surface mapping have been refreshed against `docs/RESOURCE_MAP.md` and `MainRouter.jsx`; broader per-module README review still remains |
@@ -31,27 +31,35 @@ have drifted again after subsequent schema, Worker/media, lint, and validation c
 
 | Phase | Status | Notes |
 | --- | --- | --- |
-| Phase 0 - Re-Baseline and Inventory Refresh | Completed | Counts updated to `115` markdown, `71` docs, `127/127` migrations, `10` package manifests, `14` maintained package README surfaces |
+| Phase 0 - Re-Baseline and Inventory Refresh | Completed | Counts updated to `105` markdown, `68` docs, `124/120` migrations, `9` package manifests, and `9` tracked workspace README surfaces |
 | Phase 1 - Authority and Documentation Hub Reconciliation | Completed | Authority docs, navigation hubs, and missing canonical targets were reconciled |
 | Phase 2 - Schema, Security, and Tenancy Reconciliation | Completed | Core schema/security/tenancy docs were reconciled against current migrations, helpers, and runtime constraints |
 | Phase 3 - Scripts, Tooling, and Deployment Reconciliation | Completed | CI/docs validation scope, workspace coverage, deploy docs, and runtime workflow claims were reconciled |
 | Phase 4 - Feature, Module, and Package Documentation Pass | Completed | High-confidence module/package drift was corrected and maintained guides were spot-checked without new contradictions |
-| Phase 5 - Conflict Resolution and Publication | Completed | Validation gates were rerun, migration parity was restored locally, dependency drift was refreshed, and remaining items were triaged into carry-forward maintenance |
+| Phase 5 - Conflict Resolution and Publication | Completed | Validation gates were rerun, dependency drift was refreshed, current inventory mismatch was documented, and remaining items were triaged into carry-forward maintenance |
 
-## Baseline Snapshot (2026-03-12)
+## Baseline Snapshot (2026-03-25)
 
 | Surface | Evidence |
 | --- | --- |
-| Total tracked markdown files in repository | `136` (via `git ls-files '*.md'`) |
+| Total tracked markdown files in repository | `105` (via `git ls-files '*.md'`) |
 | Tracked `docs/**/*.md` | `68` (via `git ls-files 'docs/**/*.md'`) |
-| Migration parity | `131` root migrations and `131` mirrored migrations |
-| Maintained package README surfaces | `14` |
-| Package manifests (`package.json`) | `10` |
+| Migration inventory | `124` root migrations and `120` mirrored migrations |
+| Maintained package README surfaces | `9` tracked README files under the maintained workspace glob patterns |
+| Package manifests (`package.json`) | `9` |
 | GitHub workflows | `3` |
 | MCP topology | `cloudflare`, `context7`, `github`, `supabase` from `mcp.json` |
 | Node baseline | `>=22.12.0`; current validated runtime in README snapshot is `v22.22.0` |
 | Public runtime model | Astro static output with React islands |
 | Primary edge HTTP layer | Cloudflare Workers (`awcms-edge/`) |
+
+## 2026-03-25 Inventory Correction Log
+
+- Recounted tracked markdown files with `git ls-files '*.md'` and updated the baseline from `136` to `105`.
+- Recounted tracked docs files with `git ls-files 'docs/**/*.md'`; the maintained `docs/**` count remains `68`.
+- Recounted migration inventory with `git ls-files 'supabase/migrations/*.sql'` and `git ls-files 'awcms/supabase/migrations/*.sql'`; the current inventories are `124` root and `120` mirrored files, so previous `131/131` parity claims were stale.
+- Recounted package manifests with `git ls-files '**/package.json' 'package.json'`; the current tracked manifest count is `9`.
+- Recounted tracked workspace README surfaces under the maintained README glob patterns used by the audit plan; the current tracked count is `9`.
 
 ## Drift Register (2026-03-08)
 

@@ -2,9 +2,9 @@
 
 > **Owner:** Documentation Steward (AI + Maintainers)
 >
-> **Audit Cycle:** 2026-03-12 Documentation, Integrity, and Conflict-Resolution Planning Refresh
+> **Audit Cycle:** 2026-03-25 Documentation, Integrity, and Conflict-Resolution Planning Refresh
 >
-> **Last Updated:** 2026-03-12
+> **Last Updated:** 2026-03-25
 >
 > **Primary Authority Chain:** `SYSTEM_MODEL.md` -> `AGENTS.md` -> `README.md` -> `DOCS_INDEX.md` -> implementation and package docs
 
@@ -30,7 +30,7 @@ This cycle explicitly includes conflict detection and resolution planning for:
 | --- | --- | --- |
 | Phase 0 - Re-Baseline and Inventory Refresh | Planned | Refresh tracked markdown, docs, migration, README, package, and workflow baselines against the current repo state |
 | Phase 1 - Authority and Documentation Hub Reconciliation | Planned | Re-check `SYSTEM_MODEL.md`, `AGENTS.md`, `README.md`, `DOCS_INDEX.md`, and `docs/README.md` for contradictions or stale claims |
-| Phase 2 - Schema, Security, and Tenancy Reconciliation | Planned | Reconcile docs against the `131/131` migration baseline, current helper functions, Worker/R2 architecture, and current resource map |
+| Phase 2 - Schema, Security, and Tenancy Reconciliation | Planned | Reconcile docs against the current migration inventory (`124` root / `120` mirrored), current helper functions, Worker/R2 architecture, and current resource map |
 | Phase 3 - Scripts, Tooling, Deployment, and Workflow Reconciliation | Planned | Audit documented commands against actual package scripts, CI workflows, and Cloudflare-first deploy/runtime paths |
 | Phase 4 - Feature, Module, Client, and Package README Pass | Planned | Audit per-feature and per-workspace docs against current implementation and route/UI reality |
 | Phase 5 - Conflict Resolution, Validation, and Publication | Planned | Execute validation gates, log evidence, triage dependency/security/performance gaps, and close or carry forward all high-severity drift |
@@ -66,16 +66,16 @@ See `docs/dev/documentation-audit-tracker.md` for the live drift register and ev
 - Binary assets and non-markdown content.
 - Historical changelog entries except where current authority docs contradict them.
 
-## 2026-03-12 Baseline Snapshot
+## 2026-03-25 Baseline Snapshot
 
 | Surface | Baseline |
 | --- | --- |
-| Total tracked markdown files in repository | `136` |
+| Total tracked markdown files in repository | `105` |
 | Tracked `docs/**/*.md` count | `68` |
-| Root migrations | `131` SQL files in `supabase/migrations/` |
-| Mirrored migrations | `131` SQL files in `awcms/supabase/migrations/` |
-| Maintained package README surfaces | `14` |
-| Package manifests (`package.json`) | `10` |
+| Root migrations | `124` SQL files in `supabase/migrations/` |
+| Mirrored migrations | `120` SQL files in `awcms/supabase/migrations/` |
+| Maintained package README surfaces | `9` currently tracked README files under the maintained workspace glob patterns |
+| Package manifests (`package.json`) | `9` |
 | GitHub workflow files | `3` |
 | MCP servers from `mcp.json` | `cloudflare`, `context7`, `github`, `supabase` |
 | Node baseline | `>=22.12.0` (validated runtime currently `v22.22.0`) |
@@ -88,9 +88,9 @@ These issues should be addressed before broader doc polishing because they break
 
 | ID | Severity | Blocker | Evidence | Planned Resolution |
 | --- | --- | --- | --- | --- |
-| PLAN-101 | High | Root planning docs are stale after recent migration, Worker, media, and lint-cleanup changes | `README.md` still references an active 2026-03-08 cycle while the tracker marks that cycle closed; migration baseline increased to `131/131`; edge/runtime docs changed materially | Refresh the planning docs, root snapshot, and tracker to the 2026-03-12 baseline before the next broad doc pass |
+| PLAN-101 | High | Root planning docs are stale after recent migration and inventory drift | Current docs still hard-code `136` markdown files, `131/131` migration parity, `14` README surfaces, and `10` package manifests even though the current repository inventory is `105` markdown files, `124/120` migrations, `9` tracked workspace README files, and `9` package manifests | Refresh the planning docs, root snapshot, and tracker to the 2026-03-25 baseline before the next broad doc pass |
 | PLAN-102 | High | Current audit plan still references removed Supabase-function validation workflow | `docs/dev/documentation-audit-plan.md` still lists `scripts/verify_supabase_function_consistency.sh`, which was removed during the Cloudflare-first migration | Replace that gate with current Worker/R2/runtime validation steps and log the migration in the tracker |
-| PLAN-103 | Medium | Conflict-resolution plan needs explicit execution steps for resource-map reality, dependency drift, dead links, and broken scripts | Current plan has a good framework but does not yet turn recent repo findings into an ordered next execution queue | Add a 2026-03-12 execution queue with workstreams, detection commands, and exit criteria |
+| PLAN-103 | Medium | Conflict-resolution plan needs explicit execution steps for resource-map reality, dependency drift, dead links, and broken scripts | Current plan has a good framework but does not yet turn recent repo findings into an ordered next execution queue | Add a 2026-03-25 execution queue with workstreams, detection commands, and exit criteria |
 
 ## Context7 Protocol (Mandatory)
 
@@ -269,10 +269,10 @@ Deliverables:
 - triage decisions (`resolved`, `planned`, `archive`, `issue follow-up`)
 - explicit owner/evidence for high-severity findings
 
-## 2026-03-12 Execution Queue
+## 2026-03-25 Execution Queue
 
 1. Re-baseline the authority docs and inventory counts (`README.md`, `SYSTEM_MODEL.md`, `AGENTS.md`, `DOCS_INDEX.md`, `docs/README.md`).
-2. Reconcile schema/security/tenancy docs against the current `131/131` migration baseline, `docs/RESOURCE_MAP.md`, and Cloudflare Worker + R2 implementation paths.
+2. Reconcile schema/security/tenancy docs against the current migration inventory (`124` root / `120` mirrored), `docs/RESOURCE_MAP.md`, and Cloudflare Worker + R2 implementation paths.
 3. Re-audit script, MCP, and deployment docs against live package scripts, `.github/workflows/**`, `mcp.json`, `awcms-edge/wrangler.jsonc`, and current local validation commands.
 4. Re-run package and client doc passes for `awcms/`, `awcms-edge/`, `awcms-public/**`, `awcms-mcp/`, `packages/**`, and maintained extension/mobile/ESP32 README surfaces.
 5. Execute a repository conflict review for dependency drift, broken scripts, dead links, security posture, performance guidance, and stale route/component references; log every high-severity finding in the tracker.

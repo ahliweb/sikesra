@@ -65,7 +65,7 @@ Agents must be aware of the exact versions in use:
 | TipTap           | 3.13.0   | Rich text editor (XSS-safe)      |
 | Framer Motion    | 12.23.26 | Animations                       |
 | Radix UI         | Latest   | Accessible UI primitives         |
-| Lucide React     | 0.564.0  | Admin / Public icon library      |
+| Lucide React     | 0.577.0  | Admin / Public icon library      |
 | i18next          | 25.7.2   | Internationalization             |
 | Recharts         | 3.5.1    | Charts & Data Visualization      |
 | Leaflet          | 1.9.4    | Maps                             |
@@ -649,8 +649,8 @@ AWCMS also runs external MCP servers for cloud and ecosystem tasks:
 
 - `context7` (remote): `https://mcp.context7.com/mcp`
 - `github` (local wrapper): `scripts/start_github_mcp.sh` -> Docker `ghcr.io/github/github-mcp-server`
-- Cloudflare managed remote servers:
-  - `cloudflare-api`, `cloudflare-docs`, `cloudflare-bindings`, `cloudflare-observability`, `cloudflare-builds`, `cloudflare-radar`, `cloudflare-browser`
+- Cloudflare local MCP server:
+  - `cloudflare` (local npx `@cloudflare/mcp-server-cloudflare`)
 
 ### Setup
 
