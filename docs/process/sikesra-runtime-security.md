@@ -24,6 +24,7 @@ This document records the project-specific runtime and secret-handling baseline 
 - Use Docker Build Secrets for build-time sensitive inputs if Coolify build-time secrets are unavoidable.
 - Keep PostgreSQL credentials least-privilege and application-scoped; do not use PostgreSQL superuser credentials for the app runtime.
 - Treat Coolify API responses as management-plane data and redact credentials, tokens, private URLs, and connection strings before copying output into issues or docs.
+- Treat readiness output as operator-facing evidence: print only booleans, resource names, non-secret IDs, status codes, and expected database names; never print raw credentials, tokens, connection strings, hostnames from private URLs, or raw API payloads.
 
 ## Required Environment Values
 
@@ -54,6 +55,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
 - Keep the Worker aligned with the AWCMS Mini EmDash-first Cloudflare baseline: `@astrojs/cloudflare/entrypoints/server`, `nodejs_compat`, `global_fetch_strictly_public`, `/_emdash/` admin entry, required Worker secrets, R2 binding `MEDIA_BUCKET`, and Hyperdrive binding `HYPERDRIVE`.
 - Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` only after a SIKESRA-specific Hyperdrive configuration is created for the Coolify-managed PostgreSQL database.
+- Context7 Cloudflare Workers documentation confirms the Worker should bind Hyperdrive through Wrangler using `nodejs_compat` and a non-secret Hyperdrive ID, while database credentials belong in the Hyperdrive configuration or Worker secrets rather than committed files.
 
 ## Coolify Recommendations
 
@@ -62,6 +64,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Disable build-time exposure for runtime-only secrets.
 - Use required-variable guards such as `${DATABASE_URL:?}` in Docker Compose only when this project introduces compose-managed services.
 - Use Context7 canonical Coolify documentation `/coollabsio/coolify-docs` for API and secret-management references.
+- Context7 Coolify documentation distinguishes runtime variables from build variables and recommends disabling build exposure for runtime-only API keys, database URLs, and passwords; Docker Build Secrets are only for unavoidable build-time sensitive inputs.
 
 ## Provisioning Status
 
@@ -107,7 +110,9 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 
 ## Current Repository State
 
-This SIKESRA repository currently contains PRD documents, local env configuration, and runtime/security planning docs. No script files are currently present in this repository, so there are no repository-local script credentials to migrate in this step.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`. The script reads secrets only from ignored env files or process environment, prints a redacted readiness report, and fails closed while `wrangler.jsonc` still contains the Hyperdrive placeholder.
+
+No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 
 ## Tracking Issues
 

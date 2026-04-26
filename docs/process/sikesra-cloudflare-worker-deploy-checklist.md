@@ -21,6 +21,8 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 
 - Confirm Coolify PostgreSQL resource `sikesrakobar-postgres` remains `running:healthy`.
 - Confirm the SIKESRA database name remains `sikesrakobar`.
+- Confirm local-only Hyperdrive fallback connection variables, if present, target `sikesrakobar` rather than an upstream AWCMS Mini database.
+- Confirm readiness reports redact hostnames, tokens, passwords, private URLs, connection strings, and raw management-plane responses.
 - Confirm the app-scoped database user remains least-privilege.
 - Confirm the R2 bucket `sikesra` remains private.
 - Confirm there are no real secrets in tracked files.
@@ -81,6 +83,7 @@ Operator rules:
 
 Run or verify the following after Hyperdrive and secrets are ready:
 
+- Local redacted readiness check: `node scripts/verify-runtime-readiness.mjs`.
 - Worker deploy succeeds with `wrangler.jsonc`.
 - Base URL loads: `https://sikesrakobar.ahlikoding.com`.
 - EmDash admin entry loads: `https://sikesrakobar.ahlikoding.com/_emdash/`.
