@@ -52,6 +52,8 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Bind R2 as a private bucket and serve documents only through permission-aware, audited application flows.
 - Keep Turnstile hostname allowlists aligned with `sikesrakobar.ahlikoding.com` when login, reset, or invite flows are enabled.
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
+- Keep the Worker aligned with the AWCMS Mini EmDash-first Cloudflare baseline: `@astrojs/cloudflare/entrypoints/server`, `nodejs_compat`, `global_fetch_strictly_public`, `/_emdash/` admin entry, required Worker secrets, R2 binding `MEDIA_BUCKET`, and Hyperdrive binding `HYPERDRIVE`.
+- Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` only after a SIKESRA-specific Hyperdrive configuration is created for the Coolify-managed PostgreSQL database.
 
 ## Coolify Recommendations
 
@@ -75,10 +77,13 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
 - Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
+- Repository-side Cloudflare Worker configuration now exists in `wrangler.jsonc` for Worker `sikesra-kobar`, custom domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET` to bucket `sikesra`, and the AWCMS Mini required Worker secret contract.
+- `wrangler.jsonc` intentionally keeps the Hyperdrive ID as `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` until the SIKESRA Hyperdrive configuration is created; do not deploy this Worker before replacing that non-secret placeholder.
 
 ## Remaining Runtime Secret Work
 
 - Create or identify the Cloudflare Worker/application deployment resource for `sikesrakobar.ahlikoding.com`.
+- Create a SIKESRA-specific Cloudflare Hyperdrive configuration for the Coolify-managed PostgreSQL resource and update `wrangler.jsonc` with its non-secret ID.
 - Store Worker runtime secrets in Cloudflare secrets once the Worker resource exists.
 - If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
 - Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
