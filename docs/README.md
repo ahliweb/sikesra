@@ -21,6 +21,10 @@ SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of 
 - `admin/` - admin operating guidance
 - `process/` - workflow, runtime validation, and deployment docs
 
+## Admin Docs
+
+- `admin/sikesra-uiux-implementation.md` - implemented SIKESRA admin UI/UX model surface, route map, reusable components, workflow states, masking policy, and text wireframes
+
 ## SIKESRA-Specific Process Docs
 
 - `process/sikesra-cloudflare-worker-deploy-checklist.md` - SIKESRA deploy checklist
