@@ -82,9 +82,12 @@ Current scan scope:
 
 - `.env.example`
 - `.dev.vars.example`
+- `package.json`
 - `wrangler.jsonc`
 - `AGENTS.md`
 - `scripts/**/*.mjs`
+- `src/**/*.mjs`
+- `tests/**/*.mjs`
 - `docs/process/**/*.md`
 - `docs/security/**/*.md`
 - tracked-file inventory for local secret file classes that must remain untracked

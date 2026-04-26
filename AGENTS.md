@@ -35,3 +35,10 @@ Treat every other repository as read-only reference unless the user explicitly s
 - Use `docs/process/ai-workflow-planning-templates.md` for planning and execution prompts.
 - Validate docs/config-only work with `pnpm lint` when available.
 - Validate runtime or TypeScript changes with `pnpm check` plus issue-specific checks.
+
+## Source Layout
+
+- `src/plugins/sikesra-admin/` is the writable SIKESRA extension surface for EmDash-first admin/plugin work.
+- Keep upstream AWCMS Mini source in `ahliweb/awcms-mini` as read-only reference; do not copy generated artifacts, local env files, or build output from upstream.
+- `tests/unit/` contains dependency-light regression tests for SIKESRA plugin descriptors and security-sensitive helper behavior.
+- Use `pnpm check` for source changes in this repository; it runs secret hygiene and unit tests.

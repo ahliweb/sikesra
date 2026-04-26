@@ -1,0 +1,13 @@
+{
+  "name": "awcms-mini-sikesra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "check": "node scripts/check-secret-hygiene.mjs && node --test tests/unit/*.test.mjs",
+    "check:secret-hygiene": "node scripts/check-secret-hygiene.mjs",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "lint": "node scripts/check-secret-hygiene.mjs"
+  }
+}
