@@ -21,6 +21,11 @@ import {
   getSikesraStatusBadge,
   listSikesraStatusBadgeDefinitions,
 } from "../../src/plugins/sikesra-admin/status-badges.mjs";
+import {
+  SIKESRA_SENSITIVE_CLASSIFICATIONS,
+  createSikesraSensitiveFieldProps,
+  maskSikesraSensitiveValue,
+} from "../../src/plugins/sikesra-admin/sensitive-fields.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -158,6 +163,75 @@ test("SIKESRA status badge categories cover data, verification, document, and se
   assert.equal(listSikesraStatusBadgeDefinitions("verification").length > 0, true);
   assert.equal(listSikesraStatusBadgeDefinitions("document").length > 0, true);
   assert.equal(listSikesraStatusBadgeDefinitions("sensitivity").length, 2);
+});
+
+test("SIKESRA sensitive fields mask NIK/KIA by default", () => {
+  const props = createSikesraSensitiveFieldProps({ value: "6201010101010001", fieldType: "nik" });
+
+  assert.equal(props.mode, "masked");
+  assert.equal(props.displayValue.endsWith("0001"), true);
+  assert.equal(props.displayValue.includes("620101010101"), false);
+  assert.equal(props.canCopy, false);
+  assert.equal(props.auditAction, null);
+});
+
+test("SIKESRA sensitive fields support hidden, masked, and full modes", () => {
+  assert.equal(createSikesraSensitiveFieldProps({ value: "" }).mode, "hidden");
+  assert.equal(createSikesraSensitiveFieldProps({ value: "6201010101010001" }).mode, "masked");
+  assert.equal(
+    createSikesraSensitiveFieldProps({
+      value: "6201010101010001",
+      canReveal: true,
+      revealRequested: true,
+    }).mode,
+    "full",
+  );
+});
+
+test("SIKESRA highly restricted fields require step-up before full reveal", () => {
+  const blocked = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    classification: "highly_restricted",
+    canReveal: true,
+    revealRequested: true,
+  });
+  const revealed = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    classification: "highly_restricted",
+    canReveal: true,
+    revealRequested: true,
+    stepUpSatisfied: true,
+    canCopy: true,
+  });
+
+  assert.equal(blocked.mode, "masked");
+  assert.equal(blocked.revealBlockedReason, "step_up_required");
+  assert.equal(revealed.mode, "full");
+  assert.equal(revealed.canCopy, true);
+  assert.equal(revealed.auditAction, "sikesra.sensitive_field.reveal");
+});
+
+test("SIKESRA sensitive field copy and reveal affordances require permission", () => {
+  const blocked = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    canReveal: false,
+    canCopy: true,
+    revealRequested: true,
+  });
+
+  assert.equal(blocked.mode, "masked");
+  assert.equal(blocked.canCopy, false);
+  assert.equal(blocked.revealBlockedReason, "permission_required");
+});
+
+test("SIKESRA sensitive field helpers avoid exposing personal values in labels", () => {
+  assert.equal(Object.keys(SIKESRA_SENSITIVE_CLASSIFICATIONS).sort().join(","), "highly_restricted,restricted");
+  assert.equal(maskSikesraSensitiveValue("081234567890", "phone").endsWith("890"), true);
+
+  const props = createSikesraSensitiveFieldProps({ value: "Anak Contoh", fieldType: "child_name", context: "Nama anak" });
+  assert.equal(props.ariaLabel, "Nama anak: disamarkan");
+  assert.equal(props.displayValue.includes("Contoh"), false);
+  assert.match(props.warning, /terbatas/i);
 });
 
 function flattenPages(pages) {
