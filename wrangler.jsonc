@@ -46,5 +46,11 @@
       "binding": "HYPERDRIVE",
       "id": "27eafcdafb5e4904bf083c4133a54161"
     }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "78cc94b763664d56b5ac9d34f1244304"
+    }
   ]
 }
