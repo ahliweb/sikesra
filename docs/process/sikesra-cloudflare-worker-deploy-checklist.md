@@ -13,9 +13,11 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 
 - `wrangler.jsonc` exists for Worker `sikesra-kobar`.
 - Custom domain route is set to `sikesrakobar.ahlikoding.com`.
+- Cloudflare Worker Custom Domain `sikesrakobar.ahlikoding.com` is attached to Worker `sikesra-kobar`.
 - Private R2 bucket binding is set to `MEDIA_BUCKET` -> `sikesra`.
 - Required Worker secrets are declared in `wrangler.jsonc`.
 - The Hyperdrive binding uses the SIKESRA-specific Hyperdrive ID for `sikesra-kobar-postgres`.
+- Temporary smoke Worker deployment is active until the full AWCMS Mini/EmDash build artifact is deployed.
 
 ## Required Pre-Deploy Checks
 
@@ -93,13 +95,14 @@ Operator rules:
 Run or verify the following after Hyperdrive and secrets are ready:
 
 - Local redacted readiness check: `node scripts/verify-runtime-readiness.mjs`.
+- Temporary Worker smoke deploy, if the full AWCMS Mini build output is not present yet: `node scripts/deploy-smoke-worker.mjs`.
 - Worker secret sync/readiness check: `node scripts/sync-worker-secrets.mjs` after Worker deployment.
 - Worker deploy succeeds with `wrangler.jsonc`.
 - Base URL loads: `https://sikesrakobar.ahlikoding.com`.
-- EmDash admin entry loads: `https://sikesrakobar.ahlikoding.com/_emdash/`.
+- EmDash admin smoke entry loads: `https://sikesrakobar.ahlikoding.com/_emdash/`.
 - Health endpoint returns success when implemented.
-- Database-backed runtime paths succeed through Hyperdrive.
-- R2-backed non-sensitive smoke object write/read/delete succeeds.
+- Hyperdrive binding smoke succeeds: `https://sikesrakobar.ahlikoding.com/__smoke/db`.
+- R2-backed non-sensitive smoke object write/read/delete succeeds: `https://sikesrakobar.ahlikoding.com/__smoke/r2`.
 
 ## Security Notes
 
