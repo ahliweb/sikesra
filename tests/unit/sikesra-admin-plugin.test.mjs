@@ -4,6 +4,9 @@ import test from "node:test";
 import {
   SIKESRA_ADMIN_PAGES,
   SIKESRA_ADMIN_PERMISSIONS,
+  SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
+  filterSikesraAdminPagesByPermissions,
+  flattenSikesraAdminPages,
   sikesraAdminPlugin,
 } from "../../src/plugins/sikesra-admin/index.mjs";
 
@@ -16,6 +19,7 @@ test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/index.mjs");
   assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
+  assert.deepEqual(plugin.routePlaceholders, SIKESRA_ADMIN_ROUTE_PLACEHOLDERS);
 });
 
 test("SIKESRA admin pages cover the MVP menu labels", () => {
@@ -55,6 +59,30 @@ test("SIKESRA permissions use one permission code per top-level admin page", () 
   for (const page of SIKESRA_ADMIN_PAGES) {
     assert.equal(permissionCodes.has(page.permissionCode), true, page.permissionCode);
   }
+});
+
+test("SIKESRA admin route placeholders mirror the flattened menu", () => {
+  const pagePaths = flattenSikesraAdminPages().map((page) => page.path).sort();
+  const routePaths = SIKESRA_ADMIN_ROUTE_PLACEHOLDERS.map((route) => route.path).sort();
+
+  assert.deepEqual(routePaths, pagePaths);
+
+  for (const route of SIKESRA_ADMIN_ROUTE_PLACEHOLDERS) {
+    assert.equal(route.status, "placeholder");
+    assert.equal(route.implementationIssue, "ahliweb/sikesra#13");
+    assert.equal(typeof route.permissionCode, "string");
+  }
+});
+
+test("SIKESRA admin menu can be filtered by permission metadata", () => {
+  const visible = filterSikesraAdminPagesByPermissions(["sikesra.dashboard.read", "sikesra.registry.read"]);
+  const labels = flattenPages(visible).map((page) => page.label);
+
+  assert.equal(labels.includes("Dashboard SIKESRA"), true);
+  assert.equal(labels.includes("Registry Data"), true);
+  assert.equal(labels.includes("Anak Yatim/Piatu"), true);
+  assert.equal(labels.includes("Audit Log"), false);
+  assert.equal(labels.includes("Pengaturan"), false);
 });
 
 function flattenPages(pages) {

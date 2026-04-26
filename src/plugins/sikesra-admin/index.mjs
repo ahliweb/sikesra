@@ -73,6 +73,14 @@ export const SIKESRA_ADMIN_PAGES = [
   page("/settings", "Pengaturan", "settings", "sikesra.settings.manage"),
 ];
 
+export const SIKESRA_ADMIN_ROUTE_PLACEHOLDERS = flattenPages(SIKESRA_ADMIN_PAGES).map((page) => ({
+  path: page.path,
+  label: page.label,
+  permissionCode: page.permissionCode,
+  status: "placeholder",
+  implementationIssue: "ahliweb/sikesra#13",
+}));
+
 function page(path, label, icon, permissionCode, children = []) {
   return {
     path,
@@ -94,5 +102,27 @@ export function sikesraAdminPlugin() {
     adminEntry: "/src/plugins/sikesra-admin/index.mjs",
     permissions: SIKESRA_ADMIN_PERMISSIONS,
     adminPages: SIKESRA_ADMIN_PAGES,
+    routePlaceholders: SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
   };
+}
+
+export function flattenSikesraAdminPages(pages = SIKESRA_ADMIN_PAGES) {
+  return flattenPages(pages);
+}
+
+export function filterSikesraAdminPagesByPermissions(grantedPermissions, pages = SIKESRA_ADMIN_PAGES) {
+  const permissionSet = new Set(grantedPermissions ?? []);
+
+  return pages
+    .map((item) => {
+      const children = filterSikesraAdminPagesByPermissions(permissionSet, item.children ?? []);
+      const allowed = permissionSet.has(item.permissionCode) || children.length > 0;
+      if (!allowed) return null;
+      return { ...item, children };
+    })
+    .filter(Boolean);
+}
+
+function flattenPages(pages) {
+  return pages.flatMap((page) => [page, ...flattenPages(page.children ?? [])]);
 }
