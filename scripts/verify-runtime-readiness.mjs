@@ -1,29 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
+import { hasValue, loadLocalEnv } from "./_local-env.mjs";
 
 const ENV_FILES = [".env.local", ".env"];
 const HYPERDRIVE_PLACEHOLDER = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
-
-function loadEnvFile(path, env = process.env) {
-  if (!existsSync(path)) return;
-
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#") || !line.includes("=")) continue;
-
-    const index = line.indexOf("=");
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^["']|["']$/g, "");
-
-    if (!env[key]) env[key] = value;
-  }
-}
-
-function hasValue(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 function stripJsonc(input) {
   let output = "";
@@ -189,7 +168,7 @@ function checkWrangler(wrangler) {
 }
 
 async function main() {
-  for (const file of ENV_FILES) loadEnvFile(file);
+  loadLocalEnv(ENV_FILES);
 
   const wrangler = parseWrangler();
   const databaseUrl = safeUrlSummary(process.env.DATABASE_URL);

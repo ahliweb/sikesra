@@ -49,7 +49,7 @@ Preferred pattern:
 - store the live Coolify token in a local-only secret location
 - expose it to the MCP client through an environment variable or client-managed secret reference
 - keep the repository limited to documentation of the variable name and workflow, not the token value
-- keep any environment-specific local token overrides in `.env.<environment>.local`, which the shared local env loader now resolves before `.env.local`, `.env.<environment>`, and `.env`
+- keep any environment-specific local token overrides in ignored env files. The current SIKESRA helper loads `.env.local` before `.env` so local secrets override safe defaults without shell-sourcing the file.
 - when a Coolify-managed service itself needs a password, API token, or connection string, prefer a Coolify locked secret at the resource level instead of reusing the MCP token or writing the value into local scripts
 
 ## Recommended Variable Pattern
@@ -73,7 +73,7 @@ COOLIFY_ACCESS_TOKEN=<local-only-secret>
 
 If you want a tracked example for non-secret local defaults, keep only `COOLIFY_BASE_URL` in `.env.example` and keep `COOLIFY_ACCESS_TOKEN` in `.env.local` or `.env.<environment>.local`.
 
-The local wrapper now loads env files with Cloudflare-style precedence through the shared Node env loader rather than sourcing them as shell code, and it requires `COOLIFY_BASE_URL` plus `COOLIFY_ACCESS_TOKEN` to come from env-managed configuration instead of script defaults.
+The local helper now loads env files through `scripts/_local-env.mjs` rather than sourcing them as shell code. Scripts that use Coolify API credentials require `COOLIFY_BASE_URL` plus `COOLIFY_ACCESS_TOKEN` to come from env-managed configuration instead of script defaults.
 
 ## Local CLI And MCP Workflow
 
@@ -81,9 +81,9 @@ For Coolify Cloud:
 
 1. keep `COOLIFY_BASE_URL` in `.env`, `.env.<environment>`, or `.env.local` as needed, and keep `COOLIFY_ACCESS_TOKEN` in `.env.local` or `.env.<environment>.local`
 2. run `coolify context set-token cloud "$COOLIFY_ACCESS_TOKEN"` to configure the CLI locally
-3. run `pnpm coolify:mcp` when an MCP client should launch the local wrapper in this repository
+3. use the configured MCP client or direct read-only scripts only after those values are present in local env-managed configuration
 
-The tracked wrapper script now reads env files with Cloudflare-style precedence through the shared Node loader, so the most specific local secret file wins without executing the files as shell code, and passes the credentials to the MCP server without storing the token in the script itself.
+The tracked helper reads env files through the shared Node loader without executing the files as shell code. It never stores the token in the script itself.
 
 For Cloudflare-hosted deployment secrets, keep Worker runtime secrets in Wrangler-managed secrets or CI/CD-managed environment storage rather than tracked files. Use tracked `.env.example` values only for placeholders and non-secret defaults.
 
@@ -100,31 +100,19 @@ Read-only verification may include:
 5. `GET /api/v1/servers/{uuid}`
 6. `GET /api/v1/databases/{uuid}`
 
-For the current AWCMS Mini SIKESRA Coolify/PostgreSQL management-plane posture, use the combined read-only audit first:
+For the current AWCMS Mini SIKESRA Coolify/PostgreSQL management-plane posture, use the combined read-only runtime readiness check first:
 
 ```bash
-pnpm audit:coolify
+node scripts/verify-runtime-readiness.mjs
 ```
 
-This command checks the current PostgreSQL resource and VPS server detail endpoints together, emits only redacted posture fields, and exits non-zero while any Coolify-side issue remains open.
+This command checks the current PostgreSQL resource and Cloudflare runtime posture together, emits only redacted posture fields, and exits non-zero while any required runtime posture check fails.
 
-The repository also provides a focused read-only wrapper for the current PostgreSQL resource:
-
-```bash
-pnpm audit:coolify-postgres
-```
-
-This command uses `COOLIFY_BASE_URL` plus `COOLIFY_ACCESS_TOKEN` through the same env-managed path as the MCP wrapper, reads the documented database detail endpoint, omits secret-bearing fields from output, and exits non-zero when the API posture still violates the reviewed expectations.
+This SIKESRA repo does not currently include separate Coolify-only audit wrappers. If those are added later, they must use `scripts/_local-env.mjs`, emit only redacted posture fields, and avoid raw management-plane payloads. Any focused Coolify PostgreSQL audit command must use `COOLIFY_BASE_URL` plus `COOLIFY_ACCESS_TOKEN` through the same env-managed path, read only documented detail endpoints, omit secret-bearing fields from output, and exit non-zero when the API posture violates the reviewed expectations.
 
 For PostgreSQL SSL remediation, use the Coolify dashboard or another reviewed Coolify-supported management path. Coolify's documented database update endpoint rejected `enable_ssl` and `ssl_mode` fields with validation errors during this review, so the API-backed repository command is currently verification-only for SSL state.
 
-For the reviewed PostgreSQL VPS server connection posture, use:
-
-```bash
-pnpm audit:coolify-server-ssh
-```
-
-This command calls the documented Coolify server detail endpoint, reports only non-secret server posture fields, and exits non-zero while the API still reports root SSH or reachability/usability gaps that need operator review.
+For reviewed PostgreSQL VPS server connection posture, use Coolify dashboard/API read-only evidence and copy back only non-secret fields. A future repository command may wrap this if server posture checks become routine.
 
 Coolify's documented Terminal Access feature is dashboard-interactive; it is not a public REST command-execution endpoint. If local SSH certificate/key access is unavailable, use the Coolify dashboard terminal to inspect `sshd_config` and copy back only non-secret settings such as `PasswordAuthentication`, `PermitRootLogin`, and `PubkeyAuthentication`.
 

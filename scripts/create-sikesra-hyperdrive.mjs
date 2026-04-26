@@ -1,29 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { hasValue, loadLocalEnv } from "./_local-env.mjs";
 
 const CONFIG_NAME = "sikesra-kobar-postgres";
 const PLACEHOLDER_ID = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
-
-function loadEnvFile(path, env = process.env) {
-  if (!existsSync(path)) return;
-
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#") || !line.includes("=")) continue;
-
-    const index = line.indexOf("=");
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^["']|["']$/g, "");
-
-    if (!env[key]) env[key] = value;
-  }
-}
-
-function hasValue(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 function redactErrors(errors) {
   if (!Array.isArray(errors)) return [];
@@ -94,8 +73,7 @@ function printReport(report) {
 }
 
 async function main() {
-  loadEnvFile(".env.local");
-  loadEnvFile(".env");
+  loadLocalEnv();
 
   if (!hasValue(process.env.CLOUDFLARE_ACCOUNT_ID) || !hasValue(process.env.CLOUDFLARE_API_TOKEN)) {
     throw new Error("Missing Cloudflare account ID or API token.");

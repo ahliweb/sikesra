@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { loadLocalEnv, requireValue } from "./_local-env.mjs";
 
 const WORKER_SCRIPT = `export default {
   async fetch(request, env) {
@@ -36,21 +37,6 @@ const WORKER_SCRIPT = `export default {
   },
 };
 `;
-
-function loadEnvFile(path, env = process.env) {
-  if (!existsSync(path)) return;
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#") || !line.includes("=")) continue;
-    const index = line.indexOf("=");
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^["']|["']$/g, "");
-    if (!env[key]) env[key] = value;
-  }
-}
 
 function stripJsonc(input) {
   let output = "";
@@ -103,14 +89,8 @@ async function cloudflareFetch(path, options = {}) {
   return { response, json };
 }
 
-function requireValue(value, name) {
-  if (!value) throw new Error(`Missing ${name}.`);
-  return value;
-}
-
 async function main() {
-  loadEnvFile(".env.local");
-  loadEnvFile(".env");
+  loadLocalEnv();
 
   const accountId = requireValue(process.env.CLOUDFLARE_ACCOUNT_ID, "CLOUDFLARE_ACCOUNT_ID");
   requireValue(process.env.CLOUDFLARE_API_TOKEN, "CLOUDFLARE_API_TOKEN");

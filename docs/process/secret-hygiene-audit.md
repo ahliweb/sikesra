@@ -17,11 +17,11 @@ The current maintained `scripts/**` entrypoints reviewed in this pass did not co
 
 The current maintained script entrypoints now use the shared `scripts/_local-env.mjs` helper where local env loading is required, so secret loading stays auditable and consistent without sourcing env files as shell code.
 
-The reviewed local command wrappers and deploy wrapper now inject the local Hyperdrive connection-string compatibility variable unless local execution explicitly opts into `DATABASE_TRANSPORT=direct`, which keeps the required credential in env files instead of tracked scripts, avoids leaking transport-specific settings into reviewed direct-postgresql local flows, and still lets local Cloudflare tooling follow the current Hyperdrive Worker baseline with the existing non-secret local default when no credential-bearing `DATABASE_URL` is configured.
+The reviewed local command scripts read connection strings and tokens only from ignored env files or the inherited process environment. Credential-bearing Hyperdrive and PostgreSQL values must stay in `.env.local`, Cloudflare-managed secrets, Coolify locked secrets, or an equivalent local secret store, not in tracked scripts.
 
-The reviewed local build wrapper now also removes generated `dist/server/.dev.vars*` files after `astro build` completes so local operator secrets from `.env.local` do not linger inside the Cloudflare build artifact tree.
+This repository is currently a SIKESRA runtime/config workspace and does not contain the full app build wrapper. If app build scripts are added here later, they must remove generated `dist/server/.dev.vars*` files after local builds so local operator secrets from `.env.local` do not linger inside Cloudflare build artifact trees.
 
-The reviewed local env helper now follows Cloudflare's current `.env` merge precedence for local development: `.env.<environment>.local`, `.env.local`, `.env.<environment>`, `.env`. This keeps environment-specific operator secrets in untracked env files instead of embedding them in maintained scripts or tracked config defaults.
+The reviewed local env helper now centralizes parser-based env loading in `scripts/_local-env.mjs`. The current SIKESRA scripts intentionally load `.env.local` before `.env`, so local operator secrets override tracked-safe defaults without sourcing env files as shell code.
 
 The current repository posture should therefore be described as:
 
@@ -76,12 +76,14 @@ Preferred repository patterns:
 
 ## Automated Coverage
 
-The repository now includes `pnpm check:secret-hygiene` as the focused automated regression check for reviewed maintained surfaces.
+The repository now includes `node scripts/check-secret-hygiene.mjs` as the focused automated regression check for reviewed maintained surfaces. If a future `package.json` is added, a `pnpm check:secret-hygiene` alias may wrap the same script.
 
 Current scan scope:
 
 - `.env.example`
-- `README.md`
+- `.dev.vars.example`
+- `wrangler.jsonc`
+- `AGENTS.md`
 - `scripts/**/*.mjs`
 - `docs/process/**/*.md`
 - `docs/security/**/*.md`
@@ -90,7 +92,7 @@ Current scan scope:
 Current detection focus:
 
 - hardcoded sensitive env assignments such as `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, and `*_ENCRYPTION_KEY`
-- hardcoded `process.env.*` assignments for those same secret-bearing names
+- inline high-entropy literals near secret-bearing names
 - credential-bearing URLs with embedded usernames and passwords
 - inline Bearer-token values
 - tracked local secret files such as `.env`, `.env.local`, `.env.<environment>`, `.dev.vars`, and `.dev.vars.<environment>`
@@ -153,8 +155,8 @@ If the audit does not find confirmed live secrets:
 
 ## Validation
 
-- `pnpm check:secret-hygiene` for the focused automated regression check
-- `pnpm lint` for docs and config-example updates
+- `node scripts/check-secret-hygiene.mjs` for the focused automated regression check
+- `pnpm lint` for docs and config-example updates when a package manifest is available
 - focused review of changed examples for residual secret exposure
 - `pnpm check` only if the audit changes runtime or script behavior
 
