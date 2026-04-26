@@ -40,6 +40,9 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Direct Hyperdrive creation against `id1.ahlikoding.com:5432` was attempted and refused by the origin, which is consistent with the desired private PostgreSQL posture.
 - Access-protected Hyperdrive creation through the existing `pg-hyperdrive.ahlikoding.com` tunnel reached the protected origin, but Cloudflare rejected the SIKESRA credentials as invalid for that origin.
 - Automated SIKESRA-only Hyperdrive creation was attempted with `scripts/create-sikesra-hyperdrive.mjs`; Cloudflare still rejected the direct private origin and the existing protected origin still does not accept the SIKESRA database credentials.
+- A SIKESRA-specific protected Tunnel hostname, `pg-sikesra-hyperdrive.ahlikoding.com`, was configured to reach the `sikesrakobar-postgres` private origin through Cloudflare Access.
+- Local ignored database credentials were synchronized from Coolify for `sikesrakobar-postgres`; a redacted `psql` smoke test through the protected Tunnel returned database `sikesrakobar`.
+- Hyperdrive creation now reaches the SIKESRA database but is blocked because the Coolify PostgreSQL resource has SSL/TLS disabled; Cloudflare Hyperdrive requires PostgreSQL SSL/TLS support.
 - The existing AWCMS Mini Hyperdrive configuration points at `pg-hyperdrive.ahlikoding.com` for database `awcms_mini`, which indicates the current tunnel is attached to the existing AWCMS Mini PostgreSQL service rather than the newly-created standalone `sikesrakobar-postgres` Coolify resource.
 - Do not deploy `wrangler.jsonc` while it still contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
 
@@ -48,6 +51,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Preferred if using the existing protected PostgreSQL tunnel: create database `sikesrakobar` and a least-privilege runtime role on the PostgreSQL service behind `pg-hyperdrive.ahlikoding.com`, then create Hyperdrive with that role.
 - Preferred if keeping the new standalone Coolify PostgreSQL resource: provision a separate Cloudflare Tunnel or Workers VPC Service path to `sikesrakobar-postgres`, then create Hyperdrive against that private origin.
 - Do not make the database public just to satisfy Hyperdrive creation unless an explicit reviewed exception is approved.
+- Enable SSL/TLS on the Coolify `sikesrakobar-postgres` resource before retrying Hyperdrive creation; use Coolify database SSL settings rather than exposing PostgreSQL publicly.
 
 ## Secret Checklist
 

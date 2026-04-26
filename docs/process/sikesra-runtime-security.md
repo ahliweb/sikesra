@@ -77,6 +77,9 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - PostgreSQL database name verified: `sikesrakobar`.
 - PostgreSQL application user verified: `sikesrakobar_app`.
 - PostgreSQL public exposure verified through Coolify API: `is_public=false`.
+- SIKESRA-specific protected Tunnel hostname configured for Hyperdrive origin access: `pg-sikesra-hyperdrive.ahlikoding.com`.
+- Redacted `psql` smoke test through Cloudflare Access and Tunnel verified connectivity to database `sikesrakobar` after synchronizing ignored local credentials from Coolify.
+- Hyperdrive creation is currently blocked by Coolify PostgreSQL SSL/TLS support, not by TCP routing or credential mismatch.
 - Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
 - Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
