@@ -1,111 +1,126 @@
-# System Architecture
-
-> **Documentation Authority**: [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) - Complete architecture, tech stack, and security mandates
+# SIKESRA Architecture Overview
 
 ## Purpose
 
-Describe the runtime architecture and data flow across the AWCMS monorepo.
+This document summarizes the current system shape for SIKESRA operators and contributors.
 
-## Audience
+## Core Split
 
-- Developers working across admin/public/mobile/IoT
-- Operators configuring deployments
+### EmDash Core
 
-## Prerequisites
+EmDash remains the host architecture.
 
-- [SYSTEM_MODEL.md](../../SYSTEM_MODEL.md) - **Primary authority** for system architecture
-- [AGENTS.md](../../AGENTS.md) - Implementation patterns and Context7 references
-- [docs/architecture/standards.md](./standards.md) - Core standards
-- [docs/tenancy/overview.md](../tenancy/overview.md) - Multi-tenancy details
+EmDash owns:
 
-## Core Concepts
+- the Astro-based runtime shell
+- the admin host and plugin surface
+- the CMS-oriented route and integration model
+- the baseline auth/session boundary that Mini extends rather than replaces
 
-AWCMS is a headless system with multiple clients sharing a Supabase backend:
+### Mini Overlay
 
-- Admin Panel: React 19 SPA (Vite)
-- Public Portal: Astro static output + React islands (Cloudflare Pages)
-- Mobile: Flutter app
-- IoT: ESP32 firmware
+AWCMS Mini adds governance overlays on top of EmDash.
 
-## How It Works
+Mini owns:
 
-### Architecture Diagram
+- user governance and lifecycle controls
+- explicit RBAC and ABAC services
+- role hierarchy metadata and protection rules
+- job hierarchy and assignment history
+- logical and administrative region governance
+- 2FA, lockouts, step-up, password-reset recovery, and session controls
+- audit logs and security events
+- governance-aware plugin contracts
 
-```mermaid
-graph TD
-    Visitor[Public Visitor] -->|HTTPS| PublicPortal
-    Admin[Tenant Admin] -->|HTTPS| AdminPanel
-    Owner[Platform Owner] -->|HTTPS| AdminPanel
+## Runtime Stack
 
-    subgraph "Public Portal (Static Build)"
-        PublicPortal[Astro App]
-        Resolver[Build-Time Tenant Resolver]
-        PublicPortal --> Resolver
-        Resolver -->|Resolve Tenant| RPC[Supabase RPC]
-        registry[Component Registry]
-        PublicPortal -.-> registry
-    end
+- Host runtime: Astro + EmDash `0.7.0`
+- Hosting baseline: Cloudflare Worker (`sikesra-kobar`) at `sikesrakobar.ahlikoding.com`
+- Database: PostgreSQL (`sikesrakobar` on VPS `202.10.45.224`)
+- Database transport: Hyperdrive (`sikesra-kobar-postgres-runtime`, ID `27eafcdafb5e4904bf083c4133a54161`)
+- Query and migration layer: Kysely
+- Extension model: internal EmDash-compatible plugins
+- Admin surface: EmDash admin extended by Mini governance pages
+- R2 bucket: `sikesra` (binding: `MEDIA_BUCKET`)
+- SESSION KV: `SESSION` (ID: `78cc94b763664d56b5ac9d34f1244304`)
 
-    subgraph "Admin Panel (Vite SPA)"
-        AdminPanel[React 19 App]
-        AdminContext[Tenant Context]
-        Puck[Puck Visual Editor]
-        AdminPanel --> AdminContext
-        AdminPanel --> Puck
-    end
+## Layer Map
 
-    subgraph "Backend Layer (Supabase)"
-        RPC
-        DB[(PostgreSQL)]
-        Auth[GoTrue Auth]
-        Storage[S3 Storage]
-        RLS{RLS Policies}
-        DB --- RLS
-    end
+### Host Layer
 
-    AdminContext -->|Authenticated API| RLS
-    Resolver -->|Public API Key| RLS
-    Puck -->|JSONB Save| DB
-```
+EmDash provides the application shell and extension seams.
 
-### Admin Panel Flow
+### Database Layer
 
-1. TenantContext resolves tenant via `get_tenant_by_domain`.
-2. `setGlobalTenantId()` injects `x-tenant-id` on Supabase requests.
-3. UI components enforce ABAC with `usePermissions()`.
-4. All writes use soft delete for removal.
+Mini uses PostgreSQL as the single system of record and Kysely for:
 
-### Public Portal Flow
+- migrations
+- repositories
+- transactions
+- explicit SQL-oriented data access
 
-1. Build-time tenant resolution uses `PUBLIC_TENANT_ID` or `VITE_PUBLIC_TENANT_ID` and `getStaticPaths` for tenant routes.
-2. Supabase clients are created via `createClientFromEnv(import.meta.env)` (static builds).
-3. Pages render with `PuckRenderer` and a registry allow-list.
-4. Static builds render published tenant content; middleware-based analytics logging applies only to non-canonical runtime experiments.
-5. Consent banner is rendered client-side via `ConsentNotice`.
+### Governance Layer
 
-## Implementation Patterns
+Mini overlays service-layer policy and support tables for:
 
-- Admin client: `awcms/src/lib/customSupabaseClient.js`
-- Public client: `awcms-public/primary/src/lib/supabase.ts`
-- Tenant resolution: `awcms/src/contexts/TenantContext.jsx` and `awcms-public/primary/src/lib/publicTenant.ts`
+- roles and permissions
+- ABAC evaluation
+- jobs
+- logical regions
+- administrative regions
+- security and audit concerns
 
-## Security and Compliance Notes
+### Plugin Layer
 
-- Tenant isolation is enforced at UI, API, and database layers.
-- ABAC checks are mandatory at entry points and on data operations.
-- Supabase is the only backend; no custom servers.
+Mini extends EmDash through internal plugins instead of introducing a second framework core.
 
-## Operational Concerns
+The current contract includes:
 
-- Admin and public apps are deployed as separate Cloudflare Pages projects.
-- Supabase migrations are managed in `supabase/migrations`.
+- plugin permission registration
+- plugin route authorization helper
+- plugin service authorization helper
+- plugin audit helper
+- plugin region-awareness helper
+- plugin descriptors that register first-party plugins with EmDash
 
-## Troubleshooting
+## Primary Admin Surface
 
-- See `docs/dev/troubleshooting.md`.
+The main governance extension is `awcms-users-admin`.
 
-## References
+Admin entry: `https://sikesrakobar.ahlikoding.com/_emdash/`
 
-- `docs/tenancy/overview.md`
-- `docs/tenancy/supabase.md`
-- `docs/modules/PUBLIC_PORTAL_ARCHITECTURE.md`
+It provides:
+
+- user list and user detail tabs
+- roles and permission matrix views
+- jobs and titles/levels views
+- logical and administrative region views
+- sessions and login history views
+- security settings and 2FA reset operations
+- audit log view
+
+## Operational Priorities
+
+The current implementation is optimized for:
+
+- single-tenant simplicity
+- explicit service-layer enforcement
+- additive rollout safety
+- operator-visible auditability
+- recoverable governance changes
+
+## Cross-References
+
+- `docs/architecture/constraints.md`
+- `docs/architecture/runtime-config.md`
+- `docs/architecture/repository-layout.md`
+- `docs/governance/auth-and-authorization.md`
+- `docs/governance/permission-matrix.md`
+- `docs/governance/roles.md`
+- `docs/governance/jobs.md`
+- `docs/governance/regions.md`
+- `docs/security/operations.md`
+- `docs/process/cloudflare-coolify-origin-hardening.md`
+- `docs/process/postgresql-vps-hardening.md`
+- `docs/plugins/contract-overview.md`
+- `docs/admin/operations-guide.md`
