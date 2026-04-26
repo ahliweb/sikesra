@@ -24,6 +24,7 @@ SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of 
 ## SIKESRA-Specific Process Docs
 
 - `process/sikesra-cloudflare-worker-deploy-checklist.md` - SIKESRA deploy checklist
+- `process/sikesra-religion-reference.md` - controlled Agama reference and normalization guidance
 - `process/sikesra-runtime-security.md` - SIKESRA runtime and secret handling baseline
 - `process/sikesra-uiux-github-issue-plan.md` - canonical issue mapping for SIKESRA UI/UX work
 

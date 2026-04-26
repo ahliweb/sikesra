@@ -33,6 +33,13 @@ import {
   createSikesraFormWizardState,
   createSikesraInlineValidation,
 } from "../../src/plugins/sikesra-admin/form-wizard.mjs";
+import {
+  SIKESRA_AGAMA_FIELD_CONTEXTS,
+  SIKESRA_RELIGION_OPTIONS,
+  createSikesraAgamaSelectModel,
+  mapSikesraReligionImportValue,
+  normalizeSikesraReligionValue,
+} from "../../src/plugins/sikesra-admin/religion-reference.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -304,6 +311,54 @@ test("SIKESRA inline validation messages are clear Indonesian text", () => {
   assert.equal(validation.message, "NIK/KIA: Wajib diisi.");
   assert.match(SIKESRA_FORM_INLINE_MESSAGES.sensitive_masked, /disamarkan/i);
   assert.equal(/object_type|uuid|entity/i.test(validation.message), false);
+});
+
+test("SIKESRA religion reference uses controlled Indonesian labels", () => {
+  const labels = SIKESRA_RELIGION_OPTIONS.map((option) => option.label);
+
+  assert.deepEqual(labels, ["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu", "Kepercayaan Terhadap Tuhan YME"]);
+  assert.equal(SIKESRA_AGAMA_FIELD_CONTEXTS.elderly, "Agama Lansia");
+  assert.equal(SIKESRA_AGAMA_FIELD_CONTEXTS.caregiver, "Agama Pendamping/Penanggung Jawab");
+});
+
+test("SIKESRA religion reference normalizes spelling variants", () => {
+  assert.deepEqual(normalizeSikesraReligionValue("Katholik"), { value: "katolik", label: "Katolik" });
+  assert.deepEqual(normalizeSikesraReligionValue("Budha"), { value: "buddha", label: "Buddha" });
+  assert.deepEqual(normalizeSikesraReligionValue("Konghuchu"), { value: "konghucu", label: "Konghucu" });
+});
+
+test("SIKESRA religion import mapping rejects unknown free text", () => {
+  const mapped = mapSikesraReligionImportValue("Kristen Protestan");
+  const unknown = mapSikesraReligionImportValue("Agama Tidak Dikenal");
+
+  assert.equal(mapped.ok, true);
+  assert.equal(mapped.value, "kristen");
+  assert.equal(unknown.ok, false);
+  assert.match(unknown.message, /tidak ditemukan/i);
+});
+
+test("SIKESRA Agama select model supports required, read-only, and privacy states", () => {
+  const model = createSikesraAgamaSelectModel({ subject: "child", value: "Islam", required: true, canViewIndividualReligion: true });
+  const restricted = createSikesraAgamaSelectModel({ subject: "elderly", value: "Katolik", canViewIndividualReligion: false });
+  const readOnly = createSikesraAgamaSelectModel({ subject: "institution", value: "Hindu", readOnly: true, individualLevel: false });
+
+  assert.equal(model.label, "Agama Anak");
+  assert.equal(model.freeTextAllowed, false);
+  assert.equal(model.validation, null);
+  assert.equal(restricted.label, "Agama Lansia");
+  assert.equal(restricted.displayValue, "Disamarkan");
+  assert.equal(restricted.options.length, 0);
+  assert.equal(readOnly.readOnly, true);
+  assert.equal(readOnly.disabled, true);
+  assert.equal(readOnly.displayValue, "Hindu");
+});
+
+test("SIKESRA Agama select model avoids internal field names", () => {
+  const model = createSikesraAgamaSelectModel({ subject: "teacher", usage: "filter" });
+  const serialized = JSON.stringify(model);
+
+  assert.equal(model.label, "Agama Guru");
+  assert.equal(/religion_reference_id|religion_code/i.test(serialized), false);
 });
 
 function flattenPages(pages) {
