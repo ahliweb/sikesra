@@ -9,6 +9,11 @@ import {
   flattenSikesraAdminPages,
   sikesraAdminPlugin,
 } from "../../src/plugins/sikesra-admin/index.mjs";
+import {
+  SIKESRA_HOST_REGISTRATION,
+  appendSikesraAdminPlugin,
+  createAstroConfigRegistrationPatch,
+} from "../../src/plugins/sikesra-admin/host-registration.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -83,6 +88,25 @@ test("SIKESRA admin menu can be filtered by permission metadata", () => {
   assert.equal(labels.includes("Anak Yatim/Piatu"), true);
   assert.equal(labels.includes("Audit Log"), false);
   assert.equal(labels.includes("Pengaturan"), false);
+});
+
+test("SIKESRA host registration appends the plugin once", () => {
+  const existing = [{ id: "awcms-users-admin" }];
+  const plugins = appendSikesraAdminPlugin(existing);
+  const registeredTwice = appendSikesraAdminPlugin(plugins);
+
+  assert.equal(plugins.length, 2);
+  assert.equal(plugins[1].id, "sikesra-admin");
+  assert.equal(registeredTwice.length, 2);
+});
+
+test("SIKESRA host registration documents the EmDash integration seam", () => {
+  const patch = createAstroConfigRegistrationPatch();
+
+  assert.equal(SIKESRA_HOST_REGISTRATION.upstreamConfigFile, "astro.config.mjs");
+  assert.equal(SIKESRA_HOST_REGISTRATION.emdashIntegrationOption, "plugins");
+  assert.match(patch, /sikesraAdminPlugin/);
+  assert.match(patch, /plugins: \[awcmsUsersAdminPlugin\(\), sikesraAdminPlugin\(\)\]/);
 });
 
 function flattenPages(pages) {
