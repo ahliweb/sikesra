@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { loadLocalEnv, requireValue } from "./_local-env.mjs";
 
 const WORKER_SCRIPT = `export default {
@@ -89,30 +90,54 @@ async function cloudflareFetch(path, options = {}) {
   return { response, json };
 }
 
+export function buildSmokeWorkerMetadata(wrangler) {
+  return {
+    main_module: "worker.mjs",
+    compatibility_date: wrangler.compatibility_date,
+    compatibility_flags: wrangler.compatibility_flags ?? [],
+    bindings: [
+      ...Object.entries(wrangler.vars ?? {}).map(([name, text]) => ({ type: "plain_text", name, text })),
+      ...(wrangler.r2_buckets ?? []).map((bucket) => ({
+        type: "r2_bucket",
+        name: bucket.binding,
+        bucket_name: bucket.bucket_name,
+      })),
+      ...(wrangler.hyperdrive ?? []).map((config) => ({
+        type: "hyperdrive",
+        name: config.binding,
+        id: config.id,
+      })),
+      ...(wrangler.kv_namespaces ?? []).map((namespace) => ({
+        type: "kv_namespace",
+        name: namespace.binding,
+        namespace_id: namespace.id,
+      })),
+    ],
+    observability: wrangler.observability ?? { enabled: true },
+  };
+}
+
+export function summarizeSmokeWorkerBindings(metadata) {
+  const bindings = Array.isArray(metadata?.bindings) ? metadata.bindings : [];
+  return bindings.map((binding) => ({ type: binding.type, name: binding.name })).sort((left, right) => `${left.type}:${left.name}`.localeCompare(`${right.type}:${right.name}`));
+}
+
+function assertSmokeDeployAllowed(env = process.env) {
+  if (env.SIKESRA_ALLOW_SMOKE_WORKER_DEPLOY !== "true") {
+    throw new Error("Refusing to replace the live Worker with the smoke Worker unless SIKESRA_ALLOW_SMOKE_WORKER_DEPLOY=true is set locally.");
+  }
+}
+
 async function main() {
   loadLocalEnv();
+  assertSmokeDeployAllowed();
 
   const accountId = requireValue(process.env.CLOUDFLARE_ACCOUNT_ID, "CLOUDFLARE_ACCOUNT_ID");
   requireValue(process.env.CLOUDFLARE_API_TOKEN, "CLOUDFLARE_API_TOKEN");
 
   const wrangler = JSON.parse(stripJsonc(readFileSync("wrangler.jsonc", "utf8")));
   const workerName = wrangler.name;
-  const hyperdriveId = wrangler.hyperdrive?.[0]?.id;
-  const r2Bucket = wrangler.r2_buckets?.[0]?.bucket_name;
-  const compatibilityDate = wrangler.compatibility_date;
-  const compatibilityFlags = wrangler.compatibility_flags ?? [];
-
-  const metadata = {
-    main_module: "worker.mjs",
-    compatibility_date: compatibilityDate,
-    compatibility_flags: compatibilityFlags,
-    bindings: [
-      { type: "r2_bucket", name: "MEDIA_BUCKET", bucket_name: r2Bucket },
-      { type: "hyperdrive", name: "HYPERDRIVE", id: hyperdriveId },
-      ...Object.entries(wrangler.vars ?? {}).map(([name, text]) => ({ type: "plain_text", name, text })),
-    ],
-    observability: { enabled: true },
-  };
+  const metadata = buildSmokeWorkerMetadata(wrangler);
 
   const form = new FormData();
   form.set("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
@@ -129,8 +154,7 @@ async function main() {
         ok: deploy.response.ok && deploy.json?.success !== false,
         workerName,
         httpStatus: deploy.response.status,
-        r2Binding: "MEDIA_BUCKET",
-        hyperdriveBinding: "HYPERDRIVE",
+        bindings: summarizeSmokeWorkerBindings(metadata),
         errors: Array.isArray(deploy.json?.errors) ? deploy.json.errors.map((error) => ({ code: error.code, message: error.message })) : [],
         redaction: "API token, raw response, and secret values omitted.",
       },
@@ -141,7 +165,9 @@ async function main() {
   process.exit(deploy.response.ok && deploy.json?.success !== false ? 0 : 1);
 }
 
-main().catch((error) => {
-  console.log(JSON.stringify({ ok: false, error: error.message, redaction: "Secret values omitted." }, null, 2));
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.log(JSON.stringify({ ok: false, error: error.message, redaction: "Secret values omitted." }, null, 2));
+    process.exit(1);
+  });
+}

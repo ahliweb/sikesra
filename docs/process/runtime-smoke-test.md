@@ -170,3 +170,9 @@ Common database `reason` values and next checks:
 - `pnpm typecheck`
 - `pnpm build`
 - `pnpm healthcheck`
+
+## Smoke Worker Safety
+
+`scripts/deploy-smoke-worker.mjs` is intentionally guarded because it replaces the live Worker script with a smoke-test Worker. It refuses to deploy unless `SIKESRA_ALLOW_SMOKE_WORKER_DEPLOY=true` is set in a local-only environment file or process environment.
+
+When used, the script builds Cloudflare Worker metadata from `wrangler.jsonc` and preserves the reviewed non-secret bindings, including `MEDIA_BUCKET`, `HYPERDRIVE`, and `SESSION`. Production secrets still belong in Cloudflare-managed Worker secrets and are not printed by the script.
