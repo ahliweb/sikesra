@@ -72,6 +72,8 @@ Operator rules:
 - Do not paste secret values into GitHub issues.
 - Do not store runtime secrets as build-time variables unless explicitly required.
 - Prefer Cloudflare Worker secrets for the Worker runtime and Coolify locked secrets for database/resource management.
+- After the Worker script exists in Cloudflare, run `node scripts/sync-worker-secrets.mjs` to sync required Worker secrets from ignored local env values without printing secret values.
+- The secret sync script fails closed if `sikesra-kobar` does not exist yet, so it is safe to run before deployment as a readiness check.
 
 ## R2 Checklist
 
@@ -91,6 +93,7 @@ Operator rules:
 Run or verify the following after Hyperdrive and secrets are ready:
 
 - Local redacted readiness check: `node scripts/verify-runtime-readiness.mjs`.
+- Worker secret sync/readiness check: `node scripts/sync-worker-secrets.mjs` after Worker deployment.
 - Worker deploy succeeds with `wrangler.jsonc`.
 - Base URL loads: `https://sikesrakobar.ahlikoding.com`.
 - EmDash admin entry loads: `https://sikesrakobar.ahlikoding.com/_emdash/`.

@@ -50,6 +50,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 
 - Declare required Worker secret names in Wrangler configuration when this repository adds Worker config.
 - Store secret values through `wrangler secret put` or the Cloudflare dashboard.
+- Use `node scripts/sync-worker-secrets.mjs` after the Worker exists to populate the required Cloudflare Worker secrets from ignored env values without printing secret values.
 - Bind R2 as a private bucket and serve documents only through permission-aware, audited application flows.
 - Keep Turnstile hostname allowlists aligned with `sikesrakobar.ahlikoding.com` when login, reset, or invite flows are enabled.
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
@@ -85,12 +86,13 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
 - Repository-side Cloudflare Worker configuration now exists in `wrangler.jsonc` for Worker `sikesra-kobar`, custom domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET` to bucket `sikesra`, and the AWCMS Mini required Worker secret contract.
 - `wrangler.jsonc` now contains the non-secret SIKESRA Hyperdrive ID for `sikesra-kobar-postgres`; do not replace it with the existing AWCMS Mini Hyperdrive ID.
+- Cloudflare Worker secret sync was attempted with `scripts/sync-worker-secrets.mjs`; it failed closed because the Worker script `sikesra-kobar` does not exist in Cloudflare yet.
 
 ## Remaining Runtime Secret Work
 
 - Create or identify the Cloudflare Worker/application deployment resource for `sikesrakobar.ahlikoding.com`.
 - Keep the SIKESRA-specific Cloudflare Hyperdrive configuration for the Coolify-managed PostgreSQL resource aligned with `wrangler.jsonc`.
-- Store Worker runtime secrets in Cloudflare secrets once the Worker resource exists.
+- Deploy or create Worker script `sikesra-kobar`, then store Worker runtime secrets in Cloudflare secrets with `scripts/sync-worker-secrets.mjs`.
 - If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
 - Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
 
@@ -113,7 +115,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs` and `scripts/create-sikesra-hyperdrive.mjs`. The scripts read secrets only from ignored env files or process environment, print redacted reports, and fail closed while `wrangler.jsonc` still contains the Hyperdrive placeholder.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, and `scripts/sync-worker-secrets.mjs`. The scripts read secrets only from ignored env files or process environment, print redacted reports, and fail closed when required infrastructure is missing.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 
