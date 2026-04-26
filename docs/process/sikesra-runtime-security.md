@@ -124,7 +124,7 @@ No tracked scripts currently contain hardcoded credential values; local-only con
 
 ## Tracking Issues
 
-- Runtime provisioning and environment synchronization: ahliweb/sikesra#41.
+- Worker replacement follow-on: ahliweb/sikesra#44.
 - Planning index: ahliweb/sikesra#40.
 - Document upload/R2 UI: ahliweb/sikesra#28.
 - Reports/export sensitive data flow: ahliweb/sikesra#32.

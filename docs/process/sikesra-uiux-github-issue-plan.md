@@ -103,6 +103,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - ahliweb/sikesra#10: Provision Coolify database and locked runtime secrets.
 - ahliweb/sikesra#11: Configure Cloudflare Worker runtime, domain, secrets, and R2 binding.
 - ahliweb/sikesra#12: Create Hyperdrive binding for `sikesrakobar` PostgreSQL.
+- ahliweb/sikesra#44: Replace temporary smoke Worker with full AWCMS Mini/EmDash build.
 
 ## Current Runtime Status
 
@@ -112,7 +113,9 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Coolify reports the PostgreSQL resource as `running:healthy` and `is_public=false`.
 - R2 bucket `sikesra` was verified through Cloudflare MCP using a non-sensitive write/read/delete smoke object.
 - `wrangler.jsonc` exists for Worker `sikesra-kobar`, domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET`, and the required AWCMS Mini Worker secret contract.
-- Deployment remains blocked until the SIKESRA-specific Hyperdrive ID replaces `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
+- The SIKESRA-specific Hyperdrive ID is bound and runtime readiness passes.
+- Worker/domain/R2/Hyperdrive smoke checks are passing on the deployed temporary Worker surface.
+- Remaining deployment follow-on is replacing the temporary smoke Worker with the full AWCMS Mini/EmDash build in #44.
 
 ## Recommended Dependency Order
 
@@ -121,7 +124,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Complete ahliweb/sikesra#42 before module forms that need `Agama` fields.
 - Complete ahliweb/sikesra#43 before Lansia dashboard, registry, import/export, audit, tests, and docs coverage can be closed.
 - Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
-- Resolve runtime blocker ahliweb/sikesra#12 before deployment smoke tests for the Cloudflare-hosted Worker.
+- Runtime provisioning issues ahliweb/sikesra#11, #12, and #41 are complete; proceed with #44 when the full AWCMS Mini/EmDash Worker artifact is ready.
 
 ## Security Notes
 
