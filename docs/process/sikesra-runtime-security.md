@@ -41,7 +41,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - PostgreSQL username and password if split variables are used
 - R2 access key and secret key
 - Cloudflare API token
-- Coolify API token
+- Coolify base URL and access token, using `COOLIFY_BASE_URL` and `COOLIFY_ACCESS_TOKEN` for compatibility with the AWCMS Mini Coolify MCP wrapper and audit scripts
 - Turnstile secret key
 - session/JWT secrets
 
