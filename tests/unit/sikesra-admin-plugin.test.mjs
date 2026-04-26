@@ -14,6 +14,13 @@ import {
   appendSikesraAdminPlugin,
   createAstroConfigRegistrationPatch,
 } from "../../src/plugins/sikesra-admin/host-registration.mjs";
+import {
+  SIKESRA_STATUS_BADGE_CLASS_BY_TONE,
+  SIKESRA_STATUS_BADGE_DEFINITIONS,
+  createSikesraStatusBadgeProps,
+  getSikesraStatusBadge,
+  listSikesraStatusBadgeDefinitions,
+} from "../../src/plugins/sikesra-admin/status-badges.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -107,6 +114,50 @@ test("SIKESRA host registration documents the EmDash integration seam", () => {
   assert.equal(SIKESRA_HOST_REGISTRATION.emdashIntegrationOption, "plugins");
   assert.match(patch, /sikesraAdminPlugin/);
   assert.match(patch, /plugins: \[awcmsUsersAdminPlugin\(\), sikesraAdminPlugin\(\)\]/);
+});
+
+test("SIKESRA status badges cover required MVP states", () => {
+  const requiredStates = [
+    "draft",
+    "submitted",
+    "verified",
+    "need_revision",
+    "rejected",
+    "active",
+    "archived",
+    "pending",
+    "incomplete",
+    "restricted",
+    "highly_restricted",
+  ];
+
+  assert.deepEqual(Object.keys(SIKESRA_STATUS_BADGE_DEFINITIONS).sort(), requiredStates.sort());
+});
+
+test("SIKESRA status badges provide accessible Indonesian text labels", () => {
+  for (const definition of Object.values(SIKESRA_STATUS_BADGE_DEFINITIONS)) {
+    const props = createSikesraStatusBadgeProps(definition.status, { context: "Status data" });
+
+    assert.equal(typeof props.label, "string");
+    assert.equal(props.label.length > 0, true);
+    assert.equal(props.textOnly, props.label);
+    assert.equal(props.ariaLabel, `Status data: ${props.label}`);
+    assert.equal(props.className, SIKESRA_STATUS_BADGE_CLASS_BY_TONE[props.tone]);
+    assert.equal(/nik|kia|kk|uuid|entity|object_type/i.test(props.label), false);
+  }
+});
+
+test("SIKESRA status badge helpers normalize aliases and fall back safely", () => {
+  assert.equal(getSikesraStatusBadge("need-revision").status, "need_revision");
+  assert.equal(getSikesraStatusBadge("HIGHLY RESTRICTED").status, "highly_restricted");
+  assert.equal(getSikesraStatusBadge("unknown").status, "pending");
+});
+
+test("SIKESRA status badge categories cover data, verification, document, and sensitivity", () => {
+  assert.equal(listSikesraStatusBadgeDefinitions("data").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("verification").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("document").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("sensitivity").length, 2);
 });
 
 function flattenPages(pages) {
