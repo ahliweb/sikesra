@@ -26,6 +26,13 @@ import {
   createSikesraSensitiveFieldProps,
   maskSikesraSensitiveValue,
 } from "../../src/plugins/sikesra-admin/sensitive-fields.mjs";
+import {
+  SIKESRA_FORM_INLINE_MESSAGES,
+  SIKESRA_FORM_MODES,
+  SIKESRA_FORM_SECTIONS,
+  createSikesraFormWizardState,
+  createSikesraInlineValidation,
+} from "../../src/plugins/sikesra-admin/form-wizard.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -232,6 +239,71 @@ test("SIKESRA sensitive field helpers avoid exposing personal values in labels",
   assert.equal(props.ariaLabel, "Nama anak: disamarkan");
   assert.equal(props.displayValue.includes("Contoh"), false);
   assert.match(props.warning, /terbatas/i);
+});
+
+test("SIKESRA form wizard covers the global PRD sections", () => {
+  const labels = SIKESRA_FORM_SECTIONS.map((section) => section.label);
+
+  assert.deepEqual(labels, [
+    "Kode dan Kategori",
+    "Wilayah dan Alamat",
+    "Identitas Utama",
+    "Detail Khusus Modul",
+    "Personil Terkait",
+    "Dokumen",
+    "Status dan Catatan",
+    "Ringkasan Sebelum Submit",
+  ]);
+});
+
+test("SIKESRA form wizard supports required modes and progress", () => {
+  assert.deepEqual(SIKESRA_FORM_MODES, ["create", "edit_draft", "edit_need_revision", "read_only", "verify"]);
+
+  const state = createSikesraFormWizardState({
+    mode: "edit-need-revision",
+    hasUnsavedChanges: true,
+    values: {
+      completeness: {
+        code_category: true,
+        region_address: true,
+        primary_identity: true,
+      },
+    },
+  });
+
+  assert.equal(state.mode, "edit_need_revision");
+  assert.equal(state.progress.completed, 3);
+  assert.equal(state.progress.total, 8);
+  assert.match(state.unsavedChangesWarning, /belum disimpan/i);
+});
+
+test("SIKESRA form wizard applies conditional visibility", () => {
+  const createState = createSikesraFormWizardState({ mode: "create" });
+  const readOnlyState = createSikesraFormWizardState({ mode: "read_only" });
+  const createLabels = createState.sections.map((section) => section.label);
+  const readOnlyLabels = readOnlyState.sections.map((section) => section.label);
+
+  assert.equal(createLabels.includes("Status dan Catatan"), false);
+  assert.equal(createLabels.includes("Ringkasan Sebelum Submit"), true);
+  assert.equal(readOnlyLabels.includes("Ringkasan Sebelum Submit"), false);
+  assert.equal(readOnlyState.readOnly, true);
+});
+
+test("SIKESRA form wizard supports verify/read-only behavior", () => {
+  const verifyState = createSikesraFormWizardState({ mode: "verify" });
+  const readOnlyState = createSikesraFormWizardState({ mode: "read_only" });
+
+  assert.equal(verifyState.verifyMode, true);
+  assert.equal(verifyState.readOnly, true);
+  assert.equal(readOnlyState.canSubmit, false);
+});
+
+test("SIKESRA inline validation messages are clear Indonesian text", () => {
+  const validation = createSikesraInlineValidation("NIK/KIA", "required");
+
+  assert.equal(validation.message, "NIK/KIA: Wajib diisi.");
+  assert.match(SIKESRA_FORM_INLINE_MESSAGES.sensitive_masked, /disamarkan/i);
+  assert.equal(/object_type|uuid|entity/i.test(validation.message), false);
 });
 
 function flattenPages(pages) {
