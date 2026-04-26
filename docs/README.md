@@ -1,71 +1,67 @@
-# AWCMS Documentation Hub
+# SIKESRA Docs
 
-> **Documentation Authority:** `SYSTEM_MODEL.md` -> `AGENTS.md` -> `README.md` -> `DOCS_INDEX.md` -> implementation and module docs
->
-> **Status:** Maintained
->
-> **Last Updated:** 2026-03-12
+This directory contains the maintained architecture, governance, security, plugin, admin, and process documentation for SIKESRA (awcms-mini-sikesra).
 
-## Purpose
+SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of AWCMS Mini, serving `sikesrakobar.ahlikoding.com`.
 
-This file is the practical entrypoint for the `docs/` tree. It does not redefine architecture rules.
-It routes readers to canonical documents and implementation-backed runbooks.
+## Read In This Order
 
-## Start Here
+1. `../REQUIREMENTS.md`
+2. `../AGENTS.md`
+3. `../README.md`
+4. `../DOCS_INDEX.md`
+5. the focused document for your task
 
-- System constraints and mandatory versions: `SYSTEM_MODEL.md`
-- Agent and implementation rules: `AGENTS.md`
-- Monorepo operations and baseline commands: `README.md`
-- Canonical docs routing: `DOCS_INDEX.md`
+## Folder Map
 
-## Documentation Domains
+- `architecture/` - architecture constraints and repository/runtime guidance
+- `governance/` - auth, roles, jobs, and regions guidance
+- `security/` - security operations, recovery, and rate-limit strategy
+- `plugins/` - plugin governance contract docs
+- `admin/` - admin operating guidance
+- `process/` - workflow, runtime validation, and deployment docs
 
-| Domain | Focus | Canonical Entry |
-| --- | --- | --- |
-| Architecture | System model, database, standards, folder structure | `docs/architecture/overview.md` |
-| Tenancy | Tenant isolation, hierarchy, Supabase tenancy behavior | `docs/tenancy/overview.md` |
-| Security | ABAC, RLS, threat model, security controls | `docs/security/overview.md` |
-| Developer Guides | Setup, CI/CD, testing, platform-specific development | `docs/dev/setup.md` |
-| Modules | Feature and subsystem documentation | `docs/modules/MODULES_GUIDE.md` |
-| Deploy | Deployment runbooks and environments | `docs/deploy/overview.md` |
-| Compliance | Regulatory and standards mapping | `docs/compliance/overview.md` |
-| Guides | Migration and operational guides | `docs/guides/opencode-models.md` |
+## SIKESRA-Specific Process Docs
 
-## Evidence Sources for Documentation Updates
+- `process/sikesra-cloudflare-worker-deploy-checklist.md` - SIKESRA deploy checklist
+- `process/sikesra-runtime-security.md` - SIKESRA runtime and secret handling baseline
+- `process/sikesra-uiux-github-issue-plan.md` - canonical issue mapping for SIKESRA UI/UX work
 
-When updating any document in this repo, verify claims against these implementation sources:
+## Upstream Process Docs (adapted for SIKESRA)
 
-- Package scripts and runtime constraints: `**/package.json`
-- CI/CD behavior: `.github/workflows/*.yml`
-- Database and RLS behavior: `supabase/migrations/*.sql`, `awcms/supabase/migrations/*.sql`
-- Operational scripts: `scripts/*.sh`
-- App implementation:
-  - `awcms/src/**`
-  - `awcms-public/primary/src/**`
-  - `awcms-mcp/src/**`
+- `process/ai-workflow-planning-templates.md` - reusable AI workflow templates for docs, planning, implementation, and review tasks
+- `process/cloudflare-hosted-runtime.md` - full runtime expectations and all env var requirements; `DATABASE_TRANSPORT=hyperdrive` is the reviewed production default
+- `process/cloudflare-hyperdrive-decision.md` - Hyperdrive preferred; private tunnel path through `pg-hyperdrive.ahlikoding.com`
+- `process/cloudflare-pages-vs-workers-decision.md` - single Worker deployment; no Pages+Workers split
+- `process/cloudflare-tunnel-private-db-connector-runbook.md` - tunnel operator runbook for the VPS-side `cloudflared` connector step
+- `process/cloudflare-coolify-origin-hardening.md` - Cloudflare edge → Worker → Hyperdrive → PostgreSQL trust boundary
+- `process/coolify-mcp-secret-handling.md` - supported local-only secret handling pattern for Coolify MCP access
+- `process/github-issue-workflow.md` - issue-first workflow, atomic scope rules
+- `process/migration-deployment-checklist.md` - pre/post-deploy checklist
+- `process/postgresql-vps-hardening.md` - VPS PostgreSQL access posture
+- `process/secret-hygiene-audit.md` - audit checklist and cleanup rules for scripts, config examples, and operator secret handling
+- `process/runtime-smoke-test.md` - `pnpm healthcheck` with optional posture assertion env vars
+- `process/hyperdrive-rollout-operator-handoff.md` - condensed operator command sheet for Hyperdrive rollout
+- `process/emdash-ledger-repair-runbook.md` - operator-only inspection and repair flow for the EmDash `_emdash_migrations` ledger
+- `process/emdash-alignment-and-security-plan-2026.md` - EmDash alignment and security recommendations backlog source
 
-## Context7-First Documentation Workflow
+## Key SIKESRA Identifiers
 
-- Audit plan: `docs/dev/documentation-audit-plan.md`
-- Audit tracker and drift log: `docs/dev/documentation-audit-tracker.md`
-- Benchmark response standard: `docs/dev/context7-benchmark-playbook.md`
+- Hostname: `sikesrakobar.ahlikoding.com`
+- Database: `sikesrakobar` / runtime role: `sikesrakobar_runtime`
+- Worker: `sikesra-kobar`
+- R2 bucket: `sikesra` (binding: `MEDIA_BUCKET`)
+- Hyperdrive: `sikesra-kobar-postgres-runtime` (ID: `27eafcdafb5e4904bf083c4133a54161`)
+- SESSION KV: `SESSION` (ID: `78cc94b763664d56b5ac9d34f1244304`)
+- Issue tracker: `ahliweb/sikesra`
+- Upstream reference (read-only): `ahliweb/awcms-mini`, local path `/home/data/dev_react/awcms-mini`
 
-The active 2026-03-12 planning refresh re-baselines repository counts, authority-doc drift, resource-map
-reconciliation, script accuracy, security wording, dependency/version mismatches, and dead-link remediation planning.
+## Accuracy Rule
 
-Use Context7 MCP as the primary external source for library guidance and preserve verified IDs from
-`AGENTS.md` and `docs/dev/documentation-audit-plan.md`.
+These docs should describe the real repository state, not just the intended plan. When implementation and planning diverge, update the docs to match the current code and call out rollout caveats explicitly.
 
-## Maintained vs Non-Authoritative Docs
+## Validation Baseline
 
-- Maintained: markdown files under root docs and package-level maintained README files.
-- Non-authoritative examples/vendor docs (reference-only):
-  - `awcms-public/primary/vendor/README.md`
-  - `awcms/src/templates/flowbiteadminastro/**/README.md`
-  - generated platform asset READMEs (for example iOS asset catalog notes)
-
-## Notes
-
-- For complete topic navigation, use `DOCS_INDEX.md`.
-- For version and security mandates, defer to `SYSTEM_MODEL.md`.
-- For benchmark-focused documentation quality improvements, follow `docs/dev/context7-benchmark-playbook.md`.
+- `pnpm check` is the default aggregate validation path for routine local changes.
+- `pnpm lint` and `pnpm format` currently use Prettier on the maintained docs/config surface, not the entire repository.
+- Keep any issue-specific validation commands in addition to that baseline.

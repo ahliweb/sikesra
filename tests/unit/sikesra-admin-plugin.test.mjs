@@ -1,0 +1,311 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  SIKESRA_ADMIN_PAGES,
+  SIKESRA_ADMIN_PERMISSIONS,
+  SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
+  filterSikesraAdminPagesByPermissions,
+  flattenSikesraAdminPages,
+  sikesraAdminPlugin,
+} from "../../src/plugins/sikesra-admin/index.mjs";
+import {
+  SIKESRA_HOST_REGISTRATION,
+  appendSikesraAdminPlugin,
+  createAstroConfigRegistrationPatch,
+} from "../../src/plugins/sikesra-admin/host-registration.mjs";
+import {
+  SIKESRA_STATUS_BADGE_CLASS_BY_TONE,
+  SIKESRA_STATUS_BADGE_DEFINITIONS,
+  createSikesraStatusBadgeProps,
+  getSikesraStatusBadge,
+  listSikesraStatusBadgeDefinitions,
+} from "../../src/plugins/sikesra-admin/status-badges.mjs";
+import {
+  SIKESRA_SENSITIVE_CLASSIFICATIONS,
+  createSikesraSensitiveFieldProps,
+  maskSikesraSensitiveValue,
+} from "../../src/plugins/sikesra-admin/sensitive-fields.mjs";
+import {
+  SIKESRA_FORM_INLINE_MESSAGES,
+  SIKESRA_FORM_MODES,
+  SIKESRA_FORM_SECTIONS,
+  createSikesraFormWizardState,
+  createSikesraInlineValidation,
+} from "../../src/plugins/sikesra-admin/form-wizard.mjs";
+
+test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
+  const plugin = sikesraAdminPlugin();
+
+  assert.equal(plugin.id, "sikesra-admin");
+  assert.equal(plugin.format, "native");
+  assert.equal(plugin.entrypoint, "/src/plugins/sikesra-admin/index.mjs");
+  assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/index.mjs");
+  assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
+  assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
+  assert.deepEqual(plugin.routePlaceholders, SIKESRA_ADMIN_ROUTE_PLACEHOLDERS);
+});
+
+test("SIKESRA admin pages cover the MVP menu labels", () => {
+  const labels = flattenPages(SIKESRA_ADMIN_PAGES).map((page) => page.label);
+
+  assert.deepEqual(
+    [
+      "Dashboard SIKESRA",
+      "Registry Data",
+      "Verifikasi Data",
+      "Dokumen Pendukung",
+      "Import Excel",
+      "Laporan & Export",
+      "Wilayah & Kodefikasi",
+      "Audit Log",
+      "Pengguna & Akses",
+      "Pengaturan",
+      "Lansia Terlantar",
+      "Guru Agama",
+    ].every((label) => labels.includes(label)),
+    true,
+  );
+});
+
+test("SIKESRA menu entries avoid technical operator-facing labels", () => {
+  for (const page of flattenPages(SIKESRA_ADMIN_PAGES)) {
+    assert.equal(/entity|object_type_code|uuid/i.test(page.label), false, page.label);
+    assert.equal(page.group, "SIKESRA");
+    assert.equal(typeof page.permissionCode, "string");
+    assert.equal(page.sensitivity, "restricted");
+  }
+});
+
+test("SIKESRA permissions use one permission code per top-level admin page", () => {
+  const permissionCodes = new Set(SIKESRA_ADMIN_PERMISSIONS.map((permission) => permission.code));
+
+  for (const page of SIKESRA_ADMIN_PAGES) {
+    assert.equal(permissionCodes.has(page.permissionCode), true, page.permissionCode);
+  }
+});
+
+test("SIKESRA admin route placeholders mirror the flattened menu", () => {
+  const pagePaths = flattenSikesraAdminPages().map((page) => page.path).sort();
+  const routePaths = SIKESRA_ADMIN_ROUTE_PLACEHOLDERS.map((route) => route.path).sort();
+
+  assert.deepEqual(routePaths, pagePaths);
+
+  for (const route of SIKESRA_ADMIN_ROUTE_PLACEHOLDERS) {
+    assert.equal(route.status, "placeholder");
+    assert.equal(route.implementationIssue, "ahliweb/sikesra#13");
+    assert.equal(typeof route.permissionCode, "string");
+  }
+});
+
+test("SIKESRA admin menu can be filtered by permission metadata", () => {
+  const visible = filterSikesraAdminPagesByPermissions(["sikesra.dashboard.read", "sikesra.registry.read"]);
+  const labels = flattenPages(visible).map((page) => page.label);
+
+  assert.equal(labels.includes("Dashboard SIKESRA"), true);
+  assert.equal(labels.includes("Registry Data"), true);
+  assert.equal(labels.includes("Anak Yatim/Piatu"), true);
+  assert.equal(labels.includes("Audit Log"), false);
+  assert.equal(labels.includes("Pengaturan"), false);
+});
+
+test("SIKESRA host registration appends the plugin once", () => {
+  const existing = [{ id: "awcms-users-admin" }];
+  const plugins = appendSikesraAdminPlugin(existing);
+  const registeredTwice = appendSikesraAdminPlugin(plugins);
+
+  assert.equal(plugins.length, 2);
+  assert.equal(plugins[1].id, "sikesra-admin");
+  assert.equal(registeredTwice.length, 2);
+});
+
+test("SIKESRA host registration documents the EmDash integration seam", () => {
+  const patch = createAstroConfigRegistrationPatch();
+
+  assert.equal(SIKESRA_HOST_REGISTRATION.upstreamConfigFile, "astro.config.mjs");
+  assert.equal(SIKESRA_HOST_REGISTRATION.emdashIntegrationOption, "plugins");
+  assert.match(patch, /sikesraAdminPlugin/);
+  assert.match(patch, /plugins: \[awcmsUsersAdminPlugin\(\), sikesraAdminPlugin\(\)\]/);
+});
+
+test("SIKESRA status badges cover required MVP states", () => {
+  const requiredStates = [
+    "draft",
+    "submitted",
+    "verified",
+    "need_revision",
+    "rejected",
+    "active",
+    "archived",
+    "pending",
+    "incomplete",
+    "restricted",
+    "highly_restricted",
+  ];
+
+  assert.deepEqual(Object.keys(SIKESRA_STATUS_BADGE_DEFINITIONS).sort(), requiredStates.sort());
+});
+
+test("SIKESRA status badges provide accessible Indonesian text labels", () => {
+  for (const definition of Object.values(SIKESRA_STATUS_BADGE_DEFINITIONS)) {
+    const props = createSikesraStatusBadgeProps(definition.status, { context: "Status data" });
+
+    assert.equal(typeof props.label, "string");
+    assert.equal(props.label.length > 0, true);
+    assert.equal(props.textOnly, props.label);
+    assert.equal(props.ariaLabel, `Status data: ${props.label}`);
+    assert.equal(props.className, SIKESRA_STATUS_BADGE_CLASS_BY_TONE[props.tone]);
+    assert.equal(/nik|kia|kk|uuid|entity|object_type/i.test(props.label), false);
+  }
+});
+
+test("SIKESRA status badge helpers normalize aliases and fall back safely", () => {
+  assert.equal(getSikesraStatusBadge("need-revision").status, "need_revision");
+  assert.equal(getSikesraStatusBadge("HIGHLY RESTRICTED").status, "highly_restricted");
+  assert.equal(getSikesraStatusBadge("unknown").status, "pending");
+});
+
+test("SIKESRA status badge categories cover data, verification, document, and sensitivity", () => {
+  assert.equal(listSikesraStatusBadgeDefinitions("data").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("verification").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("document").length > 0, true);
+  assert.equal(listSikesraStatusBadgeDefinitions("sensitivity").length, 2);
+});
+
+test("SIKESRA sensitive fields mask NIK/KIA by default", () => {
+  const props = createSikesraSensitiveFieldProps({ value: "6201010101010001", fieldType: "nik" });
+
+  assert.equal(props.mode, "masked");
+  assert.equal(props.displayValue.endsWith("0001"), true);
+  assert.equal(props.displayValue.includes("620101010101"), false);
+  assert.equal(props.canCopy, false);
+  assert.equal(props.auditAction, null);
+});
+
+test("SIKESRA sensitive fields support hidden, masked, and full modes", () => {
+  assert.equal(createSikesraSensitiveFieldProps({ value: "" }).mode, "hidden");
+  assert.equal(createSikesraSensitiveFieldProps({ value: "6201010101010001" }).mode, "masked");
+  assert.equal(
+    createSikesraSensitiveFieldProps({
+      value: "6201010101010001",
+      canReveal: true,
+      revealRequested: true,
+    }).mode,
+    "full",
+  );
+});
+
+test("SIKESRA highly restricted fields require step-up before full reveal", () => {
+  const blocked = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    classification: "highly_restricted",
+    canReveal: true,
+    revealRequested: true,
+  });
+  const revealed = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    classification: "highly_restricted",
+    canReveal: true,
+    revealRequested: true,
+    stepUpSatisfied: true,
+    canCopy: true,
+  });
+
+  assert.equal(blocked.mode, "masked");
+  assert.equal(blocked.revealBlockedReason, "step_up_required");
+  assert.equal(revealed.mode, "full");
+  assert.equal(revealed.canCopy, true);
+  assert.equal(revealed.auditAction, "sikesra.sensitive_field.reveal");
+});
+
+test("SIKESRA sensitive field copy and reveal affordances require permission", () => {
+  const blocked = createSikesraSensitiveFieldProps({
+    value: "6201010101010001",
+    canReveal: false,
+    canCopy: true,
+    revealRequested: true,
+  });
+
+  assert.equal(blocked.mode, "masked");
+  assert.equal(blocked.canCopy, false);
+  assert.equal(blocked.revealBlockedReason, "permission_required");
+});
+
+test("SIKESRA sensitive field helpers avoid exposing personal values in labels", () => {
+  assert.equal(Object.keys(SIKESRA_SENSITIVE_CLASSIFICATIONS).sort().join(","), "highly_restricted,restricted");
+  assert.equal(maskSikesraSensitiveValue("081234567890", "phone").endsWith("890"), true);
+
+  const props = createSikesraSensitiveFieldProps({ value: "Anak Contoh", fieldType: "child_name", context: "Nama anak" });
+  assert.equal(props.ariaLabel, "Nama anak: disamarkan");
+  assert.equal(props.displayValue.includes("Contoh"), false);
+  assert.match(props.warning, /terbatas/i);
+});
+
+test("SIKESRA form wizard covers the global PRD sections", () => {
+  const labels = SIKESRA_FORM_SECTIONS.map((section) => section.label);
+
+  assert.deepEqual(labels, [
+    "Kode dan Kategori",
+    "Wilayah dan Alamat",
+    "Identitas Utama",
+    "Detail Khusus Modul",
+    "Personil Terkait",
+    "Dokumen",
+    "Status dan Catatan",
+    "Ringkasan Sebelum Submit",
+  ]);
+});
+
+test("SIKESRA form wizard supports required modes and progress", () => {
+  assert.deepEqual(SIKESRA_FORM_MODES, ["create", "edit_draft", "edit_need_revision", "read_only", "verify"]);
+
+  const state = createSikesraFormWizardState({
+    mode: "edit-need-revision",
+    hasUnsavedChanges: true,
+    values: {
+      completeness: {
+        code_category: true,
+        region_address: true,
+        primary_identity: true,
+      },
+    },
+  });
+
+  assert.equal(state.mode, "edit_need_revision");
+  assert.equal(state.progress.completed, 3);
+  assert.equal(state.progress.total, 8);
+  assert.match(state.unsavedChangesWarning, /belum disimpan/i);
+});
+
+test("SIKESRA form wizard applies conditional visibility", () => {
+  const createState = createSikesraFormWizardState({ mode: "create" });
+  const readOnlyState = createSikesraFormWizardState({ mode: "read_only" });
+  const createLabels = createState.sections.map((section) => section.label);
+  const readOnlyLabels = readOnlyState.sections.map((section) => section.label);
+
+  assert.equal(createLabels.includes("Status dan Catatan"), false);
+  assert.equal(createLabels.includes("Ringkasan Sebelum Submit"), true);
+  assert.equal(readOnlyLabels.includes("Ringkasan Sebelum Submit"), false);
+  assert.equal(readOnlyState.readOnly, true);
+});
+
+test("SIKESRA form wizard supports verify/read-only behavior", () => {
+  const verifyState = createSikesraFormWizardState({ mode: "verify" });
+  const readOnlyState = createSikesraFormWizardState({ mode: "read_only" });
+
+  assert.equal(verifyState.verifyMode, true);
+  assert.equal(verifyState.readOnly, true);
+  assert.equal(readOnlyState.canSubmit, false);
+});
+
+test("SIKESRA inline validation messages are clear Indonesian text", () => {
+  const validation = createSikesraInlineValidation("NIK/KIA", "required");
+
+  assert.equal(validation.message, "NIK/KIA: Wajib diisi.");
+  assert.match(SIKESRA_FORM_INLINE_MESSAGES.sensitive_masked, /disamarkan/i);
+  assert.equal(/object_type|uuid|entity/i.test(validation.message), false);
+});
+
+function flattenPages(pages) {
+  return pages.flatMap((page) => [page, ...flattenPages(page.children ?? [])]);
+}

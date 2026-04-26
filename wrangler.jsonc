@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "name": "sikesra-kobar",
+  "compatibility_date": "2026-04-26",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "vars": {
+    "DATABASE_TRANSPORT": "hyperdrive",
+    "HYPERDRIVE_BINDING": "HYPERDRIVE",
+    "MINI_RUNTIME_TARGET": "cloudflare",
+    "TRUSTED_PROXY_MODE": "cloudflare",
+    "SITE_URL": "https://sikesrakobar.ahlikoding.com",
+    "ADMIN_ENTRY_PATH": "/_emdash/",
+    "R2_MEDIA_BUCKET_BINDING": "MEDIA_BUCKET",
+    "R2_MEDIA_BUCKET_NAME": "sikesra"
+  },
+  "secrets": {
+    "required": [
+      "APP_SECRET",
+      "MINI_TOTP_ENCRYPTION_KEY",
+      "TURNSTILE_SECRET_KEY",
+      "EDGE_API_JWT_SECRET"
+    ]
+  },
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "sikesrakobar.ahlikoding.com",
+      "custom_domain": true
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "sikesra"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "27eafcdafb5e4904bf083c4133a54161"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "78cc94b763664d56b5ac9d34f1244304"
+    }
+  ]
+}
