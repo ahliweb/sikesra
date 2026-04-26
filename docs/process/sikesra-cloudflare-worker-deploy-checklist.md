@@ -32,6 +32,19 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` with the resulting non-secret Hyperdrive ID.
 - Keep `DATABASE_TRANSPORT=hyperdrive` and `HYPERDRIVE_BINDING=HYPERDRIVE` aligned with the deployed Worker runtime.
 
+## Hyperdrive Attempt Status
+
+- Direct Hyperdrive creation against `id1.ahlikoding.com:5432` was attempted and refused by the origin, which is consistent with the desired private PostgreSQL posture.
+- Access-protected Hyperdrive creation through the existing `pg-hyperdrive.ahlikoding.com` tunnel reached the protected origin, but Cloudflare rejected the SIKESRA credentials as invalid for that origin.
+- The existing AWCMS Mini Hyperdrive configuration points at `pg-hyperdrive.ahlikoding.com` for database `awcms_mini`, which indicates the current tunnel is attached to the existing AWCMS Mini PostgreSQL service rather than the newly-created standalone `sikesrakobar-postgres` Coolify resource.
+- Do not deploy `wrangler.jsonc` while it still contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
+
+## Hyperdrive Resolution Options
+
+- Preferred if using the existing protected PostgreSQL tunnel: create database `sikesrakobar` and a least-privilege runtime role on the PostgreSQL service behind `pg-hyperdrive.ahlikoding.com`, then create Hyperdrive with that role.
+- Preferred if keeping the new standalone Coolify PostgreSQL resource: provision a separate Cloudflare Tunnel or Workers VPC Service path to `sikesrakobar-postgres`, then create Hyperdrive against that private origin.
+- Do not make the database public just to satisfy Hyperdrive creation unless an explicit reviewed exception is approved.
+
 ## Secret Checklist
 
 Store production values in Cloudflare Worker secrets, not in `wrangler.jsonc`:
