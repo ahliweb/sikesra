@@ -110,7 +110,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`. The script reads secrets only from ignored env files or process environment, prints a redacted readiness report, and fails closed while `wrangler.jsonc` still contains the Hyperdrive placeholder.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs` and `scripts/create-sikesra-hyperdrive.mjs`. The scripts read secrets only from ignored env files or process environment, print redacted reports, and fail closed while `wrangler.jsonc` still contains the Hyperdrive placeholder.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 

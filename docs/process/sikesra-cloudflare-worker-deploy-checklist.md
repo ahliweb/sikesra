@@ -29,6 +29,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 
 ## Hyperdrive Checklist
 
+- Run `node scripts/create-sikesra-hyperdrive.mjs` to create or reuse the SIKESRA-specific Hyperdrive config and replace the placeholder ID when Cloudflare validates the origin.
 - Create a Cloudflare Hyperdrive configuration for the Coolify-managed `sikesrakobar` PostgreSQL database.
 - Do not commit the database password or full connection string.
 - Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` with the resulting non-secret Hyperdrive ID.
@@ -38,6 +39,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 
 - Direct Hyperdrive creation against `id1.ahlikoding.com:5432` was attempted and refused by the origin, which is consistent with the desired private PostgreSQL posture.
 - Access-protected Hyperdrive creation through the existing `pg-hyperdrive.ahlikoding.com` tunnel reached the protected origin, but Cloudflare rejected the SIKESRA credentials as invalid for that origin.
+- Automated SIKESRA-only Hyperdrive creation was attempted with `scripts/create-sikesra-hyperdrive.mjs`; Cloudflare still rejected the direct private origin and the existing protected origin still does not accept the SIKESRA database credentials.
 - The existing AWCMS Mini Hyperdrive configuration points at `pg-hyperdrive.ahlikoding.com` for database `awcms_mini`, which indicates the current tunnel is attached to the existing AWCMS Mini PostgreSQL service rather than the newly-created standalone `sikesrakobar-postgres` Coolify resource.
 - Do not deploy `wrangler.jsonc` while it still contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
 
