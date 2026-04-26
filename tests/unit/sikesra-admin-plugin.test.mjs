@@ -41,6 +41,36 @@ import {
   normalizeSikesraReligionValue,
 } from "../../src/plugins/sikesra-admin/religion-reference.mjs";
 import { buildSmokeWorkerMetadata, summarizeSmokeWorkerBindings } from "../../scripts/deploy-smoke-worker.mjs";
+import {
+  SIKESRA_MODULE_KEYS,
+  SIKESRA_MODULE_LABELS,
+  SIKESRA_VULNERABLE_PERSON_MODULES,
+  createSikesraDashboardFilter,
+  createSikesraStatCard,
+  createSikesraStatCards,
+  createVerificationStatusWidget,
+  createAttentionSummaryEntry,
+  createActivityTimelineItem,
+  createSikesraDashboardLayout,
+} from "../../src/plugins/sikesra-admin/dashboard-widgets.mjs";
+import {
+  SIKESRA_REGISTRY_COLUMNS,
+  createSikesraRegistryFilter,
+  createSikesraRegistryRow,
+  createSikesraRegistryRowActions,
+  createSikesraRegistryListModel,
+  getSikesraRegistryVisibleColumns,
+  SIKESRA_REGISTRY_LIST_STATE_LABELS,
+} from "../../src/plugins/sikesra-admin/registry-list.mjs";
+import {
+  SIKESRA_DETAIL_TABS,
+  getSikesraDetailVisibleTabs,
+  createSikesraDetailHeader,
+  createSikesraDetailActions,
+  createSikesraDetailSensitiveFieldModel,
+  createSikesraDetailPageModel,
+  SIKESRA_DETAIL_SENSITIVE_FIELD_KEYS,
+} from "../../src/plugins/sikesra-admin/detail-page.mjs";
 
 test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   const plugin = sikesraAdminPlugin();
@@ -384,3 +414,306 @@ test("SIKESRA smoke Worker deployment metadata preserves reviewed bindings", () 
 function flattenPages(pages) {
   return pages.flatMap((page) => [page, ...flattenPages(page.children ?? [])]);
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard widget model tests (#17)
+// ---------------------------------------------------------------------------
+
+test("SIKESRA dashboard module keys cover all eight MVP modules", () => {
+  assert.equal(SIKESRA_MODULE_KEYS.length, 8);
+  assert.ok(SIKESRA_MODULE_KEYS.includes("lansia_terlantar"));
+  assert.ok(SIKESRA_MODULE_KEYS.includes("anak_yatim"));
+  assert.ok(SIKESRA_MODULE_KEYS.includes("disabilitas"));
+  assert.ok(SIKESRA_MODULE_KEYS.includes("guru_agama"));
+});
+
+test("SIKESRA vulnerable person modules are correctly identified", () => {
+  assert.ok(SIKESRA_VULNERABLE_PERSON_MODULES.has("anak_yatim"));
+  assert.ok(SIKESRA_VULNERABLE_PERSON_MODULES.has("disabilitas"));
+  assert.ok(SIKESRA_VULNERABLE_PERSON_MODULES.has("lansia_terlantar"));
+  assert.ok(!SIKESRA_VULNERABLE_PERSON_MODULES.has("guru_agama"));
+  assert.ok(!SIKESRA_VULNERABLE_PERSON_MODULES.has("rumah_ibadah"));
+});
+
+test("SIKESRA stat card model has expected shape and never contains personal data", () => {
+  const card = createSikesraStatCard("lansia_terlantar", { total: 42, regionScope: "Kec. Kobar" });
+  assert.equal(card.moduleKey, "lansia_terlantar");
+  assert.equal(card.label, "Lansia Terlantar");
+  assert.equal(card.total, 42);
+  assert.equal(card.regionScope, "Kec. Kobar");
+  assert.equal(card.isVulnerablePerson, true);
+  assert.equal(card.containsPersonalData, false);
+  assert.ok(card.routeTarget.includes("lansia_terlantar"));
+});
+
+test("SIKESRA stat cards returns all eight module stubs", () => {
+  const cards = createSikesraStatCards();
+  assert.equal(cards.length, 8);
+  assert.ok(cards.every((c) => c.total === null));
+  assert.ok(cards.every((c) => c.containsPersonalData === false));
+});
+
+test("SIKESRA dashboard filter defaults all fields to null", () => {
+  const filter = createSikesraDashboardFilter();
+  assert.equal(filter.wilayah_kecamatan, null);
+  assert.equal(filter.module_key, null);
+  assert.equal(filter.period_year, null);
+});
+
+test("SIKESRA verification status widget has all required status keys", () => {
+  const widget = createVerificationStatusWidget({ verified: 10, draft: 3 });
+  assert.equal(widget.widgetType, "verification_status_distribution");
+  const keys = widget.statuses.map((s) => s.key);
+  assert.ok(keys.includes("draft"));
+  assert.ok(keys.includes("verified"));
+  assert.ok(keys.includes("need_revision"));
+  const verified = widget.statuses.find((s) => s.key === "verified");
+  assert.equal(verified.count, 10);
+  const submitted = widget.statuses.find((s) => s.key === "submitted");
+  assert.equal(submitted.count, null);
+});
+
+test("SIKESRA attention summary entry never contains personal data", () => {
+  const entry = createAttentionSummaryEntry("anak_yatim", 5, 2);
+  assert.equal(entry.moduleKey, "anak_yatim");
+  assert.equal(entry.incompleteDocuments, 5);
+  assert.equal(entry.needRevision, 2);
+  assert.equal(entry.containsPersonalData, false);
+});
+
+test("SIKESRA activity timeline item rejects unsafe event types", () => {
+  assert.throws(
+    () =>
+      createActivityTimelineItem({
+        eventType: "field_value_changed",
+        moduleKey: "guru_agama",
+        entityId: "SK-2026-0001",
+        actorRole: "Operator",
+        occurredAt: "2026-04-27T00:00:00Z",
+      }),
+    /Unsafe activity event type/
+  );
+});
+
+test("SIKESRA activity timeline item accepts safe event types", () => {
+  const item = createActivityTimelineItem({
+    eventType: "record_verified",
+    moduleKey: "guru_agama",
+    entityId: "SK-2026-0001",
+    actorRole: "Verifikator",
+    occurredAt: "2026-04-27T00:00:00Z",
+  });
+  assert.equal(item.eventType, "record_verified");
+  assert.equal(item.containsPersonalData, false);
+  assert.equal(item.entityId, "SK-2026-0001");
+});
+
+test("SIKESRA dashboard layout suppresses religion distribution without explicit permission", () => {
+  const layout = createSikesraDashboardLayout({
+    roleContext: "admin",
+    grantedPermissions: ["sikesra.dashboard.read"],
+    filter: createSikesraDashboardFilter(),
+  });
+  assert.equal(layout.canRender, true);
+  assert.equal(layout.visibility.showReligionDistribution, false);
+  assert.equal(layout.religionDistribution, null);
+});
+
+test("SIKESRA pimpinan dashboard suppresses attention summary but shows stat cards", () => {
+  const layout = createSikesraDashboardLayout({
+    roleContext: "pimpinan",
+    grantedPermissions: ["sikesra.dashboard.read"],
+    filter: createSikesraDashboardFilter(),
+  });
+  assert.equal(layout.visibility.showAttentionSummary, false);
+  assert.equal(layout.visibility.showStatCards, true);
+  assert.ok(Array.isArray(layout.statCards));
+  assert.ok(layout.attentionSummary.length === 0);
+});
+
+// ---------------------------------------------------------------------------
+// Registry list view model tests (#18)
+// ---------------------------------------------------------------------------
+
+test("SIKESRA registry filter defaults all fields to null/false", () => {
+  const filter = createSikesraRegistryFilter();
+  assert.equal(filter.module_key, null);
+  assert.equal(filter.wilayah_kecamatan, null);
+  assert.equal(filter.quick_search, null);
+  assert.equal(filter.attention_only, false);
+});
+
+test("SIKESRA registry columns include required PRD columns", () => {
+  const keys = SIKESRA_REGISTRY_COLUMNS.map((c) => c.key);
+  assert.ok(keys.includes("id_sikesra"));
+  assert.ok(keys.includes("name"));
+  assert.ok(keys.includes("verification_status"));
+  assert.ok(keys.includes("document_completeness"));
+  assert.ok(keys.includes("actions"));
+});
+
+test("SIKESRA registry row model sets isVulnerablePerson correctly", () => {
+  const row = createSikesraRegistryRow(
+    { module_key: "anak_yatim", id_sikesra: "SK-0001", name: "Test", verification_status: "draft" },
+    ["sikesra.registry.read"]
+  );
+  assert.equal(row.isVulnerablePerson, true);
+  assert.equal(row.module_label, "Anak Yatim/Piatu");
+});
+
+test("SIKESRA registry row actions are empty without permissions", () => {
+  const row = createSikesraRegistryRow(
+    { module_key: "guru_agama", verification_status: "draft" },
+    []
+  );
+  assert.equal(row.actions.length, 0);
+});
+
+test("SIKESRA registry row actions respect verification status gating", () => {
+  const entity = { module_key: "guru_agama", verification_status: "verified" };
+  const perms = new Set(["sikesra.registry.write", "sikesra.verification.write", "sikesra.registry.manage"]);
+  const actions = createSikesraRegistryRowActions(entity, perms);
+  const editAction = actions.find((a) => a.key === "edit");
+  const archiveAction = actions.find((a) => a.key === "archive");
+  assert.ok(editAction, "edit action should be present for registry.write");
+  assert.equal(editAction.enabled, false, "edit should be disabled for verified status");
+  assert.ok(archiveAction, "archive action should be present for registry.manage");
+  assert.equal(archiveAction.enabled, true, "archive should be enabled for verified status");
+});
+
+test("SIKESRA registry list model hides religion filter when no explicit permission", () => {
+  const model = createSikesraRegistryListModel({
+    grantedPermissions: ["sikesra.registry.read"],
+    filter: createSikesraRegistryFilter({ module_key: "guru_agama" }),
+    loadState: "loaded",
+    rows: [],
+    totalCount: 0,
+  });
+  assert.equal(model.showReligionFilter, false);
+});
+
+test("SIKESRA registry list model shows religion filter with explicit permission and module filter", () => {
+  const model = createSikesraRegistryListModel({
+    grantedPermissions: ["sikesra.registry.read", "sikesra.registry.religion_filter.read"],
+    filter: createSikesraRegistryFilter({ module_key: "guru_agama" }),
+    loadState: "loaded",
+    rows: [],
+    totalCount: 0,
+  });
+  assert.equal(model.showReligionFilter, true);
+});
+
+test("SIKESRA registry list model loading state label is in Indonesian", () => {
+  const model = createSikesraRegistryListModel({
+    grantedPermissions: ["sikesra.registry.read"],
+    filter: createSikesraRegistryFilter(),
+    loadState: "loading",
+    rows: [],
+  });
+  assert.equal(model.stateLabel, SIKESRA_REGISTRY_LIST_STATE_LABELS.loading);
+  assert.ok(model.stateLabel.includes("Memuat"));
+});
+
+// ---------------------------------------------------------------------------
+// Generic detail page model tests (#19)
+// ---------------------------------------------------------------------------
+
+test("SIKESRA detail tabs are all covered by base permission set", () => {
+  const tabs = getSikesraDetailVisibleTabs(["sikesra.registry.read"]);
+  const keys = tabs.map((t) => t.key);
+  assert.ok(keys.includes("ringkasan"));
+  assert.ok(keys.includes("data_utama"));
+  assert.ok(keys.includes("catatan"));
+  // Dokumen and Verifikasi require elevated permissions.
+  assert.ok(!keys.includes("dokumen"));
+  assert.ok(!keys.includes("verifikasi"));
+});
+
+test("SIKESRA detail tabs include audit tab only with audit permission", () => {
+  const tabsWithAudit = getSikesraDetailVisibleTabs([
+    "sikesra.registry.read",
+    "sikesra.audit.read",
+  ]);
+  assert.ok(tabsWithAudit.map((t) => t.key).includes("riwayat_perubahan"));
+});
+
+test("SIKESRA detail header masks religion without explicit permission", () => {
+  const header = createSikesraDetailHeader(
+    { module_key: "guru_agama", agama: "Islam", verification_status: "verified" },
+    ["sikesra.registry.read"]
+  );
+  assert.equal(header.agama, null);
+  assert.equal(header.agamaIsRevealed, false);
+});
+
+test("SIKESRA detail header reveals religion with explicit permission", () => {
+  const header = createSikesraDetailHeader(
+    { module_key: "guru_agama", agama: "Kristen" },
+    ["sikesra.registry.read", "sikesra.registry.religion.read"]
+  );
+  assert.equal(header.agama, "Kristen");
+  assert.equal(header.agamaIsRevealed, true);
+});
+
+test("SIKESRA detail header marks vulnerable person modules correctly", () => {
+  const header = createSikesraDetailHeader({ module_key: "disabilitas" }, [
+    "sikesra.registry.read",
+  ]);
+  assert.equal(header.isVulnerablePerson, true);
+});
+
+test("SIKESRA detail actions require audit for sensitive operations", () => {
+  const actions = createSikesraDetailActions(
+    { verification_status: "submitted" },
+    ["sikesra.verification.write", "sikesra.reports.export", "sikesra.registry.sensitive.read"]
+  );
+  const verifyAction = actions.find((a) => a.key === "verify");
+  const exportAction = actions.find((a) => a.key === "export_record");
+  const revealAction = actions.find((a) => a.key === "reveal_sensitive");
+  assert.ok(verifyAction?.auditRequired);
+  assert.ok(exportAction?.auditRequired);
+  assert.ok(revealAction?.auditRequired);
+});
+
+test("SIKESRA detail sensitive fields default to masked display value", () => {
+  const model = createSikesraDetailSensitiveFieldModel(
+    "nik",
+    "1234567890123456",
+    new Set(["sikesra.registry.read"])
+  );
+  assert.equal(model.isRevealed, false);
+  assert.equal(model.displayValue, "••••••••");
+  assert.equal(model.requiresAuditOnReveal, true);
+});
+
+test("SIKESRA detail sensitive fields reveal value with sensitive.read permission", () => {
+  const model = createSikesraDetailSensitiveFieldModel(
+    "nik",
+    "1234567890123456",
+    new Set(["sikesra.registry.read", "sikesra.registry.sensitive.read"])
+  );
+  assert.equal(model.isRevealed, true);
+  assert.equal(model.displayValue, "1234567890123456");
+});
+
+test("SIKESRA detail page model is not renderable without registry.read permission", () => {
+  const model = createSikesraDetailPageModel({
+    entity: { module_key: "guru_agama" },
+    grantedPermissions: [],
+    loadState: "loaded",
+  });
+  assert.equal(model.canRender, false);
+  assert.equal(model.header, null);
+  assert.deepEqual(model.actions, []);
+});
+
+test("SIKESRA detail page model has all sensitive field stubs for data_utama tab", () => {
+  const model = createSikesraDetailPageModel({
+    entity: { module_key: "lansia_terlantar" },
+    grantedPermissions: ["sikesra.registry.read"],
+    loadState: "loaded",
+  });
+  assert.equal(model.canRender, true);
+  assert.equal(model.sensitiveFields.length, SIKESRA_DETAIL_SENSITIVE_FIELD_KEYS.length);
+  assert.ok(model.sensitiveFields.every((f) => f.isRevealed === false));
+});
