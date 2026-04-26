@@ -2,7 +2,10 @@
 
 ## Source Prompt
 
-This document records the implementation result for `prompt_planning_git_hub_issues_sikesra_uiux_prd.md`.
+This document records the implementation result for:
+
+- `prompt_planning_git_hub_issues_sikesra_uiux_prd.md`
+- `prompt_planning_git_hub_issues_sikesra_uiux_prd_with_religion_field_guru_agama_lansia_terlantar.md`
 
 Priority PRD reference:
 
@@ -27,14 +30,16 @@ The planning work inspected the upstream `ahliweb/awcms-mini` codebase and ident
 - Audit log: present through migration, repository, service, and plugin helper.
 - Tests: unit tests and package scripts exist; CI workflow visibility was unclear during planning.
 - Documentation: docs-first conventions exist under `docs/` and related top-level documentation.
+- Religion/agama master data: not confirmed in repository analysis and now tracked as a dedicated planning/UI issue.
+- Lansia Terlantar/vulnerable-person model: not confirmed in repository analysis and now tracked as a dedicated module UI/security issue.
 
 ## Milestones
 
 The required milestones were created in `ahliweb/sikesra`:
 
-- `SIKESRA UI/UX MVP - Sprint 1: Layout, Navigation, and Core Components`
+- `SIKESRA UI/UX MVP - Sprint 1: Layout, Navigation, Core Components, and Religion Reference Foundation`
 - `SIKESRA UI/UX MVP - Sprint 2: Dashboard and Registry Data`
-- `SIKESRA UI/UX MVP - Sprint 3: Module Forms`
+- `SIKESRA UI/UX MVP - Sprint 3: Module Forms, Religion Fields, and Vulnerable Person Modules`
 - `SIKESRA UI/UX MVP - Sprint 4: Code, Documents, and Verification`
 - `SIKESRA UI/UX MVP - Sprint 5: Import, Export, Audit, and Access Management`
 - `SIKESRA UI/UX MVP - Hardening: Accessibility, Security UX, Tests, and Documentation`
@@ -46,26 +51,28 @@ The required milestones were created in `ahliweb/sikesra`:
 
 ## Sprint 1 Issues
 
-- ahliweb/sikesra#13: Create admin navigation structure for SIKESRA modules.
-- ahliweb/sikesra#14: Build reusable status badges for data, verification, documents, and sensitivity.
-- ahliweb/sikesra#15: Build shared form section and wizard components for SIKESRA forms.
-- ahliweb/sikesra#16: Build sensitive field display and masking component.
+- ahliweb/sikesra#13: Create admin navigation structure for SIKESRA modules including Lansia Terlantar.
+- ahliweb/sikesra#14: Build reusable status badges for data, verification, documents, sensitivity, and vulnerable-person states.
+- ahliweb/sikesra#15: Build shared form section and wizard components for SIKESRA forms, religion fields, and vulnerable-person warning sections.
+- ahliweb/sikesra#16: Build sensitive field display and masking component for identifiers, individual-level religion, and vulnerable-person data.
+- ahliweb/sikesra#42: Add religion reference master data planning and reusable Agama select component.
 
 ## Sprint 2 Issues
 
-- ahliweb/sikesra#17: Implement SIKESRA dashboard with MVP widgets.
-- ahliweb/sikesra#18: Implement registry data list view with filters and action column.
-- ahliweb/sikesra#19: Implement generic detail page pattern for SIKESRA entities.
+- ahliweb/sikesra#17: Implement SIKESRA dashboard with MVP widgets including Lansia Terlantar aggregate data.
+- ahliweb/sikesra#18: Implement registry data list view with filters, religion filter, vulnerable-person filters, and action column.
+- ahliweb/sikesra#19: Implement generic detail page pattern for SIKESRA entities with permission-aware religion and Lansia sections.
 
 ## Sprint 3 Issues
 
-- ahliweb/sikesra#20: Implement Rumah Ibadah form UI based on PRD field sections.
-- ahliweb/sikesra#21: Implement Lembaga Keagamaan form UI.
-- ahliweb/sikesra#22: Implement Lembaga Pendidikan Keagamaan form UI.
-- ahliweb/sikesra#23: Implement Lembaga Kesejahteraan Sosial form UI.
-- ahliweb/sikesra#24: Implement Guru Agama/Guru Ngaji form UI.
-- ahliweb/sikesra#25: Implement Anak Yatim form UI with child data privacy protections.
-- ahliweb/sikesra#26: Implement Disabilitas form UI with sensitive data protections.
+- ahliweb/sikesra#20: Implement Rumah Ibadah form UI with religion reference support.
+- ahliweb/sikesra#21: Implement Lembaga Keagamaan form UI with religion reference support.
+- ahliweb/sikesra#22: Implement Lembaga Pendidikan Keagamaan form UI with religion reference support.
+- ahliweb/sikesra#23: Implement Lembaga Kesejahteraan Sosial form UI with religion reference and vulnerable-person awareness.
+- ahliweb/sikesra#24: Implement Guru Agama form UI with religion reference support. The general module label must not use `Guru Ngaji`.
+- ahliweb/sikesra#25: Implement Anak Yatim form UI with child data privacy and religion reference protections.
+- ahliweb/sikesra#26: Implement Disabilitas form UI with sensitive data and religion reference protections.
+- ahliweb/sikesra#43: Implement Lansia Terlantar form UI with vulnerable-person privacy protections.
 
 ## Sprint 4 Issues
 
@@ -76,8 +83,8 @@ The required milestones were created in `ahliweb/sikesra`:
 
 ## Sprint 5 Issues
 
-- ahliweb/sikesra#31: Implement Import Excel staging UI with mapping and validation review.
-- ahliweb/sikesra#32: Implement reports and export UI with sensitive data confirmation.
+- ahliweb/sikesra#31: Implement Import Excel staging UI with religion and Lansia Terlantar mapping.
+- ahliweb/sikesra#32: Implement reports and export UI with sensitive, religion, and vulnerable-person confirmation.
 - ahliweb/sikesra#33: Implement official region and custom region UI components.
 - ahliweb/sikesra#34: Implement audit log viewer UI for SIKESRA actions.
 - ahliweb/sikesra#35: Implement users, roles, permissions, and region scope UI for SIKESRA.
@@ -109,8 +116,10 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 
 ## Recommended Dependency Order
 
-- Start with ahliweb/sikesra#13 through ahliweb/sikesra#16.
+- Start with ahliweb/sikesra#13 through ahliweb/sikesra#16 and religion foundation issue ahliweb/sikesra#42.
 - Complete region components in ahliweb/sikesra#33 before most form and ID-generation work.
+- Complete ahliweb/sikesra#42 before module forms that need `Agama` fields.
+- Complete ahliweb/sikesra#43 before Lansia dashboard, registry, import/export, audit, tests, and docs coverage can be closed.
 - Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
 - Resolve runtime blocker ahliweb/sikesra#12 before deployment smoke tests for the Cloudflare-hosted Worker.
 
@@ -120,7 +129,8 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Store Worker secrets in Cloudflare-managed secrets.
 - Store Coolify-managed resource credentials in Coolify locked runtime secrets when an application resource exists.
 - Keep R2 private and expose documents only through permission-aware, audit-friendly application flows.
-- Mask NIK/KIA, child data, disability data, and sensitive document details by default in UI.
+- Mask NIK/KIA, No KK, individual-level religion, child data, elderly/vulnerable-person data, disability data, health-related notes, and sensitive document details by default in UI.
+- Use `Guru Agama` as the neutral general module label. Treat Islam-specific `guru ngaji` context as contextual teaching-place/activity data, not the general module title.
 
 ## Migration Correction
 
