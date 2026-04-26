@@ -1,0 +1,13 @@
+# Local-only Cloudflare Worker secret example for SIKESRA Kobar.
+# Copy to `.dev.vars` for local Worker development only.
+# Do not commit real values.
+
+APP_SECRET=
+MINI_TOTP_ENCRYPTION_KEY=
+TURNSTILE_SECRET_KEY=
+EDGE_API_JWT_SECRET=
+
+# Optional local-only compatibility values if the app expects them during
+# development. Keep real values in `.env.local` or Cloudflare-managed secrets.
+SESSION_SECRET=
+JWT_SECRET=
