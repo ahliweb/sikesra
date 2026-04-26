@@ -15,7 +15,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Custom domain route is set to `sikesrakobar.ahlikoding.com`.
 - Private R2 bucket binding is set to `MEDIA_BUCKET` -> `sikesra`.
 - Required Worker secrets are declared in `wrangler.jsonc`.
-- The Hyperdrive binding still uses `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` and blocks deploy.
+- The Hyperdrive binding uses the SIKESRA-specific Hyperdrive ID for `sikesra-kobar-postgres`.
 
 ## Required Pre-Deploy Checks
 
@@ -32,7 +32,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Run `node scripts/create-sikesra-hyperdrive.mjs` to create or reuse the SIKESRA-specific Hyperdrive config and replace the placeholder ID when Cloudflare validates the origin.
 - Create a Cloudflare Hyperdrive configuration for the Coolify-managed `sikesrakobar` PostgreSQL database.
 - Do not commit the database password or full connection string.
-- Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` with the resulting non-secret Hyperdrive ID.
+- Keep the non-secret SIKESRA Hyperdrive ID in `wrangler.jsonc` aligned with the Cloudflare config named `sikesra-kobar-postgres`.
 - Keep `DATABASE_TRANSPORT=hyperdrive` and `HYPERDRIVE_BINDING=HYPERDRIVE` aligned with the deployed Worker runtime.
 
 ## Hyperdrive Attempt Status
@@ -43,15 +43,16 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - A SIKESRA-specific protected Tunnel hostname, `pg-sikesra-hyperdrive.ahlikoding.com`, was configured to reach the `sikesrakobar-postgres` private origin through Cloudflare Access.
 - Local ignored database credentials were synchronized from Coolify for `sikesrakobar-postgres`; a redacted `psql` smoke test through the protected Tunnel returned database `sikesrakobar`.
 - Hyperdrive creation now reaches the SIKESRA database but is blocked because the Coolify PostgreSQL resource has SSL/TLS disabled; Cloudflare Hyperdrive requires PostgreSQL SSL/TLS support.
+- PostgreSQL SSL/TLS was enabled through the private database path and the SIKESRA Hyperdrive config `sikesra-kobar-postgres` was created successfully.
 - The existing AWCMS Mini Hyperdrive configuration points at `pg-hyperdrive.ahlikoding.com` for database `awcms_mini`, which indicates the current tunnel is attached to the existing AWCMS Mini PostgreSQL service rather than the newly-created standalone `sikesrakobar-postgres` Coolify resource.
-- Do not deploy `wrangler.jsonc` while it still contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
+- `wrangler.jsonc` no longer contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
 
 ## Hyperdrive Resolution Options
 
 - Preferred if using the existing protected PostgreSQL tunnel: create database `sikesrakobar` and a least-privilege runtime role on the PostgreSQL service behind `pg-hyperdrive.ahlikoding.com`, then create Hyperdrive with that role.
 - Preferred if keeping the new standalone Coolify PostgreSQL resource: provision a separate Cloudflare Tunnel or Workers VPC Service path to `sikesrakobar-postgres`, then create Hyperdrive against that private origin.
 - Do not make the database public just to satisfy Hyperdrive creation unless an explicit reviewed exception is approved.
-- Enable SSL/TLS on the Coolify `sikesrakobar-postgres` resource before retrying Hyperdrive creation; use Coolify database SSL settings rather than exposing PostgreSQL publicly.
+- Keep SSL/TLS enabled for `sikesrakobar-postgres`; use Coolify database SSL settings for future certificate rotation rather than exposing PostgreSQL publicly.
 
 ## Secret Checklist
 
