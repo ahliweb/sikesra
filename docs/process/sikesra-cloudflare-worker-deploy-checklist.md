@@ -16,7 +16,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Cloudflare Worker Custom Domain `sikesrakobar.ahlikoding.com` is attached to Worker `sikesra-kobar`.
 - Private R2 bucket binding is set to `MEDIA_BUCKET` -> `sikesra`.
 - Required Worker secrets are declared in `wrangler.jsonc`.
-- The Hyperdrive binding uses the SIKESRA-specific Hyperdrive ID for `sikesra-kobar-postgres`.
+- The Hyperdrive binding uses the least-privilege-backed SIKESRA Hyperdrive ID for `sikesra-kobar-postgres-runtime`.
 - Temporary smoke Worker deployment is active until the full AWCMS Mini/EmDash build artifact is deployed.
 
 ## Required Pre-Deploy Checks
@@ -34,7 +34,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - Run `node scripts/create-sikesra-hyperdrive.mjs` to create or reuse the SIKESRA-specific Hyperdrive config and replace the placeholder ID when Cloudflare validates the origin.
 - Create a Cloudflare Hyperdrive configuration for the Coolify-managed `sikesrakobar` PostgreSQL database.
 - Do not commit the database password or full connection string.
-- Keep the non-secret SIKESRA Hyperdrive ID in `wrangler.jsonc` aligned with the Cloudflare config named `sikesra-kobar-postgres`.
+- Keep the non-secret SIKESRA Hyperdrive ID in `wrangler.jsonc` aligned with the Cloudflare config named `sikesra-kobar-postgres-runtime`.
 - Keep `DATABASE_TRANSPORT=hyperdrive` and `HYPERDRIVE_BINDING=HYPERDRIVE` aligned with the deployed Worker runtime.
 
 ## Hyperdrive Attempt Status
@@ -45,7 +45,7 @@ It keeps the rollout aligned with the current AWCMS Mini EmDash-first Cloudflare
 - A SIKESRA-specific protected Tunnel hostname, `pg-sikesra-hyperdrive.ahlikoding.com`, was configured to reach the `sikesrakobar-postgres` private origin through Cloudflare Access.
 - Local ignored database credentials were synchronized from Coolify for `sikesrakobar-postgres`; a redacted `psql` smoke test through the protected Tunnel returned database `sikesrakobar`.
 - Hyperdrive creation now reaches the SIKESRA database but is blocked because the Coolify PostgreSQL resource has SSL/TLS disabled; Cloudflare Hyperdrive requires PostgreSQL SSL/TLS support.
-- PostgreSQL SSL/TLS was enabled through the private database path and the SIKESRA Hyperdrive config `sikesra-kobar-postgres` was created successfully.
+- PostgreSQL SSL/TLS was enabled through the private database path and the SIKESRA Hyperdrive config was rotated to least-privilege-backed `sikesra-kobar-postgres-runtime`.
 - The existing AWCMS Mini Hyperdrive configuration points at `pg-hyperdrive.ahlikoding.com` for database `awcms_mini`, which indicates the current tunnel is attached to the existing AWCMS Mini PostgreSQL service rather than the newly-created standalone `sikesrakobar-postgres` Coolify resource.
 - `wrangler.jsonc` no longer contains `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID`.
 
@@ -103,6 +103,7 @@ Run or verify the following after Hyperdrive and secrets are ready:
 - Health endpoint returns success when implemented.
 - Hyperdrive binding smoke succeeds: `https://sikesrakobar.ahlikoding.com/__smoke/db`.
 - R2-backed non-sensitive smoke object write/read/delete succeeds: `https://sikesrakobar.ahlikoding.com/__smoke/r2`.
+- Runtime database credentials should stay on the least-privilege role; if credentials are rotated again, rerun `node scripts/create-sikesra-hyperdrive.mjs`, redeploy the Worker, and rerun the smoke checks.
 
 ## Security Notes
 

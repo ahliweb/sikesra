@@ -23,6 +23,7 @@ This document records the project-specific runtime and secret-handling baseline 
 - Keep Coolify-managed resource secrets in Coolify locked environment variables with runtime-only scope by default.
 - Use Docker Build Secrets for build-time sensitive inputs if Coolify build-time secrets are unavoidable.
 - Keep PostgreSQL credentials least-privilege and application-scoped; do not use PostgreSQL superuser credentials for the app runtime.
+- Keep the SIKESRA runtime on the least-privilege PostgreSQL role and rotate the Hyperdrive config if database credentials are rotated again.
 - Treat Coolify API responses as management-plane data and redact credentials, tokens, private URLs, and connection strings before copying output into issues or docs.
 - Treat readiness output as operator-facing evidence: print only booleans, resource names, non-secret IDs, status codes, and expected database names; never print raw credentials, tokens, connection strings, hostnames from private URLs, or raw API payloads.
 
@@ -80,12 +81,12 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - PostgreSQL public exposure verified through Coolify API: `is_public=false`.
 - SIKESRA-specific protected Tunnel hostname configured for Hyperdrive origin access: `pg-sikesra-hyperdrive.ahlikoding.com`.
 - Redacted `psql` smoke test through Cloudflare Access and Tunnel verified connectivity to database `sikesrakobar` after synchronizing ignored local credentials from Coolify.
-- PostgreSQL SSL/TLS was enabled through the private database path and Cloudflare Hyperdrive config `sikesra-kobar-postgres` was created for database `sikesrakobar`.
+- PostgreSQL SSL/TLS was enabled through the private database path and the original SIKESRA Hyperdrive config was later rotated to least-privilege-backed Hyperdrive config `sikesra-kobar-postgres-runtime` for database `sikesrakobar`.
 - Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
 - Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
 - Repository-side Cloudflare Worker configuration now exists in `wrangler.jsonc` for Worker `sikesra-kobar`, custom domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET` to bucket `sikesra`, and the AWCMS Mini required Worker secret contract.
-- `wrangler.jsonc` now contains the non-secret SIKESRA Hyperdrive ID for `sikesra-kobar-postgres`; do not replace it with the existing AWCMS Mini Hyperdrive ID.
+- `wrangler.jsonc` now contains the non-secret SIKESRA Hyperdrive ID for `sikesra-kobar-postgres-runtime`; do not replace it with the existing AWCMS Mini Hyperdrive ID.
 - Cloudflare Worker secret sync was attempted with `scripts/sync-worker-secrets.mjs`; it failed closed because the Worker script `sikesra-kobar` does not exist in Cloudflare yet.
 - Cloudflare Worker `sikesra-kobar` is now deployed with a temporary smoke script, required Worker secrets, R2 binding, Hyperdrive binding, and Worker Custom Domain `sikesrakobar.ahlikoding.com`.
 - Public smoke tests passed for base URL, EmDash smoke entry, Hyperdrive binding presence, and R2 non-sensitive write/read/delete.
