@@ -111,8 +111,8 @@ This SIKESRA repository currently contains PRD documents, local env configuratio
 
 ## Tracking Issues
 
-- Runtime provisioning and environment synchronization: ahliweb/awcms-mini#243.
-- Planning index: ahliweb/awcms-mini#242.
-- Document upload/R2 UI: ahliweb/awcms-mini#230.
-- Reports/export sensitive data flow: ahliweb/awcms-mini#234.
-- Implementation documentation: ahliweb/awcms-mini#241.
+- Runtime provisioning and environment synchronization: ahliweb/sikesra#41.
+- Planning index: ahliweb/sikesra#40.
+- Document upload/R2 UI: ahliweb/sikesra#28.
+- Reports/export sensitive data flow: ahliweb/sikesra#32.
+- Implementation documentation: ahliweb/sikesra#39.

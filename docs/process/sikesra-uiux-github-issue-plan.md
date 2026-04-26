@@ -14,7 +14,7 @@ Supporting technical reference:
 
 ## Repository Analysis Summary
 
-The planning work inspected the upstream `ahliweb/awcms-mini` repository and identified the following current-state baseline:
+The planning work inspected the upstream `ahliweb/awcms-mini` codebase and identified the following current-state baseline:
 
 - Admin layout: no separate standalone SIKESRA admin shell; AWCMS Mini is EmDash-first through `/_emdash/` and plugin admin surfaces.
 - Route structure: Astro pages, API routes, and EmDash auth middleware exist.
@@ -30,7 +30,7 @@ The planning work inspected the upstream `ahliweb/awcms-mini` repository and ide
 
 ## Milestones
 
-The required milestones were created in `ahliweb/awcms-mini`:
+The required milestones were created in `ahliweb/sikesra`:
 
 - `SIKESRA UI/UX MVP - Sprint 1: Layout, Navigation, and Core Components`
 - `SIKESRA UI/UX MVP - Sprint 2: Dashboard and Registry Data`
@@ -41,53 +41,53 @@ The required milestones were created in `ahliweb/awcms-mini`:
 
 ## Planning And Epic Issues
 
-- ahliweb/awcms-mini#242: Planning index and repository analysis for MVP implementation.
-- ahliweb/awcms-mini#243: Provision SIKESRA Kobar database, domain, R2 bucket, and environment configuration.
+- ahliweb/sikesra#40: Planning index and repository analysis for MVP implementation.
+- ahliweb/sikesra#41: Provision SIKESRA Kobar database, domain, R2 bucket, and environment configuration.
 
 ## Sprint 1 Issues
 
-- ahliweb/awcms-mini#215: Create admin navigation structure for SIKESRA modules.
-- ahliweb/awcms-mini#216: Build reusable status badges for data, verification, documents, and sensitivity.
-- ahliweb/awcms-mini#217: Build shared form section and wizard components for SIKESRA forms.
-- ahliweb/awcms-mini#218: Build sensitive field display and masking component.
+- ahliweb/sikesra#13: Create admin navigation structure for SIKESRA modules.
+- ahliweb/sikesra#14: Build reusable status badges for data, verification, documents, and sensitivity.
+- ahliweb/sikesra#15: Build shared form section and wizard components for SIKESRA forms.
+- ahliweb/sikesra#16: Build sensitive field display and masking component.
 
 ## Sprint 2 Issues
 
-- ahliweb/awcms-mini#219: Implement SIKESRA dashboard with MVP widgets.
-- ahliweb/awcms-mini#220: Implement registry data list view with filters and action column.
-- ahliweb/awcms-mini#221: Implement generic detail page pattern for SIKESRA entities.
+- ahliweb/sikesra#17: Implement SIKESRA dashboard with MVP widgets.
+- ahliweb/sikesra#18: Implement registry data list view with filters and action column.
+- ahliweb/sikesra#19: Implement generic detail page pattern for SIKESRA entities.
 
 ## Sprint 3 Issues
 
-- ahliweb/awcms-mini#222: Implement Rumah Ibadah form UI based on PRD field sections.
-- ahliweb/awcms-mini#223: Implement Lembaga Keagamaan form UI.
-- ahliweb/awcms-mini#224: Implement Lembaga Pendidikan Keagamaan form UI.
-- ahliweb/awcms-mini#225: Implement Lembaga Kesejahteraan Sosial form UI.
-- ahliweb/awcms-mini#226: Implement Guru Agama/Guru Ngaji form UI.
-- ahliweb/awcms-mini#227: Implement Anak Yatim form UI with child data privacy protections.
-- ahliweb/awcms-mini#228: Implement Disabilitas form UI with sensitive data protections.
+- ahliweb/sikesra#20: Implement Rumah Ibadah form UI based on PRD field sections.
+- ahliweb/sikesra#21: Implement Lembaga Keagamaan form UI.
+- ahliweb/sikesra#22: Implement Lembaga Pendidikan Keagamaan form UI.
+- ahliweb/sikesra#23: Implement Lembaga Kesejahteraan Sosial form UI.
+- ahliweb/sikesra#24: Implement Guru Agama/Guru Ngaji form UI.
+- ahliweb/sikesra#25: Implement Anak Yatim form UI with child data privacy protections.
+- ahliweb/sikesra#26: Implement Disabilitas form UI with sensitive data protections.
 
 ## Sprint 4 Issues
 
-- ahliweb/awcms-mini#229: Implement ID SIKESRA 20-digit UI states and explanation modal.
-- ahliweb/awcms-mini#230: Implement document upload card and document list UI.
-- ahliweb/awcms-mini#231: Implement verification review page and decision workflow UI.
-- ahliweb/awcms-mini#232: Implement need_revision UX with inline verifier notes.
+- ahliweb/sikesra#27: Implement ID SIKESRA 20-digit UI states and explanation modal.
+- ahliweb/sikesra#28: Implement document upload card and document list UI.
+- ahliweb/sikesra#29: Implement verification review page and decision workflow UI.
+- ahliweb/sikesra#30: Implement need_revision UX with inline verifier notes.
 
 ## Sprint 5 Issues
 
-- ahliweb/awcms-mini#233: Implement Import Excel staging UI with mapping and validation review.
-- ahliweb/awcms-mini#234: Implement reports and export UI with sensitive data confirmation.
-- ahliweb/awcms-mini#235: Implement official region and custom region UI components.
-- ahliweb/awcms-mini#236: Implement audit log viewer UI for SIKESRA actions.
-- ahliweb/awcms-mini#237: Implement users, roles, permissions, and region scope UI for SIKESRA.
+- ahliweb/sikesra#31: Implement Import Excel staging UI with mapping and validation review.
+- ahliweb/sikesra#32: Implement reports and export UI with sensitive data confirmation.
+- ahliweb/sikesra#33: Implement official region and custom region UI components.
+- ahliweb/sikesra#34: Implement audit log viewer UI for SIKESRA actions.
+- ahliweb/sikesra#35: Implement users, roles, permissions, and region scope UI for SIKESRA.
 
 ## Hardening Issues
 
-- ahliweb/awcms-mini#238: Add accessibility and usability checks for SIKESRA admin UI.
-- ahliweb/awcms-mini#239: Add responsive behavior for SIKESRA dashboard, list, detail, and forms.
-- ahliweb/awcms-mini#240: Add UI tests for critical SIKESRA workflows.
-- ahliweb/awcms-mini#241: Write implementation documentation for SIKESRA admin UI/UX.
+- ahliweb/sikesra#36: Add accessibility and usability checks for SIKESRA admin UI.
+- ahliweb/sikesra#37: Add responsive behavior for SIKESRA dashboard, list, detail, and forms.
+- ahliweb/sikesra#38: Add UI tests for critical SIKESRA workflows.
+- ahliweb/sikesra#39: Write implementation documentation for SIKESRA admin UI/UX.
 
 ## Environment And Runtime Follow-Up Issues
 
@@ -109,9 +109,9 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 
 ## Recommended Dependency Order
 
-- Start with ahliweb/awcms-mini#215 through ahliweb/awcms-mini#218.
-- Complete region components in ahliweb/awcms-mini#235 before most form and ID-generation work.
-- Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/awcms-mini#242.
+- Start with ahliweb/sikesra#13 through ahliweb/sikesra#16.
+- Complete region components in ahliweb/sikesra#33 before most form and ID-generation work.
+- Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
 - Resolve runtime blocker ahliweb/sikesra#12 before deployment smoke tests for the Cloudflare-hosted Worker.
 
 ## Security Notes
@@ -121,3 +121,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Store Coolify-managed resource credentials in Coolify locked runtime secrets when an application resource exists.
 - Keep R2 private and expose documents only through permission-aware, audit-friendly application flows.
 - Mask NIK/KIA, child data, disability data, and sensitive document details by default in UI.
+
+## Migration Correction
+
+The initial planning issues were created in `ahliweb/awcms-mini` by mistake. They have been recreated in `ahliweb/sikesra` and the old issues in `ahliweb/awcms-mini` were closed with moved-to comments. The canonical issue tracker for SIKESRA work is now `https://github.com/ahliweb/sikesra/issues`.
