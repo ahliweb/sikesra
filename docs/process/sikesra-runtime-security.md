@@ -61,6 +61,28 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Use required-variable guards such as `${DATABASE_URL:?}` in Docker Compose only when this project introduces compose-managed services.
 - Use Context7 canonical Coolify documentation `/coollabsio/coolify-docs` for API and secret-management references.
 
+## Provisioning Status
+
+- Coolify API access is available locally through ignored `.env.local` values `COOLIFY_BASE_URL` and `COOLIFY_ACCESS_TOKEN`.
+- Coolify target server identified for the database: `server database id1.ahlikoding`.
+- Coolify target project identified for database resources: `awcms dev`.
+- Coolify target environment identified for database resources: `id1.ahlikoding.com database`.
+- Managed PostgreSQL resource created for SIKESRA Kobar: `sikesrakobar-postgres`.
+- PostgreSQL resource status verified through the Coolify API: `running:healthy`.
+- PostgreSQL database name verified: `sikesrakobar`.
+- PostgreSQL application user verified: `sikesrakobar_app`.
+- PostgreSQL public exposure verified through Coolify API: `is_public=false`.
+- Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
+- Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
+- The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
+
+## Remaining Runtime Secret Work
+
+- Create or identify the Cloudflare Worker/application deployment resource for `sikesrakobar.ahlikoding.com`.
+- Store Worker runtime secrets in Cloudflare secrets once the Worker resource exists.
+- If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
+- Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
+
 ## OWASP-Aligned Controls
 
 - Validate all operator input server-side, including fields also validated in UI.
