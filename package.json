@@ -7,10 +7,25 @@
   "scripts": {
     "check": "node scripts/check-secret-hygiene.mjs && node --test tests/unit/*.test.mjs",
     "check:secret-hygiene": "node scripts/check-secret-hygiene.mjs",
-    "db:migrate": "node scripts/db-migrate.mjs up",
-    "db:migrate:probe": "node scripts/db-migrate.mjs probe",
-    "db:migrate:status": "node scripts/db-migrate.mjs status",
+    "db:migrate": "tsx scripts/db-migrate.ts up",
+    "db:migrate:probe": "tsx scripts/db-migrate.ts probe",
+    "db:migrate:status": "tsx scripts/db-migrate.ts status",
+    "db:seed": "tsx scripts/db-seed.ts",
     "test:unit": "node --test tests/unit/*.test.mjs",
-    "lint": "node scripts/check-secret-hygiene.mjs"
+    "lint": "node scripts/check-secret-hygiene.mjs",
+    "api:build": "tsc -p tsconfig.api.json",
+    "api:dev": "node --watch --import tsx/esm src/api/index.ts",
+    "api:start": "node dist/api/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.0",
+    "hono": "^4.7.7",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
   }
 }
