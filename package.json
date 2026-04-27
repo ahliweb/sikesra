@@ -5,6 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
+    "audit:coolify-postgres": "node scripts/audit-coolify-postgres.mjs",
+    "audit:database-role": "node scripts/audit-database-role.mjs",
     "check": "node scripts/check-secret-hygiene.mjs && node --import tsx/esm --test tests/unit/*.test.mjs",
     "check:secret-hygiene": "node scripts/check-secret-hygiene.mjs",
     "db:migrate": "tsx scripts/db-migrate.ts up",

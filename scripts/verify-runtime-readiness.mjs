@@ -57,14 +57,27 @@ async function checkCoolify(env) {
 
   const url = new URL(`/api/v1/databases/${env.COOLIFY_SIKESRA_POSTGRES_RESOURCE_UUID}`, env.COOLIFY_BASE_URL);
   const { response, json } = await fetchJson(url, env.COOLIFY_ACCESS_TOKEN);
+  const postgresUser = hasValue(json?.postgres_user) ? json.postgres_user : null;
   result.httpStatus = response.status;
-  result.ok = response.ok;
+  result.healthy = typeof json?.status === "string" ? json.status.startsWith("running") : false;
   result.name = json?.name ?? null;
   result.status = json?.status ?? null;
   result.isPublic = json?.is_public ?? null;
+  result.publicPortPresent = hasValue(String(json?.public_port ?? ""));
+  result.publicDatabaseUrlPresent = hasValue(json?.public_database_url);
   result.databaseMatches = json?.postgres_db === "sikesrakobar";
-  result.userPresent = hasValue(json?.postgres_user);
+  result.runtimeRole = postgresUser;
+  result.runtimeRoleIsDedicated = hasValue(postgresUser) && postgresUser !== "postgres";
+  result.userPresent = hasValue(postgresUser);
   result.passwordPresent = hasValue(json?.postgres_password);
+  result.sslEnabled = typeof json?.enable_ssl === "boolean" ? json.enable_ssl : null;
+  result.sslMode = hasValue(json?.ssl_mode) ? json.ssl_mode : null;
+  result.ok =
+    response.ok &&
+    result.healthy &&
+    result.isPublic === false &&
+    result.databaseMatches &&
+    result.runtimeRoleIsDedicated;
   return result;
 }
 
