@@ -27,6 +27,10 @@ import {
   hashRecoveryCode,
 } from "../../modules/two-factor/index.js";
 import { recordLoginAttempt } from "../../modules/login-attempts/index.js";
+import {
+  deleteExpiredSessionRevocations,
+  revokeSessionToken,
+} from "../../modules/session-revocations/index.js";
 import { getRolesForUser } from "../../modules/roles/index.js";
 import { ROLES_REQUIRING_2FA } from "../middleware/abac.js";
 import type { AuthVariables } from "../middleware/abac.js";
@@ -386,9 +390,28 @@ auth.post("/login/verify-2fa", async (c) => {
 
 auth.post("/logout", async (c) => {
   const requestId = (c.get("requestId" as never) as string | undefined) ?? "unknown";
-  // JWT is stateless — client discards the token.
-  // For a future blocklist (Redis/DB), invalidate here.
-  return c.json({ success: true, data: { message: "Logged out." }, meta: { requestId } }, 200);
+  const env = getEnv();
+  const token = extractBearerToken(c.req.header("Authorization"));
+
+  if (!token) {
+    return c.json(
+      { success: false, error: { code: "UNAUTHENTICATED", message: "Bearer token is required." }, meta: { requestId } },
+      401,
+    );
+  }
+
+  const payload = verifyToken(token, env.JWT_SECRET);
+  if (!payload || payload.pending2fa) {
+    return c.json(
+      { success: false, error: { code: "UNAUTHENTICATED", message: "Valid session token is required." }, meta: { requestId } },
+      401,
+    );
+  }
+
+  await revokeSessionToken(payload, token, env.JWT_SECRET);
+  await deleteExpiredSessionRevocations();
+
+  return c.json({ success: true, data: { revoked: true }, meta: { requestId } }, 200);
 });
 
 export { auth };

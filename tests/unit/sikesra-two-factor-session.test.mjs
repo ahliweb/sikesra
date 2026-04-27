@@ -18,6 +18,7 @@ import {
   issueToken,
   verifyToken,
 } from "../../src/modules/session/index.ts";
+import { getSessionRevocationHash } from "../../src/modules/session-revocations/index.ts";
 
 test("base32 helpers round-trip binary data", () => {
   const original = Buffer.from("sikesra-two-factor");
@@ -75,6 +76,7 @@ test("JWT sessions verify and reject tampering", () => {
   assert.equal(payload?.sub, "user-1");
   assert.equal(payload?.role, "admin");
   assert.equal(payload?.twoFactorVerified, true);
+  assert.equal(typeof payload?.jti, "string");
 
   const tampered = token.replace(/.$/, "x");
   assert.equal(verifyToken(tampered, signingKey), null);
@@ -87,6 +89,21 @@ test("pending 2FA token is marked as partial session", () => {
   assert.equal(payload?.sub, "user-2");
   assert.equal(payload?.pending2fa, true);
   assert.equal(payload?.twoFactorVerified, false);
+  assert.equal(typeof payload?.jti, "string");
+});
+
+test("session revocation hashes never expose raw JWT identifiers", () => {
+  const signingKey = "test-jwt-signing-key-that-is-long-enough";
+  const token = issueToken("user-3", "admin", signingKey, {
+    twoFactorVerified: true,
+  });
+  const payload = verifyToken(token, signingKey);
+  assert.ok(payload);
+
+  const tokenHash = getSessionRevocationHash(payload, token, signingKey);
+  assert.match(tokenHash, /^[a-f0-9]{64}$/);
+  assert.notEqual(tokenHash, payload.jti);
+  assert.equal(tokenHash.includes(token), false);
 });
 
 test("bearer token extraction is strict", () => {

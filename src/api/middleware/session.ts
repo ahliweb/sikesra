@@ -11,6 +11,7 @@
 
 import type { Context, Next } from "hono";
 import { verifyToken, extractBearerToken } from "../../modules/session/index.js";
+import { isSessionTokenRevoked } from "../../modules/session-revocations/index.js";
 import { getEnv } from "../config/env.js";
 import { getPermissionsForRoles, getRolesForUser } from "../../modules/roles/index.js";
 
@@ -29,6 +30,17 @@ export async function sessionLoader(c: Context, next: Next): Promise<Response | 
   }
 
   if (payload.pending2fa) {
+    await next();
+    return;
+  }
+
+  try {
+    if (await isSessionTokenRevoked(payload, token, env.JWT_SECRET)) {
+      await next();
+      return;
+    }
+  } catch (err) {
+    console.error("[session] Revocation check failed:", err);
     await next();
     return;
   }

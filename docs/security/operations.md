@@ -29,6 +29,7 @@ Mini owns the security-hardening layer:
 - versioned edge API routes under `/api/v1/*` with explicit JSON, CORS, and security-header handling
 - `/api/v1/token` password and refresh-token grants for external or mobile clients
 - TOTP-based 2FA and recovery codes
+- server-side logout revocation backed by hashed JWT session identifiers
 - admin-triggered 2FA reset with step-up enforcement
 - active session inspection and revocation
 - staged mandatory 2FA rollout modes: `none`, `protected_roles`, `custom`
@@ -55,6 +56,7 @@ Security operations should treat those as separate trust boundaries.
 - Store `EDGE_API_JWT_SECRET` as a Cloudflare-managed secret.
 - Keep deployed Worker secrets in Cloudflare-managed secret storage (`wrangler secret put`), not in local `.dev.vars` files or Wrangler `[vars]`.
 - Keep local secret files (`.env.local`, `.dev.vars`) untracked.
+- Store only hashed session identifiers for logout revocation; never persist raw JWTs, bearer tokens, or TOTP recovery codes.
 
 ## PostgreSQL Guidance
 

@@ -10,7 +10,7 @@
  *     twoFactorVerified?: boolean, pending2fa?: boolean }
  */
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,6 +19,8 @@ export interface JwtPayload {
   role: string;
   iat: number;
   exp: number;
+  /** Unique session identifier used for server-side revocation checks. */
+  jti?: string;
   /** true after the user completes 2FA verification. */
   twoFactorVerified?: boolean;
   /** true when awaiting 2FA step (partial session). */
@@ -75,6 +77,7 @@ export function issueToken(
       role,
       iat: now,
       exp: now + ttl,
+      jti: randomUUID(),
       twoFactorVerified: opts?.twoFactorVerified ?? false,
     },
     secret,
@@ -96,6 +99,7 @@ export function issuePending2faToken(
       role,
       iat: now,
       exp: now + PENDING_TTL_SECONDS,
+      jti: randomUUID(),
       pending2fa: true,
       twoFactorVerified: false,
     },
