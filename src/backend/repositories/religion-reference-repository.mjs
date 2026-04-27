@@ -30,6 +30,9 @@ export function createSikesraReligionReferenceRepository() {
     async findByAnyRuntime(value) {
       return findRuntimeReligionReference(value);
     },
+    async updateLifecycle(input) {
+      return updateRuntimeReligionReferenceLifecycle(input);
+    },
   });
 }
 
@@ -116,5 +119,59 @@ async function findRuntimeReligionReference(value) {
     });
   } catch {
     return findSikesraReligionReference(value);
+  }
+}
+
+async function updateRuntimeReligionReferenceLifecycle(input) {
+  const referenceId = String(input?.referenceId ?? "").trim();
+  const isActive = input?.isActive === true;
+
+  if (!referenceId) {
+    throw new Error("RELIGION_REFERENCE_ID_REQUIRED");
+  }
+
+  try {
+    const pool = getPool();
+    const rows = await pool`
+      with existing as (
+        select id, code, normalized_name, display_name, is_active, sort_order
+        from public.religion_references
+        where id = ${referenceId}
+      ), updated as (
+        update public.religion_references
+        set is_active = ${isActive},
+            updated_at = now()
+        where id = ${referenceId}
+        returning id, code, normalized_name, display_name, is_active, sort_order
+      )
+      select
+        updated.id,
+        updated.code,
+        updated.normalized_name,
+        updated.display_name,
+        updated.is_active,
+        updated.sort_order,
+        existing.is_active as previous_active
+      from updated
+      join existing on existing.id = updated.id
+      limit 1
+    `;
+
+    const match = rows[0];
+    if (!match) {
+      return null;
+    }
+
+    return Object.freeze({
+      id: match.id,
+      code: match.code,
+      normalizedName: match.normalized_name,
+      displayName: match.display_name,
+      active: match.is_active,
+      sortOrder: match.sort_order,
+      previousActive: match.previous_active,
+    });
+  } catch (error) {
+    throw new Error("RELIGION_REFERENCE_RUNTIME_UNAVAILABLE", { cause: error });
   }
 }

@@ -27,7 +27,9 @@ export type AuditAction =
   | "settings.change"
   | "login.success"
   | "login.failure"
-  | "logout";
+  | "logout"
+  | "sikesra.reference.inactive_read"
+  | "sikesra.reference.lifecycle_update";
 
 export interface AuditEntry {
   /** UUID of the acting user. Null for system/unauthenticated actions. */

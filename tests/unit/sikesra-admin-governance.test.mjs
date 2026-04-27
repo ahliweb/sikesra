@@ -17,6 +17,7 @@ import {
 test("SIKESRA audit action labels cover core governance actions", () => {
   assert.equal(SIKESRA_AUDIT_ACTION_LABELS["sikesra.reports.export"], "Export Laporan");
   assert.equal(SIKESRA_AUDIT_ACTION_LABELS["sikesra.access.role_assign"], "Tetapkan Peran");
+  assert.equal(SIKESRA_AUDIT_ACTION_LABELS["sikesra.reference.lifecycle_update"], "Ubah Lifecycle Referensi Agama");
 });
 
 test("SIKESRA audit log table requires audit permission", () => {

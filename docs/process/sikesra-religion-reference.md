@@ -8,7 +8,20 @@ The repository also now includes a minimal backend/reference-data seam in `src/b
 
 The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, executes reviewed PostgreSQL migrations through `psql`, can read runtime-backed religion reference rows through the async repository/service helpers when those tables are present, and now exposes a read-only `/api/v1/references/religions` backend handoff route for controlled option reads. The plugin/model metadata now also advertises that reviewed route contract explicitly so future consumers can switch over without rediscovering the endpoint shape. The `AgamaSelect` model now also reports its current load strategy explicitly as `sync_seed_fallback` with an `async_route_ready` handoff state, and the module-form plus registry-filter consumer seams mirror a stable `optionsSource` contract for renderers. This lets EmDash/UI consumers detect the current repository-safe fallback mode and reviewed route handoff without drilling into ad hoc nested metadata. The current synchronous plugin/UI contract still uses the reviewed seed-backed service methods until a dedicated consumer update lands.
 
-Workbook-specific follow-on planning for Tokoh Agama / Guru Agama / Pelayan Keagamaan import evidence is now tracked separately in `docs/process/sikesra-tokoh-agama-excel-field-sync-2026.md` and GitHub issues `#75` and `#76`. That workbook evidence should refine religion inference and import alias planning without expanding this document into a full import-staging design.
+The service boundary now also enforces reviewed authorization and audit rules for runtime management behavior:
+
+- inactive religion reference reads require `sikesra.reference.manage`
+- successful inactive reads expose audit action metadata `sikesra.reference.inactive_read`
+- lifecycle activation/deactivation is now handled through the backend service seam, also gated by `sikesra.reference.manage`
+- lifecycle changes emit scrubbed audit entries through `sikesra.reference.lifecycle_update`
+- religion-sensitive report/export access now uses a backend authorization seam that defaults to aggregate-only scope unless `sikesra.reports.sensitive_export` is present
+- religion-sensitive export/report audit payloads remain scrubbed and use `sikesra.reports.export`
+
+Active read-only option access remains available for the current runtime handoff, while inactive lifecycle visibility and lifecycle changes are explicitly treated as managed reference-data concerns. The route returns a `403` error when `includeInactive=true` is requested without the required permission.
+
+For backend report/export handling, the repository now also has an explicit service-layer authorization seam for religion-sensitive outputs. That seam requires `sikesra.reports.export`, downgrades requests to aggregate-only scope when `sikesra.reports.sensitive_export` is absent, and exposes scrubbed audit metadata for higher-level export/report handlers.
+
+Workbook-specific follow-on planning for Tokoh Agama / Guru Agama / Pelayan Keagamaan import evidence is now tracked separately in `docs/process/sikesra-tokoh-agama-excel-field-sync-2026.md`, while the reviewed staging contract lives in `docs/process/sikesra-tokoh-agama-import-staging-plan.md` under GitHub issue `#76`. That workbook evidence should refine religion inference and import alias planning without expanding this document into a full import-staging design.
 
 ## Rules
 
@@ -59,7 +72,7 @@ Repository dependency order:
 9. `#72` exposes explicit select-model load strategy metadata so consumers can distinguish current sync fallback from the reviewed async route handoff.
 10. `#73` exposes a stable `optionsSource` contract from the Agama consumer seam for renderer handoff.
 11. `#74` exposes the same reviewed `optionsSource` contract from the registry religion filter seam.
-12. `#49` should add broader runtime usage, service-layer authorization, and audit-covered write/admin flows on top of that seam, repository boundary, migration contract, service boundary, and read-only route.
+12. `#49` is now satisfied by the repository-owned reference-data seam, runtime read handoff, consumer handoff metadata, managed lifecycle service boundary, and explicit report/export authorization helpers for individual-level religion handling.
 
 Tracked follow-up: `ahliweb/sikesra#49`.
 

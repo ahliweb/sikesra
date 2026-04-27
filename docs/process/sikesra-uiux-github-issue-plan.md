@@ -64,12 +64,11 @@ Completed issue groups:
 Open follow-on issues:
 
 - `#49` backend-controlled religion master data
-- `#75` Tokoh Agama workbook field/PRD sync planning
 - `#76` Tokoh Agama import staging and canonical field-mapping planning
 
 This means the remaining work is no longer broad UI planning. It is now focused on backend reference-data completion and keeping runtime/docs state aligned with the already deployed EmDash Worker baseline.
 
-Workbook-specific import planning for Tokoh Agama sources is now documented separately in `docs/process/sikesra-tokoh-agama-excel-field-sync-2026.md` so the current UI/UX plan does not need to be reopened as another broad issue tree.
+Workbook-specific import planning for Tokoh Agama sources is now documented separately in `docs/process/sikesra-tokoh-agama-excel-field-sync-2026.md`, and the reviewed staging contract now lives in `docs/process/sikesra-tokoh-agama-import-staging-plan.md`, so the current UI/UX plan does not need to be reopened as another broad issue tree.
 
 ## Sprint 1 Issues
 

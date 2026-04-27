@@ -6,6 +6,8 @@ export const SIKESRA_AUDIT_ACTION_LABELS = Object.freeze({
   "sikesra.documents.replace": "Ganti Dokumen",
   "sikesra.import.promote": "Promosikan Import",
   "sikesra.reports.export": "Export Laporan",
+  "sikesra.reference.inactive_read": "Lihat Referensi Agama Nonaktif",
+  "sikesra.reference.lifecycle_update": "Ubah Lifecycle Referensi Agama",
   "sikesra.verification.verified": "Verifikasi Data",
   "sikesra.verification.need_revision": "Butuh Perbaikan",
   "sikesra.verification.rejected": "Tolak Data",

@@ -45,3 +45,12 @@ test("SIKESRA religion reference repository runtime helpers fall back safely whe
   assert.equal(references[0]?.code, "islam");
   assert.equal(reference?.code, "katolik");
 });
+
+test("SIKESRA religion reference repository lifecycle updates require a runtime DB", async () => {
+  const repository = createSikesraReligionReferenceRepository();
+
+  await assert.rejects(
+    repository.updateLifecycle({ referenceId: "agama_islam", isActive: false }),
+    /RELIGION_REFERENCE_RUNTIME_UNAVAILABLE/
+  );
+});

@@ -21,6 +21,8 @@ Related maintained repository docs:
 
 Tracked issue: `ahliweb/sikesra#75`.
 
+Implementation-focused follow-on planning for staging, provenance, warning/error taxonomy, and canonical promotion rules now lives in `docs/process/sikesra-tokoh-agama-import-staging-plan.md` under `ahliweb/sikesra#76`.
+
 ## Workbook Analysis Summary
 
 Reviewed sheets:
@@ -222,28 +224,25 @@ Current relevant open issues observed during this sync:
 
 - `#49` backend-controlled religion reference master data
 - `#67` operator-side Coolify secret verification/rotation
-- `#74` registry religion filter options source handoff
-- `#75` workbook/PRD sync planning issue for the Tokoh Agama Excel source
+- `#76` Tokoh Agama import staging and canonical field-mapping planning
 
-No existing open issue was found for a focused Tokoh Agama import field-mapping runtime follow-on.
+The focused Tokoh Agama import field-mapping planning follow-on now exists as `#76` and should own the reviewed staging contract.
 
 ## Recommended Issue Actions
 
 - Keep `#49` open and update it with workbook-driven religion inference and alias notes for `Basir`, `Guru SHM`, `Pastor`, and `Pendeta` context.
-- Keep `#75` as the maintained planning/docs sync issue covering this workbook evidence and the related PRD/doc alignment.
-- Create one focused follow-on issue for Tokoh Agama Excel import staging and canonical field mapping because the workbook evidence now clearly exceeds the current generic import-planning detail level and no open issue covers the canonical staging/provenance contract.
+- Keep `#75` as the maintained planning/docs sync issue covering workbook evidence and related PRD/doc alignment.
+- Use `#76` for the focused Tokoh Agama import staging and canonical field-mapping plan.
 
-Recommended new focused issue:
+Focused follow-on issue now tracked:
 
-- Title: `[SIKESRA Import] Add Tokoh Agama workbook staging and canonical field mapping plan`
-- Why needed: the workbook shows concrete field families, header artifacts, inferred religion cases, and staging provenance needs that are not fully captured by closed UI issue `#31` or backend religion issue `#49`.
-- Out of scope: full importer runtime implementation, live Cloudflare/Coolify rollout work, and non-Tokoh modules beyond shared staging primitives.
+- `#76` - `[SIKESRA Import] Add Tokoh Agama workbook staging and canonical field mapping plan`
 
 ## Minimal Patch Sequence For Later Implementation
 
 1. keep this workbook sync report updated as the canonical planning summary;
 2. update religion/category reference docs and issue text using the verified workbook evidence;
-3. create the focused Tokoh Agama import-staging issue;
+3. maintain the focused Tokoh Agama import-staging plan in `docs/process/sikesra-tokoh-agama-import-staging-plan.md`;
 4. only then implement mapping helpers, staging schema, or UI import-preview refinements in separate atomic issues.
 
 ## Validation

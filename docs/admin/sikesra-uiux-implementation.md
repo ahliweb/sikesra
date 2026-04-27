@@ -162,6 +162,7 @@ Related issues:
 Related planning doc:
 
 - `../process/sikesra-tokoh-agama-excel-field-sync-2026.md`
+- `../process/sikesra-tokoh-agama-import-staging-plan.md`
 
 ### Verification
 
@@ -187,6 +188,7 @@ Security expectations:
 - sensitive export requires explicit permission and confirmation
 - aggregate religion reports remain allowed without detailed sensitive export permission
 - no real sample personal data should appear in docs, tests, or examples
+- backend religion-sensitive export/report handling should default to aggregate-only scope unless `sikesra.reports.sensitive_export` is present
 
 Related issues:
 
