@@ -20,6 +20,9 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import postgres from "postgres";
 
+import { SIKESRA_DB_MIGRATIONS } from "../src/db/migrations/index.mjs";
+import { renderSikesraMigrationSql } from "../src/db/migrations/sql.mjs";
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -63,6 +66,15 @@ function getMigrationUrl(): string {
     process.exit(1);
   }
   return url;
+}
+
+export async function loadMigrationSql(name: string): Promise<string> {
+  if (name === "001_create_religion_reference_tables") {
+    return renderSikesraMigrationSql(SIKESRA_DB_MIGRATIONS[0]);
+  }
+
+  const filePath = join(SQL_DIR, `${name}.sql`);
+  return readFile(filePath, "utf8");
 }
 
 function createClient(url: string): ReturnType<typeof postgres> {
@@ -191,25 +203,11 @@ async function cmdUp(): Promise<void> {
     const justApplied: string[] = [];
 
     for (const name of pending) {
-      // Migration 001 was applied via the legacy .mjs runner; if somehow it
-      // ended up missing from the table, record it without re-running DDL.
-      if (name === "001_create_religion_reference_tables") {
-        console.log(`  [skip-rerun] ${name} (applied via legacy runner)`);
-        await sql`
-          insert into public.sikesra_migrations (name, applied_at)
-          values (${name}, now())
-          on conflict (name) do nothing
-        `;
-        justApplied.push(name);
-        continue;
-      }
-
-      const filePath = join(SQL_DIR, `${name}.sql`);
       let sqlText: string;
       try {
-        sqlText = await readFile(filePath, "utf8");
+        sqlText = await loadMigrationSql(name);
       } catch {
-        console.error(`  [error] SQL file not found: ${filePath}`);
+        console.error(`  [error] SQL migration not found: ${name}`);
         process.exit(1);
       }
 

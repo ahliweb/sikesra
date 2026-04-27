@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { MIGRATION_FILES } from "../../scripts/db-migrate.ts";
+import { loadMigrationSql, MIGRATION_FILES } from "../../scripts/db-migrate.ts";
 import { createSikesraDatabaseAccess, resolveMigrationDatabaseUrl } from "../../src/db/index.mjs";
 import { SIKESRA_DB_MIGRATIONS, SIKESRA_DB_MIGRATION_SEAM } from "../../src/db/migrations/index.mjs";
 import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs";
@@ -96,4 +96,12 @@ test("db migrate CLI keeps SQL migration list in sync with repository files", ()
   ).sort();
 
   assert.deepEqual(registeredSqlMigrations, sqlMigrationFiles);
+});
+
+test("db migrate CLI renders the repository-owned first migration instead of skipping it", async () => {
+  const sql = await loadMigrationSql("001_create_religion_reference_tables");
+
+  assert.match(sql, /create table if not exists public\.religion_references/i);
+  assert.match(sql, /create table if not exists public\.religion_reference_aliases/i);
+  assert.match(sql, /insert into public\.sikesra_migrations/i);
 });
