@@ -5,7 +5,7 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "outDir": "dist/api",
-    "rootDir": "src/api",
+    "rootDir": "src",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,6 +14,10 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src/api/**/*.ts"],
+  "include": [
+    "src/api/**/*.ts",
+    "src/modules/**/*.ts",
+    "src/db/client.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -4,12 +4,15 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { requestId } from "./middleware/request-id.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { rateLimit } from "./middleware/rate-limit.js";
+import type { AuthVariables } from "./middleware/abac.js";
 import { health } from "./routes/health.js";
+import { me } from "./routes/me.js";
+import { users } from "./routes/users.js";
+import { roles } from "./routes/roles.js";
+import { permissions } from "./routes/permissions.js";
 
 // Extend Hono context with our custom variables
-type Variables = {
-  requestId: string;
-};
+type Variables = AuthVariables;
 
 const app = new Hono<{ Variables: Variables }>();
 
@@ -27,6 +30,10 @@ app.use(
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.route("/health", health);
+app.route("/api/v1/me", me);
+app.route("/api/v1/users", users);
+app.route("/api/v1/roles", roles);
+app.route("/api/v1/permissions", permissions);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.notFound((c) => {

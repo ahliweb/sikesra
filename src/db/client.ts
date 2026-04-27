@@ -36,6 +36,9 @@ export function getDb(): ReturnType<typeof postgres> {
   return _runtimeSql;
 }
 
+/** Alias for getDb() — preferred name in module/route code. */
+export const getPool = getDb;
+
 export async function closeDb(): Promise<void> {
   if (_runtimeSql) {
     await _runtimeSql.end();
