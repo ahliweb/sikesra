@@ -219,15 +219,18 @@ function hydrateField(item, context) {
   }
 
   if (item.type === "agama") {
+    const model = createSikesraAgamaSelectModel({
+      subject: item.agamaSubject,
+      usage: "form",
+      required: item.required,
+      readOnly: context.mode === "read_only",
+      canViewIndividualReligion: context.canViewReligion,
+    });
+
     return {
       ...item,
-      model: createSikesraAgamaSelectModel({
-        subject: item.agamaSubject,
-        usage: "form",
-        required: item.required,
-        readOnly: context.mode === "read_only",
-        canViewIndividualReligion: context.canViewReligion,
-      }),
+      optionsSource: model.optionsSource,
+      model,
     };
   }
 

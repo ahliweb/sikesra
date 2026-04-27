@@ -120,11 +120,14 @@ test("SIKESRA Guru Agama form exposes religion field and no required documents",
     mode: "create",
     grantedPermissions: ["sikesra.registry.read", "sikesra.registry.religion.read"],
   });
+  const agamaField = model.fields.primary_identity.find((field) => field.key === "agama");
 
   assert.equal(model.label, "Guru Agama");
   assert.equal(model.requiresDocuments, false);
   assert.equal(model.privacy.vulnerablePerson, false);
-  assert.ok(model.fields.primary_identity.some((field) => field.key === "agama"));
+  assert.ok(agamaField);
+  assert.equal(agamaField.optionsSource.kind, "reference_route_handoff");
+  assert.equal(agamaField.optionsSource.route, "/api/v1/references/religions");
 });
 
 test("SIKESRA Anak Yatim form applies highly restricted privacy defaults", () => {
