@@ -2,11 +2,10 @@
 
 ## Scope
 
-This repository, `awcms-mini-sikesra`, is the only writable implementation workspace for SIKESRA Kobar work.
+This repository, `ahliweb/sikesra`, is the only writable implementation workspace for SIKESRA Kobar work.
 
 Treat every other repository as read-only reference unless the user explicitly says otherwise. In particular:
 
-- `ahliweb/sikesra` is the canonical issue tracker for SIKESRA work.
 - `ahliweb/awcms-mini` is upstream reference only.
 - Local sibling worktrees outside `/home/data/dev_react/awcms-mini-sikesra` are reference material only.
 

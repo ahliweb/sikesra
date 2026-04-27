@@ -1,9 +1,9 @@
 # PRD Khusus UI/UX SIKESRA Berbasis AWCMS Mini Single-Tenant
 
-**Versi:** 0.1 UI/UX Draft  
+**Versi:** 0.2 UI/UX Draft Sinkron Repository  
 **Basis Dokumen:** PRD MVP SIKESRA Berbasis AWCMS Mini Single-Tenant dan Sheet Kelengkapan Excel  
 **Fokus:** Antarmuka pengguna, pengalaman pengguna, alur input, verifikasi, dashboard, dokumen, import/export, audit, dan akses berbasis wilayah  
-**Platform:** AWCMS Mini single-tenant, PostgreSQL, Kysely, Cloudflare-compatible deployment, Cloudflare R2 atau object storage setara  
+**Platform:** AWCMS Mini single-tenant, PostgreSQL, Kysely, Cloudflare Worker runtime, Cloudflare R2 private bucket, dan PostgreSQL pada VPS yang dikelola melalui Coolify  
 **Prioritas UX:** sederhana, jelas, aman, mudah digunakan operator pemerintah daerah, region-aware, audit-friendly, dan siap dikembangkan bertahap
 
 ---
@@ -14,6 +14,16 @@ PRD UI/UX ini merinci rancangan antarmuka dan pengalaman pengguna untuk MVP SIKE
 
 Dokumen teknis sumber menegaskan bahwa SIKESRA MVP harus dibangun sebagai aplikasi single-tenant berbasis AWCMS Mini, menggunakan PostgreSQL, Kysely, RBAC/ABAC, audit log, dokumen berbasis R2/object storage, serta form yang mengikuti sheet “Kelengkapan”. Karena itu, PRD UI/UX ini tidak merancang sistem sebagai aplikasi multi-tenant kompleks, melainkan sebagai aplikasi pemerintah daerah yang sederhana tetapi kuat secara tata kelola.
 
+### Catatan Sinkronisasi Repository Saat Ini
+
+1. Repository implementasi writable adalah `ahliweb/sikesra`; `ahliweb/awcms-mini` hanya referensi read-only.
+2. Runtime produksi yang ditinjau adalah Cloudflare Worker pada `https://sikesrakobar.ahlikoding.com`.
+3. Alias admin yang ditinjau adalah `/_emdash/` pada host yang sama.
+4. Dokumen/media menggunakan bucket R2 `sikesra` melalui binding `MEDIA_BUCKET`.
+5. PostgreSQL produksi berada pada VPS yang dikelola melalui Coolify, dengan transport Worker yang ditinjau melalui binding `HYPERDRIVE`.
+6. Terminologi modul umum menggunakan `Guru Agama`, bukan `Guru Ngaji`.
+7. Baseline UI/UX repository saat ini sudah mencakup `Agama` sebagai reference field terkontrol dan modul `Lansia Terlantar` sebagai follow-on MVP yang aktif di issue tracker dan model layer UI.
+
 ### Tujuan UI/UX Utama
 
 1. Menyediakan dashboard ringkas untuk pimpinan dan admin.
@@ -21,7 +31,7 @@ Dokumen teknis sumber menegaskan bahwa SIKESRA MVP harus dibangun sebagai aplika
 3. Menyederhanakan proses input data yang panjang melalui section, wizard, dan autosave.
 4. Membuat workflow draft → submitted → verified/need_revision/rejected/active mudah dipahami.
 5. Menampilkan kodefikasi **ID SIKESRA 20 digit** secara jelas sebagai identitas bisnis resmi.
-6. Memastikan data sensitif seperti NIK/KIA, data anak, dan data disabilitas tidak tampil sembarangan.
+6. Memastikan data sensitif seperti NIK/KIA, agama individu, data anak, data disabilitas, dan data lansia rentan tidak tampil sembarangan.
 7. Menyediakan daftar, filter, pencarian, import, export, dokumen, verifikasi, dan audit log yang mudah dipakai.
 8. Mendukung pembatasan akses berbasis role, permission, wilayah resmi, wilayah custom, status data, dan klasifikasi data.
 
@@ -92,9 +102,10 @@ Registry Data
   - Lembaga Keagamaan
   - Pendidikan Keagamaan
   - Kesejahteraan Sosial
-  - Guru Agama / Ngaji
+  - Guru Agama
   - Anak Yatim
   - Disabilitas
+  - Lansia Terlantar
 Verifikasi Data
 Dokumen Pendukung
 Import Excel
@@ -182,9 +193,10 @@ Dashboard harus menjawab pertanyaan utama:
 | Total Lembaga Keagamaan | Stat card | Menampilkan jumlah lembaga keagamaan |
 | Total Pendidikan Keagamaan | Stat card | Menampilkan jumlah lembaga pendidikan keagamaan |
 | Total LKS | Stat card | Menampilkan lembaga kesejahteraan sosial |
-| Total Guru Agama | Stat card | Menampilkan guru agama/guru ngaji |
+| Total Guru Agama | Stat card | Menampilkan data guru agama |
 | Total Anak Yatim | Stat card | Menampilkan data anak yatim/piatu/yatim-piatu |
 | Total Disabilitas | Stat card | Menampilkan data penyandang disabilitas |
+| Total Lansia Terlantar | Stat card | Menampilkan data lansia terlantar/rentan sosial |
 | Status Verifikasi | Donut/bar chart | Distribusi draft/submitted/verified/need_revision/rejected |
 | Rekap Kecamatan | Table/chart | Perbandingan jumlah data antar kecamatan |
 | Rekap Desa/Kelurahan | Table | Data detail wilayah kerja |
@@ -197,7 +209,7 @@ Dashboard harus menjawab pertanyaan utama:
 [Filter Wilayah] [Filter Modul] [Filter Status] [Periode]
 
 [Total Rumah Ibadah] [Total Lembaga] [Total Pendidikan] [Total LKS]
-[Total Guru Agama]   [Total Anak Yatim] [Total Disabilitas] [Dokumen Kurang]
+[Total Guru Agama]   [Total Anak Yatim] [Total Disabilitas] [Total Lansia]
 
 [Grafik Status Verifikasi]        [Rekap per Kecamatan]
 [Daftar Butuh Perbaikan]          [Aktivitas Terakhir]
@@ -518,7 +530,7 @@ Jika memilih “Lainnya”, field text “Nama Lembaga Lainnya” muncul.
 
 ---
 
-## 14. UI Modul Guru Agama / Guru Ngaji
+## 14. UI Modul Guru Agama
 
 ### 14.1 Section Form
 
@@ -527,15 +539,42 @@ Jika memilih “Lainnya”, field text “Nama Lembaga Lainnya” muncul.
 | Identitas | Nama lengkap, NIK, TTL |
 | Wilayah | Alamat rumah, kecamatan, desa/kelurahan, wilayah custom |
 | Status Guru | Rumahan/Lembaga |
+| Agama | Agama guru dari referensi terkontrol |
 | Data Lembaga | Nama TKA/TPA, alamat TKA/TPA |
 | Kontak | Telepon/WA, email |
 | Status dan Catatan | Status data, catatan verifikator |
 
 ### 14.2 UX Kondisional
 
-- Jika status guru ngaji = Rumahan, field Nama TKA/TPA dan Alamat TKA/TPA disembunyikan.
+- Jika status guru agama = Rumahan, field Nama TKA/TPA dan Alamat TKA/TPA disembunyikan.
 - Jika status = Lembaga, field lembaga ditampilkan dan diberi rekomendasi untuk diisi.
 - NIK masuk kategori highly restricted dan dimasking.
+
+---
+
+## 16A. UI Modul Lansia Terlantar
+
+### 16A.1 Prinsip Privasi UX
+
+Data lansia terlantar harus diperlakukan sebagai data kelompok rentan. Pimpinan/viewer hanya melihat agregat atau data yang sudah diminimalkan sesuai kewenangan.
+
+### 16A.2 Section Form
+
+| Section | Field Utama |
+|---|---|
+| Kategori | Kategori lansia terlantar, status data |
+| Identitas Lansia | Nama lengkap, NIK, tempat/tanggal lahir atau perkiraan umur, jenis kelamin |
+| Agama dan Wilayah | Agama lansia, alamat, kecamatan, desa/kelurahan, wilayah custom |
+| Kondisi Sosial | Kondisi tempat tinggal, kondisi keterlantaran, kebutuhan prioritas |
+| Pendamping/Penanggung Jawab | Nama pendamping, hubungan, agama pendamping, kontak |
+| Status dan Catatan | Status verifikasi, catatan petugas, catatan verifikator |
+
+### 16A.3 UX Keamanan
+
+- Tampilkan warning: `Data lansia terlantar termasuk data pribadi dan data kelompok rentan. Gunakan hanya sesuai kewenangan, kebutuhan layanan, dan ketentuan perlindungan data yang berlaku.`
+- NIK, kontak, kondisi hidup, dan catatan kesehatan harus dimasking atau dibatasi sesuai permission.
+- Field agama bersifat permission-aware dan menggunakan referensi terkontrol, bukan free text.
+- Export data individual lansia harus membutuhkan permission khusus dan konfirmasi audit-aware.
 
 ---
 
@@ -1060,6 +1099,7 @@ Mobile bukan prioritas utama MVP, tetapi UI harus tetap dapat dibuka untuk revie
 | Guru Agama | Form mendukung status rumahan/lembaga dan field lembaga kondisional. |
 | Anak Yatim | Form mendukung kategori anak, NIK/KIA, pendidikan, wali, KK, kontak wali dengan proteksi privasi. |
 | Disabilitas | Form mendukung jenis disabilitas, subjenis sensorik kondisional, tingkat keparahan, wali. |
+| Lansia Terlantar | Form mendukung kategori lansia, agama terkontrol, kondisi sosial, pendamping, dan proteksi data kelompok rentan. |
 
 ---
 
@@ -1088,6 +1128,7 @@ Mobile bukan prioritas utama MVP, tetapi UI harus tetap dapat dibuka untuk revie
 - Guru Agama.
 - Anak Yatim.
 - Disabilitas.
+- Lansia Terlantar.
 
 ### Sprint UI/UX 4 — Kodefikasi, Dokumen, dan Verifikasi
 
@@ -1220,4 +1261,3 @@ Catatan: warna final mengikuti design token AWCMS Mini dan standar aksesibilitas
 PRD UI/UX ini menerjemahkan kebutuhan teknis SIKESRA MVP ke dalam rancangan antarmuka yang praktis dan aman. Fokus utama bukan sekadar membuat form input, tetapi membangun pengalaman kerja pendataan pemerintah daerah yang lengkap: mulai dari dashboard, input data, kodefikasi 20 digit, verifikasi, dokumen, import Excel, export laporan, audit log, hingga pengaturan akses berbasis wilayah.
 
 Dengan pendekatan AWCMS Mini single-tenant, desain UI/UX harus tetap sederhana tetapi siap berkembang. SIKESRA MVP perlu berhasil pada hal paling penting: data sesuai sheet Kelengkapan, mudah diinput, mudah diverifikasi, aman untuk data sensitif, dapat diaudit, dan dapat digunakan sebagai fondasi layanan kesejahteraan rakyat yang lebih luas.
-

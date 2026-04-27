@@ -1,10 +1,10 @@
 # PRD MVP SIKESRA Berbasis AWCMS Mini Single-Tenant dan Sheet Kelengkapan Excel
 
-Versi: 0.3 MVP Teknis
-Status: Draft implementasi teknis-fungsional
+Versi: 0.4 MVP Teknis
+Status: Draft teknis yang disinkronkan dengan baseline repository `ahliweb/sikesra`
 Sumber utama field: Sheet “Kelengkapan” pada file Excel “Data Kelengkapan Pendukung Sikesra”
 Platform utama: AWCMS Mini single-tenant
-Prioritas: MVP minimal, kodefikasi ID SIKESRA 20 digit, PostgreSQL, Kysely, RBAC/ABAC, audit log, dokumen R2, dan form sesuai Excel
+Prioritas: MVP minimal, kodefikasi ID SIKESRA 20 digit, PostgreSQL, Kysely, RBAC/ABAC, audit log, dokumen R2, form sesuai Excel, dan baseline runtime Cloudflare Worker + Coolify PostgreSQL
 
 ---
 
@@ -19,11 +19,24 @@ Sumber kebenaran field input adalah sheet “Kelengkapan” dalam Excel. Apabila
 3. PDF hanya dipakai sebagai pelengkap konsep bila tidak bertentangan.
 4. PostgreSQL sebagai database utama.
 5. Kysely sebagai query builder/typed SQL layer.
-6. Cloudflare Pages/Workers/R2 atau deployment kompatibel sebagai opsi hosting.
+6. Cloudflare Worker dan R2 sebagai baseline hosting dan object storage yang ditinjau.
 7. ID SIKESRA 20 digit tetap digunakan sebagai business identifier resmi.
 8. UUID tetap digunakan sebagai primary key internal.
 
 MVP ini ditujukan untuk mengubah workbook Excel menjadi aplikasi database single-tenant yang aman, rapi, dapat diaudit, dapat diverifikasi, dan dapat dikembangkan bertahap.
+
+### 1.1 Catatan Sinkronisasi Repository Saat Ini
+
+Dokumen ini diselaraskan dengan baseline repository `ahliweb/sikesra` saat ini:
+
+1. Repository implementasi writable adalah `ahliweb/sikesra`; `ahliweb/awcms-mini` hanya referensi read-only.
+2. Runtime produksi yang ditinjau adalah Cloudflare Worker, bukan Cloudflare Pages.
+3. Host browser publik yang ditinjau adalah `https://sikesrakobar.ahlikoding.com` dengan alias admin `/_emdash/` pada host yang sama.
+4. Dokumen/media menggunakan bucket R2 `sikesra` melalui binding Worker `MEDIA_BUCKET`.
+5. PostgreSQL produksi berada pada VPS yang dikelola melalui Coolify, dengan transport Worker yang ditinjau melalui binding Hyperdrive `HYPERDRIVE`.
+6. Terminologi modul umum menggunakan `Guru Agama`, bukan `Guru Ngaji`.
+7. Baseline UI/UX repository saat ini juga mencakup follow-on scope `Agama` sebagai reference field terkontrol dan modul `Lansia Terlantar`; keduanya harus diperlakukan sebagai bagian dari arah MVP yang sedang diimplementasikan, meskipun sebagian backend persistence masih menjadi follow-on.
+8. Status repository saat ini bukan lagi planning murni: model-layer admin/plugin untuk UI/UX telah diimplementasikan, sementara blocker tersisa adalah integrasi live host build dan backend master data agama.
 
 ---
 
@@ -44,8 +57,8 @@ SIKESRA MVP menggunakan AWCMS Mini single-tenant dengan karakter utama:
 9. TOTP-based 2FA, recovery, lockout, dan step-up authentication bila diaktifkan.
 10. Audit logs dan security events.
 11. Internal plugin contracts untuk modul SIKESRA.
-12. Cloudflare adapter untuk deployment edge bila dipilih.
-13. Cloudflare R2 untuk file/dokumen bila object storage diaktifkan.
+12. Cloudflare Worker runtime sebagai baseline deployment edge.
+13. Cloudflare R2 untuk file/dokumen melalui binding `MEDIA_BUCKET`.
 
 ### 2.2 Yang Tidak Digunakan pada MVP Ini
 
@@ -67,18 +80,18 @@ Catatan: kontrol akses tetap wajib kuat, tetapi ditegakkan melalui model AWCMS M
 Opsi sederhana:
 
 1. AWCMS Mini berjalan sebagai aplikasi Astro.
-2. PostgreSQL di VPS/Coolify Managed Service atau database PostgreSQL terkelola.
-3. File dokumen disimpan di Cloudflare R2.
+2. PostgreSQL di VPS yang dikelola melalui Coolify.
+3. File dokumen disimpan di Cloudflare R2 private bucket.
 4. Cloudflare DNS/CDN/WAF/Turnstile digunakan untuk proteksi publik.
 5. Backup database harian dan backup object metadata.
 
 Opsi produksi awal yang direkomendasikan:
 
-1. Frontend dan runtime AWCMS Mini: Cloudflare-compatible deployment bila stabil.
-2. PostgreSQL: Coolify Managed Service/VPS PostgreSQL dengan koneksi aman.
-3. File: Cloudflare R2 private bucket.
-4. Secrets: environment variables/secret manager, bukan hardcoded.
-5. Security: Turnstile untuk login/reset/invite bila tersedia, 2FA untuk admin penting.
+1. Frontend dan runtime AWCMS Mini: Cloudflare Worker runtime.
+2. PostgreSQL: VPS PostgreSQL yang dikelola melalui Coolify dengan koneksi aman.
+3. File: Cloudflare R2 private bucket dengan binding `MEDIA_BUCKET`.
+4. Secrets: env lokal ter-ignored untuk operator lokal, Cloudflare Worker secrets untuk runtime Worker, dan Coolify locked runtime secrets untuk resource/aplikasi yang dikelola di Coolify; bukan hardcoded.
+5. Security: Turnstile untuk login/reset/invite bila tersedia, 2FA untuk admin penting, dan transport database produksi melalui Hyperdrive `HYPERDRIVE`.
 
 ---
 
@@ -105,7 +118,7 @@ MVP minimal wajib menyediakan modul berikut:
 2. Lembaga Keagamaan
 3. Lembaga Pendidikan Keagamaan
 4. Lembaga Kesejahteraan Sosial
-5. Guru Agama / Guru Ngaji
+5. Guru Agama
 6. Anak Yatim
 7. Disabilitas
 8. Dokumen Pendukung
@@ -160,7 +173,7 @@ Kode jenis/subjenis MVP disesuaikan dengan sheet Kelengkapan:
 | Lembaga Keagamaan | 02 | 01 Islam, 02 Kristen, 03 Katholik, 04 Hindu, 05 Budha, 06 Konghuchu |
 | Lembaga Pendidikan Keagamaan | 03 | 01 TPA/TPQ, 02 Pondok Pesantren, 03 Lainnya |
 | Lembaga Kesejahteraan Sosial | 04 | 01 Baznas, 02 PWRI, 03 Panti Asuhan, 04 Panti Yatim, 05 Panti Jompo, 06 Rukun Kematian, 07 Majelis Taklim |
-| Guru Agama / Ngaji | 05 | 01 Rumahan, 02 Lembaga |
+| Guru Agama | 05 | 01 Rumahan, 02 Lembaga |
 | Anak Yatim | 06 | 01 Anak Yatim, 02 Anak Piatu, 03 Anak Yatim Piatu |
 | Disabilitas | 07 | 01 Fisik, 02 Intelektual, 03 Mental, 04 Sensorik |
 
@@ -469,9 +482,9 @@ Pilihan jenis rumah ibadah:
 
 ---
 
-## 7.5 Modul Guru Agama / Guru Ngaji
+## 7.5 Modul Guru Agama
 
-### Kategori Status Guru Ngaji
+### Kategori Status Guru Agama
 
 1. Rumahan
 2. Lembaga
@@ -486,7 +499,7 @@ Pilihan jenis rumah ibadah:
 | 4 | Alamat Rumah | Textarea | Ya | sikesra_entities.address_text | Format Excel |
 | 5 | Desa/Kelurahan | Cascade select | Ya | sikesra_entities.official_village_code | Wilayah resmi |
 | 6 | Wilayah Custom/Dusun/RW/RT | Select/input | Tidak | sikesra_entities.wilayah_custom_id | Tidak masuk ID |
-| 7 | Status Guru Ngaji | Select | Ya | guru_agama_details.status_guru_ngaji | Rumahan/Lembaga |
+| 7 | Status Guru Agama | Select | Ya | guru_agama_details.status_guru_agama | Rumahan/Lembaga |
 | 8 | Nama TKA/TPA | Text | Tidak | guru_agama_details.nama_tka_tpa | Bila status lembaga |
 | 9 | Alamat TKA/TPA | Textarea | Tidak | guru_agama_details.alamat_tka_tpa | Bila status lembaga |
 | 10 | Telepon/WA Pengurus Ketua | Text/phone | Tidak | sikesra_entities.phone | Sesuai Excel, bisa dimaknai kontak lembaga/pengurus |
@@ -503,7 +516,7 @@ Pilihan jenis rumah ibadah:
 | tempat_lahir | varchar | Tempat lahir bila dipisah |
 | tanggal_lahir | date | Tanggal lahir bila tersedia |
 | ttl_raw | varchar | Simpan raw TTL dari Excel/import |
-| status_guru_ngaji | varchar | Rumahan/Lembaga |
+| status_guru_agama | varchar | Rumahan/Lembaga |
 | nama_tka_tpa | varchar | Nama lembaga mengajar |
 | alamat_tka_tpa | text | Alamat lembaga mengajar |
 | created_at | timestamptz | Timestamp |
@@ -644,7 +657,7 @@ Tingkat keparahan:
 | Field | Tipe | Keterangan |
 |---|---|---|
 | id | uuid | Primary key |
-| storage_provider | varchar | r2/local/s3-compatible |
+| storage_provider | varchar | r2/s3-compatible |
 | bucket_name | varchar | Nama bucket |
 | storage_key | text | Path file |
 | original_name | varchar | Nama asli |
@@ -870,9 +883,10 @@ Karena AWCMS Mini bukan Supabase-first, semua operasi sensitif dijalankan melalu
    - Lembaga Keagamaan
    - Pendidikan Keagamaan
    - Kesejahteraan Sosial
-   - Guru Agama / Ngaji
+   - Guru Agama
    - Anak Yatim
    - Disabilitas
+   - Lansia Terlantar
 3. Verifikasi Data
 4. Dokumen Pendukung
 5. Import Excel
@@ -922,14 +936,15 @@ Widget minimum:
 5. Total Guru Agama.
 6. Total Anak Yatim.
 7. Total Disabilitas.
-8. Data draft.
-9. Data submitted.
-10. Data need_revision.
-11. Data verified.
-12. Data rejected.
-13. Dokumen belum lengkap.
-14. Rekap per kecamatan.
-15. Rekap per desa/kelurahan.
+8. Total Lansia Terlantar.
+9. Data draft.
+10. Data submitted.
+11. Data need_revision.
+12. Data verified.
+13. Data rejected.
+14. Dokumen belum lengkap.
+15. Rekap per kecamatan.
+16. Rekap per desa/kelurahan.
 
 ---
 
@@ -945,16 +960,18 @@ Widget minimum:
 8. ID SIKESRA dibuat otomatis berdasarkan desa + jenis + subjenis + sequence.
 9. Micro region tidak masuk ID.
 10. Data sensitif NIK/KIA dibatasi aksesnya.
-11. Dokumen pendukung tersimpan sebagai metadata + file object.
-12. Upload file divalidasi tipe dan ukuran.
-13. Workflow draft-submit-verify-revision-reject-active tersedia.
-14. Audit log mencatat create, update, generate code, submit, verify, upload, export, delete-soft.
-15. Import Excel masuk staging sebelum master.
-16. Export laporan tersedia minimal CSV/XLSX.
-17. Role dan permission dasar berjalan.
-18. Pembatasan wilayah kerja user berjalan.
-19. Dashboard dasar tersedia.
-20. Soft delete tersedia.
+11. Data sensitif lain seperti agama individu, data anak, data disabilitas, data lansia rentan, kontak, dan catatan kesehatan dibatasi aksesnya.
+12. Dokumen pendukung tersimpan sebagai metadata + file object.
+13. Upload file divalidasi tipe dan ukuran.
+14. Workflow draft-submit-verify-revision-reject-active tersedia.
+15. Audit log mencatat create, update, generate code, submit, verify, upload, export, delete-soft.
+16. Import Excel masuk staging sebelum master.
+17. Export laporan tersedia minimal CSV/XLSX.
+18. Role dan permission dasar berjalan.
+19. Pembatasan wilayah kerja user berjalan.
+20. Dashboard dasar tersedia.
+21. Soft delete tersedia.
+22. Runtime produksi mengikuti baseline Cloudflare Worker + `MEDIA_BUCKET` + `HYPERDRIVE` + PostgreSQL pada VPS yang dikelola Coolify.
 
 ---
 
@@ -987,11 +1004,12 @@ Widget minimum:
 5. Guru Agama.
 6. Anak Yatim.
 7. Disabilitas.
+8. Lansia Terlantar.
 
 ### Sprint 4 — Dokumen dan Import
 
 1. File object metadata.
-2. Upload dokumen R2/local compatible.
+2. Upload dokumen R2 private bucket compatible.
 3. Dokumen pendukung per entitas.
 4. Import Excel staging.
 5. Mapping sheet rekap ke model detail.
@@ -1016,5 +1034,4 @@ Namun, prinsip keamanan tetap kuat melalui RBAC, ABAC, administrative region sco
 
 Sumber field input wajib mengikuti sheet “Kelengkapan” Excel. Semua konflik antara PDF, asumsi konseptual, dan Excel diselesaikan dengan prioritas: Excel untuk field, AWCMS Mini untuk platform, dan kodefikasi 20 digit sebagai standar identitas bisnis resmi.
 
-Hasil akhir MVP yang diharapkan adalah sistem database SIKESRA yang minimal tetapi benar: field sesuai Excel, kode unik 20 digit, wilayah resmi, dokumen pendukung, workflow verifikasi, audit log, import/export, dan siap dikembangkan bertahap.
-
+Hasil akhir MVP yang diharapkan adalah sistem database SIKESRA yang minimal tetapi benar: field sesuai Excel, kode unik 20 digit, wilayah resmi, dokumen pendukung, workflow verifikasi, audit log, import/export, runtime Cloudflare Worker yang aman, integrasi PostgreSQL melalui Coolify/Hyperdrive, dan siap dikembangkan bertahap.
