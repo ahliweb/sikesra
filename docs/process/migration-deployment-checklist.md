@@ -27,6 +27,7 @@ Complete these checks before applying migrations or releasing a new build.
 - [ ] `DATABASE_CONNECT_TIMEOUT_MS` is set to a reviewed fail-fast value for the target environment
 - [ ] The configured public origin matches the Cloudflare-hosted URL
 - [ ] Required security secrets are present for the target environment
+- [ ] When secret rotation or runtime secret verification is part of the release, follow `docs/security/coolify-secret-verification-runbook.md` and record only redacted operator notes
 
 ### Schema Readiness
 

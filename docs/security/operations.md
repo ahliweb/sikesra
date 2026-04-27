@@ -98,6 +98,7 @@ These are rollout tools, not permanent substitutes for full enforcement.
 
 ## Cross-References
 
+- `docs/security/coolify-secret-verification-runbook.md`
 - `docs/security/emergency-recovery-runbook.md`
 - `docs/process/migration-deployment-checklist.md`
 - `docs/process/cloudflare-hosted-runtime.md`
