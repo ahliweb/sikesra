@@ -1,56 +1,20 @@
 import { readFileSync } from "node:fs";
 import { hasValue, loadLocalEnv } from "./_local-env.mjs";
-
-const REQUIRED_SECRETS = ["APP_SECRET", "MINI_TOTP_ENCRYPTION_KEY", "TURNSTILE_SECRET_KEY", "EDGE_API_JWT_SECRET"];
-
-function stripJsonc(input) {
-  let output = "";
-  let inString = false;
-  let stringQuote = "";
-  let escaping = false;
-
-  for (let index = 0; index < input.length; index += 1) {
-    const char = input[index];
-    const next = input[index + 1];
-
-    if (inString) {
-      output += char;
-      if (escaping) escaping = false;
-      else if (char === "\\") escaping = true;
-      else if (char === stringQuote) inString = false;
-      continue;
-    }
-
-    if (char === '"' || char === "'") {
-      inString = true;
-      stringQuote = char;
-      output += char;
-      continue;
-    }
-
-    if (char === "/" && next === "/") {
-      while (index < input.length && input[index] !== "\n") index += 1;
-      output += "\n";
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      index += 2;
-      while (index < input.length && !(input[index] === "*" && input[index + 1] === "/")) index += 1;
-      index += 1;
-      continue;
-    }
-
-    output += char;
-  }
-
-  return output.replace(/,\s*([}\]])/g, "$1");
-}
+import { getRequiredWorkerSecrets, parseWranglerConfig, stripJsonc } from "./_wrangler-config.mjs";
 
 function readWorkerName() {
   if (hasValue(process.env.SIKESRA_WORKER_NAME)) return process.env.SIKESRA_WORKER_NAME;
   const wrangler = JSON.parse(stripJsonc(readFileSync("wrangler.jsonc", "utf8")));
   return wrangler.name;
+}
+
+function readRequiredSecrets() {
+  const requiredSecrets = getRequiredWorkerSecrets(parseWranglerConfig());
+  if (requiredSecrets.length === 0) {
+    throw new Error("Missing Worker secret contract in wrangler.jsonc.");
+  }
+
+  return requiredSecrets;
 }
 
 async function cloudflareFetch(accountId, path, options = {}) {
@@ -88,9 +52,10 @@ async function main() {
   }
 
   const workerName = readWorkerName();
-  const missingLocalSecrets = REQUIRED_SECRETS.filter((name) => !hasValue(process.env[name]));
+  const requiredSecrets = readRequiredSecrets();
+  const missingLocalSecrets = requiredSecrets.filter((name) => !hasValue(process.env[name]));
   if (missingLocalSecrets.length > 0) {
-    printReport({ ok: false, workerName, missingLocalSecrets, syncedSecrets: [] });
+    printReport({ ok: false, workerName, requiredSecrets, missingLocalSecrets, syncedSecrets: [] });
     process.exit(1);
   }
 
@@ -109,7 +74,7 @@ async function main() {
 
   const syncedSecrets = [];
   const failedSecrets = [];
-  for (const name of REQUIRED_SECRETS) {
+  for (const name of requiredSecrets) {
     const result = await cloudflareFetch(process.env.CLOUDFLARE_ACCOUNT_ID, `/workers/scripts/${workerName}/secrets`, {
       method: "PUT",
       body: JSON.stringify({ name, text: process.env[name], type: "secret_text" }),
@@ -118,7 +83,7 @@ async function main() {
     else failedSecrets.push({ name, httpStatus: result.response.status });
   }
 
-  printReport({ ok: failedSecrets.length === 0, workerName, workerExists: true, syncedSecrets, failedSecrets });
+  printReport({ ok: failedSecrets.length === 0, workerName, requiredSecrets, workerExists: true, syncedSecrets, failedSecrets });
   process.exit(failedSecrets.length === 0 ? 0 : 1);
 }
 

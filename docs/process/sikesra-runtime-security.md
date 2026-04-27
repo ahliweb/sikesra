@@ -21,6 +21,7 @@ This document records the project-specific runtime and secret-handling baseline 
 - Keep local-only values in `.env.local`, `.env.<environment>.local`, or another ignored env file.
 - Keep Cloudflare Worker production secrets in Cloudflare Worker secrets, not in `wrangler` config values.
 - Keep local script secrets in `.env.local` or the inherited process environment. The maintained scripts share `scripts/_local-env.mjs` and must not parse or source env files ad hoc.
+- Keep the reviewed Worker secret contract centralized in `wrangler.jsonc`; operator scripts should read that contract rather than duplicating required secret names in multiple files.
 - Keep Coolify-managed resource secrets in Coolify locked environment variables with runtime-only scope by default.
 - Use Docker Build Secrets for build-time sensitive inputs if Coolify build-time secrets are unavoidable.
 - Keep PostgreSQL credentials least-privilege and application-scoped; do not use PostgreSQL superuser credentials for the app runtime.
@@ -62,6 +63,7 @@ Use tracked `.env.example` only for placeholders and non-secret defaults. Keep l
 - Declare required Worker secret names in Wrangler configuration when this repository adds Worker config.
 - Store secret values through `wrangler secret put` or the Cloudflare dashboard.
 - Use `node scripts/sync-worker-secrets.mjs` after the Worker exists to populate the required Cloudflare Worker secrets from ignored env values without printing secret values.
+- `scripts/sync-worker-secrets.mjs` and `scripts/verify-runtime-readiness.mjs` should derive required secret names from `wrangler.jsonc` so the local operator workflow stays aligned with reviewed EmDash/runtime changes.
 - Bind R2 as a private bucket and serve documents only through permission-aware, audited application flows.
 - Keep Turnstile hostname allowlists aligned with `sikesrakobar.ahlikoding.com` when login, reset, or invite flows are enabled.
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
@@ -127,7 +129,7 @@ Use tracked `.env.example` only for placeholders and non-secret defaults. Keep l
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, print redacted reports, and fail closed when required infrastructure is missing.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, `scripts/_wrangler-config.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, derive the reviewed Worker secret contract from `wrangler.jsonc`, print redacted reports, and fail closed when required infrastructure is missing.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 

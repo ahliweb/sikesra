@@ -1,60 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { buildDefaultEnvFiles, hasValue, loadLocalEnv } from "./_local-env.mjs";
+import { getRequiredWorkerSecrets, parseWranglerConfig } from "./_wrangler-config.mjs";
 
 const HYPERDRIVE_PLACEHOLDER = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
 
-function stripJsonc(input) {
-  let output = "";
-  let inString = false;
-  let stringQuote = "";
-  let escaping = false;
-
-  for (let index = 0; index < input.length; index += 1) {
-    const char = input[index];
-    const next = input[index + 1];
-
-    if (inString) {
-      output += char;
-      if (escaping) {
-        escaping = false;
-      } else if (char === "\\") {
-        escaping = true;
-      } else if (char === stringQuote) {
-        inString = false;
-        stringQuote = "";
-      }
-      continue;
-    }
-
-    if (char === '"' || char === "'") {
-      inString = true;
-      stringQuote = char;
-      output += char;
-      continue;
-    }
-
-    if (char === "/" && next === "/") {
-      while (index < input.length && input[index] !== "\n") index += 1;
-      output += "\n";
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      index += 2;
-      while (index < input.length && !(input[index] === "*" && input[index + 1] === "/")) index += 1;
-      index += 1;
-      continue;
-    }
-
-    output += char;
-  }
-
-  return output.replace(/,\s*([}\]])/g, "$1");
-}
-
 function parseWrangler() {
-  if (!existsSync("wrangler.jsonc")) return null;
-  return JSON.parse(stripJsonc(readFileSync("wrangler.jsonc", "utf8")));
+  return parseWranglerConfig();
 }
 
 function safeUrlSummary(raw) {
@@ -148,12 +99,12 @@ async function checkCloudflare(env, wrangler) {
 }
 
 function checkWrangler(wrangler) {
-  const requiredSecrets = ["APP_SECRET", "MINI_TOTP_ENCRYPTION_KEY", "TURNSTILE_SECRET_KEY", "EDGE_API_JWT_SECRET"];
-  const declaredSecrets = Array.isArray(wrangler?.secrets?.required) ? wrangler.secrets.required : [];
-  const missingSecrets = requiredSecrets.filter((secret) => !declaredSecrets.includes(secret));
+  const declaredSecrets = getRequiredWorkerSecrets(wrangler);
+  const requiredSecretsConfigured = declaredSecrets.length > 0;
+  const missingSecrets = requiredSecretsConfigured ? [] : ["wrangler.secrets.required"];
 
   return {
-    ok: Boolean(wrangler) && missingSecrets.length === 0,
+    ok: Boolean(wrangler) && requiredSecretsConfigured && missingSecrets.length === 0,
     workerName: wrangler?.name ?? null,
     siteUrl: wrangler?.vars?.SITE_URL ?? null,
     adminEntryPath: wrangler?.vars?.ADMIN_ENTRY_PATH ?? null,
@@ -162,6 +113,8 @@ function checkWrangler(wrangler) {
     hyperdriveBinding: wrangler?.hyperdrive?.[0]?.binding ?? null,
     hyperdriveId: wrangler?.hyperdrive?.[0]?.id ?? null,
     hyperdrivePlaceholder: wrangler?.hyperdrive?.[0]?.id === HYPERDRIVE_PLACEHOLDER,
+    requiredSecretsConfigured,
+    requiredSecrets: declaredSecrets,
     missingRequiredSecrets: missingSecrets,
   };
 }

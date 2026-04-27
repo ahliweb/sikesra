@@ -136,6 +136,7 @@ If the audit does not find confirmed live secrets:
 - OWASP Secrets Management guidance: centralize and standardize secret handling, apply least privilege, avoid plaintext secret transport, and keep rotation and auditability explicit for operator credentials.
 - Cloudflare Workers guidance: keep sensitive values out of Wrangler `vars`, prefer Worker secrets for deployed runtime values, and keep `.env*` or `.dev.vars*` files untracked in local development.
 - Coolify guidance: use Coolify Environment Variables with locked secrets for sensitive resource-side values, keep runtime-only variables out of the build phase by default, and prefer Docker Build Secrets over ordinary build args for reviewed build-time secrets.
+- Current script standard: keep the reviewed Worker secret-name contract in `wrangler.jsonc` and have operator scripts read that contract rather than duplicating secret lists in code.
 - Current Mini operator posture: Cloudflare hosts the runtime, PostgreSQL runs on a Coolify-managed VPS, and EmDash remains the host architecture, so operator automation secrets must stay distinct from application runtime credentials.
 
 ## Current Example Guidance
@@ -155,6 +156,7 @@ If the audit does not find confirmed live secrets:
 - when PostgreSQL or other service credentials must exist inside Coolify-managed resources, keep them in Coolify locked secrets instead of copied repository env files or reusable shell snippets
 - do not reintroduce `VPS_ROOT_PASSWORD` into `.env.local`, `.env.example`, or any maintained script; the reviewed VPS recovery path now uses key-only SSH instead
 - `.env.example` now documents all operator-managed variable classes with placeholder values and explicit storage-class guidance; update it when new operator variables are introduced
+- if a script audit finds only env lookups and placeholders, document that accurately instead of claiming credentials were embedded in tracked scripts
 
 ## Validation
 
