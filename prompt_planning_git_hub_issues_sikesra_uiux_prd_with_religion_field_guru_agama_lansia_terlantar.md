@@ -1,8 +1,17 @@
 Act as a senior product manager, system analyst, UI/UX architect, full-stack engineer, security engineer, data privacy analyst, and GitHub issue planner for the SIKESRA application built on AWCMS Mini.
 
-You are working in the repository:
+You are working in this repository:
 
-`https://github.com/ahliweb/awcms-mini`
+`https://github.com/ahliweb/sikesra`
+
+Repository boundary instruction:
+
+- Only analyze, plan, create issues for, open pull requests in, push commits to, and modify files in `https://github.com/ahliweb/sikesra`.
+- Do not change, create issues in, open pull requests in, push commits to, or modify any other repositories.
+- The master repository used as a reference example is `https://github.com/ahliweb/awcms-mini`.
+- Do not modify anything in the reference repository `https://github.com/ahliweb/awcms-mini`.
+- If related work appears to belong to another repository, document it as a note or dependency inside `ahliweb/sikesra` issues, but do not perform changes outside this repository.
+- If the agent has access to multiple GitHub repositories, treat all repositories other than `ahliweb/sikesra` as read-only references unless the user gives a separate explicit instruction.
 
 Your task is to analyze the provided Markdown PRD titled:
 
@@ -11,6 +20,19 @@ Your task is to analyze the provided Markdown PRD titled:
 Then create a complete planning breakdown and GitHub Issues for implementing the UI/UX MVP of SIKESRA.
 
 SIKESRA is a single-tenant government-ready application based on AWCMS Mini for managing, validating, monitoring, reporting, and mapping social, religious, educational religious, and welfare-related data. It uses PostgreSQL, Kysely, RBAC/ABAC, audit logs, Cloudflare-compatible deployment, and Cloudflare R2 or compatible object storage for documents.
+
+---
+
+## Critical Product and Terminology Rules
+
+### 1. AWCMS Mini Single-Tenant
+
+- Do not assume full AWCMS multi-tenant architecture.
+- Do not assume Supabase-first architecture.
+- Do not require Supabase Auth or Supabase RLS.
+- Use AWCMS Mini internal auth/session/service-layer authorization patterns where available in `ahliweb/sikesra`.
+- Use `ahliweb/awcms-mini` only as a read-only reference example.
+- If future-proofing is needed, use optional `site_id`, `app_scope`, or config patterns only after repository inspection.
 
 Prioritize the UI/UX implementation based on the PRD and these additional requirements:
 
@@ -1654,4 +1676,3 @@ After creating or updating GitHub Issues, respond with:
 - Use respectful and non-stigmatizing language for Lansia Terlantar.
 - Keep SIKESRA MVP aligned with AWCMS Mini single-tenant.
 - Keep all sensitive UI behavior aligned with RBAC/ABAC, region scope, auditability, privacy, and data minimization.
-

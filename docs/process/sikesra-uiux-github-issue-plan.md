@@ -4,7 +4,6 @@
 
 This document records the implementation result for:
 
-- `prompt_planning_git_hub_issues_sikesra_uiux_prd.md`
 - `prompt_planning_git_hub_issues_sikesra_uiux_prd_with_religion_field_guru_agama_lansia_terlantar.md`
 
 Priority PRD reference:
@@ -48,6 +47,26 @@ The required milestones were created in `ahliweb/sikesra`:
 
 - ahliweb/sikesra#40: Planning index and repository analysis for MVP implementation.
 - ahliweb/sikesra#41: Provision SIKESRA Kobar database, domain, R2 bucket, and environment configuration.
+
+## Current Completion Snapshot
+
+As of the current repository state, the model-layer UI/UX implementation work for the scoped SIKESRA admin surface is complete through the hardening milestone.
+
+Completed issue groups:
+
+- Sprint 1 foundation: `#13`, `#14`, `#15`, `#16`, `#42`
+- Sprint 2 dashboard and registry: `#17`, `#18`, `#19`
+- Sprint 3 forms and region/ID foundations: `#20` through `#27`, `#33`, `#43`
+- Sprint 4 documents and verification: `#28`, `#29`, `#30`
+- Sprint 5 import/export/audit/access: `#31`, `#32`, `#34`, `#35`
+- Hardening: `#36`, `#37`, `#38`, `#39`
+
+Open follow-on issues:
+
+- `#48` live Worker build integration
+- `#49` backend-controlled religion master data
+
+This means the remaining work is no longer broad UI planning. It is now focused on live build/runtime integration and backend reference-data completion.
 
 ## Sprint 1 Issues
 
@@ -117,6 +136,14 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Worker/domain/R2/Hyperdrive smoke checks are passing on the deployed temporary Worker surface.
 - Remaining deployment follow-on is replacing the temporary smoke Worker with the full AWCMS Mini/EmDash build in #44.
 
+## Current Integration Status
+
+- `src/plugins/sikesra-admin/` now contains the implemented SIKESRA model-layer surfaces for navigation, dashboard, registry, detail, forms, ID, region, documents, verification, import/export, governance, accessibility, responsive behavior, and hardening tests.
+- `src/plugins/sikesra-admin/host-registration.mjs` documents the safe host-registration seam and patch snippet for appending `sikesraAdminPlugin()` to the EmDash plugin list.
+- The local repository validates with `pnpm check` and the unit suite currently passes.
+- The live AWCMS Mini/EmDash host build workspace needed to consume that seam is still not writable from this repository and remains the blocker captured in `#48`.
+- Backend-controlled religion reference data is still not implemented in the repository/service layer and remains the blocker captured in `#49`.
+
 ## Recommended Dependency Order
 
 - Start with ahliweb/sikesra#13 through ahliweb/sikesra#16 and religion foundation issue ahliweb/sikesra#42.
@@ -126,6 +153,17 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
 - Runtime provisioning issues ahliweb/sikesra#11, #12, and #41 are complete; proceed with #44 when the full AWCMS Mini/EmDash Worker artifact is ready.
 
+## Remaining Dependency Order
+
+The historical dependency order above has been satisfied for the model-layer implementation tracked in this repository.
+
+The remaining dependency order is now:
+
+1. `#48` - apply the reviewed host-registration seam to the live AWCMS Mini/EmDash Worker build and redeploy the real host artifact.
+2. `#49` - add backend-controlled religion master/reference data so forms, imports, and reports no longer rely on local UI constants for Agama values.
+
+`#48` and `#49` are intentionally separate because one is a host/runtime integration seam and the other is backend reference-data work.
+
 ## Security Notes
 
 - Do not commit `.env`, `.env.local`, `.dev.vars`, database credentials, Cloudflare tokens, Coolify tokens, R2 keys, or private key material.
@@ -134,6 +172,13 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Keep R2 private and expose documents only through permission-aware, audit-friendly application flows.
 - Mask NIK/KIA, No KK, individual-level religion, child data, elderly/vulnerable-person data, disability data, health-related notes, and sensitive document details by default in UI.
 - Use `Guru Agama` as the neutral general module label. Treat Islam-specific `guru ngaji` context as contextual teaching-place/activity data, not the general module title.
+
+## Operator And Blocker Notes
+
+- Cloudflare/Coolify credential posture in this repository remains env-driven. Script scans continue to show placeholder constants only, not inline live credentials.
+- If live Cloudflare Worker rollout or Coolify secret changes are required, those remain operator/runtime actions and must not be overstated as repository-only changes.
+- `#48` cannot be fully completed from this repository unless the reviewed live build workspace that owns `astro.config.mjs` and the actual Worker build artifact is available for change.
+- `#49` should be implemented with backend-controlled reference data, service-layer authorization, and audit coverage for changes and export/report access involving individual-level religion data.
 
 ## Migration Correction
 
