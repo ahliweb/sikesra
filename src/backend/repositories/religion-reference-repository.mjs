@@ -5,7 +5,7 @@ import {
   normalizeReferenceText,
 } from "../reference-data/religion-reference.mjs";
 import { SIKESRA_DB_MIGRATIONS } from "../../db/migrations/index.mjs";
-import { getPool } from "../../db/client.ts";
+import { getPool } from "../../db/client.js";
 
 export function createSikesraReligionReferenceRepository() {
   const persistenceMigration = SIKESRA_DB_MIGRATIONS.find((migration) => migration.name === "001_create_religion_reference_tables");

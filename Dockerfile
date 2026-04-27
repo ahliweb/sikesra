@@ -32,6 +32,9 @@ RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
 # Copy compiled output and prod node_modules
 COPY --from=builder /app/dist/api ./dist/api
+COPY --from=builder /app/src/backend ./dist/api/backend
+COPY --from=builder /app/src/db ./dist/api/db
+COPY --from=builder /app/src/api/middleware/abac.policy.mjs ./dist/api/api/middleware/abac.policy.mjs
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
@@ -44,4 +47,4 @@ ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "dist/api/index.js"]
+CMD ["node", "dist/api/api/index.js"]
