@@ -42,7 +42,7 @@ This layout is constrained by:
 |-- tests/
 |   `-- unit/
 |-- AGENTS.md
-|-- wrangler.jsonc
+|-- .env.example
 `-- package.json
 ```
 

@@ -82,4 +82,4 @@ The general religious teacher module is labeled `Guru Agama` in SIKESRA, not `Gu
 
 - `docs/security/emergency-recovery-runbook.md`
 - `docs/process/migration-deployment-checklist.md`
-- `docs/process/sikesra-cloudflare-worker-deploy-checklist.md`
+- `docs/process/cloudflare-hosted-runtime.md`

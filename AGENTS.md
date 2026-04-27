@@ -12,19 +12,20 @@ Treat every other repository as read-only reference unless the user explicitly s
 ## Runtime Baseline
 
 - Keep the app EmDash-first and single-tenant.
-- Use Cloudflare Worker runtime for production deployment.
+- Use the Hono backend API on the Coolify-managed VPS for production backend deployment.
+- Use Cloudflare as the browser-facing edge and frontend delivery layer.
 - Use `sikesrakobar.ahlikoding.com` as the single browser-facing host.
 - Use `/_emdash/` as the reviewed admin entry alias on the same host.
-- Use R2 bucket `sikesra` through Worker binding `MEDIA_BUCKET`.
+- Use R2 bucket `sikesra` through reviewed backend-managed access.
 - Use PostgreSQL database `sikesrakobar` on the Coolify-managed VPS.
-- Use direct reviewed PostgreSQL connectivity from the Cloudflare Worker runtime; do not use Hyperdrive.
+- Use direct reviewed PostgreSQL connectivity from the Hono backend over the internal Docker network; do not use Hyperdrive or a Cloudflare Tunnel database path.
 
 ## Security Rules
 
 - Never commit real credentials, tokens, private keys, connection strings, NIK/KIA, No KK, personal data, or private documents.
-- Keep `.env`, `.env.local`, `.dev.vars`, generated Worker secret files, and secret-bearing artifacts untracked.
+- Keep `.env`, `.env.local`, `.dev.vars`, generated secret files, and secret-bearing artifacts untracked.
 - Treat SIKESRA beneficiary, child, elderly, disability, religion, contact, health, and document data as sensitive.
-- Prefer least-privilege runtime roles and Cloudflare-managed Worker secrets.
+- Prefer least-privilege runtime roles and deployment-managed secrets.
 - Keep Coolify and Cloudflare operator credentials separate from application runtime credentials.
 
 ## Workflow

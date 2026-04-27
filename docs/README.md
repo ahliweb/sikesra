@@ -2,7 +2,7 @@
 
 This directory contains the maintained architecture, governance, security, plugin, admin, and process documentation for SIKESRA (awcms-mini-sikesra).
 
-SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of AWCMS Mini, serving `sikesrakobar.ahlikoding.com`.
+SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudflare serves the public frontend and edge layer while the Hono backend API runs on a Coolify-managed VPS.
 
 ## Read In This Order
 
@@ -27,7 +27,6 @@ SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of 
 
 ## SIKESRA-Specific Process Docs
 
-- `process/sikesra-cloudflare-worker-deploy-checklist.md` - SIKESRA deploy checklist
 - `process/sikesra-religion-reference.md` - controlled Agama reference and normalization guidance
 - `process/sikesra-runtime-security.md` - SIKESRA runtime and secret handling baseline
 - `process/sikesra-uiux-github-issue-plan.md` - canonical issue mapping for SIKESRA UI/UX work
@@ -35,11 +34,10 @@ SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of 
 ## Upstream Process Docs (adapted for SIKESRA)
 
 - `process/ai-workflow-planning-templates.md` - reusable AI workflow templates for docs, planning, implementation, and review tasks
-- `process/cloudflare-hosted-runtime.md` - full runtime expectations and env requirements for the Cloudflare Worker path without Hyperdrive
+- `process/cloudflare-hosted-runtime.md` - Cloudflare edge, frontend, and Hono runtime expectations for the active no-Hyperdrive architecture
 - `architecture/no-hyperdrive-adr.md` - canonical decision record for removing Hyperdrive from the active architecture
-- `process/cloudflare-pages-vs-workers-decision.md` - single Worker deployment; no Pages+Workers split
-- `process/cloudflare-tunnel-private-db-connector-runbook.md` - tunnel operator runbook for the VPS-side `cloudflared` connector step
-- `process/cloudflare-coolify-origin-hardening.md` - Cloudflare edge → Worker → PostgreSQL trust boundary
+- `process/cloudflare-pages-vs-workers-decision.md` - historical architecture comparison context
+- `process/cloudflare-coolify-origin-hardening.md` - Cloudflare edge and Coolify API/database trust boundary
 - `process/coolify-mcp-secret-handling.md` - supported local-only secret handling pattern for Coolify MCP access
 - `process/github-issue-workflow.md` - issue-first workflow, atomic scope rules
 - `process/migration-deployment-checklist.md` - pre/post-deploy checklist
@@ -53,9 +51,8 @@ SIKESRA is an EmDash-first single-tenant Cloudflare-hosted Worker deployment of 
 
 - Hostname: `sikesrakobar.ahlikoding.com`
 - Database: `sikesrakobar` / runtime role: `sikesrakobar_runtime`
-- Worker: `sikesra-kobar`
+- Hono API service: `awcms-mini-api`
 - R2 bucket: `sikesra` (binding: `MEDIA_BUCKET`)
-- SESSION KV: `SESSION` (ID: `78cc94b763664d56b5ac9d34f1244304`)
 - Issue tracker: `ahliweb/sikesra`
 - Upstream reference (read-only): `ahliweb/awcms-mini`, local path `/home/data/dev_react/awcms-mini`
 

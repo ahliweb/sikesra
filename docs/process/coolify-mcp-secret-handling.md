@@ -6,7 +6,7 @@ This runbook defines the supported pattern for configuring Coolify MCP access wi
 
 It is aligned with the current baseline:
 
-- AWCMS Mini SIKESRA is hosted on the Cloudflare Worker runtime
+- AWCMS Mini SIKESRA uses Cloudflare as the public edge while the Hono backend API runs on Coolify
 - PostgreSQL runs on a protected VPS managed through Coolify
 - Coolify administrative automation is an operator workflow, not an in-app runtime feature
 
@@ -85,7 +85,7 @@ For Coolify Cloud:
 
 The tracked helper reads env files through the shared Node loader without executing the files as shell code. It never stores the token in the script itself.
 
-For Cloudflare-hosted deployment secrets, keep Worker runtime secrets in Wrangler-managed secrets or CI/CD-managed environment storage rather than tracked files. Use tracked `.env.example` values only for placeholders and non-secret defaults.
+For Cloudflare-side deployment secrets, keep operator credentials and reviewed secret values in deployment-managed storage or CI/CD-managed environment storage rather than tracked files. Use tracked `.env.example` values only for placeholders and non-secret defaults.
 
 ## Direct API Verification
 
@@ -106,7 +106,7 @@ For the current AWCMS Mini SIKESRA Coolify/PostgreSQL management-plane posture, 
 node scripts/verify-runtime-readiness.mjs
 ```
 
-This command checks the current PostgreSQL resource and Cloudflare runtime posture together, emits only redacted posture fields, and exits non-zero while any required runtime posture check fails.
+This command checks the current PostgreSQL resource and Cloudflare-side posture together, emits only redacted posture fields, and exits non-zero while any required runtime posture check fails.
 
 This SIKESRA repo does not currently include separate Coolify-only audit wrappers. If those are added later, they must use `scripts/_local-env.mjs`, emit only redacted posture fields, and avoid raw management-plane payloads. Any focused Coolify PostgreSQL audit command must use `COOLIFY_BASE_URL` plus `COOLIFY_ACCESS_TOKEN` through the same env-managed path, read only documented detail endpoints, omit secret-bearing fields from output, and exit non-zero when the API posture violates the reviewed expectations.
 
@@ -208,7 +208,7 @@ This baseline aligns with the current AWCMS Mini SIKESRA posture:
 
 - EmDash-first application hosted on Cloudflare Workers
 - PostgreSQL hosted on a Coolify-managed VPS
-- Hyperdrive and Tunnel rollout work separated from normal application runtime secrets
+- database transport and edge rollout work separated from normal application runtime secrets
 
 ## Validation
 
@@ -218,7 +218,6 @@ This baseline aligns with the current AWCMS Mini SIKESRA posture:
 ## Cross-References
 
 - `docs/process/secret-hygiene-audit.md`
-- `docs/process/secret-hygiene-coolify-cloudflare-topology-plan-2026.md`
 - `docs/process/cloudflare-hosted-runtime.md`
 - `docs/process/postgresql-vps-hardening.md`
 - `docs/security/operations.md`

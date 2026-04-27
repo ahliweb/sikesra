@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
-const SCAN_ROOTS = [".env.example", ".dev.vars.example", "package.json", "wrangler.jsonc", "AGENTS.md", "docs", "scripts", "src", "tests"];
+const SCAN_ROOTS = [".env.example", ".dev.vars.example", "package.json", "AGENTS.md", "docs", "scripts", "src", "tests"];
 const ALLOWED_SECRET_NAME_CONTEXT = /`?[A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PRIVATE_KEY|ENCRYPTION_KEY)[A-Z0-9_]*`?/;
 const ALLOWED_PLACEHOLDERS = /(<[^>]+>|replace-with|REPLACE_WITH|your_|example|placeholder|local-only|omitted|redacted|\$\{[A-Z0-9_]+\})/i;
 const SENSITIVE_ASSIGNMENT = /^\s*(?:export\s+)?([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PRIVATE_KEY|ENCRYPTION_KEY)[A-Z0-9_]*)\s*=\s*(.+?)\s*$/;

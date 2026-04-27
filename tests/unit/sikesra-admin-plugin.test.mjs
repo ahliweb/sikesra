@@ -40,7 +40,6 @@ import {
   mapSikesraReligionImportValue,
   normalizeSikesraReligionValue,
 } from "../../src/plugins/sikesra-admin/religion-reference.mjs";
-import { buildSmokeWorkerMetadata, summarizeSmokeWorkerBindings } from "../../scripts/deploy-smoke-worker.mjs";
 import {
   SIKESRA_MODULE_KEYS,
   SIKESRA_MODULE_LABELS,
@@ -395,23 +394,6 @@ test("SIKESRA Agama select model avoids internal field names", () => {
 
   assert.equal(model.label, "Agama Guru");
   assert.equal(/religion_reference_id|religion_code/i.test(serialized), false);
-});
-
-test("SIKESRA smoke Worker deployment metadata preserves reviewed bindings", () => {
-  const metadata = buildSmokeWorkerMetadata({
-    compatibility_date: "2026-04-26",
-    compatibility_flags: ["nodejs_compat"],
-    vars: { SITE_URL: "https://sikesrakobar.ahlikoding.com" },
-    r2_buckets: [{ binding: "MEDIA_BUCKET", bucket_name: "sikesra" }],
-    kv_namespaces: [{ binding: "SESSION", id: "example-session-kv-id" }],
-  });
-  const bindings = summarizeSmokeWorkerBindings(metadata);
-
-  assert.deepEqual(bindings, [
-    { type: "kv_namespace", name: "SESSION" },
-    { type: "plain_text", name: "SITE_URL" },
-    { type: "r2_bucket", name: "MEDIA_BUCKET" },
-  ]);
 });
 
 function flattenPages(pages) {

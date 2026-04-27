@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document records the project-specific runtime and secret-handling baseline for SIKESRA Kobar. It follows the AWCMS Mini issue-driven workflow from `docs/process/ai-workflow-planning-templates.md` in the upstream AWCMS Mini repository and keeps the SIKESRA project aligned with EmDash-first AWCMS Mini, Cloudflare-hosted runtime, PostgreSQL on a Coolify-managed VPS, and private R2 document storage.
+This document records the project-specific runtime and secret-handling baseline for SIKESRA Kobar. It follows the AWCMS Mini issue-driven workflow from `docs/process/ai-workflow-planning-templates.md` in the upstream AWCMS Mini repository and keeps the SIKESRA project aligned with EmDash-first AWCMS Mini, Cloudflare-served frontend delivery, a Hono backend API on a Coolify-managed VPS, PostgreSQL on the same VPS, and private R2 document storage.
 
 ## Runtime Baseline
 
@@ -13,15 +13,14 @@ This document records the project-specific runtime and secret-handling baseline 
 - PostgreSQL management surface: Coolify-managed PostgreSQL on the VPS.
 - R2 bucket: `sikesra`.
 - Application architecture: AWCMS Mini remains EmDash-first and single-tenant for this SIKESRA deployment.
-- Hosting baseline: Cloudflare-hosted Worker runtime with PostgreSQL transport configured through the reviewed AWCMS Mini deployment path.
+- Hosting baseline: Cloudflare edge and frontend with the Hono backend API deployed on the Coolify-managed VPS.
 
 ## Secret Storage Rules
 
 - Do not commit `.env`, `.env.local`, `.dev.vars`, connection strings, access keys, tokens, passwords, or private keys.
 - Keep local-only values in `.env.local`, `.env.<environment>.local`, or another ignored env file.
-- Keep Cloudflare Worker production secrets in Cloudflare Worker secrets, not in `wrangler` config values.
 - Keep local script secrets in `.env.local` or the inherited process environment. The maintained scripts share `scripts/_local-env.mjs` and must not parse or source env files ad hoc.
-- Keep the reviewed Worker secret contract centralized in `wrangler.jsonc`; operator scripts should read that contract rather than duplicating required secret names in multiple files.
+- Keep production backend secrets in reviewed deployment-managed secret storage rather than tracked config files.
 - Keep Coolify-managed resource secrets in Coolify locked environment variables with runtime-only scope by default.
 - Use Docker Build Secrets for build-time sensitive inputs if Coolify build-time secrets are unavoidable.
 - Keep PostgreSQL credentials least-privilege and application-scoped; do not use PostgreSQL superuser credentials for the app runtime.
@@ -39,7 +38,7 @@ The non-secret project identifiers are represented in `.env.example`:
 - `SIKESRA_BASE_URL=https://sikesrakobar.ahlikoding.com`
 - `SIKESRA_R2_BUCKET=sikesra`
 
-Secret-bearing values must be supplied through local ignored env files, Cloudflare secrets, or Coolify locked secrets:
+Secret-bearing values must be supplied through local ignored env files, Cloudflare-managed operator storage, or Coolify locked secrets:
 
 - `DATABASE_URL`
 - `DATABASE_MIGRATION_URL` when operator migration access needs a reviewed private PostgreSQL route that differs from the general runtime path
@@ -57,20 +56,18 @@ When local operator workflows need environment-specific separation, the shared h
 3. `.env.<SIKESRA_ENV>` or `.env.<NODE_ENV>`
 4. `.env`
 
-Use tracked `.env.example` only for placeholders and non-secret defaults. Keep live values in ignored local env files, Cloudflare Worker secrets, Coolify locked runtime secrets, or an external password manager.
+Use tracked `.env.example` only for placeholders and non-secret defaults. Keep live values in ignored local env files, Coolify locked runtime secrets, or an external password manager.
 
 For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored local env files when repository-owned migration commands must target a reviewed private PostgreSQL route that differs from the general runtime `DATABASE_URL` posture.
 
 ## Cloudflare Recommendations
 
-- Declare required Worker secret names in Wrangler configuration when this repository adds Worker config.
-- Store secret values through `wrangler secret put` or the Cloudflare dashboard.
-- Use `node scripts/sync-worker-secrets.mjs` after the Worker exists to populate the required Cloudflare Worker secrets from ignored env values without printing secret values.
-- `scripts/sync-worker-secrets.mjs` and `scripts/verify-runtime-readiness.mjs` should derive required secret names from `wrangler.jsonc` so the local operator workflow stays aligned with reviewed EmDash/runtime changes.
+- Keep Cloudflare as the browser-facing frontend and edge security layer, not the application runtime.
+- Store Cloudflare operator credentials only in ignored local env files or another reviewed operator secret store.
+- Keep R2 bucket configuration and Turnstile settings aligned with the reviewed public hostname.
 - Bind R2 as a private bucket and serve documents only through permission-aware, audited application flows.
 - Keep Turnstile hostname allowlists aligned with `sikesrakobar.ahlikoding.com` when login, reset, or invite flows are enabled.
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
-- Keep the Worker aligned with the AWCMS Mini EmDash-first Cloudflare baseline: `@astrojs/cloudflare/entrypoints/server`, `nodejs_compat`, `global_fetch_strictly_public`, `/_emdash/` admin entry, required Worker secrets, R2 binding `MEDIA_BUCKET`, and SESSION KV binding.
 
 ## Coolify Recommendations
 
@@ -92,23 +89,20 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 - PostgreSQL database name verified: `sikesrakobar`.
 - PostgreSQL application user verified: `sikesrakobar_runtime`.
 - PostgreSQL public exposure verified through Coolify API: `is_public=false`.
-- Redacted `psql` smoke test through Cloudflare Access and Tunnel verified connectivity to database `sikesrakobar` after synchronizing ignored local credentials from Coolify.
+- Redacted `psql` smoke test verified connectivity to database `sikesrakobar` after synchronizing ignored local credentials from Coolify.
 - PostgreSQL SSL/TLS was enabled through the reviewed private database path for database `sikesrakobar`.
-- Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
+- Coolify is the reviewed management plane for the Hono backend API and PostgreSQL runtime secrets.
 - Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
-- Repository-side Cloudflare Worker configuration now exists in `wrangler.jsonc` for Worker `sikesra-kobar`, custom domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET` to bucket `sikesra`, and the AWCMS Mini required Worker secret contract.
-- Cloudflare Worker `sikesra-kobar` is now deployed with the full AWCMS Mini/EmDash Worker build, required Worker secrets, R2 binding, SESSION KV binding, and Worker Custom Domain `sikesrakobar.ahlikoding.com`.
 - Public smoke tests passed for base URL, `/_emdash/` admin entry redirect, setup shell, and R2 binding readiness.
 - Repository migration tooling now supports `DATABASE_MIGRATION_URL` when operator migrations need the reviewed private PostgreSQL route while the general app runtime keeps its existing `DATABASE_URL` posture.
 
 ## Remaining Runtime Secret Work
 
 - Run the EmDash first-run setup at `https://sikesrakobar.ahlikoding.com/_emdash/admin/setup` before treating the live app as operator-ready.
-- Keep Worker runtime secrets synchronized in Cloudflare secrets with `scripts/sync-worker-secrets.mjs` after each secret rotation.
 - If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
 - Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
-- If `pnpm db:migrate:probe` still returns a redacted timeout after setting `DATABASE_MIGRATION_URL`, treat the blocker as operator-side private-route readiness and verify the reviewed `cloudflared` connector, route, and PostgreSQL origin reachability before retrying migrations.
+- If `pnpm db:migrate:probe` still returns a redacted timeout after setting `DATABASE_MIGRATION_URL`, treat the blocker as operator-side private-route readiness and verify the reviewed Hono/PostgreSQL network path before retrying migrations.
 
 ## OWASP-Aligned Controls
 
@@ -122,14 +116,14 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 ## Credential Migration Checklist
 
 - Search scripts and configs before each deployment-affecting change for hardcoded credentials.
-- Move any discovered credential values into `.env.local`, Cloudflare Worker secrets, or Coolify locked secrets.
+- Move any discovered credential values into `.env.local` or reviewed deployment-managed secret storage.
 - Replace scripts with environment variable reads and fail closed when required values are missing.
 - Update `.env.example` with placeholder keys only.
 - Run `node scripts/check-secret-hygiene.mjs` before committing.
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, `scripts/_wrangler-config.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, derive the reviewed Worker secret contract from `wrangler.jsonc`, print redacted reports, and fail closed when required infrastructure is missing.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/_local-env.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, print redacted reports, and fail closed when required infrastructure is missing.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 

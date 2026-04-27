@@ -107,21 +107,21 @@ Checkpoint order:
 3. Record whether ABAC audit-only flags are enabled.
 4. Record any plugin or admin-surface settings changed during the incident window.
 5. Record whether traffic is reaching the app through the supported Cloudflare-hosted runtime path.
-6. Record whether the incident coincides with hostname, Turnstile, Worker binding, or R2 bucket automation changes.
+6. Record whether the incident coincides with hostname, Turnstile, API ingress, or R2 bucket automation changes.
 
 ## Cloudflare Automation Recovery
 
 Use this when a Cloudflare-side automation change leaves the deployment in a partially applied state.
 
-1. Record the active Worker deployment version before changing anything else.
+1. Record the active frontend and API deployment identifiers before changing anything else.
 2. Record which Cloudflare-side resources changed:
    - public hostname mapping (`sikesrakobar.ahlikoding.com`)
    - Turnstile hostname or secret configuration
-   - Worker bindings: `MEDIA_BUCKET` → R2 `sikesra`, `HYPERDRIVE` → `sikesra-kobar-postgres-runtime`
-3. If the Worker deployment itself is broken, roll back the Worker version first using the reviewed Cloudflare rollback path.
+   - reviewed R2 configuration for bucket `sikesra`
+3. If the frontend deployment itself is broken, roll back the frontend deployment first using the reviewed Cloudflare rollback path.
 4. If only hostname routing is wrong, correct the custom-domain or route mapping before changing application code.
 5. If Turnstile is rejecting valid traffic, restore the last reviewed hostname allowlist or secret configuration.
-6. If the R2 binding is missing or points to the wrong bucket, restore the Worker binding contract to `MEDIA_BUCKET` and `sikesra` before changing storage logic.
+6. If the R2 configuration is missing or points to the wrong bucket, restore the reviewed runtime contract for `sikesra` before changing storage logic.
 7. Re-run the Cloudflare smoke tests from `docs/process/cloudflare-hosted-runtime.md` after each rollback step.
 
 ## Policy Rollback
@@ -170,23 +170,12 @@ Use this when emergency SSH access to the Coolify-managed VPS (`202.10.45.224`) 
 
 The reviewed Coolify-managed VPS uses key-only root SSH recovery. Do not store or use a root password from `.env.local` or any script.
 
-`cloudflared` connector recovery:
+Database-path recovery:
 
-- If the Cloudflare Tunnel connector for PostgreSQL is inactive, inspect the service status first:
-
-  ```bash
-  sudo systemctl status cloudflared-postgres.service
-  sudo journalctl -u cloudflared-postgres.service -n 50 --no-pager
-  ```
-
-- Do not paste `CLOUDFLARE_TUNNEL_TOKEN` into shell history, issue comments, or any unsecured channel.
-- If the token may have been exposed, rotate it through the Cloudflare dashboard and update the server-side secret before restarting the service.
-- After restoring the connector, verify the Hyperdrive path is healthy:
+- If the application can no longer reach PostgreSQL, inspect the Coolify-managed Hono service and PostgreSQL resource first.
+- Do not reintroduce a Cloudflare Tunnel or Hyperdrive path as an emergency workaround.
+- After restoring the reviewed runtime path, verify health with:
 
   ```bash
-  HEALTHCHECK_EXPECT_DATABASE_TRANSPORT=hyperdrive \
-  HEALTHCHECK_EXPECT_HYPERDRIVE_BINDING=HYPERDRIVE \
   pnpm healthcheck
   ```
-
-See `docs/process/cloudflare-tunnel-private-db-connector-runbook.md` for the full connector activation and recovery runbook.

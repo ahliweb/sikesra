@@ -14,7 +14,7 @@ It follows the issue-driven workflow in `docs/process/ai-workflow-planning-templ
   - `src/backend/services/`
   - `src/db/`
 - The current `src/db` surface is still a scaffold only; it does not yet provide a live PostgreSQL client, applied migrations, or API handlers for reference-data persistence.
-- The reviewed Cloudflare Worker runtime and EmDash host integration are already live and are not the current blocker for backend reference-data work.
+- The reviewed Hono backend API and EmDash host integration are already live and are not the current blocker for backend reference-data work.
 
 ## Active Issues
 
@@ -36,11 +36,11 @@ Without that persisted step, broad backend closure would still be speculative an
 
 ## Security And Runtime Guardrails
 
-- Keep Cloudflare Worker runtime secrets in Cloudflare Worker secrets.
+- Keep Cloudflare-side operator secrets and edge configuration separate from backend runtime secrets.
 - Keep Coolify-managed runtime secrets in locked runtime variables with build exposure disabled by default.
 - Keep local/operator secrets in ignored env files only.
 - Follow OWASP-style least privilege, audited service-layer authorization, and data minimization for any future backend reference-data implementation.
-- Keep the backend seam aligned with the reviewed EmDash-first, Cloudflare-hosted Worker runtime and PostgreSQL-on-Coolify baseline.
+- Keep the backend seam aligned with the reviewed EmDash-first, Cloudflare edge plus Hono backend runtime, and PostgreSQL-on-Coolify baseline.
 - Treat Coolify, Cloudflare, and PostgreSQL passwords/tokens as management-plane data only; repository status tooling may report presence booleans but must not print raw secret values.
 
 ## Validation

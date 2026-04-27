@@ -17,7 +17,7 @@ The current maintained `scripts/**` entrypoints reviewed in this pass did not co
 
 The current maintained script entrypoints now use the shared `scripts/_local-env.mjs` helper where local env loading is required, so secret loading stays auditable and consistent without sourcing env files as shell code.
 
-The reviewed local command scripts read connection strings and tokens only from ignored env files or the inherited process environment. Credential-bearing Hyperdrive and PostgreSQL values must stay in `.env.local`, Cloudflare-managed secrets, Coolify locked secrets, or an equivalent local secret store, not in tracked scripts.
+The reviewed local command scripts read connection strings and tokens only from ignored env files or the inherited process environment. Credential-bearing PostgreSQL values must stay in `.env.local`, deployment-managed secrets, Coolify locked secrets, or an equivalent local secret store, not in tracked scripts.
 
 This repository is currently a SIKESRA runtime/config workspace and does not contain the full app build wrapper. If app build scripts are added here later, they must remove generated `dist/server/.dev.vars*` files after local builds so local operator secrets from `.env.local` do not linger inside Cloudflare build artifact trees.
 
@@ -83,7 +83,6 @@ Current scan scope:
 - `.env.example`
 - `.dev.vars.example`
 - `package.json`
-- `wrangler.jsonc`
 - `AGENTS.md`
 - `scripts/**/*.mjs`
 - `src/**/*.mjs`
@@ -111,7 +110,7 @@ Current `.env.example` variable coverage:
 
 - runtime and application secrets: `DATABASE_URL`, `APP_SECRET`, `MINI_TOTP_ENCRYPTION_KEY`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `EDGE_API_JWT_SECRET`
 - operator automation secrets: `CLOUDFLARE_API_TOKEN`, `COOLIFY_ACCESS_TOKEN`
-- Cloudflare account and Tunnel variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_TUNNEL_ID`, `CLOUDFLARE_TUNNEL_NAME`, `CLOUDFLARE_TUNNEL_TOKEN`
+- Cloudflare account and operator variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`
 - Cloudflare Access variables: `CLOUDFLARE_ACCESS_APP_ID`, `CLOUDFLARE_ACCESS_APP_AUD`, `CLOUDFLARE_ACCESS_CLIENT_ID`, `CLOUDFLARE_ACCESS_CLIENT_SECRET`, `CLOUDFLARE_ACCESS_SERVICE_TOKEN_ID`
 
 If a new maintained path needs coverage, extend the scanner target list and add or update focused tests in the same issue-scoped change so the allowlist stays explicit and reviewable.
@@ -134,22 +133,21 @@ If the audit does not find confirmed live secrets:
 ## Current Standards Alignment
 
 - OWASP Secrets Management guidance: centralize and standardize secret handling, apply least privilege, avoid plaintext secret transport, and keep rotation and auditability explicit for operator credentials.
-- Cloudflare Workers guidance: keep sensitive values out of Wrangler `vars`, prefer Worker secrets for deployed runtime values, and keep `.env*` or `.dev.vars*` files untracked in local development.
+- Cloudflare guidance: keep sensitive values out of tracked frontend or edge configuration, prefer deployment-managed secrets for runtime values, and keep `.env*` or `.dev.vars*` files untracked in local development.
 - Coolify guidance: use Coolify Environment Variables with locked secrets for sensitive resource-side values, keep runtime-only variables out of the build phase by default, and prefer Docker Build Secrets over ordinary build args for reviewed build-time secrets.
-- Current script standard: keep the reviewed Worker secret-name contract in `wrangler.jsonc` and have operator scripts read that contract rather than duplicating secret lists in code.
-- Current Mini operator posture: Cloudflare hosts the runtime, PostgreSQL runs on a Coolify-managed VPS, and EmDash remains the host architecture, so operator automation secrets must stay distinct from application runtime credentials.
+- Current script standard: keep reviewed secret requirements in env-driven runtime config and avoid duplicating them across operator scripts when possible.
+- Current Mini operator posture: Cloudflare serves the public edge, PostgreSQL runs on a Coolify-managed VPS, the Hono backend API owns runtime access to protected services, and EmDash remains the host architecture, so operator automation secrets must stay distinct from application runtime credentials.
 
 ## Current Example Guidance
 
 - use placeholder database passwords in `.env.example` instead of literal local defaults
 - keep Coolify MCP tokens out of tracked files and issue bodies
 - keep `CLOUDFLARE_API_TOKEN` out of tracked files and issue bodies
-- keep any elevated Cloudflare token scopes, including Tunnel-edit tokens, in local-only or CI/CD-managed secret storage
-- keep `CLOUDFLARE_TUNNEL_TOKEN` in server-managed secret storage on the VPS connector host, not in `.env.local`; rotate immediately if leaked
-- do not rely on generated `dist/server/.dev.vars` files as a secret store; for deployed Workers keep sensitive values in Cloudflare-managed secrets instead of local dev vars or Wrangler `[vars]`
+- keep any elevated Cloudflare token scopes in local-only or CI/CD-managed secret storage
+- do not rely on generated `dist/server/.dev.vars` files as a secret store; keep sensitive values in deployment-managed secrets instead of local dev vars or tracked config
 - keep DNS-edit Cloudflare token scopes in local-only or CI/CD-managed secret storage as well
 - keep Cloudflare Access/Zero Trust variables in the appropriate storage class:
-  - `CLOUDFLARE_ACCESS_CLIENT_ID` and `CLOUDFLARE_ACCESS_CLIENT_SECRET` in Cloudflare-managed Worker secrets or CI/CD-managed secrets
+  - `CLOUDFLARE_ACCESS_CLIENT_ID` and `CLOUDFLARE_ACCESS_CLIENT_SECRET` in deployment-managed secrets or CI/CD-managed secrets
   - `CLOUDFLARE_ACCESS_APP_ID`, `CLOUDFLARE_ACCESS_APP_AUD`, and `CLOUDFLARE_ACCESS_SERVICE_TOKEN_ID` in `.env.local` or operator notes
 - keep Cloudflare Turnstile and JWT secrets in server-only configuration
 - keep production database credentials distinct from local development placeholders
@@ -167,7 +165,6 @@ If the audit does not find confirmed live secrets:
 
 ## Cross-References
 
-- `docs/process/secret-hygiene-coolify-cloudflare-topology-plan-2026.md`
 - `docs/process/ai-workflow-planning-templates.md`
 - `docs/process/cloudflare-hosted-runtime.md`
 - `docs/process/postgresql-vps-hardening.md`

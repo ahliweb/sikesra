@@ -228,7 +228,7 @@ The default recommendation is to prefer host-only cookies unless a concrete cros
 - use TLS for database traffic from the Cloudflare-hosted runtime
 - keep `pg_hba.conf` and network rules scoped narrowly
 - use non-superuser runtime credentials
-- if Hyperdrive is introduced later, treat it as a Cloudflare transport optimization, not as a replacement for PostgreSQL hardening or access review
+- keep PostgreSQL access behind the reviewed Hono backend path rather than adding a direct Cloudflare-to-database transport layer
 
 ### Hostname And Session Recommendations
 

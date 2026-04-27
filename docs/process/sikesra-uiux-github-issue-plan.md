@@ -122,8 +122,8 @@ Workbook-specific import planning for Tokoh Agama sources is now documented sepa
 The prompt was extended with deployment/runtime work for the separate `ahliweb/sikesra` project:
 
 - ahliweb/sikesra#10: Provision Coolify database and locked runtime secrets.
-- ahliweb/sikesra#11: Configure Cloudflare Worker runtime, domain, secrets, and R2 binding.
-- ahliweb/sikesra#44: Replace temporary smoke Worker with full AWCMS Mini/EmDash build.
+- ahliweb/sikesra#11: Historical Cloudflare Worker runtime, domain, secrets, and R2 binding setup.
+- ahliweb/sikesra#44: Historical Worker replacement issue before the Hono backend architecture became the reviewed baseline.
 
 ## Current Runtime Status
 
@@ -132,8 +132,8 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Application database user is `sikesrakobar_app`.
 - Coolify reports the PostgreSQL resource as `running:healthy` and `is_public=false`.
 - R2 bucket `sikesra` was verified through Cloudflare MCP using a non-sensitive write/read/delete smoke object.
-- `wrangler.jsonc` exists for Worker `sikesra-kobar`, domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET`, and the required AWCMS Mini Worker secret contract.
-- Worker/domain/R2 smoke checks passed and the temporary smoke Worker was already replaced by the full AWCMS Mini/EmDash build in `#44`.
+- The current reviewed runtime baseline is Cloudflare edge plus a Hono backend API on Coolify.
+- R2 bucket `sikesra` remains part of the reviewed storage path.
 - The deployed runtime now serves the EmDash admin shell at `/_emdash/`.
 
 ## Current Integration Status
@@ -141,7 +141,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - `src/plugins/sikesra-admin/` now contains the implemented SIKESRA model-layer surfaces for navigation, dashboard, registry, detail, forms, ID, region, documents, verification, import/export, governance, accessibility, responsive behavior, and hardening tests.
 - `src/plugins/sikesra-admin/host-registration.mjs` documents the safe host-registration seam and patch snippet for appending `sikesraAdminPlugin()` to the EmDash plugin list.
 - The local repository validates with `pnpm check` and the unit suite currently passes.
-- The reviewed host/runtime integration outcome is already live through the deployed EmDash Worker baseline documented in `#44`; the repository still keeps `host-registration.mjs` as the reviewed seam/reference for future host-build changes.
+- The reviewed host/runtime integration outcome is already live through the current deployment baseline; the repository still keeps `host-registration.mjs` as the reviewed seam/reference for future host-build changes.
 - Backend-controlled religion reference data is still not implemented in the repository/service layer and remains the blocker captured in `#49`.
 
 ## Recommended Dependency Order
@@ -151,7 +151,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Complete ahliweb/sikesra#42 before module forms that need `Agama` fields.
 - Complete ahliweb/sikesra#43 before Lansia dashboard, registry, import/export, audit, tests, and docs coverage can be closed.
 - Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
-- Runtime provisioning issues ahliweb/sikesra#11, #12, #41, and #44 are complete.
+- Runtime provisioning issues ahliweb/sikesra#11, #12, #41, and #44 are complete as historical rollout slices.
 
 ## Remaining Dependency Order
 
@@ -161,12 +161,12 @@ The remaining dependency order is now:
 
 1. `#49` - add backend-controlled religion master/reference data so forms, imports, and reports no longer rely on local UI constants for Agama values.
 
-The prior host/runtime integration follow-on is already satisfied by the deployed EmDash Worker build documented in `#44`.
+The prior host/runtime integration follow-on is already satisfied by the current reviewed deployment baseline.
 
 ## Security Notes
 
 - Do not commit `.env`, `.env.local`, `.dev.vars`, database credentials, Cloudflare tokens, Coolify tokens, R2 keys, or private key material.
-- Store Worker secrets in Cloudflare-managed secrets.
+- Store Cloudflare-side secrets and operator credentials in reviewed deployment-managed secrets.
 - Store Coolify-managed resource credentials in Coolify locked runtime secrets when an application resource exists.
 - Keep R2 private and expose documents only through permission-aware, audit-friendly application flows.
 - Mask NIK/KIA, No KK, individual-level religion, child data, elderly/vulnerable-person data, disability data, health-related notes, and sensitive document details by default in UI.
@@ -175,7 +175,7 @@ The prior host/runtime integration follow-on is already satisfied by the deploye
 ## Operator And Blocker Notes
 
 - Cloudflare/Coolify credential posture in this repository remains env-driven. Script scans continue to show placeholder constants only, not inline live credentials.
-- If live Cloudflare Worker rollout or Coolify secret changes are required, those remain operator/runtime actions and must not be overstated as repository-only changes.
+- If live Cloudflare or Coolify rollout changes are required, those remain operator/runtime actions and must not be overstated as repository-only changes.
 - `#49` should be implemented with backend-controlled reference data, service-layer authorization, and audit coverage for changes and export/report access involving individual-level religion data.
 
 ## Migration Correction

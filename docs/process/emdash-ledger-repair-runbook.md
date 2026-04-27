@@ -4,7 +4,7 @@
 
 This runbook defines the operator-only path for inspecting and, when safe, repairing the EmDash `_emdash_migrations` ledger in AWCMS Mini SIKESRA.
 
-Use it only for issue-scoped work such as the scoped SIKESRA issue, where the live Cloudflare Worker runtime must stay aligned with the current EmDash host architecture while PostgreSQL remains the system of record on the Coolify-managed VPS.
+Use it only for issue-scoped work such as the scoped SIKESRA issue, where the live deployment must stay aligned with the current EmDash host architecture while PostgreSQL remains the system of record on the Coolify-managed VPS.
 
 ## When To Use It
 
@@ -94,10 +94,9 @@ curl -i https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status
 - if the command fails before reporting a ledger state, use the printed database error `kind` and `reason` to classify the blocker before retrying:
   - `connection_timeout`: verify the Cloudflare-to-Coolify or operator-to-VPS route is reachable
   - `credential_format`: verify the effective `DATABASE_URL` contains a valid username/password pair and that local env loading did not leave the password unset or malformed
-  - `dns`: verify the reviewed hostname or Hyperdrive origin hostname resolves from the current environment
+  - `dns`: verify the reviewed hostname resolves from the current environment
   - `refused`: verify PostgreSQL is listening and ingress rules allow the current source path
   - `tls`: verify certificate, hostname, and `sslmode` alignment
-  - `hyperdrive_binding`: verify the reviewed Cloudflare Hyperdrive binding exists in the target environment
 - if the repair command fails, capture the output and stop the release
 - if the target environment is production, keep the current shared setup-status compatibility seam in place until runtime initialization is proven stable
 - if post-repair smoke tests fail, restore from the reviewed database backup or transactionally revert using the incident runbook rather than ad hoc SQL edits
@@ -107,7 +106,6 @@ curl -i https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status
 - keep this flow aligned with OWASP least-privilege and secure-secrets guidance
 - keep `DATABASE_URL`, `CLOUDFLARE_API_TOKEN`, Coolify tokens, Turnstile secrets, and JWT secrets out of tracked files
 - prefer `sslmode=verify-full` for the Coolify-managed PostgreSQL target when the reviewed certificate/hostname path is available end to end
-- keep Hyperdrive validation explicit when the Worker is running with `DATABASE_TRANSPORT=hyperdrive`
 
 ## Related Docs
 

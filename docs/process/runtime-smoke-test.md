@@ -31,7 +31,7 @@ When one or more of these values is set, `pnpm healthcheck` fails if the live no
 ## Manual Smoke Test
 
 1. Start a PostgreSQL database reachable by `DATABASE_URL`.
-2. Use the reviewed direct PostgreSQL path for the current Cloudflare deployment.
+2. Use the reviewed PostgreSQL path for the current Hono deployment.
 3. Set `DATABASE_CONNECT_TIMEOUT_MS` to a reviewed fail-fast value such as `10000` when validating remote or operator-managed PostgreSQL targets.
 4. Use the reviewed hostname `id1.ahlikoding.com` with `sslmode=verify-full` when certificate validation is available.
 5. Set `SITE_URL` to the browser-facing hostname for the environment when validating a deployed-style build.
@@ -71,7 +71,7 @@ This command reuses the current repo-owned verification steps in order:
 - `pnpm smoke:deployed-runtime-health -- <base-url>`
 - `pnpm smoke:cloudflare-admin`
 
-The deployed runtime health step reads `/_emdash/api/setup/status` from the live Worker and checks the embedded `runtimeHealth` payload for:
+The deployed runtime health step reads `/_emdash/api/setup/status` from the live deployment and checks the embedded `runtimeHealth` payload for:
 
 - deployed database reachability
 - non-secret deployed database posture
@@ -116,7 +116,7 @@ The smoke result reports separate checks for:
 - `setupShell` for the reviewed `/_emdash/admin/setup` shell render path
 - `setupStatus` as a diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
 
-1. Load the public hostname and confirm it responds through the active Worker deployment.
+1. Load the public hostname and confirm it responds through the active reviewed deployment.
 2. Load `https://sikesrakobar.ahlikoding.com/_emdash/` and confirm it redirects to `/_emdash/admin` on the same host.
 3. If `ADMIN_SITE_URL` is still enabled for compatibility, load the admin hostname root and confirm it redirects to the configured admin entry path.
 4. Exercise at least one Turnstile-protected public flow and confirm:
@@ -137,7 +137,7 @@ The smoke result reports separate checks for:
 - if the runtime is pointed at the wrong reviewed transport target, `pnpm healthcheck` exits non-zero when expectation variables are set
 - if hostname automation is only partially applied, the public or admin hostname smoke tests fail
 - if Turnstile hostname configuration is wrong, valid solves fail server-side with hostname mismatch behavior
-- if the Worker R2 binding is missing, runtime storage paths fail with `R2_BUCKET_NOT_CONFIGURED`
+- if the reviewed R2 configuration is missing, runtime storage paths fail with `R2_BUCKET_NOT_CONFIGURED`
 
 Common database `reason` values and next checks:
 
@@ -153,9 +153,3 @@ Common database `reason` values and next checks:
 - `pnpm typecheck`
 - `pnpm build`
 - `pnpm healthcheck`
-
-## Smoke Worker Safety
-
-`scripts/deploy-smoke-worker.mjs` is intentionally guarded because it replaces the live Worker script with a smoke-test Worker. It refuses to deploy unless `SIKESRA_ALLOW_SMOKE_WORKER_DEPLOY=true` is set in a local-only environment file or process environment.
-
-When used, the script builds Cloudflare Worker metadata from `wrangler.jsonc` and preserves the reviewed non-secret bindings, including `MEDIA_BUCKET` and `SESSION`. Production secrets still belong in Cloudflare-managed Worker secrets and are not printed by the script.

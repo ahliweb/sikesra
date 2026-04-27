@@ -37,7 +37,7 @@ It is based on:
 ### Current Deployment Gap
 
 - The repo now documents and configures a Cloudflare-hosted runtime baseline while keeping PostgreSQL remote on a Coolify-managed VPS.
-- The remaining deployment work is follow-on integration detail around bindings, Hyperdrive adoption, and feature-specific Cloudflare services.
+- The remaining deployment work is follow-on integration detail around reviewed frontend delivery, Hono integration, and feature-specific Cloudflare services.
 
 ## Planning Goal
 
@@ -82,7 +82,7 @@ Recommended direction:
 - add Cloudflare deployment configuration such as `wrangler.jsonc` when the adapter move lands
 - define runtime bindings for edge-hosted services instead of assuming local Node-only process access
 - document the new production baseline as Cloudflare-hosted app plus Coolify-managed PostgreSQL
-- evaluate Cloudflare Hyperdrive for PostgreSQL access from Workers to reduce direct connection pressure and improve edge/runtime compatibility
+- keep PostgreSQL access behind the Hono backend API when adding Cloudflare-hosted frontend or edge features
 
 Security and operational notes:
 
@@ -204,7 +204,7 @@ Recommended API standards:
 Cloudflare-specific guidance:
 
 - use service bindings or platform bindings where possible instead of internal HTTP hops
-- if direct PostgreSQL connectivity from Workers is needed, prefer Hyperdrive-style pooling patterns over long-lived manual connections
+- do not introduce direct PostgreSQL connectivity from Workers; route database-backed behavior through Hono instead
 - avoid exposing management/admin endpoints as public mobile APIs
 
 ## Security Standards And Recommendations
@@ -253,7 +253,7 @@ SIKESRA issue: create or use a scoped issue
 
 - migrate or validate Astro/EmDash hosting for Cloudflare runtime support
 - define Cloudflare deployment config and bindings
-- evaluate Hyperdrive for PostgreSQL access from edge runtime code
+- keep edge runtime code thin and use Hono for PostgreSQL-backed behavior
 - update runtime and deployment docs for Cloudflare-hosted Mini plus Coolify-managed PostgreSQL
 
 ### Issue B: Soft Delete Lifecycle Completion
@@ -315,7 +315,7 @@ For implementation issues created from this plan:
 - Astro Cloudflare adapter guidance
 - Cloudflare Turnstile server-side validation guidance
 - Cloudflare R2 binding and presigned URL guidance
-- Cloudflare Workers and Hyperdrive best practices
+- Cloudflare Workers best practices and Hono-backed API separation
 - OWASP Authentication Cheat Sheet
 - OWASP REST Security Cheat Sheet
 - OWASP File Upload Cheat Sheet

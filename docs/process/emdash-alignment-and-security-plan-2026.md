@@ -137,11 +137,7 @@ Move these counters to a shared backend such as Redis or another TTL-capable sto
 
 Direct use of `x-forwarded-for` is not enough. Mini should only trust forwarded client IP headers when the request comes through a trusted proxy path.
 
-For the intended deployment model, document a Cloudflare-plus-Coolify origin strategy and choose one of these explicit patterns:
-
-- Cloudflare Tunnel
-- Cloudflare proxied DNS plus origin firewalling and authenticated origin protections where applicable
-- strict origin header validation where applicable
+For the intended deployment model, document a Cloudflare-plus-Coolify origin strategy and use explicit protections such as proxied DNS, origin firewalling, authenticated origin protections where applicable, and strict origin-header validation where applicable.
 
 Coolify-specific note:
 
@@ -181,8 +177,7 @@ Mini already has the right direction on step-up and session revocation, but the 
 #### Cloudflare And Edge Hardening
 
 - Prefer proxied DNS and origin IP concealment.
-- Prefer Cloudflare Tunnel if operationally acceptable for the Coolify-hosted app.
-- If using standard proxied DNS instead of Tunnel, restrict direct origin access as much as possible and validate origin-bound traffic.
+- Restrict direct origin access as much as possible and validate origin-bound traffic.
 - Add rate limiting or managed challenge rules at the edge for login, password reset, and other abuse-prone endpoints.
 
 #### Coolify And Origin Behavior

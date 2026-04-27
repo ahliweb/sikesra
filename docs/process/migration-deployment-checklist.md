@@ -21,11 +21,10 @@ Complete these checks before applying migrations or releasing a new build.
 - [ ] `pnpm build` passes
 - [ ] `pnpm healthcheck` passes against the target environment or an equivalent pre-production environment
 - [ ] If the reviewed target posture is known for the release, `pnpm healthcheck` is run with the non-secret expectation variables needed to fail fast on the wrong transport target
-- [ ] `pnpm verify:live-runtime -- <base-url>` is available as the combined deployed-runtime verification path for database posture and the admin/setup smoke seam when live Worker verification is in scope
-- [ ] `MINI_RUNTIME_TARGET=cloudflare` is set for the supported production path
+- [ ] `pnpm verify:live-runtime -- <base-url>` is available as the combined deployed-runtime verification path for database posture and the admin/setup smoke seam when live deployment verification is in scope
 - [ ] `DATABASE_URL` points to the intended PostgreSQL instance
 - [ ] `DATABASE_CONNECT_TIMEOUT_MS` is set to a reviewed fail-fast value for the target environment
-- [ ] The configured public origin matches the Cloudflare-hosted URL
+- [ ] `APP_URL`, `API_BASE_URL`, and `PUBLIC_API_BASE_URL` match the reviewed frontend and API origins
 - [ ] Required security secrets are present for the target environment
 - [ ] When secret rotation or runtime secret verification is part of the release, follow `docs/security/coolify-secret-verification-runbook.md` and record only redacted operator notes
 
@@ -53,12 +52,10 @@ Complete these checks before applying migrations or releasing a new build.
 ### Edge And Origin Readiness
 
 - [ ] Cloudflare DNS for the public hostname is configured for the Cloudflare-hosted application path
-- [ ] If a dedicated admin hostname is used, Cloudflare DNS/custom-domain config points it at the same Worker deployment
-- [ ] `wrangler.jsonc` or equivalent deployment config matches the intended Worker name, assets, and bindings
-- [ ] Non-interactive Cloudflare rollout automation has `CLOUDFLARE_API_TOKEN` available if Wrangler-managed binding changes are part of the release
-- [ ] The `MEDIA_BUCKET` Worker binding points at the intended R2 bucket `sikesra`
-- [ ] `TRUSTED_PROXY_MODE=cloudflare` is configured for the supported production path
-- [ ] The adapter's default `SESSION` binding or an explicit equivalent binding is available for the target environment
+- [ ] The reviewed frontend and API ingress configuration point at the intended deployment surfaces
+- [ ] Non-interactive Cloudflare rollout automation has `CLOUDFLARE_API_TOKEN` available if Cloudflare-managed DNS, Turnstile, or R2 changes are part of the release
+- [ ] The reviewed runtime R2 configuration points at the intended bucket `sikesra`
+- [ ] `TRUSTED_PROXY_MODE=cloudflare` is configured when the API is behind Cloudflare proxying
 
 ### PostgreSQL Readiness
 
@@ -86,7 +83,7 @@ Perform these steps during the release window.
 8. Confirm no unexpected pending migrations remain
 9. Deploy the application build
 10. Run `pnpm healthcheck`
-11. Prefer `pnpm verify:live-runtime -- <base-url>` as the combined post-deploy deployed-runtime verification path when live Worker verification is in scope
+11. Prefer `pnpm verify:live-runtime -- <base-url>` as the combined post-deploy deployed-runtime verification path when live deployment verification is in scope
 
 Use expectation variables when the release has a reviewed target posture.
 
@@ -189,15 +186,13 @@ Use these focused checks when the release touches governance or security surface
 - [ ] User detail tabs load: `Overview`, `Roles`, `Jobs`, `Logical Regions`, `Administrative Regions`, `Sessions`, `Security`
 - [ ] Protected action confirmations still appear for high-risk user-detail actions
 - [ ] Admin routes load correctly through the Cloudflare public hostname
-- [ ] If `ADMIN_SITE_URL` is configured for compatibility, the admin hostname root redirects to the configured admin entry path and the admin surface still loads correctly there
 
 ### Cloudflare Automation
 
-- [ ] `https://sikesrakobar.ahlikoding.com/` responds through the current Cloudflare-hosted Worker deployment
+- [ ] `https://sikesrakobar.ahlikoding.com/` responds through the current reviewed deployment path
 - [ ] `https://sikesrakobar.ahlikoding.com/_emdash/` redirects to `/_emdash/admin` on the same host
-- [ ] If a compatibility admin hostname is still enabled, its root redirects to the configured admin entry path on the same Worker deployment
 - [ ] Turnstile-protected public flows behave correctly for the reviewed hostname set
-- [ ] The deployed Worker still exposes the `MEDIA_BUCKET` binding for `sikesra`
+- [ ] The deployed runtime can still reach bucket `sikesra` through the reviewed backend configuration
 - [ ] The deployed runtime secret for `DATABASE_URL` matches the reviewed PostgreSQL hostname and SSL mode for the environment
 - [ ] Cloudflare-side hostname, Turnstile, and R2 configuration changes are reflected in the current operator notes before release signoff
 - [ ] When issue the scoped SIKESRA issue or related EmDash compatibility work is in scope, `https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status` still returns success after the release window
@@ -233,7 +228,7 @@ Roll back or pause the release if any of these occur:
 - RBAC or ABAC checks unexpectedly allow high-risk actions
 - Audit entries stop appearing for plugin-managed or security-sensitive actions
 - Mandatory 2FA rollout applies to the wrong role set
-- Cloudflare automation leaves hostname routing, Turnstile validation, or R2 binding state partially applied and the smoke tests no longer pass
+- Cloudflare automation leaves hostname routing, Turnstile validation, or R2 state partially applied and the smoke tests no longer pass
 
 ## Explicitly Avoid
 

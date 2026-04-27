@@ -35,8 +35,8 @@ The implementation should assume the following are fixed unless a later issue ex
 - Admin model: EmDash admin extended carefully
 - Public rendering model: EmDash public/content architecture
 - Security model: backend and service-layer enforcement first
-- Hosting: Cloudflare Worker (`sikesra-kobar`) at `sikesrakobar.ahlikoding.com`
-- Database transport: Hyperdrive (`sikesra-kobar-postgres-runtime`, ID `27eafcdafb5e4904bf083c4133a54161`)
+- Hosting: Cloudflare edge and frontend on `sikesrakobar.ahlikoding.com` with the Hono backend API on the Coolify-managed VPS
+- Database transport: direct PostgreSQL connectivity from the Hono backend over the reviewed private Docker-network path
 
 ## Scope Guardrails
 

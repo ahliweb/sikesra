@@ -14,11 +14,11 @@ The current writable implementation surface is:
 - `tests/unit/` for dependency-light regression tests
 - `package.json` for repository-local validation commands
 
-`ahliweb/awcms-mini` remains read-only upstream reference. Do not copy upstream `.env`, `.env.local`, `.dev.vars`, `dist/`, `.wrangler/`, `node_modules/`, database dumps, generated Worker secret files, or local operator artifacts into this repository.
+`ahliweb/awcms-mini` remains read-only upstream reference. Do not copy upstream `.env`, `.env.local`, `.dev.vars`, `dist/`, `.wrangler/`, `node_modules/`, database dumps, generated secret files, or local operator artifacts into this repository.
 
 ## Rationale
 
-The open SIKESRA UI/UX issues require writable admin/plugin files. A full upstream import would increase review scope and the risk of copying unrelated runtime state. A small plugin surface keeps the next issues atomic while preserving the Cloudflare Worker, Hyperdrive, R2, and Coolify-managed PostgreSQL runtime baseline.
+The open SIKESRA UI/UX issues require writable admin/plugin files. A full upstream import would increase review scope and the risk of copying unrelated runtime state. A small plugin surface keeps the next issues atomic while preserving the Cloudflare edge, Hono backend, R2, and Coolify-managed PostgreSQL runtime baseline.
 
 ## Current Plugin Surface
 
@@ -30,7 +30,7 @@ The open SIKESRA UI/UX issues require writable admin/plugin files. A full upstre
 
 `src/plugins/sikesra-admin/host-registration.mjs` exports the reviewed host registration seam for the live AWCMS Mini/EmDash build. The intended EmDash integration change is to append `sikesraAdminPlugin()` to the existing `emdash({ plugins: [...] })` option in `astro.config.mjs` while preserving the existing `awcmsUsersAdminPlugin()` registration.
 
-The source of truth for the live build remains the Cloudflare Worker deployment flow. Do not edit the upstream `ahliweb/awcms-mini` worktree in place from this repository; use the host registration seam in a reviewed build/integration step.
+The source of truth for the live build remains the reviewed Cloudflare-and-Hono deployment flow. Do not edit the upstream `ahliweb/awcms-mini` worktree in place from this repository; use the host registration seam in a reviewed build/integration step.
 
 The descriptor follows the upstream AWCMS Mini plugin pattern of exposing `id`, `version`, `format`, `entrypoint`, `adminEntry`, `permissions`, and `adminPages`.
 
@@ -40,7 +40,7 @@ The descriptor follows the upstream AWCMS Mini plugin pattern of exposing `id`, 
 - Menu metadata may declare `permissionCode`, but backend routes and services must enforce permissions separately.
 - SIKESRA data involving NIK/KIA, No KK, children, elderly people, disability, religion, contact, health, or documents remains sensitive.
 - Use masked, aggregate, or permission-gated displays by default for sensitive data.
-- Keep credentials and connection strings in `.env.local`, Cloudflare Worker secrets, Coolify locked secrets, or operator-managed secret stores only.
+- Keep credentials and connection strings in `.env.local`, Coolify locked secrets, or operator-managed secret stores only.
 
 ## Validation
 

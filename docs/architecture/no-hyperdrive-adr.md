@@ -43,7 +43,7 @@ Do not use Cloudflare Hyperdrive in the SIKESRA production architecture.
 - No Coolify compose rendering workarounds.
 - Connection pooling, timeouts, and retry behavior are under direct application control inside the Hono backend.
 - Operator migrations can run from the VPS using the internal Docker network, without requiring a tunnel, Hyperdrive, or public DB exposure.
-- Simpler secret management: no Hyperdrive configuration in `wrangler.jsonc`, no `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_*` variables.
+- Simpler secret management: no Hyperdrive configuration file is needed and no `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_*` variables remain in the active runtime path.
 
 **Negative / Trade-offs**
 
@@ -52,15 +52,14 @@ Do not use Cloudflare Hyperdrive in the SIKESRA production architecture.
 
 ## Migration Notes
 
-The following artifacts reference Hyperdrive as an active path and must be updated or archived:
+The following artifacts referenced Hyperdrive as an active path and were updated or archived as part of the Hono-baseline cleanup:
 
-- `wrangler.jsonc` — remove or archive `[[hyperdrive]]` binding block once the Worker is decommissioned.
-- `.env.example` — remove `SIKESRA_HYPERDRIVE_*` and `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_*` variables after the Worker is decommissioned.
+- `.env.example` — remove `SIKESRA_HYPERDRIVE_*` and `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_*` variables.
 - `docs/architecture/runtime-config.md` — remove `DATABASE_TRANSPORT=hyperdrive` as a production baseline.
 - `docs/architecture/database-access.md` — remove Hyperdrive transport references.
-- Any remaining Coolify service for the PgBouncer TLS proxy can be deleted once the Worker is decommissioned and no traffic routes through it.
+- Any remaining Coolify service for the PgBouncer TLS proxy can be deleted once no traffic routes through it.
 
-Until the Worker is formally decommissioned, these files retain their current content to avoid breaking the live Worker deployment. References are clearly marked as legacy/historical.
+Historical planning documents may still discuss the earlier Worker and Hyperdrive path as superseded context, but the active repository runtime baseline no longer depends on those artifacts.
 
 ## Approved By
 

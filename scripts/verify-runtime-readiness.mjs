@@ -1,10 +1,5 @@
 import { existsSync } from "node:fs";
 import { buildDefaultEnvFiles, hasValue, loadLocalEnv } from "./_local-env.mjs";
-import { getRequiredWorkerSecrets, parseWranglerConfig } from "./_wrangler-config.mjs";
-
-function parseWrangler() {
-  return parseWranglerConfig();
-}
 
 function safeUrlSummary(raw) {
   if (!hasValue(raw)) return { present: false };
@@ -79,60 +74,39 @@ async function checkCoolify(env) {
   return result;
 }
 
-async function checkCloudflare(env, wrangler) {
+async function checkCloudflare(env) {
   const result = {
-    ok: true,
+    ok: hasValue(env.CLOUDFLARE_ACCOUNT_ID) && hasValue(env.CLOUDFLARE_API_TOKEN),
     configured: hasValue(env.CLOUDFLARE_ACCOUNT_ID) && hasValue(env.CLOUDFLARE_API_TOKEN),
     redaction: "Cloudflare token, raw response, and secret values are omitted.",
   };
 
-  result.workerName = wrangler?.name ?? null;
-  result.r2Binding = wrangler?.r2_buckets?.[0]?.binding ?? null;
-  result.sessionBinding = wrangler?.kv_namespaces?.[0]?.binding ?? null;
+  result.accountIdPresent = hasValue(env.CLOUDFLARE_ACCOUNT_ID);
+  result.r2Bucket = hasValue(env.R2_BUCKET_NAME) ? env.R2_BUCKET_NAME : null;
+  result.turnstileEnabled = hasValue(env.TURNSTILE_SECRET_KEY);
   return result;
-}
-
-function checkWrangler(wrangler) {
-  const declaredSecrets = getRequiredWorkerSecrets(wrangler);
-  const requiredSecretsConfigured = declaredSecrets.length > 0;
-  const missingSecrets = requiredSecretsConfigured ? [] : ["wrangler.secrets.required"];
-
-  return {
-    ok: Boolean(wrangler) && requiredSecretsConfigured && missingSecrets.length === 0,
-    workerName: wrangler?.name ?? null,
-    siteUrl: wrangler?.vars?.SITE_URL ?? null,
-    adminEntryPath: wrangler?.vars?.ADMIN_ENTRY_PATH ?? null,
-    r2Binding: wrangler?.r2_buckets?.[0]?.binding ?? null,
-    r2Bucket: wrangler?.r2_buckets?.[0]?.bucket_name ?? null,
-    sessionBinding: wrangler?.kv_namespaces?.[0]?.binding ?? null,
-    requiredSecretsConfigured,
-    requiredSecrets: declaredSecrets,
-    missingRequiredSecrets: missingSecrets,
-  };
 }
 
 async function main() {
   const envFiles = buildDefaultEnvFiles(process.env);
   loadLocalEnv(envFiles);
 
-  const wrangler = parseWrangler();
   const databaseUrl = safeUrlSummary(process.env.DATABASE_URL);
   const envCheck = {
-    ok: databaseUrl.database === "sikesrakobar" && existsSync(".dev.vars.example"),
+    ok: databaseUrl.database === "sikesrakobar" && existsSync(".env.example"),
     databaseUrl,
     databaseUrlMatches: databaseUrl.database === "sikesrakobar",
     loadedEnvFiles: envFiles,
-    devVarsExamplePresent: existsSync(".dev.vars.example"),
+    envExamplePresent: existsSync(".env.example"),
     envLocalPresent: existsSync(".env.local"),
   };
   const checks = {
-    wrangler: checkWrangler(wrangler),
     env: envCheck,
     coolify: await checkCoolify(process.env),
-    cloudflare: await checkCloudflare(process.env, wrangler),
+    cloudflare: await checkCloudflare(process.env),
   };
 
-  const ok = checks.wrangler.ok && checks.env.ok && checks.coolify.ok && checks.cloudflare.ok;
+  const ok = checks.env.ok && checks.coolify.ok && checks.cloudflare.ok;
   const output = {
     ok,
     service: "sikesra-runtime-readiness",

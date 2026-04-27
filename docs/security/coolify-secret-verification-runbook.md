@@ -20,7 +20,7 @@ Use this runbook together with:
 This runbook covers:
 
 - Coolify-managed runtime secret inventory verification
-- Cloudflare-managed Worker secret verification
+- Cloudflare-managed secret and operator-credential verification
 - PostgreSQL runtime and migration credential posture checks
 - redacted operator-note expectations for rotation evidence
 
@@ -41,7 +41,7 @@ Verify the current live deployment stores these values only in reviewed secret s
 - `TWO_FACTOR_RECOVERY_CODE_PEPPER`
 - provider API keys used by the running app
 
-### Cloudflare-managed Worker secrets
+### Cloudflare-managed secrets and operator credentials
 
 - `TURNSTILE_SECRET_KEY`
 - `EDGE_API_JWT_SECRET`
@@ -100,12 +100,12 @@ pnpm db:migrate:probe
 pnpm healthcheck
 ```
 
-### 4. Verify Cloudflare Worker secret posture
+### 4. Verify Cloudflare-side secret posture
 
 In the Cloudflare dashboard, Wrangler, or another reviewed Cloudflare management path:
 
-- confirm required Worker secrets exist in Cloudflare-managed secret storage
-- confirm the deployed Worker still has the intended bindings such as `MEDIA_BUCKET` and `HYPERDRIVE`
+- confirm required Cloudflare-managed secrets and operator credentials exist only in approved secret storage
+- confirm the reviewed R2 bucket and Turnstile configuration still match the active architecture
 - confirm Turnstile secret material is not stored in client-visible config
 - confirm only the public Turnstile site key is exposed to the browser
 
@@ -143,7 +143,7 @@ Then confirm:
 
 - login still works for a known good test account
 - Turnstile-protected flows still validate correctly
-- the Worker still reaches PostgreSQL through the intended transport
+- the Hono backend still reaches PostgreSQL through the intended transport
 - the deployed runtime still exposes the expected non-secret posture only
 
 ## Closure Notes For #67
@@ -153,7 +153,7 @@ Then confirm:
 - Coolify live secret inventory has been reviewed without copying values into GitHub
 - any exposed or script-stored credentials were rotated and invalidated
 - runtime and migration database roles are distinct and least-privilege
-- Cloudflare Worker secret storage was rechecked for the reviewed secret contract
+- Cloudflare-side secret storage and reviewed platform configuration were rechecked
 - redacted operator notes include secret locations and rotation dates
 - `pnpm check:secret-hygiene` still passes after the verification pass
 
