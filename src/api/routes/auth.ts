@@ -39,6 +39,11 @@ type Variables = AuthVariables;
 
 const auth = new Hono<{ Variables: Variables }>();
 
+export type LoginTwoFactorDecision =
+  | { kind: "not_required" }
+  | { kind: "challenge_required" }
+  | { kind: "setup_required" };
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function hashPassword(password: string, pepper: string): string {
@@ -52,6 +57,26 @@ function safeEqual(a: string, b: string): boolean {
   const bBuf = Buffer.from(b);
   if (aBuf.length !== bBuf.length) return false;
   return timingSafeEqual(aBuf, bBuf);
+}
+
+export function evaluateLoginTwoFactorDecision(input: {
+  roleNames: string[];
+  twoFactorConfirmedAt: string | null | undefined;
+}): LoginTwoFactorDecision {
+  const twoFactorConfirmed = input.twoFactorConfirmedAt != null;
+  const protectedRole = input.roleNames.some((role) =>
+    (ROLES_REQUIRING_2FA as readonly string[]).includes(role),
+  );
+
+  if (twoFactorConfirmed) {
+    return { kind: "challenge_required" };
+  }
+
+  if (protectedRole) {
+    return { kind: "setup_required" };
+  }
+
+  return { kind: "not_required" };
 }
 
 // ── POST /api/v1/auth/login ───────────────────────────────────────────────────
@@ -179,11 +204,37 @@ auth.post("/login", async (c) => {
   const roleNames = roles.map((r) => r.name);
   const primaryRole = roleNames[0] ?? "viewer";
 
-  const requires2fa =
-    security[0]?.two_factor_confirmed_at != null ||
-    roleNames.some((r) => (ROLES_REQUIRING_2FA as readonly string[]).includes(r));
+  const twoFactorDecision = evaluateLoginTwoFactorDecision({
+    roleNames,
+    twoFactorConfirmedAt: security[0]?.two_factor_confirmed_at,
+  });
 
-  if (requires2fa) {
+  if (twoFactorDecision.kind === "setup_required") {
+    await recordLoginAttempt({
+      userId: user.id,
+      email,
+      ipAddress: ip,
+      userAgent: ua,
+      success: false,
+      failureReason: "2fa_setup_required",
+      turnstileVerified,
+      twoFactorUsed: false,
+      recoveryCodeUsed: false,
+    });
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: "2FA_SETUP_REQUIRED",
+          message: "Two-factor authentication setup is required before this account can sign in.",
+        },
+        meta: { requestId },
+      },
+      403,
+    );
+  }
+
+  if (twoFactorDecision.kind === "challenge_required") {
     const pendingToken = issuePending2faToken(user.id, primaryRole, env.JWT_SECRET);
     await recordLoginAttempt({
       userId: user.id,

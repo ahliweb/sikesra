@@ -19,6 +19,7 @@ import {
   verifyToken,
 } from "../../src/modules/session/index.ts";
 import { getSessionRevocationHash } from "../../src/modules/session-revocations/index.ts";
+import { evaluateLoginTwoFactorDecision } from "../../src/api/routes/auth.ts";
 
 test("base32 helpers round-trip binary data", () => {
   const original = Buffer.from("sikesra-two-factor");
@@ -104,6 +105,36 @@ test("session revocation hashes never expose raw JWT identifiers", () => {
   assert.match(tokenHash, /^[a-f0-9]{64}$/);
   assert.notEqual(tokenHash, payload.jti);
   assert.equal(tokenHash.includes(token), false);
+});
+
+test("protected roles without confirmed 2FA are blocked pending setup", () => {
+  assert.deepEqual(
+    evaluateLoginTwoFactorDecision({
+      roleNames: ["admin"],
+      twoFactorConfirmedAt: null,
+    }),
+    { kind: "setup_required" },
+  );
+});
+
+test("confirmed 2FA requires login challenge for protected roles", () => {
+  assert.deepEqual(
+    evaluateLoginTwoFactorDecision({
+      roleNames: ["auditor"],
+      twoFactorConfirmedAt: "2026-04-27T00:00:00.000Z",
+    }),
+    { kind: "challenge_required" },
+  );
+});
+
+test("non-protected roles without confirmed 2FA can continue login", () => {
+  assert.deepEqual(
+    evaluateLoginTwoFactorDecision({
+      roleNames: ["viewer"],
+      twoFactorConfirmedAt: null,
+    }),
+    { kind: "not_required" },
+  );
 });
 
 test("bearer token extraction is strict", () => {
