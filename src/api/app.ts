@@ -13,6 +13,7 @@ import { roles } from "./routes/roles.js";
 import { permissions } from "./routes/permissions.js";
 import { auth } from "./routes/auth.js";
 import { security } from "./routes/security.js";
+import { references } from "./routes/references.js";
 
 // Extend Hono context with our custom variables
 type Variables = AuthVariables;
@@ -37,6 +38,7 @@ app.use("*", sessionLoader);
 app.route("/health", health);
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/security", security);
+app.route("/api/v1/references", references);
 app.route("/api/v1/me", me);
 app.route("/api/v1/users", users);
 app.route("/api/v1/roles", roles);
