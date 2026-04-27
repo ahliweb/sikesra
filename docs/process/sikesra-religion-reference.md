@@ -4,9 +4,9 @@
 
 SIKESRA now has a reusable framework-neutral `AgamaSelect` view model in `src/plugins/sikesra-admin/religion-reference.mjs`.
 
-The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`, a repository-layer persistence seam in `src/backend/repositories/religion-reference-repository.mjs`, a real repository-owned migration contract in `src/db/migrations/index.mjs`, and a narrow backend service boundary in `src/backend/services/religion-reference-service.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes the service boundary for canonical values and normalization, but live runtime persistence is still not implemented yet.
+The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`, a repository-layer persistence seam in `src/backend/repositories/religion-reference-repository.mjs`, a real repository-owned migration contract in `src/db/migrations/index.mjs`, and a narrow backend service boundary in `src/backend/services/religion-reference-service.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes the service boundary for canonical values and normalization. The backend repository/service now also expose async runtime-read helpers that prefer live PostgreSQL-backed rows when the reviewed tables are available, while preserving the reviewed seed fallback when runtime persistence is unavailable.
 
-The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, but it does not yet execute live PostgreSQL migrations or read runtime-backed rows. Until that runtime persistence step is added, the UI model still exposes a controlled contract and reports repository-backend seam readiness, while the backend seam defines the canonical repository-local contract that `#49` should attach to.
+The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, executes reviewed PostgreSQL migrations through `psql`, and can read runtime-backed religion reference rows through the async repository/service helpers when those tables are present. The current synchronous plugin/UI contract still uses the reviewed seed-backed service methods until a dedicated consumer update lands.
 
 ## Rules
 
@@ -51,7 +51,8 @@ Repository dependency order:
 3. `#54` adds the repository-layer persistence attachment seam under the service boundary.
 4. `#55` adds the minimal `src/db` and migration scaffold.
 5. `#56` replaces the scaffold placeholder with a real religion-reference table and seed migration contract.
-6. `#49` should add live persistence execution, service-layer authorization, and audit-covered runtime usage on top of that seam, repository boundary, migration contract, and service boundary.
+6. `#69` adds the runtime-read preference with safe seed fallback.
+7. `#49` should add broader runtime usage, service-layer authorization, and audit-covered write/admin flows on top of that seam, repository boundary, migration contract, and service boundary.
 
 Tracked follow-up: `ahliweb/sikesra#49`.
 

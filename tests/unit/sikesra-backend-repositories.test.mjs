@@ -8,8 +8,8 @@ test("SIKESRA religion reference repository exposes persistence-ready seam metad
 
   assert.equal(repository.seam.status, "repository_backend_seam_ready");
   assert.equal(repository.seam.followUpIssue, "ahliweb/sikesra#49");
-  assert.equal(repository.seam.sourceIssue, "ahliweb/sikesra#56");
-  assert.equal(repository.seam.storage, "repository_seed_repository_with_persistence_contract");
+  assert.equal(repository.seam.sourceIssue, "ahliweb/sikesra#69");
+  assert.equal(repository.seam.storage, "runtime_postgresql_preferred_with_seed_fallback");
   assert.equal(repository.persistenceMigration?.name, "001_create_religion_reference_tables");
 });
 
@@ -34,4 +34,14 @@ test("SIKESRA religion reference repository finds values by reviewed aliases", (
 
   assert.equal(reference?.code, "konghucu");
   assert.equal(repository.findByAny("Agama Tidak Dikenal"), null);
+});
+
+test("SIKESRA religion reference repository runtime helpers fall back safely when runtime is unavailable", async () => {
+  const repository = createSikesraReligionReferenceRepository();
+
+  const references = await repository.listRuntime();
+  const reference = await repository.findByAnyRuntime("Katholik");
+
+  assert.equal(references[0]?.code, "islam");
+  assert.equal(reference?.code, "katolik");
 });
