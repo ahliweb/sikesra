@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { hasValue, loadLocalEnv } from "./_local-env.mjs";
+import { buildDefaultEnvFiles, hasValue, loadLocalEnv } from "./_local-env.mjs";
 
-const ENV_FILES = [".env.local", ".env"];
 const HYPERDRIVE_PLACEHOLDER = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
 
 function stripJsonc(input) {
@@ -168,7 +167,8 @@ function checkWrangler(wrangler) {
 }
 
 async function main() {
-  loadLocalEnv(ENV_FILES);
+  const envFiles = buildDefaultEnvFiles(process.env);
+  loadLocalEnv(envFiles);
 
   const wrangler = parseWrangler();
   const databaseUrl = safeUrlSummary(process.env.DATABASE_URL);
@@ -183,6 +183,7 @@ async function main() {
     localHyperdriveConnection,
     localHyperdriveConnectionMatches:
       !localHyperdriveConnection.present || localHyperdriveConnection.database === "sikesrakobar",
+    loadedEnvFiles: envFiles,
     devVarsExamplePresent: existsSync(".dev.vars.example"),
     envLocalPresent: existsSync(".env.local"),
   };

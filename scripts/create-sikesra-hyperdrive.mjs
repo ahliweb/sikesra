@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { hasValue, loadLocalEnv } from "./_local-env.mjs";
+import { hasValue, loadLocalEnv, requireValue } from "./_local-env.mjs";
 
 const CONFIG_NAME = "sikesra-kobar-postgres";
 const PLACEHOLDER_ID = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
@@ -24,13 +24,18 @@ async function cloudflareFetch(path, options = {}) {
 }
 
 function buildPayload() {
-  const databaseUrl = new URL(process.env.DATABASE_URL || "");
+  const databaseUrl = new URL(requireValue(process.env.DATABASE_URL, "DATABASE_URL"));
   const useAccess = process.env.SIKESRA_HYPERDRIVE_USE_ACCESS === "true";
   const host = process.env.SIKESRA_HYPERDRIVE_ORIGIN_HOST || databaseUrl.hostname;
   const database = process.env.SIKESRA_HYPERDRIVE_DATABASE || databaseUrl.pathname.replace(/^\//, "");
+  const scheme = process.env.SIKESRA_HYPERDRIVE_ORIGIN_SCHEME || databaseUrl.protocol.replace(":", "") || "postgresql";
 
   if (!hasValue(host) || !hasValue(database) || !hasValue(databaseUrl.username) || !hasValue(databaseUrl.password)) {
     throw new Error("Missing required SIKESRA database origin values.");
+  }
+
+  if (!["postgres", "postgresql"].includes(scheme)) {
+    throw new Error("Unsupported SIKESRA_HYPERDRIVE_ORIGIN_SCHEME. Use postgres or postgresql.");
   }
 
   const origin = {
@@ -38,14 +43,20 @@ function buildPayload() {
     database,
     user: decodeURIComponent(databaseUrl.username),
     password: decodeURIComponent(databaseUrl.password),
-    scheme: process.env.SIKESRA_HYPERDRIVE_ORIGIN_SCHEME || databaseUrl.protocol.replace(":", "") || "postgresql",
+    scheme,
   };
 
   if (useAccess) {
+    requireValue(process.env.CLOUDFLARE_ACCESS_CLIENT_ID, "CLOUDFLARE_ACCESS_CLIENT_ID");
+    requireValue(process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET, "CLOUDFLARE_ACCESS_CLIENT_SECRET");
     origin.access_client_id = process.env.CLOUDFLARE_ACCESS_CLIENT_ID;
     origin.access_client_secret = process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET;
   } else {
-    origin.port = Number(process.env.SIKESRA_HYPERDRIVE_ORIGIN_PORT || databaseUrl.port || "5432");
+    const port = Number(process.env.SIKESRA_HYPERDRIVE_ORIGIN_PORT || databaseUrl.port || "5432");
+    if (!Number.isInteger(port) || port <= 0) {
+      throw new Error("Invalid SIKESRA_HYPERDRIVE_ORIGIN_PORT.");
+    }
+    origin.port = port;
   }
 
   return { name: process.env.SIKESRA_HYPERDRIVE_NAME || CONFIG_NAME, origin };

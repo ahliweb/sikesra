@@ -21,7 +21,7 @@ The reviewed local command scripts read connection strings and tokens only from 
 
 This repository is currently a SIKESRA runtime/config workspace and does not contain the full app build wrapper. If app build scripts are added here later, they must remove generated `dist/server/.dev.vars*` files after local builds so local operator secrets from `.env.local` do not linger inside Cloudflare build artifact trees.
 
-The reviewed local env helper now centralizes parser-based env loading in `scripts/_local-env.mjs`. The current SIKESRA scripts intentionally load `.env.local` before `.env`, so local operator secrets override tracked-safe defaults without sourcing env files as shell code.
+The reviewed local env helper now centralizes parser-based env loading in `scripts/_local-env.mjs`. The current SIKESRA scripts intentionally load `.env.<environment>.local`, `.env.local`, `.env.<environment>`, and then `.env`, so local operator secrets and environment-specific overrides take precedence over tracked-safe defaults without sourcing env files as shell code.
 
 The current repository posture should therefore be described as:
 

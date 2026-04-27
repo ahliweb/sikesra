@@ -18,7 +18,7 @@ This document records the project-specific runtime and secret-handling baseline 
 ## Secret Storage Rules
 
 - Do not commit `.env`, `.env.local`, `.dev.vars`, connection strings, access keys, tokens, passwords, or private keys.
-- Keep local-only values in `.env.local` or another ignored env file.
+- Keep local-only values in `.env.local`, `.env.<environment>.local`, or another ignored env file.
 - Keep Cloudflare Worker production secrets in Cloudflare Worker secrets, not in `wrangler` config values.
 - Keep local script secrets in `.env.local` or the inherited process environment. The maintained scripts share `scripts/_local-env.mjs` and must not parse or source env files ad hoc.
 - Keep Coolify-managed resource secrets in Coolify locked environment variables with runtime-only scope by default.
@@ -47,6 +47,15 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 - Coolify base URL and access token, using `COOLIFY_BASE_URL` and `COOLIFY_ACCESS_TOKEN` for compatibility with the AWCMS Mini Coolify MCP wrapper and audit scripts
 - Turnstile secret key
 - session/JWT secrets
+
+When local operator workflows need environment-specific separation, the shared helper now loads env files in this order:
+
+1. `.env.<SIKESRA_ENV>.local` or `.env.<NODE_ENV>.local`
+2. `.env.local`
+3. `.env.<SIKESRA_ENV>` or `.env.<NODE_ENV>`
+4. `.env`
+
+Use tracked `.env.example` only for placeholders and non-secret defaults. Keep live values in ignored local env files, Cloudflare Worker secrets, Coolify locked runtime secrets, or an external password manager.
 
 ## Cloudflare Recommendations
 
@@ -118,7 +127,7 @@ Secret-bearing values must be supplied through local ignored env files, Cloudfla
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, print redacted reports, and fail closed when required infrastructure is missing.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, print redacted reports, and fail closed when required infrastructure is missing.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 

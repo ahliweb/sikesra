@@ -1,6 +1,21 @@
 import { existsSync, readFileSync } from "node:fs";
 
-export const DEFAULT_ENV_FILES = [".env.local", ".env"];
+export function getEnvScope(env = process.env) {
+  const scope = env.SIKESRA_ENV || env.NODE_ENV;
+  return hasValue(scope) ? scope.trim() : null;
+}
+
+export function buildDefaultEnvFiles(env = process.env) {
+  const scope = getEnvScope(env);
+  return [
+    ...(scope ? [`.env.${scope}.local`] : []),
+    ".env.local",
+    ...(scope ? [`.env.${scope}`] : []),
+    ".env",
+  ];
+}
+
+export const DEFAULT_ENV_FILES = buildDefaultEnvFiles();
 
 export function hasValue(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -37,7 +52,8 @@ export function loadEnvFile(path, env = process.env) {
 }
 
 export function loadLocalEnv(files = DEFAULT_ENV_FILES, env = process.env) {
-  return files.map((file) => ({ file, loaded: loadEnvFile(file, env) }));
+  const resolvedFiles = Array.isArray(files) ? files : buildDefaultEnvFiles(env);
+  return resolvedFiles.map((file) => ({ file, loaded: loadEnvFile(file, env) }));
 }
 
 export function requireValue(value, name) {
