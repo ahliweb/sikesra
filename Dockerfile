@@ -12,9 +12,9 @@ COPY package.json pnpm-lock.yaml ./
 # Install all deps (including devDeps for tsc)
 RUN pnpm install --frozen-lockfile
 
-# Copy source
+# Copy source needed by the API TypeScript build
 COPY tsconfig.api.json ./
-COPY src/api ./src/api
+COPY src ./src
 
 # Compile
 RUN pnpm api:build
