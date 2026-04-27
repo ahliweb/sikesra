@@ -22,6 +22,7 @@ import postgres from "postgres";
 
 import { SIKESRA_DB_MIGRATIONS } from "../src/db/migrations/index.mjs";
 import { renderSikesraMigrationSql } from "../src/db/migrations/sql.mjs";
+import { resolveMigrationDatabaseUrl } from "../src/db/index.mjs";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -56,11 +57,10 @@ function loadLocalEnvFiles(): void {
 
 function getMigrationUrl(): string {
   // Prefer reviewed env files but still allow explicitly exported vars.
-  const url =
-    process.env["DATABASE_MIGRATION_URL"] ?? process.env["DATABASE_URL"];
+  const url = resolveMigrationDatabaseUrl(process.env);
   if (!url) {
     console.error(
-      "Error: DATABASE_MIGRATION_URL or DATABASE_URL must be set.\n" +
+      "Error: DATABASE_INTERNAL_URL, DATABASE_MIGRATION_URL, or DATABASE_URL must be set.\n" +
         "       Export from .env.local or pass via cross-env.",
     );
     process.exit(1);

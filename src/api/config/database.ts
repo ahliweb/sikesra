@@ -7,7 +7,8 @@ export function getDb(): ReturnType<typeof postgres> {
   if (_sql) return _sql;
 
   const env = getEnv();
-  _sql = postgres(env.DATABASE_URL, {
+  const url = process.env["DATABASE_INTERNAL_URL"] ?? env.DATABASE_URL;
+  _sql = postgres(url, {
     max: 10,
     idle_timeout: 30,
     connect_timeout: 15,

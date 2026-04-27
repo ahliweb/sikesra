@@ -8,6 +8,14 @@
 
 import postgres from "postgres";
 
+function resolveRuntimeDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return env["DATABASE_INTERNAL_URL"] ?? env["DATABASE_URL"];
+}
+
+function resolveMigrationDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return env["DATABASE_INTERNAL_URL"] ?? env["DATABASE_MIGRATION_URL"] ?? env["DATABASE_URL"];
+}
+
 // ---------------------------------------------------------------------------
 // Runtime client (singleton, lazy)
 // ---------------------------------------------------------------------------
@@ -21,8 +29,8 @@ let _runtimeSql: ReturnType<typeof postgres> | undefined;
 export function getDb(): ReturnType<typeof postgres> {
   if (_runtimeSql) return _runtimeSql;
 
-  const url = process.env["DATABASE_URL"];
-  if (!url) throw new Error("DATABASE_URL is not set");
+  const url = resolveRuntimeDatabaseUrl();
+  if (!url) throw new Error("DATABASE_INTERNAL_URL or DATABASE_URL is not set");
 
   _runtimeSql = postgres(url, {
     max: 10,
@@ -66,10 +74,9 @@ export async function checkDbConnectivity(): Promise<"ok" | "error"> {
  * Caller must call .end() when done.
  */
 export function createMigrationClient(): ReturnType<typeof postgres> {
-  const url =
-    process.env["DATABASE_MIGRATION_URL"] ?? process.env["DATABASE_URL"];
+  const url = resolveMigrationDatabaseUrl();
   if (!url)
-    throw new Error("DATABASE_MIGRATION_URL or DATABASE_URL must be set");
+    throw new Error("DATABASE_INTERNAL_URL, DATABASE_MIGRATION_URL, or DATABASE_URL must be set");
 
   return postgres(url, {
     max: 1,

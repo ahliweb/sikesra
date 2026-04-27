@@ -12,7 +12,7 @@ export function createSikesraDatabaseAccess(env = process.env) {
   return Object.freeze({
     seam: SIKESRA_DATABASE_ACCESS_SEAM,
     getConnectionSummary() {
-      return summarizeConnection(env.DATABASE_URL);
+      return summarizeConnection(resolveRuntimeDatabaseUrl(env));
     },
     getMigrationConnectionSummary() {
       return summarizeConnection(resolveMigrationDatabaseUrl(env));
@@ -30,7 +30,12 @@ export function createSikesraDatabaseAccess(env = process.env) {
 
 export const sikesraDatabaseAccess = createSikesraDatabaseAccess();
 
+export function resolveRuntimeDatabaseUrl(env = process.env) {
+  return hasValue(env.DATABASE_INTERNAL_URL) ? env.DATABASE_INTERNAL_URL : env.DATABASE_URL;
+}
+
 export function resolveMigrationDatabaseUrl(env = process.env) {
+  if (hasValue(env.DATABASE_INTERNAL_URL)) return env.DATABASE_INTERNAL_URL;
   return hasValue(env.DATABASE_MIGRATION_URL) ? env.DATABASE_MIGRATION_URL : env.DATABASE_URL;
 }
 

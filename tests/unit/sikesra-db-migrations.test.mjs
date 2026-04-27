@@ -5,7 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { loadMigrationSql, MIGRATION_FILES } from "../../scripts/db-migrate.ts";
-import { createSikesraDatabaseAccess, resolveMigrationDatabaseUrl } from "../../src/db/index.mjs";
+import { createSikesraDatabaseAccess, resolveMigrationDatabaseUrl, resolveRuntimeDatabaseUrl } from "../../src/db/index.mjs";
 import { SIKESRA_DB_MIGRATIONS, SIKESRA_DB_MIGRATION_SEAM } from "../../src/db/migrations/index.mjs";
 import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs";
 
@@ -51,6 +51,17 @@ test("SIKESRA migration URL resolution prefers DATABASE_MIGRATION_URL when provi
     }),
     buildDatabaseUrl("example.com", "runtime_user"),
   );
+});
+
+test("SIKESRA runtime and migration URL resolution prefer DATABASE_INTERNAL_URL when provided", () => {
+  const env = {
+    DATABASE_URL: buildDatabaseUrl("old-public.example.com", "runtime_user"),
+    DATABASE_MIGRATION_URL: buildDatabaseUrl("old-migration.example.com", "migration_user"),
+    DATABASE_INTERNAL_URL: buildDatabaseUrl("coolify-db.internal", "internal_user"),
+  };
+
+  assert.equal(resolveRuntimeDatabaseUrl(env), buildDatabaseUrl("coolify-db.internal", "internal_user"));
+  assert.equal(resolveMigrationDatabaseUrl(env), buildDatabaseUrl("coolify-db.internal", "internal_user"));
 });
 
 function buildDatabaseUrl(hostname, username) {
