@@ -1,9 +1,11 @@
+import { createSikesraPsqlDatabaseClient } from "./client/psql.mjs";
+
 export const SIKESRA_DATABASE_ACCESS_SEAM = Object.freeze({
-  status: "repository_db_scaffold_ready",
+  status: "repository_db_execution_ready",
   followUpIssue: "ahliweb/sikesra#49",
-  sourceIssue: "ahliweb/sikesra#55",
-  runtime: "postgresql_hyperdrive_client_pending",
-  note: "Scaffold database SIKESRA sudah tersedia untuk summary konfigurasi dan wiring migration, tetapi client PostgreSQL runtime belum ditambahkan.",
+  sourceIssue: "ahliweb/sikesra#57",
+  runtime: "postgresql_psql_database_url",
+  note: "Surface database SIKESRA sekarang mendukung summary koneksi teredaksi dan eksekusi migrasi repository melalui psql non-interaktif.",
 });
 
 export function createSikesraDatabaseAccess(env = process.env) {
@@ -11,6 +13,9 @@ export function createSikesraDatabaseAccess(env = process.env) {
     seam: SIKESRA_DATABASE_ACCESS_SEAM,
     getConnectionSummary() {
       return summarizeConnection(env.DATABASE_URL);
+    },
+    createMigrationClient() {
+      return createSikesraPsqlDatabaseClient({ env });
     },
   });
 }

@@ -10,8 +10,8 @@ test("SIKESRA database scaffold exposes redacted connection summary only", () =>
     DATABASE_URL: "postgresql://runtime_user:super-secret@example.com:5432/sikesrakobar",
   });
 
-  assert.equal(database.seam.status, "repository_db_scaffold_ready");
-  assert.equal(database.seam.sourceIssue, "ahliweb/sikesra#55");
+  assert.equal(database.seam.status, "repository_db_execution_ready");
+  assert.equal(database.seam.sourceIssue, "ahliweb/sikesra#57");
   assert.deepEqual(database.getConnectionSummary(), {
     configured: true,
     parseable: true,
@@ -19,6 +19,7 @@ test("SIKESRA database scaffold exposes redacted connection summary only", () =>
     usernamePresent: true,
     passwordPresent: true,
   });
+  assert.equal(database.createMigrationClient().seam.sourceIssue, "ahliweb/sikesra#57");
 });
 
 test("SIKESRA migration scaffold registers the first religion persistence contract", () => {

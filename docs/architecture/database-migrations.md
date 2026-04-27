@@ -6,20 +6,25 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 ## Current Migration Commands
 
+- `pnpm db:migrate`
+  - applies pending repository-owned SIKESRA migrations to PostgreSQL through non-interactive `psql`
 - `pnpm db:migrate:status`
-  - prints the current repository-owned migration registry status without mutating a live database
+  - prints the current repository-owned migration registry status and the live SIKESRA migration ledger when reachable
 
 ## Source of Truth
 
 - runner script: `scripts/db-migrate.mjs`
 - database access seam: `src/db/index.mjs`
+- psql execution seam: `src/db/client/psql.mjs`
 - migration registry: `src/db/migrations/index.mjs`
 - migration runner module: `src/db/migrations/runner.mjs`
+- migration SQL renderer: `src/db/migrations/sql.mjs`
 
 ## Current Bootstrap State
 
 - the current repository-owned registry registers `001_create_religion_reference_tables`
-- this first entry defines the persisted table contract and reviewed seed rows for religion references and aliases, but it does not yet execute SQL or Kysely schema changes
+- this first entry defines the persisted table contract and reviewed seed rows for religion references and aliases
+- `pnpm db:migrate` now renders and executes the repository-owned SQL through `psql`, recording applied entries in `public.sikesra_migrations`
 - live persistence, rollback, and EmDash-ledger compatibility work remain follow-on scope for `#49`
 
 ## Current EmDash Runtime Caveat
@@ -29,10 +34,17 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 ## Runtime Input
 
-- `DATABASE_URL` is read only to produce a redacted connection summary for status output
+- `DATABASE_URL` is required for live repository-owned migration execution
 - the runner uses `scripts/_local-env.mjs` to load `.env.local` first, then `.env`
+- when PostgreSQL is unreachable, the runner exits non-zero with a redacted `kind` and `reason` instead of a raw stack trace
 
 ## Usage
+
+### Apply Pending Repository Migrations
+
+```bash
+pnpm db:migrate
+```
 
 ### Check Migration Status
 
@@ -44,10 +56,12 @@ pnpm db:migrate:status
 
 - keep migration files ordered and descriptive
 - do not introduce ad hoc schema changes outside the repository-owned migration registry
-- do not bypass PostgreSQL for first-party schema state once the real client and execution path land
+- use non-interactive `psql` execution with env-managed credentials only for the current repository-owned migration path
 - keep status output redacted: never print passwords, full connection strings, or tokens
+- fail fast on unreachable PostgreSQL and return operator-safe error classifications instead of leaking raw driver/process details
 
 ## Validation
 
+- `pnpm db:migrate`
 - `pnpm db:migrate:status`
 - `pnpm check`

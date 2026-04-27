@@ -7,11 +7,12 @@ This document defines the shared database access surface for services in SIKESRA
 ## Source of Truth
 
 - singleton access module: `src/db/index.mjs`
+- `psql` execution seam: `src/db/client/psql.mjs`
 
 ## Rules
 
-- services should acquire future database access through `src/db/index.mjs`
-- until the runtime PostgreSQL client lands, the current scaffold should expose only seam metadata and redacted connection summary helpers
+- services and migration tooling should acquire future database access through `src/db/index.mjs`
+- the current repository seam now exposes redacted connection summary helpers plus a non-interactive `psql` migration client
 - repositories should stay framework-neutral and avoid embedding credentials or raw connection strings in logs or operator-facing output
 
 ## Current Scaffold Pattern
@@ -20,9 +21,10 @@ This document defines the shared database access surface for services in SIKESRA
 import { sikesraDatabaseAccess } from "../db/index.mjs";
 
 const summary = sikesraDatabaseAccess.getConnectionSummary();
+const client = sikesraDatabaseAccess.createMigrationClient();
 ```
 
-The runtime PostgreSQL client, transactions, and error classification layers are not implemented in this repository yet. They should land as later issue-scoped follow-on work once the persisted religion-reference path in `#49` is ready to use them.
+The repository currently uses a minimal `psql` execution client for migrations. Richer runtime PostgreSQL adapters, transactions, and error classification layers should land as later issue-scoped follow-on work once the persisted religion-reference path in `#49` is ready to use them.
 
 ## SIKESRA Database
 
@@ -35,4 +37,5 @@ The runtime PostgreSQL client, transactions, and error classification layers are
 ## Validation
 
 - `pnpm test:unit`
+- `pnpm db:migrate`
 - `pnpm db:migrate:status`

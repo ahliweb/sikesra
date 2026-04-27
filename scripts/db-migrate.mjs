@@ -6,13 +6,13 @@ function main() {
   loadLocalEnv();
 
   const command = process.argv[2] ?? "status";
-  if (command !== "status") {
+  if (!["status", "up"].includes(command)) {
     console.error(
       JSON.stringify(
         {
           ok: false,
           command,
-          error: "Unsupported migration command in current scaffold. Use status only.",
+          error: "Unsupported repository migration command. Use status or up.",
         },
         null,
         2,
@@ -24,22 +24,55 @@ function main() {
   const database = createSikesraDatabaseAccess(process.env);
   const runner = createSikesraMigrationRunner();
 
-  console.log(
-    JSON.stringify(
-      {
-        ok: true,
-        command,
-        database: {
-          seam: database.seam,
-          connection: database.getConnectionSummary(),
+  try {
+    const client = database.createMigrationClient();
+    const output =
+      command === "up"
+        ? {
+            ok: true,
+            command,
+            database: {
+              seam: database.seam,
+              connection: database.getConnectionSummary(),
+            },
+            migrations: runner.applyPending(client),
+            redaction: "No passwords, tokens, or connection strings are printed.",
+          }
+        : {
+            ok: true,
+            command,
+            database: {
+              seam: database.seam,
+              connection: database.getConnectionSummary(),
+            },
+            migrations: runner.getLiveStatus(client),
+            redaction: "No passwords, tokens, or connection strings are printed.",
+          };
+
+    console.log(JSON.stringify(output, null, 2));
+  } catch (error) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          command,
+          database: {
+            seam: database.seam,
+            connection: database.getConnectionSummary(),
+          },
+          error: {
+            kind: error?.kind ?? "unknown",
+            reason: error?.reason ?? "unexpected_failure",
+            message: error?.message ?? "Repository migration command failed.",
+          },
+          redaction: "No passwords, tokens, or connection strings are printed.",
         },
-        migrations: runner.getStatus(),
-        redaction: "No passwords, tokens, or connection strings are printed.",
-      },
-      null,
-      2,
-    ),
-  );
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
 }
 
 main();
