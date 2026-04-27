@@ -14,9 +14,10 @@
  * Requires .env.local or exported env vars to be present.
  */
 
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import postgres from "postgres";
 
 // ---------------------------------------------------------------------------
@@ -26,9 +27,11 @@ import postgres from "postgres";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const SQL_DIR = join(__dirname, "../src/db/migrations/sql");
 
+loadLocalEnvFiles();
+
 // All migrations in execution order. The first entry (001) is handled by the
 // legacy .mjs runner; subsequent entries are plain SQL files.
-const MIGRATION_FILES: readonly string[] = [
+export const MIGRATION_FILES: readonly string[] = [
   "001_create_religion_reference_tables", // handled by legacy runner
   "002_create_auth_tables",
   "003_create_security_tables",
@@ -36,11 +39,20 @@ const MIGRATION_FILES: readonly string[] = [
   "005_create_file_objects_table",
   "006_create_notification_tables",
   "007_create_app_role_grants",
+  "008_create_session_revocations",
 ];
 
+function loadLocalEnvFiles(): void {
+  for (const envFile of [".env.local", ".env"]) {
+    const filePath = join(__dirname, "..", envFile);
+    if (existsSync(filePath)) {
+      process.loadEnvFile?.(filePath);
+    }
+  }
+}
+
 function getMigrationUrl(): string {
-  // Load .env.local manually (tsx does not auto-load dotenv)
-  // We rely on the caller having sourced env or using cross-env / dotenv-cli.
+  // Prefer reviewed env files but still allow explicitly exported vars.
   const url =
     process.env["DATABASE_MIGRATION_URL"] ?? process.env["DATABASE_URL"];
   if (!url) {
@@ -238,19 +250,21 @@ async function cmdUp(): Promise<void> {
 // Entrypoint
 // ---------------------------------------------------------------------------
 
-const command = process.argv[2] ?? "up";
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const command = process.argv[2] ?? "up";
 
-switch (command) {
-  case "probe":
-    await cmdProbe();
-    break;
-  case "status":
-    await cmdStatus();
-    break;
-  case "up":
-    await cmdUp();
-    break;
-  default:
-    console.error(`Unknown command: ${command}. Use: probe | status | up`);
-    process.exit(1);
+  switch (command) {
+    case "probe":
+      await cmdProbe();
+      break;
+    case "status":
+      await cmdStatus();
+      break;
+    case "up":
+      await cmdUp();
+      break;
+    default:
+      console.error(`Unknown command: ${command}. Use: probe | status | up`);
+      process.exit(1);
+  }
 }

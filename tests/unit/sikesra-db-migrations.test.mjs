@@ -1,9 +1,15 @@
 import assert from "node:assert/strict";
+import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
+import { MIGRATION_FILES } from "../../scripts/db-migrate.ts";
 import { createSikesraDatabaseAccess, resolveMigrationDatabaseUrl } from "../../src/db/index.mjs";
 import { SIKESRA_DB_MIGRATIONS, SIKESRA_DB_MIGRATION_SEAM } from "../../src/db/migrations/index.mjs";
 import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 test("SIKESRA database scaffold exposes redacted connection summary only", () => {
   const database = createSikesraDatabaseAccess({
@@ -76,4 +82,18 @@ test("SIKESRA migration runner reports pending migrations from the registry", ()
   assert.deepEqual(pendingStatus.pending, ["001_create_religion_reference_tables"]);
   assert.deepEqual(appliedStatus.applied, ["001_create_religion_reference_tables"]);
   assert.deepEqual(appliedStatus.pending, []);
+});
+
+test("db migrate CLI keeps SQL migration list in sync with repository files", () => {
+  const sqlDir = join(__dirname, "../../src/db/migrations/sql");
+  const sqlMigrationFiles = readdirSync(sqlDir)
+    .filter((name) => name.endsWith(".sql"))
+    .map((name) => name.replace(/\.sql$/, ""))
+    .sort();
+
+  const registeredSqlMigrations = MIGRATION_FILES.filter(
+    (name) => name !== "001_create_religion_reference_tables",
+  ).sort();
+
+  assert.deepEqual(registeredSqlMigrations, sqlMigrationFiles);
 });
