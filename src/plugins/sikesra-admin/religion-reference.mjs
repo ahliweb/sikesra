@@ -1,23 +1,16 @@
 import { createSikesraSensitiveFieldProps } from "./sensitive-fields.mjs";
-import {
-  SIKESRA_RELIGION_REFERENCE_SEAM,
-  findSikesraReligionReference,
-  listSikesraReligionReferences,
-  mapSikesraReligionReferenceImport,
-  normalizeReferenceText,
-  toSikesraReligionOption,
-} from "../../backend/reference-data/religion-reference.mjs";
+import { sikesraReligionReferenceService } from "../../backend/services/religion-reference-service.mjs";
 
 export const SIKESRA_RELIGION_REFERENCE_SOURCE = {
-  status: SIKESRA_RELIGION_REFERENCE_SEAM.status,
+  status: sikesraReligionReferenceService.seam.status,
   followUpIssue: "ahliweb/sikesra#49",
   operatorLabel: "Referensi Agama",
-  sourceIssue: SIKESRA_RELIGION_REFERENCE_SEAM.sourceIssue,
-  storage: SIKESRA_RELIGION_REFERENCE_SEAM.storage,
-  note: "Gunakan referensi agama dari seam backend repository; persistence runtime masih mengikuti follow-up issue.",
+  sourceIssue: sikesraReligionReferenceService.seam.sourceIssue,
+  storage: sikesraReligionReferenceService.seam.storage,
+  note: "Gunakan referensi agama melalui service boundary backend repository; persistence runtime masih mengikuti follow-up issue.",
 };
 
-export const SIKESRA_RELIGION_OPTIONS = Object.freeze(listSikesraReligionReferences().map((reference) => toSikesraReligionOption(reference)));
+export const SIKESRA_RELIGION_OPTIONS = Object.freeze(sikesraReligionReferenceService.listOptions());
 
 export const SIKESRA_AGAMA_FIELD_CONTEXTS = Object.freeze({
   person: "Agama",
@@ -79,25 +72,15 @@ export function createSikesraAgamaSelectModel(input = {}) {
 }
 
 export function normalizeSikesraReligionValue(value) {
-  const match = findSikesraReligionReference(value);
-
-  return match ? { value: match.code, label: match.displayName } : { value: "", label: "" };
+  return sikesraReligionReferenceService.normalizeValue(value);
 }
 
 export function mapSikesraReligionImportValue(value) {
-  const mapped = mapSikesraReligionReferenceImport(value);
-
-  return {
-    ok: mapped.ok,
-    value: mapped.reference?.code ?? "",
-    label: mapped.reference?.displayName ?? "",
-    normalizedInput: mapped.normalizedInput,
-    message: mapped.message,
-  };
+  return sikesraReligionReferenceService.mapImportValue(value);
 }
 
 function selectOptions({ includeInactive }) {
-  return listSikesraReligionReferences({ includeInactive }).map((reference) => toSikesraReligionOption(reference));
+  return sikesraReligionReferenceService.listOptions({ includeInactive });
 }
 
 function normalizeSubject(subject) {
@@ -109,5 +92,3 @@ function normalizeUsage(usage) {
   const key = String(usage ?? "form").trim().toLowerCase().replace(/[-\s]+/g, "_");
   return SIKESRA_AGAMA_SELECT_USAGES.includes(key) ? key : "form";
 }
-
-export { normalizeReferenceText as normalizeSikesraReligionText };
