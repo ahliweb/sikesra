@@ -8,8 +8,9 @@ test("SIKESRA religion reference repository exposes persistence-ready seam metad
 
   assert.equal(repository.seam.status, "repository_backend_seam_ready");
   assert.equal(repository.seam.followUpIssue, "ahliweb/sikesra#49");
-  assert.equal(repository.seam.sourceIssue, "ahliweb/sikesra#54");
-  assert.equal(repository.seam.storage, "repository_seed_repository");
+  assert.equal(repository.seam.sourceIssue, "ahliweb/sikesra#56");
+  assert.equal(repository.seam.storage, "repository_seed_repository_with_persistence_contract");
+  assert.equal(repository.persistenceMigration?.name, "001_create_religion_reference_tables");
 });
 
 test("SIKESRA religion reference repository lists canonical seed references", () => {

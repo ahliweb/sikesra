@@ -18,8 +18,8 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 ## Current Bootstrap State
 
-- the current repository-owned scaffold registers `001_religion_reference_persistence_contract`
-- this first entry is a migration contract descriptor only; it does not yet execute SQL or Kysely schema changes
+- the current repository-owned registry registers `001_create_religion_reference_tables`
+- this first entry defines the persisted table contract and reviewed seed rows for religion references and aliases, but it does not yet execute SQL or Kysely schema changes
 - live persistence, rollback, and EmDash-ledger compatibility work remain follow-on scope for `#49`
 
 ## Current EmDash Runtime Caveat
