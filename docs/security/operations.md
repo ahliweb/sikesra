@@ -43,7 +43,7 @@ For the intended deployment model:
 - Cloudflare hosts the supported application runtime (Worker `sikesra-kobar`).
 - PostgreSQL (`sikesrakobar`) runs as a protected remote dependency on VPS `202.10.45.224`.
 - Coolify manages the PostgreSQL host lifecycle and related operator environment.
-- Hyperdrive (`sikesra-kobar-postgres-runtime`) is the reviewed database transport.
+- PostgreSQL remains a protected remote dependency behind the reviewed Cloudflare Worker path.
 
 Security operations should treat those as separate trust boundaries.
 

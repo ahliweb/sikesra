@@ -17,7 +17,7 @@ Treat every other repository as read-only reference unless the user explicitly s
 - Use `/_emdash/` as the reviewed admin entry alias on the same host.
 - Use R2 bucket `sikesra` through Worker binding `MEDIA_BUCKET`.
 - Use PostgreSQL database `sikesrakobar` on the Coolify-managed VPS.
-- Use Hyperdrive binding `HYPERDRIVE` for the reviewed production database transport.
+- Use direct reviewed PostgreSQL connectivity from the Cloudflare Worker runtime; do not use Hyperdrive.
 
 ## Security Rules
 

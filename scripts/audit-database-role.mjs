@@ -19,10 +19,6 @@ function summarizeUrl(raw) {
 }
 
 function resolveRuntimeUrl(env = process.env) {
-  if (hasValue(env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE)) {
-    return env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE;
-  }
-
   return env.DATABASE_URL;
 }
 
@@ -83,9 +79,7 @@ async function main() {
 
   const runtimeUrl = resolveRuntimeUrl(process.env);
   if (!hasValue(runtimeUrl)) {
-    throw new Error(
-      "Missing DATABASE_URL or CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE.",
-    );
+    throw new Error("Missing DATABASE_URL.");
   }
 
   const runtimeSummary = summarizeUrl(runtimeUrl);

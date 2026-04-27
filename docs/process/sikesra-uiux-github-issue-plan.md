@@ -123,7 +123,6 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 
 - ahliweb/sikesra#10: Provision Coolify database and locked runtime secrets.
 - ahliweb/sikesra#11: Configure Cloudflare Worker runtime, domain, secrets, and R2 binding.
-- ahliweb/sikesra#12: Create Hyperdrive binding for `sikesrakobar` PostgreSQL.
 - ahliweb/sikesra#44: Replace temporary smoke Worker with full AWCMS Mini/EmDash build.
 
 ## Current Runtime Status
@@ -134,9 +133,8 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Coolify reports the PostgreSQL resource as `running:healthy` and `is_public=false`.
 - R2 bucket `sikesra` was verified through Cloudflare MCP using a non-sensitive write/read/delete smoke object.
 - `wrangler.jsonc` exists for Worker `sikesra-kobar`, domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET`, and the required AWCMS Mini Worker secret contract.
-- The SIKESRA-specific Hyperdrive ID is bound and runtime readiness passes.
-- Worker/domain/R2/Hyperdrive smoke checks passed and the temporary smoke Worker was already replaced by the full AWCMS Mini/EmDash build in `#44`.
-- The deployed runtime now serves the EmDash admin shell at `/_emdash/` and the edge API health endpoint confirms Hyperdrive-backed PostgreSQL connectivity.
+- Worker/domain/R2 smoke checks passed and the temporary smoke Worker was already replaced by the full AWCMS Mini/EmDash build in `#44`.
+- The deployed runtime now serves the EmDash admin shell at `/_emdash/`.
 
 ## Current Integration Status
 

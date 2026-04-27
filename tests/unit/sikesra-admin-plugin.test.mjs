@@ -403,13 +403,11 @@ test("SIKESRA smoke Worker deployment metadata preserves reviewed bindings", () 
     compatibility_flags: ["nodejs_compat"],
     vars: { SITE_URL: "https://sikesrakobar.ahlikoding.com" },
     r2_buckets: [{ binding: "MEDIA_BUCKET", bucket_name: "sikesra" }],
-    hyperdrive: [{ binding: "HYPERDRIVE", id: "example-hyperdrive-id" }],
     kv_namespaces: [{ binding: "SESSION", id: "example-session-kv-id" }],
   });
   const bindings = summarizeSmokeWorkerBindings(metadata);
 
   assert.deepEqual(bindings, [
-    { type: "hyperdrive", name: "HYPERDRIVE" },
     { type: "kv_namespace", name: "SESSION" },
     { type: "plain_text", name: "SITE_URL" },
     { type: "r2_bucket", name: "MEDIA_BUCKET" },

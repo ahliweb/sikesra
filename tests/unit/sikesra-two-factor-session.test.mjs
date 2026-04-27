@@ -82,7 +82,7 @@ test("JWT sessions verify and reject tampering", () => {
   assert.equal(payload?.twoFactorVerified, true);
   assert.equal(typeof payload?.jti, "string");
 
-  const tampered = token.replace(/.$/, "x");
+  const tampered = `${token}x`;
   assert.equal(verifyToken(tampered, signingKey), null);
 });
 

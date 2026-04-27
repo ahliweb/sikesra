@@ -5,8 +5,6 @@
   "compatibility_date": "2026-04-26",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "vars": {
-    "DATABASE_TRANSPORT": "hyperdrive",
-    "HYPERDRIVE_BINDING": "HYPERDRIVE",
     "MINI_RUNTIME_TARGET": "cloudflare",
     "TRUSTED_PROXY_MODE": "cloudflare",
     "SITE_URL": "https://sikesrakobar.ahlikoding.com",
@@ -39,12 +37,6 @@
     {
       "binding": "MEDIA_BUCKET",
       "bucket_name": "sikesra"
-    }
-  ],
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "27eafcdafb5e4904bf083c4133a54161"
     }
   ],
   "kv_namespaces": [

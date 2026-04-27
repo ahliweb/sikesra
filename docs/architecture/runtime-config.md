@@ -145,18 +145,9 @@ These are safe to expose to the browser. Never include database credentials, R2 
 | `PUBLIC_APP_ENV`          | `production` or `staging`                                  |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Public Turnstile site key for rendering widgets          |
 
-## Legacy Note: Cloudflare Worker and Hyperdrive
+## No-Hyperdrive Note
 
-Previous versions of this document listed the following as the production baseline:
-
-- `MINI_RUNTIME_TARGET=cloudflare`
-- `DATABASE_TRANSPORT=hyperdrive`
-- `HYPERDRIVE_BINDING=HYPERDRIVE`
-- `HEALTHCHECK_EXPECT_DATABASE_TRANSPORT=hyperdrive`
-
-These settings apply only to the legacy Cloudflare Worker deployment path. They are no longer used in the target architecture. See `docs/architecture/no-hyperdrive-adr.md`.
-
-The legacy Worker (`sikesra-kobar`) and its `wrangler.jsonc`, `[[hyperdrive]]` binding, and associated variables remain in the repository until the Worker is formally decommissioned. They must not be treated as the active production configuration.
+Cloudflare Hyperdrive is not part of the active SIKESRA repository architecture. Use `DATABASE_URL` and `DATABASE_MIGRATION_URL` for reviewed PostgreSQL connectivity instead. See `docs/architecture/no-hyperdrive-adr.md`.
 
 ## Rules
 

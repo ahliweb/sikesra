@@ -19,10 +19,9 @@ const WORKER_SCRIPT = `export default {
 
     if (url.pathname === "/__smoke/db") {
       return Response.json({
-        ok: Boolean(env.HYPERDRIVE && env.HYPERDRIVE.connectionString),
-        service: "sikesra-hyperdrive-binding-smoke",
-        bindingPresent: Boolean(env.HYPERDRIVE),
-        connectionStringPresent: Boolean(env.HYPERDRIVE && env.HYPERDRIVE.connectionString),
+        ok: Boolean(env.SESSION),
+        service: "sikesra-worker-binding-smoke",
+        sessionBindingPresent: Boolean(env.SESSION),
       });
     }
 
@@ -101,11 +100,6 @@ export function buildSmokeWorkerMetadata(wrangler) {
         type: "r2_bucket",
         name: bucket.binding,
         bucket_name: bucket.bucket_name,
-      })),
-      ...(wrangler.hyperdrive ?? []).map((config) => ({
-        type: "hyperdrive",
-        name: config.binding,
-        id: config.id,
       })),
       ...(wrangler.kv_namespaces ?? []).map((namespace) => ({
         type: "kv_namespace",

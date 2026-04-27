@@ -2,8 +2,6 @@ import { existsSync } from "node:fs";
 import { buildDefaultEnvFiles, hasValue, loadLocalEnv } from "./_local-env.mjs";
 import { getRequiredWorkerSecrets, parseWranglerConfig } from "./_wrangler-config.mjs";
 
-const HYPERDRIVE_PLACEHOLDER = "REPLACE_WITH_SIKESRA_HYPERDRIVE_ID";
-
 function parseWrangler() {
   return parseWranglerConfig();
 }
@@ -83,31 +81,14 @@ async function checkCoolify(env) {
 
 async function checkCloudflare(env, wrangler) {
   const result = {
-    ok: false,
+    ok: true,
     configured: hasValue(env.CLOUDFLARE_ACCOUNT_ID) && hasValue(env.CLOUDFLARE_API_TOKEN),
     redaction: "Cloudflare token, raw response, and secret values are omitted.",
   };
 
-  if (!result.configured) return result;
-
-  const { response, json } = await fetchJson(
-    `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs`,
-    env.CLOUDFLARE_API_TOKEN,
-  );
-  const configs = Array.isArray(json?.result) ? json.result : [];
-  const wranglerHyperdriveId = wrangler?.hyperdrive?.[0]?.id ?? null;
-  const matchingConfig = configs.find((config) => config.id === wranglerHyperdriveId);
-
-  result.httpStatus = response.status;
-  result.hyperdriveListOk = response.ok;
-  result.hyperdriveCount = configs.length;
-  result.wranglerHyperdriveIdPresent = hasValue(wranglerHyperdriveId);
-  result.wranglerHyperdrivePlaceholder = wranglerHyperdriveId === HYPERDRIVE_PLACEHOLDER;
-  result.wranglerHyperdriveExists = Boolean(matchingConfig);
-  result.sikesraNamedConfigs = configs
-    .filter((config) => /sikesra|kobar/i.test(config.name || ""))
-    .map((config) => ({ id: config.id, name: config.name, database: config.origin?.database ?? null }));
-  result.ok = response.ok && result.wranglerHyperdriveIdPresent && !result.wranglerHyperdrivePlaceholder && result.wranglerHyperdriveExists;
+  result.workerName = wrangler?.name ?? null;
+  result.r2Binding = wrangler?.r2_buckets?.[0]?.binding ?? null;
+  result.sessionBinding = wrangler?.kv_namespaces?.[0]?.binding ?? null;
   return result;
 }
 
@@ -123,9 +104,7 @@ function checkWrangler(wrangler) {
     adminEntryPath: wrangler?.vars?.ADMIN_ENTRY_PATH ?? null,
     r2Binding: wrangler?.r2_buckets?.[0]?.binding ?? null,
     r2Bucket: wrangler?.r2_buckets?.[0]?.bucket_name ?? null,
-    hyperdriveBinding: wrangler?.hyperdrive?.[0]?.binding ?? null,
-    hyperdriveId: wrangler?.hyperdrive?.[0]?.id ?? null,
-    hyperdrivePlaceholder: wrangler?.hyperdrive?.[0]?.id === HYPERDRIVE_PLACEHOLDER,
+    sessionBinding: wrangler?.kv_namespaces?.[0]?.binding ?? null,
     requiredSecretsConfigured,
     requiredSecrets: declaredSecrets,
     missingRequiredSecrets: missingSecrets,
@@ -138,17 +117,10 @@ async function main() {
 
   const wrangler = parseWrangler();
   const databaseUrl = safeUrlSummary(process.env.DATABASE_URL);
-  const localHyperdriveConnection = safeUrlSummary(process.env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE);
   const envCheck = {
-    ok:
-      databaseUrl.database === "sikesrakobar" &&
-      (!localHyperdriveConnection.present || localHyperdriveConnection.database === "sikesrakobar") &&
-      existsSync(".dev.vars.example"),
+    ok: databaseUrl.database === "sikesrakobar" && existsSync(".dev.vars.example"),
     databaseUrl,
     databaseUrlMatches: databaseUrl.database === "sikesrakobar",
-    localHyperdriveConnection,
-    localHyperdriveConnectionMatches:
-      !localHyperdriveConnection.present || localHyperdriveConnection.database === "sikesrakobar",
     loadedEnvFiles: envFiles,
     devVarsExamplePresent: existsSync(".dev.vars.example"),
     envLocalPresent: existsSync(".env.local"),

@@ -8,7 +8,7 @@ import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs
 test("SIKESRA database scaffold exposes redacted connection summary only", () => {
   const database = createSikesraDatabaseAccess({
     DATABASE_URL: buildDatabaseUrl("example.com", "runtime_user"),
-    DATABASE_MIGRATION_URL: buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
+    DATABASE_MIGRATION_URL: buildDatabaseUrl("private-db.example.com", "migration_user"),
   });
 
   assert.equal(database.seam.status, "repository_db_execution_ready");
@@ -34,9 +34,9 @@ test("SIKESRA migration URL resolution prefers DATABASE_MIGRATION_URL when provi
   assert.equal(
     resolveMigrationDatabaseUrl({
       DATABASE_URL: buildDatabaseUrl("example.com", "runtime_user"),
-      DATABASE_MIGRATION_URL: buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
+      DATABASE_MIGRATION_URL: buildDatabaseUrl("private-db.example.com", "migration_user"),
     }),
-    buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
+    buildDatabaseUrl("private-db.example.com", "migration_user"),
   );
 
   assert.equal(

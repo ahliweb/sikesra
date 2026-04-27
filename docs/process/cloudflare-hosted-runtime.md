@@ -21,7 +21,6 @@ The supported baseline production path is:
 - optional `ADMIN_SITE_URL` remains a compatibility-only entry host when an operator still needs a dedicated admin hostname
 - `TRUSTED_PROXY_MODE=cloudflare`
 - `DATABASE_URL` points to the intended remote PostgreSQL instance
-- `DATABASE_TRANSPORT=hyperdrive` is the reviewed production default for the current live Cloudflare deployment
 - `wrangler.jsonc` or equivalent deployment config defines the Worker, assets, observability, and required bindings
 - `TURNSTILE_SECRET_KEY` is stored as a server-only secret when Turnstile protection is enabled
 - `TURNSTILE_EXPECTED_HOSTNAMES` should be set or derived correctly for the reviewed hostname set in the environment
@@ -42,7 +41,6 @@ The supported baseline production path is:
 - Ensure the adapter's default `SESSION` KV binding or an explicit equivalent binding is available
 - Keep `/_emdash/` as the reviewed browser entry alias and redirect it into EmDash's current `/_emdash/admin` surface on the same host
 - Keep the setup shell under `/_emdash/admin/setup` database-lazy in repository middleware so transport/bootstrap reconciliation does not turn into a blanket Worker exception before the EmDash setup flow can render
-- Keep the reviewed Hyperdrive binding active in Worker config for the current live deployment, while local Astro validation derives the required local connection string from env-managed `DATABASE_URL`
 - If split hostnames are still used for compatibility, keep the admin hostname pointed at the same Worker deployment and treat it as an entry host for the configured admin entry path
 - Add edge protections such as rate limiting, managed challenge, or Turnstile on abuse-prone routes as those features land
 - The current Turnstile-covered public flows are login, password-reset request, and invite activation when the Turnstile secret is configured
@@ -56,12 +54,10 @@ The supported baseline production path is:
 
 - Treat PostgreSQL as a private remote dependency
 - Use TLS for database traffic
-- Keep `DATABASE_TRANSPORT=hyperdrive` for the current live Cloudflare deployment unless a reviewed rollback intentionally returns the Worker to direct PostgreSQL transport
 - Prefer `DATABASE_URL` values that connect through `id1.ahlikoding.com` for hostname validation in the reviewed production baseline
 - Prefer `sslmode=verify-full` when certificate validation is available, and treat weaker modes such as `require` as explicitly documented interim posture only
 - Keep firewall and `pg_hba.conf` rules scoped narrowly
 - Use non-superuser runtime credentials
-- If Hyperdrive is enabled, treat it as the preferred pooling and transport layer from the Cloudflare-hosted runtime rather than a replacement for PostgreSQL hardening
 
 ## Minimum Operator Checks
 
@@ -80,10 +76,8 @@ Before deployment:
 - Confirm `ADMIN_SITE_URL` only if a dedicated admin hostname is still enabled for compatibility
 - Confirm `TURNSTILE_EXPECTED_HOSTNAMES` or its derived fallback matches the reviewed hostname set when Turnstile is enabled
 - Confirm `EDGE_API_JWT_SECRET` and any non-default `EDGE_API_JWT_*` settings are set correctly when `/api/v1/token` is enabled
-- Confirm `DATABASE_TRANSPORT` matches the intended deployment path
 - Confirm `DATABASE_URL` or approved database transport configuration points to the intended PostgreSQL target
-- Confirm the reviewed PostgreSQL SSL hostname `id1.ahlikoding.com` remains the intended origin posture behind the active Hyperdrive path
-- Confirm the `HYPERDRIVE` binding exists when `DATABASE_TRANSPORT=hyperdrive`
+- Confirm the reviewed PostgreSQL SSL hostname `id1.ahlikoding.com` remains the intended direct origin posture
 
 After deployment:
 
@@ -114,7 +108,7 @@ Run these in order after a deployment or after Cloudflare-side automation change
 - Confirm the alias redirects to `/_emdash/admin` on the same host.
 - Confirm the EmDash admin surface loads there without introducing a second admin shell or alternate API surface.
 - If `ADMIN_SITE_URL` is still configured for compatibility, confirm the hostname root redirects to the configured admin entry path on the same Worker deployment.
-- Prefer `pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com` when the deploy window needs the reviewed combined verification path for deployed database posture and the admin/setup smoke seam. The command now asserts the reviewed Hyperdrive transport and binding by default unless an operator explicitly overrides the expectation inputs.
+- Prefer `pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com` when the deploy window needs the reviewed combined verification path for deployed database posture and the admin/setup smoke seam.
 - Prefer `pnpm smoke:cloudflare-admin` as the focused regression check for the reviewed admin-entry alias and setup-shell path.
 - Prefer `pnpm smoke:deployed-runtime-health -- https://sikesrakobar.ahlikoding.com` when operators need the deployed Worker to report its non-secret database posture without depending on workstation-level direct reachability to the private PostgreSQL origin.
 
@@ -136,9 +130,8 @@ Run these in order after a deployment or after Cloudflare-side automation change
 
 - Run `pnpm healthcheck` or the environment-equivalent health path.
 - Confirm the app can still reach PostgreSQL on the Coolify-managed VPS.
-- Confirm the reviewed application hostname `id1.ahlikoding.com` and TLS posture still match the intended deployment configuration when `DATABASE_TRANSPORT=direct`.
-- Confirm the deployed `DATABASE_URL` secret matches the reviewed hostname and SSL mode rather than an outdated direct-IP value when `DATABASE_TRANSPORT=direct`.
-- Confirm the `HYPERDRIVE` binding resolves correctly when `DATABASE_TRANSPORT=hyperdrive`.
+- Confirm the reviewed application hostname `id1.ahlikoding.com` and TLS posture still match the intended deployment configuration.
+- Confirm the deployed `DATABASE_URL` secret matches the reviewed hostname and SSL mode rather than an outdated direct-IP value.
 - When the reviewed rollout target is known, prefer the non-secret `pnpm healthcheck` assertion variables so runtime verification fails fast on the wrong transport, hostname, SSL mode, or binding.
 - Confirm no Cloudflare-side automation change accidentally altered the database path assumptions.
 - Confirm any local-only `.dev.vars` copy used for troubleshooting remains untracked and is not being treated as production secret storage.
@@ -200,7 +193,7 @@ Current consequence:
 - the repository now declares the intended custom-domain automation baseline in `wrangler.jsonc`
 - operators should still record the live `ahlikoding.com` zone ID and confirm the deployed Worker is the target of the reviewed public custom domain during environment rollout
 - the smoke tests in this document remain the required verification step until account inventory is readable through the available Cloudflare management path
-- the same caveat applies to Hyperdrive rollout work when Wrangler or the available Cloudflare management path cannot read the live account inventory non-interactively
+- the same caveat applies to other Cloudflare-side rollout work when Wrangler or the available Cloudflare management path cannot read the live account inventory non-interactively
 
 ## Cross-References
 

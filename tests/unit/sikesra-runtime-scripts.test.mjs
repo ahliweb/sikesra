@@ -10,6 +10,8 @@ test("SIKESRA wrangler helper reads the reviewed Worker secret contract", () => 
 
   assert.equal(wrangler.name, "sikesra-kobar");
   assert.deepEqual(requiredSecrets, ["APP_SECRET", "MINI_TOTP_ENCRYPTION_KEY", "TURNSTILE_SECRET_KEY", "EDGE_API_JWT_SECRET"]);
+  assert.equal(wrangler.vars?.DATABASE_TRANSPORT, undefined);
+  assert.equal(Array.isArray(wrangler.hyperdrive), false);
 });
 
 test("SIKESRA wrangler helper returns empty secrets when no contract exists", () => {

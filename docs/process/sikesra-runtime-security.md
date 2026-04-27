@@ -25,7 +25,7 @@ This document records the project-specific runtime and secret-handling baseline 
 - Keep Coolify-managed resource secrets in Coolify locked environment variables with runtime-only scope by default.
 - Use Docker Build Secrets for build-time sensitive inputs if Coolify build-time secrets are unavoidable.
 - Keep PostgreSQL credentials least-privilege and application-scoped; do not use PostgreSQL superuser credentials for the app runtime.
-- Keep the SIKESRA runtime on the least-privilege PostgreSQL role and rotate the Hyperdrive config if database credentials are rotated again.
+- Keep the SIKESRA runtime on the least-privilege PostgreSQL role and rotate direct runtime credentials through reviewed secret stores when database credentials change.
 - Treat Coolify API responses as management-plane data and redact credentials, tokens, private URLs, and connection strings before copying output into issues or docs.
 - Treat readiness output as operator-facing evidence: print only booleans, resource names, non-secret IDs, status codes, and expected database names; never print raw credentials, tokens, connection strings, hostnames from private URLs, or raw API payloads.
 
@@ -59,7 +59,7 @@ When local operator workflows need environment-specific separation, the shared h
 
 Use tracked `.env.example` only for placeholders and non-secret defaults. Keep live values in ignored local env files, Cloudflare Worker secrets, Coolify locked runtime secrets, or an external password manager.
 
-For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored local env files when repository-owned migration commands must target the reviewed private PostgreSQL route such as `pg-sikesra-hyperdrive.ahlikoding.com` while the general app runtime continues using a different `DATABASE_URL` posture.
+For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored local env files when repository-owned migration commands must target a reviewed private PostgreSQL route that differs from the general runtime `DATABASE_URL` posture.
 
 ## Cloudflare Recommendations
 
@@ -70,9 +70,7 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 - Bind R2 as a private bucket and serve documents only through permission-aware, audited application flows.
 - Keep Turnstile hostname allowlists aligned with `sikesrakobar.ahlikoding.com` when login, reset, or invite flows are enabled.
 - Prefer host-only secure cookies unless a reviewed operator workflow requires cross-host sharing.
-- Keep the Worker aligned with the AWCMS Mini EmDash-first Cloudflare baseline: `@astrojs/cloudflare/entrypoints/server`, `nodejs_compat`, `global_fetch_strictly_public`, `/_emdash/` admin entry, required Worker secrets, R2 binding `MEDIA_BUCKET`, and Hyperdrive binding `HYPERDRIVE`.
-- Replace `REPLACE_WITH_SIKESRA_HYPERDRIVE_ID` in `wrangler.jsonc` only after a SIKESRA-specific Hyperdrive configuration is created for the Coolify-managed PostgreSQL database.
-- Context7 Cloudflare Workers documentation confirms the Worker should bind Hyperdrive through Wrangler using `nodejs_compat` and a non-secret Hyperdrive ID, while database credentials belong in the Hyperdrive configuration or Worker secrets rather than committed files.
+- Keep the Worker aligned with the AWCMS Mini EmDash-first Cloudflare baseline: `@astrojs/cloudflare/entrypoints/server`, `nodejs_compat`, `global_fetch_strictly_public`, `/_emdash/` admin entry, required Worker secrets, R2 binding `MEDIA_BUCKET`, and SESSION KV binding.
 
 ## Coolify Recommendations
 
@@ -94,22 +92,19 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 - PostgreSQL database name verified: `sikesrakobar`.
 - PostgreSQL application user verified: `sikesrakobar_runtime`.
 - PostgreSQL public exposure verified through Coolify API: `is_public=false`.
-- SIKESRA-specific protected Tunnel hostname configured for Hyperdrive origin access: `pg-sikesra-hyperdrive.ahlikoding.com`.
 - Redacted `psql` smoke test through Cloudflare Access and Tunnel verified connectivity to database `sikesrakobar` after synchronizing ignored local credentials from Coolify.
-- PostgreSQL SSL/TLS was enabled through the private database path and the original SIKESRA Hyperdrive config was later rotated to least-privilege-backed Hyperdrive config `sikesra-kobar-postgres-runtime` for database `sikesrakobar`.
+- PostgreSQL SSL/TLS was enabled through the reviewed private database path for database `sikesrakobar`.
 - Coolify currently reports no application or service resource for this repository, so application runtime secrets cannot yet be stored in a Coolify application scope.
 - Cloudflare MCP can access the R2 bucket `sikesra`; a non-sensitive smoke object was written, read, and deleted through the MCP.
 - The local Cloudflare API token returned HTTP 403 for direct R2 bucket REST operations, so direct API automation needs either a token scope update or continued use of the Cloudflare MCP.
 - Repository-side Cloudflare Worker configuration now exists in `wrangler.jsonc` for Worker `sikesra-kobar`, custom domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET` to bucket `sikesra`, and the AWCMS Mini required Worker secret contract.
-- `wrangler.jsonc` now contains the non-secret SIKESRA Hyperdrive ID for `sikesra-kobar-postgres-runtime`; do not replace it with the existing AWCMS Mini Hyperdrive ID.
-- Cloudflare Worker `sikesra-kobar` is now deployed with the full AWCMS Mini/EmDash Worker build, required Worker secrets, R2 binding, Hyperdrive binding, SESSION KV binding, and Worker Custom Domain `sikesrakobar.ahlikoding.com`.
-- Public smoke tests passed for base URL, `/_emdash/` admin entry redirect, setup shell, Hyperdrive binding presence, and R2 binding readiness.
+- Cloudflare Worker `sikesra-kobar` is now deployed with the full AWCMS Mini/EmDash Worker build, required Worker secrets, R2 binding, SESSION KV binding, and Worker Custom Domain `sikesrakobar.ahlikoding.com`.
+- Public smoke tests passed for base URL, `/_emdash/` admin entry redirect, setup shell, and R2 binding readiness.
 - Repository migration tooling now supports `DATABASE_MIGRATION_URL` when operator migrations need the reviewed private PostgreSQL route while the general app runtime keeps its existing `DATABASE_URL` posture.
 
 ## Remaining Runtime Secret Work
 
 - Run the EmDash first-run setup at `https://sikesrakobar.ahlikoding.com/_emdash/admin/setup` before treating the live app as operator-ready.
-- Keep the SIKESRA-specific Cloudflare Hyperdrive configuration for the Coolify-managed PostgreSQL resource aligned with `wrangler.jsonc`.
 - Keep Worker runtime secrets synchronized in Cloudflare secrets with `scripts/sync-worker-secrets.mjs` after each secret rotation.
 - If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
 - Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
@@ -134,7 +129,7 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 
 ## Current Repository State
 
-This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/create-sikesra-hyperdrive.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, `scripts/_wrangler-config.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, derive the reviewed Worker secret contract from `wrangler.jsonc`, print redacted reports, and fail closed when required infrastructure is missing.
+This SIKESRA repository now includes `scripts/verify-runtime-readiness.mjs`, `scripts/deploy-smoke-worker.mjs`, `scripts/sync-worker-secrets.mjs`, `scripts/_local-env.mjs`, `scripts/_wrangler-config.mjs`, and `scripts/check-secret-hygiene.mjs`. The scripts read secrets only from ignored env files or process environment, support environment-specific local overrides through the shared loader, derive the reviewed Worker secret contract from `wrangler.jsonc`, print redacted reports, and fail closed when required infrastructure is missing.
 
 No tracked scripts currently contain hardcoded credential values; local-only connection values remain in ignored env files.
 
