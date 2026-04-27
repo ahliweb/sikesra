@@ -4,7 +4,7 @@
 
 SIKESRA now has a reusable framework-neutral `AgamaSelect` view model in `src/plugins/sikesra-admin/religion-reference.mjs`.
 
-The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs` and a narrow backend service boundary in `src/backend/services/religion-reference-service.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes the service boundary for canonical values and normalization, but persistence is still not implemented yet.
+The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`, a repository-layer persistence seam in `src/backend/repositories/religion-reference-repository.mjs`, and a narrow backend service boundary in `src/backend/services/religion-reference-service.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes the service boundary for canonical values and normalization, but persistence is still not implemented yet.
 
 The repository does not yet contain database migrations or a persisted backend reference table for religion master data. Until persistence is added, the UI model still exposes a controlled contract and reports repository-backend seam readiness, while the backend seam defines the canonical repository-local contract that `#49` should attach to.
 
@@ -48,13 +48,15 @@ Repository dependency order:
 
 1. `#52` introduces the minimal backend reference-data seam now present in `src/backend/reference-data/religion-reference.mjs`.
 2. `#53` adds the narrow service-layer read boundary on top of that seam.
-3. `#49` should add persistence, service-layer authorization, and audit-covered runtime usage on top of that seam and service boundary.
+3. `#54` adds the repository-layer persistence attachment seam under the service boundary.
+4. `#49` should add persistence, service-layer authorization, and audit-covered runtime usage on top of that seam, repository boundary, and service boundary.
 
 Tracked follow-up: `ahliweb/sikesra#49`.
 
 ## Validation
 
 - `pnpm check`
+- `node --check src/backend/repositories/religion-reference-repository.mjs`
 - `node --check src/backend/services/religion-reference-service.mjs`
 - `node --check src/backend/reference-data/religion-reference.mjs`
 - `node --check src/plugins/sikesra-admin/religion-reference.mjs`

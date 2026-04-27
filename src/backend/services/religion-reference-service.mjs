@@ -1,20 +1,18 @@
 import {
-  SIKESRA_RELIGION_REFERENCE_SEAM,
-  findSikesraReligionReference,
-  listSikesraReligionReferences,
   mapSikesraReligionReferenceImport,
   toSikesraReligionOption,
 } from "../reference-data/religion-reference.mjs";
+import { sikesraReligionReferenceRepository } from "../repositories/religion-reference-repository.mjs";
 
 export function createSikesraReligionReferenceService() {
   return Object.freeze({
-    seam: SIKESRA_RELIGION_REFERENCE_SEAM,
+    seam: sikesraReligionReferenceRepository.seam,
     listOptions(input) {
-      const references = listSikesraReligionReferences({ includeInactive: input?.includeInactive === true });
+      const references = sikesraReligionReferenceRepository.list({ includeInactive: input?.includeInactive === true });
       return references.map((reference) => toSikesraReligionOption(reference));
     },
     normalizeValue(value) {
-      const reference = findSikesraReligionReference(value);
+      const reference = sikesraReligionReferenceRepository.findByAny(value);
       return reference ? { value: reference.code, label: reference.displayName } : { value: "", label: "" };
     },
     mapImportValue(value) {

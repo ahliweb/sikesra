@@ -8,6 +8,7 @@ test("SIKESRA religion reference service exposes seam metadata", () => {
 
   assert.equal(service.seam.status, "repository_backend_seam_ready");
   assert.equal(service.seam.followUpIssue, "ahliweb/sikesra#49");
+  assert.equal(service.seam.sourceIssue, "ahliweb/sikesra#54");
 });
 
 test("SIKESRA religion reference service lists canonical option values", () => {
