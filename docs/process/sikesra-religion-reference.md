@@ -4,7 +4,9 @@
 
 SIKESRA now has a reusable framework-neutral `AgamaSelect` view model in `src/plugins/sikesra-admin/religion-reference.mjs`.
 
-The repository does not yet contain database migrations or a backend reference table for religion master data. Until that backend seam exists, the UI model exposes a controlled local contract and marks the source as `planned_backend_reference`.
+The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`. This seam provides the reviewed canonical religion seed contract and normalization helpers, but it still does not persist data yet.
+
+The repository does not yet contain database migrations or a persisted backend reference table for religion master data. Until persistence is added, the UI model still exposes a controlled local contract and marks the source as `planned_backend_reference`, while the new backend seam defines the canonical repository-local contract that `#49` should attach to.
 
 ## Rules
 
@@ -40,12 +42,18 @@ Unknown values must remain unmapped and require operator review. They must not s
 
 ## Backend Follow-Up
 
-Create the backend reference-data implementation before module forms persist religion data. The backend should provide controlled active/inactive lifecycle, stable internal IDs, import aliases, region-independent reference behavior, and audit coverage for changes.
+Create the persisted backend reference-data implementation before module forms persist religion data. The backend should provide controlled active/inactive lifecycle, stable internal IDs, import aliases, region-independent reference behavior, and audit coverage for changes.
+
+Repository dependency order:
+
+1. `#52` introduces the minimal backend reference-data seam now present in `src/backend/reference-data/religion-reference.mjs`.
+2. `#49` should add persistence, service-layer authorization, and audit-covered runtime usage on top of that seam.
 
 Tracked follow-up: `ahliweb/sikesra#49`.
 
 ## Validation
 
 - `pnpm check`
+- `node --check src/backend/reference-data/religion-reference.mjs`
 - `node --check src/plugins/sikesra-admin/religion-reference.mjs`
 - `git diff --check`
