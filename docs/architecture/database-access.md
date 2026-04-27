@@ -7,54 +7,22 @@ This document defines the shared database access surface for services in SIKESRA
 ## Source of Truth
 
 - singleton access module: `src/db/index.mjs`
-- postgres client factory: `src/db/client/postgres.mjs`
-- transaction wrapper: `src/db/transactions.mjs`
-- error classifier: `src/db/errors.mjs`
 
 ## Rules
 
-- services should acquire database access through `src/db/index.mjs`
-- services should use `withTransaction(...)` for multi-step writes
-- nested transaction intent must be explicit through strategy selection
-- error handling should classify database failures through `classifyDatabaseError(...)`
-- repositories should filter `deleted_at is null` by default for soft-deletable entities
-- repositories should expose explicit soft-delete, restore, or include-deleted paths instead of mixing deleted rows into normal reads
+- services should acquire future database access through `src/db/index.mjs`
+- until the runtime PostgreSQL client lands, the current scaffold should expose only seam metadata and redacted connection summary helpers
+- repositories should stay framework-neutral and avoid embedding credentials or raw connection strings in logs or operator-facing output
 
-## Transaction Strategy
-
-### `reuse`
-
-- default nested strategy
-- if a controlled transaction already exists, reuse it
-- use this for normal service composition
-
-### `savepoint`
-
-- nested strategy for partial rollback boundaries inside an existing controlled transaction
-- use only when a service truly needs savepoint semantics
-
-## Recommended Service Pattern
+## Current Scaffold Pattern
 
 ```js
-import { getDatabase, withTransaction } from "../db/index.mjs";
+import { sikesraDatabaseAccess } from "../db/index.mjs";
 
-const db = getDatabase();
-
-await withTransaction(db, async (trx) => {
-  // multi-step write using trx
-});
+const summary = sikesraDatabaseAccess.getConnectionSummary();
 ```
 
-## Error Classification Kinds
-
-- `authentication`
-- `connection`
-- `constraint`
-- `migration`
-- `not_found`
-- `query`
-- `transaction`
-- `unknown`
+The runtime PostgreSQL client, transactions, and error classification layers are not implemented in this repository yet. They should land as later issue-scoped follow-on work once the persisted religion-reference path in `#49` is ready to use them.
 
 ## SIKESRA Database
 
@@ -67,5 +35,4 @@ await withTransaction(db, async (trx) => {
 ## Validation
 
 - `pnpm test:unit`
-- `pnpm typecheck`
-- `pnpm build`
+- `pnpm db:migrate:status`
