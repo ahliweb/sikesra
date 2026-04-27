@@ -26,7 +26,10 @@ import {
   findMatchingRecoveryCode,
   hashRecoveryCode,
 } from "../../modules/two-factor/index.js";
-import { recordLoginAttempt } from "../../modules/login-attempts/index.js";
+import {
+  getLoginLockoutDecision,
+  recordLoginAttempt,
+} from "../../modules/login-attempts/index.js";
 import {
   deleteExpiredSessionRevocations,
   revokeSessionToken,
@@ -43,6 +46,13 @@ export type LoginTwoFactorDecision =
   | { kind: "not_required" }
   | { kind: "challenge_required" }
   | { kind: "setup_required" };
+
+export function shouldBlockLoginAttempt(input: {
+  recentFailureCount: number;
+  maxFailures: number;
+}): boolean {
+  return input.recentFailureCount >= input.maxFailures;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -107,6 +117,30 @@ auth.post("/login", async (c) => {
 
   const ip = c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For");
   const ua = c.req.header("User-Agent");
+
+  const lockout = await getLoginLockoutDecision({
+    email,
+    ipAddress: ip,
+  });
+
+  if (
+    shouldBlockLoginAttempt({
+      recentFailureCount: lockout.recentFailureCount,
+      maxFailures: env.LOGIN_LOCKOUT_MAX_FAILURES,
+    })
+  ) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: "ACCOUNT_TEMPORARILY_LOCKED",
+          message: "Too many login attempts. Please try again later.",
+        },
+        meta: { requestId, retryAfterSeconds: lockout.retryAfterSeconds },
+      },
+      429,
+    );
+  }
 
   // ── Turnstile ─────────────────────────────────────────────────────────────
 

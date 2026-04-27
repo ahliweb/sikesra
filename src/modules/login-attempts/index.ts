@@ -81,3 +81,55 @@ export async function recordLoginAttempt(
     console.error("[login-attempts] Failed to record attempt:", err);
   }
 }
+
+export interface LoginLockoutDecision {
+  locked: boolean;
+  recentFailureCount: number;
+  retryAfterSeconds: number;
+}
+
+export async function getLoginLockoutDecision(input: {
+  email: string;
+  ipAddress?: string;
+  windowMinutes?: number;
+  maxFailures?: number;
+}): Promise<LoginLockoutDecision> {
+  const piiPepper = getEnv().PASSWORD_PEPPER;
+  const windowMinutes = input.windowMinutes ?? getEnv().LOGIN_LOCKOUT_WINDOW_MINUTES;
+  const maxFailures = input.maxFailures ?? getEnv().LOGIN_LOCKOUT_MAX_FAILURES;
+  const emailHash = hashPii(input.email.toLowerCase(), piiPepper);
+  const ipHash = input.ipAddress ? hashPii(input.ipAddress, piiPepper) : null;
+  const pool = getPool();
+
+  const rows = await pool<
+    {
+      failure_count: number | string;
+      oldest_attempt_at: string | null;
+    }[]
+  >`
+    select
+      count(*)::int as failure_count,
+      min(created_at)::text as oldest_attempt_at
+    from public.login_attempts
+    where success = false
+      and created_at >= now() - (${windowMinutes} * interval '1 minute')
+      and (
+        email_or_identifier = ${emailHash}
+        ${ipHash ? pool`or ip_address_hash = ${ipHash}` : pool``}
+      )
+  `;
+
+  const failureCount = Number(rows[0]?.failure_count ?? 0);
+  const oldestAttemptAt = rows[0]?.oldest_attempt_at ? Date.parse(rows[0].oldest_attempt_at) : null;
+  const windowMs = windowMinutes * 60 * 1000;
+  const retryAfterSeconds =
+    failureCount >= maxFailures && oldestAttemptAt
+      ? Math.max(1, Math.ceil((oldestAttemptAt + windowMs - Date.now()) / 1000))
+      : 0;
+
+  return {
+    locked: failureCount >= maxFailures,
+    recentFailureCount: failureCount,
+    retryAfterSeconds,
+  };
+}

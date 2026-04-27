@@ -13,6 +13,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
   PASSWORD_PEPPER: z.string().min(16, "PASSWORD_PEPPER must be at least 16 characters"),
+  LOGIN_LOCKOUT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+  LOGIN_LOCKOUT_MAX_FAILURES: z.coerce.number().int().positive().default(5),
 
   // Cloudflare R2
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),

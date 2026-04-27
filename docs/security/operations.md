@@ -22,6 +22,7 @@ Mini owns the security-hardening layer:
 ## Current Controls
 
 - password login with failure tracking
+- temporary lockout enforcement after repeated failed login attempts
 - Cloudflare Turnstile enforcement on public login, password-reset request, and invite-activation flows when configured
 - lockout response for repeated failures
 - mandatory password reset support
@@ -51,6 +52,7 @@ Security operations should treat those as separate trust boundaries.
 - Trust `CF-Connecting-IP` and configure `TRUSTED_PROXY_MODE=cloudflare`.
 - Do not treat arbitrary `X-Forwarded-For` values as authoritative.
 - Add Cloudflare rate limiting or managed challenge rules for login and other abuse-prone auth endpoints.
+- Keep backend login lockout thresholds aligned with env-backed `LOGIN_LOCKOUT_WINDOW_MINUTES` and `LOGIN_LOCKOUT_MAX_FAILURES`.
 - Store `TURNSTILE_SECRET_KEY` as a Cloudflare-managed secret.
 - For the reviewed SIKESRA hostname, Turnstile hostname validation should allow only `sikesrakobar.ahlikoding.com`.
 - Store `EDGE_API_JWT_SECRET` as a Cloudflare-managed secret.

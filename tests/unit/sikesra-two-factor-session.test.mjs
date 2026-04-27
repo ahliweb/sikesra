@@ -19,7 +19,10 @@ import {
   verifyToken,
 } from "../../src/modules/session/index.ts";
 import { getSessionRevocationHash } from "../../src/modules/session-revocations/index.ts";
-import { evaluateLoginTwoFactorDecision } from "../../src/api/routes/auth.ts";
+import {
+  evaluateLoginTwoFactorDecision,
+  shouldBlockLoginAttempt,
+} from "../../src/api/routes/auth.ts";
 
 test("base32 helpers round-trip binary data", () => {
   const original = Buffer.from("sikesra-two-factor");
@@ -134,6 +137,17 @@ test("non-protected roles without confirmed 2FA can continue login", () => {
       twoFactorConfirmedAt: null,
     }),
     { kind: "not_required" },
+  );
+});
+
+test("login lockout decision blocks attempts at configured threshold", () => {
+  assert.equal(
+    shouldBlockLoginAttempt({ recentFailureCount: 4, maxFailures: 5 }),
+    false,
+  );
+  assert.equal(
+    shouldBlockLoginAttempt({ recentFailureCount: 5, maxFailures: 5 }),
+    true,
   );
 });
 
