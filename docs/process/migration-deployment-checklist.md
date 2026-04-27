@@ -60,6 +60,7 @@ Complete these checks before applying migrations or releasing a new build.
 
 ### PostgreSQL Readiness
 
+- [ ] Run `pnpm db:migrate:probe` and record the redacted reachability result before the migration window
 - [ ] PostgreSQL access is restricted to the intended application host or private network path
 - [ ] PostgreSQL transport security expectations are confirmed for the target environment
 - [ ] `id1.ahlikoding.com` resolves to the reviewed PostgreSQL VPS and the certificate covers that hostname when `sslmode=verify-full` is expected
@@ -114,6 +115,7 @@ If a migration fails:
 
 - Stop the release
 - Capture the failing migration name and error output
+- Run `pnpm db:migrate:probe` to separate PostgreSQL reachability/auth/TLS blockers from repository migration logic
 - Use the recovery runbook before attempting manual intervention
 - Only run `pnpm db:migrate:down` if the migration and operational impact have been reviewed for safe rollback
 

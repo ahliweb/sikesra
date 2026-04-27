@@ -6,13 +6,13 @@ function main() {
   loadLocalEnv();
 
   const command = process.argv[2] ?? "status";
-  if (!["status", "up"].includes(command)) {
+  if (!["status", "up", "probe"].includes(command)) {
     console.error(
       JSON.stringify(
         {
           ok: false,
           command,
-          error: "Unsupported repository migration command. Use status or up.",
+          error: "Unsupported repository migration command. Use probe, status, or up.",
         },
         null,
         2,
@@ -27,7 +27,18 @@ function main() {
   try {
     const client = database.createMigrationClient();
     const output =
-      command === "up"
+      command === "probe"
+        ? {
+            ok: true,
+            command,
+            database: {
+              seam: database.seam,
+              connection: database.getConnectionSummary(),
+            },
+            probe: client.probeReachability(),
+            redaction: "No passwords, tokens, or connection strings are printed.",
+          }
+        : command === "up"
         ? {
             ok: true,
             command,

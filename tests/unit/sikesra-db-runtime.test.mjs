@@ -21,10 +21,27 @@ test("SIKESRA psql client uses non-interactive redacted execution settings", () 
 
   client.listAppliedMigrationNames();
 
-  assert.equal(client.seam.sourceIssue, "ahliweb/sikesra#57");
+  assert.equal(client.seam.sourceIssue, "ahliweb/sikesra#58");
   assert.equal(calls[0].command, "psql");
   assert.ok(calls[0].args.includes("--no-password"));
   assert.equal(calls[0].options.env.PGCONNECT_TIMEOUT, "5");
+});
+
+test("SIKESRA psql client exposes a redacted reachability probe", () => {
+  const client = createSikesraPsqlDatabaseClient({
+    env: {
+      DATABASE_URL: "postgresql://runtime_user:super-secret@example.com:5432/sikesrakobar",
+    },
+    spawn() {
+      return { status: 0, stdout: "sikesrakobar\n", stderr: "" };
+    },
+  });
+
+  assert.deepEqual(client.probeReachability(), {
+    ok: true,
+    kind: "connection",
+    reason: "reachable",
+  });
 });
 
 test("SIKESRA psql client classifies timeout failures without exposing secrets", () => {
@@ -40,6 +57,22 @@ test("SIKESRA psql client classifies timeout failures without exposing secrets",
   assert.throws(
     () => client.listAppliedMigrationNames(),
     (error) => error.kind === "connection" && error.reason === "timeout" && /timed out/i.test(error.message),
+  );
+});
+
+test("SIKESRA psql client classifies authentication failures without exposing secrets", () => {
+  const client = createSikesraPsqlDatabaseClient({
+    env: {
+      DATABASE_URL: "postgresql://runtime_user:super-secret@example.com:5432/sikesrakobar",
+    },
+    spawn() {
+      return { status: 2, signal: null, stdout: "", stderr: "psql: error: password authentication failed for user 'runtime_user'" };
+    },
+  });
+
+  assert.throws(
+    () => client.probeReachability(),
+    (error) => error.kind === "authentication" && error.reason === "authentication_failed",
   );
 });
 

@@ -8,6 +8,7 @@
     "check": "node scripts/check-secret-hygiene.mjs && node --test tests/unit/*.test.mjs",
     "check:secret-hygiene": "node scripts/check-secret-hygiene.mjs",
     "db:migrate": "node scripts/db-migrate.mjs up",
+    "db:migrate:probe": "node scripts/db-migrate.mjs probe",
     "db:migrate:status": "node scripts/db-migrate.mjs status",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "lint": "node scripts/check-secret-hygiene.mjs"

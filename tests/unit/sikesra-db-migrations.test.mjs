@@ -19,7 +19,7 @@ test("SIKESRA database scaffold exposes redacted connection summary only", () =>
     usernamePresent: true,
     passwordPresent: true,
   });
-  assert.equal(database.createMigrationClient().seam.sourceIssue, "ahliweb/sikesra#57");
+  assert.equal(database.createMigrationClient().seam.sourceIssue, "ahliweb/sikesra#58");
 });
 
 test("SIKESRA migration scaffold registers the first religion persistence contract", () => {

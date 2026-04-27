@@ -8,6 +8,8 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 - `pnpm db:migrate`
   - applies pending repository-owned SIKESRA migrations to PostgreSQL through non-interactive `psql`
+- `pnpm db:migrate:probe`
+  - checks PostgreSQL reachability for the repository migration path and returns a redacted structured result
 - `pnpm db:migrate:status`
   - prints the current repository-owned migration registry status and the live SIKESRA migration ledger when reachable
 
@@ -37,6 +39,7 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 - `DATABASE_URL` is required for live repository-owned migration execution
 - the runner uses `scripts/_local-env.mjs` to load `.env.local` first, then `.env`
 - when PostgreSQL is unreachable, the runner exits non-zero with a redacted `kind` and `reason` instead of a raw stack trace
+- the reachability probe distinguishes reviewed classes such as timeout, authentication failure, DNS failure, TLS failure, and generic connection failure where `psql` stderr makes that possible
 
 ## Usage
 
@@ -52,6 +55,12 @@ pnpm db:migrate
 pnpm db:migrate:status
 ```
 
+### Probe PostgreSQL Reachability
+
+```bash
+pnpm db:migrate:probe
+```
+
 ## Rules
 
 - keep migration files ordered and descriptive
@@ -59,9 +68,11 @@ pnpm db:migrate:status
 - use non-interactive `psql` execution with env-managed credentials only for the current repository-owned migration path
 - keep status output redacted: never print passwords, full connection strings, or tokens
 - fail fast on unreachable PostgreSQL and return operator-safe error classifications instead of leaking raw driver/process details
+- use the reachability probe before rollout when Coolify-managed server access is unavailable from the current tool session
 
 ## Validation
 
 - `pnpm db:migrate`
+- `pnpm db:migrate:probe`
 - `pnpm db:migrate:status`
 - `pnpm check`

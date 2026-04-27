@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 export const SIKESRA_PSQL_CLIENT_SEAM = Object.freeze({
   status: "repository_psql_execution_ready",
   followUpIssue: "ahliweb/sikesra#49",
-  sourceIssue: "ahliweb/sikesra#57",
+  sourceIssue: "ahliweb/sikesra#58",
   runtime: "psql_database_url",
   note: "Eksekusi migrasi repository menggunakan psql non-interaktif dengan kredensial dari environment runtime saja.",
 });
@@ -11,6 +11,19 @@ export const SIKESRA_PSQL_CLIENT_SEAM = Object.freeze({
 export function createSikesraPsqlDatabaseClient({ env = process.env, spawn = spawnSync } = {}) {
   return Object.freeze({
     seam: SIKESRA_PSQL_CLIENT_SEAM,
+    probeReachability() {
+      executeSql({
+        env,
+        spawn,
+        sql: "select current_database();",
+      });
+
+      return {
+        ok: true,
+        kind: "connection",
+        reason: "reachable",
+      };
+    },
     listAppliedMigrationNames() {
       const ledgerExists = executeSql({
         env,
@@ -68,8 +81,8 @@ function executeSql({ env, spawn, sql, timeoutMs = resolveTimeoutMs(env, 10000) 
 
   if (result.status !== 0) {
     throw databaseError(
-      "query",
-      "psql_non_zero_exit",
+      classifyStderr(String(result.stderr ?? "")).kind,
+      classifyStderr(String(result.stderr ?? "")).reason,
       "psql migration command exited non-zero while executing repository-owned SQL.",
     );
   }
@@ -93,4 +106,30 @@ function databaseError(kind, reason, message) {
   error.kind = kind;
   error.reason = reason;
   return error;
+}
+
+function classifyStderr(stderr) {
+  const input = String(stderr ?? "").toLowerCase();
+
+  if (/password authentication failed|no password supplied|authentication failed/.test(input)) {
+    return { kind: "authentication", reason: "authentication_failed" };
+  }
+
+  if (/could not translate host name|name or service not known|temporary failure in name resolution/.test(input)) {
+    return { kind: "connection", reason: "dns_resolution_failed" };
+  }
+
+  if (/connection timed out|timeout expired/.test(input)) {
+    return { kind: "connection", reason: "timeout" };
+  }
+
+  if (/could not connect to server|connection refused|network is unreachable|no route to host/.test(input)) {
+    return { kind: "connection", reason: "connection_failed" };
+  }
+
+  if (/ssl|tls|certificate/.test(input)) {
+    return { kind: "connection", reason: "tls_validation_failed" };
+  }
+
+  return { kind: "query", reason: "psql_non_zero_exit" };
 }
