@@ -8,6 +8,8 @@ The repository also now includes a minimal backend/reference-data seam in `src/b
 
 The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, executes reviewed PostgreSQL migrations through `psql`, can read runtime-backed religion reference rows through the async repository/service helpers when those tables are present, and now exposes a read-only `/api/v1/references/religions` backend handoff route for controlled option reads. The plugin/model metadata now also advertises that reviewed route contract explicitly so future consumers can switch over without rediscovering the endpoint shape. The `AgamaSelect` model now also reports its current load strategy explicitly as `sync_seed_fallback` with an `async_route_ready` handoff state, and the module-form plus registry-filter consumer seams mirror a stable `optionsSource` contract for renderers. This lets EmDash/UI consumers detect the current repository-safe fallback mode and reviewed route handoff without drilling into ad hoc nested metadata. The current synchronous plugin/UI contract still uses the reviewed seed-backed service methods until a dedicated consumer update lands.
 
+Workbook-specific follow-on planning for Tokoh Agama / Guru Agama / Pelayan Keagamaan import evidence is now tracked separately in `docs/process/sikesra-tokoh-agama-excel-field-sync-2026.md` and GitHub issues `#75` and `#76`. That workbook evidence should refine religion inference and import alias planning without expanding this document into a full import-staging design.
+
 ## Rules
 
 - Do not use arbitrary free text for religion fields by default.

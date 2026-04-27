@@ -156,6 +156,12 @@ Related issues:
 
 - `#31` import staging UI
 - `#49` controlled religion reference backend
+- `#75` workbook field/PRD sync for Tokoh Agama data evidence
+- `#76` Tokoh Agama staging and canonical field-mapping planning
+
+Related planning doc:
+
+- `../process/sikesra-tokoh-agama-excel-field-sync-2026.md`
 
 ### Verification
 
