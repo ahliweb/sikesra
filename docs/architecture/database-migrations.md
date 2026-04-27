@@ -37,6 +37,7 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 ## Runtime Input
 
 - `DATABASE_URL` is required for live repository-owned migration execution
+- `DATABASE_MIGRATION_URL` overrides `DATABASE_URL` for migration commands when operators need a reviewed private PostgreSQL path that differs from the general app runtime path
 - the runner uses `scripts/_local-env.mjs` to load `.env.local` first, then `.env`
 - when PostgreSQL is unreachable, the runner exits non-zero with a redacted `kind` and `reason` instead of a raw stack trace
 - the reachability probe distinguishes reviewed classes such as timeout, authentication failure, DNS failure, TLS failure, and generic connection failure where `psql` stderr makes that possible
@@ -66,6 +67,7 @@ pnpm db:migrate:probe
 - keep migration files ordered and descriptive
 - do not introduce ad hoc schema changes outside the repository-owned migration registry
 - use non-interactive `psql` execution with env-managed credentials only for the current repository-owned migration path
+- prefer `DATABASE_MIGRATION_URL` for operator migration workflows when the Coolify-managed private DB route differs from the app runtime connection path
 - keep status output redacted: never print passwords, full connection strings, or tokens
 - fail fast on unreachable PostgreSQL and return operator-safe error classifications instead of leaking raw driver/process details
 - use the reachability probe before rollout when Coolify-managed server access is unavailable from the current tool session

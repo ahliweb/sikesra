@@ -34,6 +34,7 @@ function main() {
             database: {
               seam: database.seam,
               connection: database.getConnectionSummary(),
+              migrationConnection: database.getMigrationConnectionSummary(),
             },
             probe: client.probeReachability(),
             redaction: "No passwords, tokens, or connection strings are printed.",
@@ -45,6 +46,7 @@ function main() {
             database: {
               seam: database.seam,
               connection: database.getConnectionSummary(),
+              migrationConnection: database.getMigrationConnectionSummary(),
             },
             migrations: runner.applyPending(client),
             redaction: "No passwords, tokens, or connection strings are printed.",
@@ -55,6 +57,7 @@ function main() {
             database: {
               seam: database.seam,
               connection: database.getConnectionSummary(),
+              migrationConnection: database.getMigrationConnectionSummary(),
             },
             migrations: runner.getLiveStatus(client),
             redaction: "No passwords, tokens, or connection strings are printed.",
@@ -70,6 +73,7 @@ function main() {
           database: {
             seam: database.seam,
             connection: database.getConnectionSummary(),
+            migrationConnection: database.getMigrationConnectionSummary(),
           },
           error: {
             kind: error?.kind ?? "unknown",

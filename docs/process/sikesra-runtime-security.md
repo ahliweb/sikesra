@@ -42,6 +42,7 @@ The non-secret project identifiers are represented in `.env.example`:
 Secret-bearing values must be supplied through local ignored env files, Cloudflare secrets, or Coolify locked secrets:
 
 - `DATABASE_URL`
+- `DATABASE_MIGRATION_URL` when operator migration access needs a reviewed private PostgreSQL route that differs from the general runtime path
 - PostgreSQL username and password if split variables are used
 - R2 access key and secret key
 - Cloudflare API token
@@ -57,6 +58,8 @@ When local operator workflows need environment-specific separation, the shared h
 4. `.env`
 
 Use tracked `.env.example` only for placeholders and non-secret defaults. Keep live values in ignored local env files, Cloudflare Worker secrets, Coolify locked runtime secrets, or an external password manager.
+
+For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored local env files when repository-owned migration commands must target the reviewed private PostgreSQL route such as `pg-sikesra-hyperdrive.ahlikoding.com` while the general app runtime continues using a different `DATABASE_URL` posture.
 
 ## Cloudflare Recommendations
 

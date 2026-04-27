@@ -1,18 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createSikesraDatabaseAccess } from "../../src/db/index.mjs";
+import { createSikesraDatabaseAccess, resolveMigrationDatabaseUrl } from "../../src/db/index.mjs";
 import { SIKESRA_DB_MIGRATIONS, SIKESRA_DB_MIGRATION_SEAM } from "../../src/db/migrations/index.mjs";
 import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs";
 
 test("SIKESRA database scaffold exposes redacted connection summary only", () => {
   const database = createSikesraDatabaseAccess({
-    DATABASE_URL: "postgresql://runtime_user:super-secret@example.com:5432/sikesrakobar",
+    DATABASE_URL: buildDatabaseUrl("example.com", "runtime_user"),
+    DATABASE_MIGRATION_URL: buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
   });
 
   assert.equal(database.seam.status, "repository_db_execution_ready");
-  assert.equal(database.seam.sourceIssue, "ahliweb/sikesra#57");
+  assert.equal(database.seam.sourceIssue, "ahliweb/sikesra#59");
   assert.deepEqual(database.getConnectionSummary(), {
+    configured: true,
+    parseable: true,
+    database: "sikesrakobar",
+    usernamePresent: true,
+    passwordPresent: true,
+  });
+  assert.deepEqual(database.getMigrationConnectionSummary(), {
     configured: true,
     parseable: true,
     database: "sikesrakobar",
@@ -21,6 +29,27 @@ test("SIKESRA database scaffold exposes redacted connection summary only", () =>
   });
   assert.equal(database.createMigrationClient().seam.sourceIssue, "ahliweb/sikesra#58");
 });
+
+test("SIKESRA migration URL resolution prefers DATABASE_MIGRATION_URL when provided", () => {
+  assert.equal(
+    resolveMigrationDatabaseUrl({
+      DATABASE_URL: buildDatabaseUrl("example.com", "runtime_user"),
+      DATABASE_MIGRATION_URL: buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
+    }),
+    buildDatabaseUrl("pg-sikesra-hyperdrive.ahlikoding.com", "migration_user"),
+  );
+
+  assert.equal(
+    resolveMigrationDatabaseUrl({
+      DATABASE_URL: buildDatabaseUrl("example.com", "runtime_user"),
+    }),
+    buildDatabaseUrl("example.com", "runtime_user"),
+  );
+});
+
+function buildDatabaseUrl(hostname, username) {
+  return `postgresql://${username}:placeholder-secret@${hostname}:5432/sikesrakobar`;
+}
 
 test("SIKESRA migration scaffold registers the first religion persistence contract", () => {
   assert.equal(SIKESRA_DB_MIGRATION_SEAM.status, "repository_migration_scaffold_ready");
