@@ -379,6 +379,9 @@ test("SIKESRA Agama select model supports required, read-only, and privacy state
   assert.equal(restricted.label, "Agama Lansia");
   assert.equal(restricted.displayValue, "Disamarkan");
   assert.equal(restricted.options.length, 0);
+  assert.equal(model.loadStrategy.mode, "sync_seed_fallback");
+  assert.equal(model.loadStrategy.handoffState, "async_route_ready");
+  assert.equal(model.loadStrategy.runtimeRoute, "/api/v1/references/religions");
   assert.equal(readOnly.readOnly, true);
   assert.equal(readOnly.disabled, true);
   assert.equal(readOnly.displayValue, "Hindu");

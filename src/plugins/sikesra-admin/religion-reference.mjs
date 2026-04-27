@@ -15,6 +15,13 @@ export const SIKESRA_RELIGION_REFERENCE_SOURCE = {
   note: "Gunakan referensi agama melalui service boundary backend repository; handoff route runtime read-only sudah tersedia, sementara consumer sinkron masih mengikuti follow-up issue.",
 };
 
+export const SIKESRA_RELIGION_REFERENCE_LOAD_STRATEGY = Object.freeze({
+  mode: "sync_seed_fallback",
+  runtimeRoute: "/api/v1/references/religions",
+  handoffState: "async_route_ready",
+  fallbackBehavior: "Gunakan opsi sinkron seed-backed saat ini sampai consumer async berpindah ke route backend read-only yang telah ditinjau.",
+});
+
 export const SIKESRA_RELIGION_OPTIONS = Object.freeze(sikesraReligionReferenceService.listOptions());
 
 export const SIKESRA_AGAMA_FIELD_CONTEXTS = Object.freeze({
@@ -72,6 +79,7 @@ export function createSikesraAgamaSelectModel(input = {}) {
     importMappingSupported: true,
     exportRequirement: individualLevel ? "Export data agama individu memerlukan izin eksplisit dan audit log." : "Gunakan agregasi untuk dashboard dan laporan umum.",
     auditAction: individualLevel ? "sikesra.religion.view" : null,
+    loadStrategy: SIKESRA_RELIGION_REFERENCE_LOAD_STRATEGY,
     referenceSource: SIKESRA_RELIGION_REFERENCE_SOURCE,
   };
 }
