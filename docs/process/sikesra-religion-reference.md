@@ -4,9 +4,9 @@
 
 SIKESRA now has a reusable framework-neutral `AgamaSelect` view model in `src/plugins/sikesra-admin/religion-reference.mjs`.
 
-The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`. This seam provides the reviewed canonical religion seed contract and normalization helpers, but it still does not persist data yet.
+The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes this seam for canonical values and normalization, but persistence is still not implemented yet.
 
-The repository does not yet contain database migrations or a persisted backend reference table for religion master data. Until persistence is added, the UI model still exposes a controlled local contract and marks the source as `planned_backend_reference`, while the new backend seam defines the canonical repository-local contract that `#49` should attach to.
+The repository does not yet contain database migrations or a persisted backend reference table for religion master data. Until persistence is added, the UI model still exposes a controlled contract and reports repository-backend seam readiness, while the backend seam defines the canonical repository-local contract that `#49` should attach to.
 
 ## Rules
 

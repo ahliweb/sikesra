@@ -1,21 +1,23 @@
 import { createSikesraSensitiveFieldProps } from "./sensitive-fields.mjs";
+import {
+  SIKESRA_RELIGION_REFERENCE_SEAM,
+  findSikesraReligionReference,
+  listSikesraReligionReferences,
+  mapSikesraReligionReferenceImport,
+  normalizeReferenceText,
+  toSikesraReligionOption,
+} from "../../backend/reference-data/religion-reference.mjs";
 
 export const SIKESRA_RELIGION_REFERENCE_SOURCE = {
-  status: "planned_backend_reference",
+  status: SIKESRA_RELIGION_REFERENCE_SEAM.status,
   followUpIssue: "ahliweb/sikesra#49",
   operatorLabel: "Referensi Agama",
-  note: "Gunakan data referensi terkontrol dari backend saat tersedia; daftar lokal ini adalah kontrak UI sementara.",
+  sourceIssue: SIKESRA_RELIGION_REFERENCE_SEAM.sourceIssue,
+  storage: SIKESRA_RELIGION_REFERENCE_SEAM.storage,
+  note: "Gunakan referensi agama dari seam backend repository; persistence runtime masih mengikuti follow-up issue.",
 };
 
-export const SIKESRA_RELIGION_OPTIONS = Object.freeze([
-  religion("islam", "Islam", ["moslem", "muslim"]),
-  religion("kristen", "Kristen", ["kristen protestan", "protestan", "protestant"]),
-  religion("katolik", "Katolik", ["katholik", "katholic", "katolic"]),
-  religion("hindu", "Hindu"),
-  religion("buddha", "Buddha", ["budha", "buddhist"]),
-  religion("konghucu", "Konghucu", ["kong hu cu", "konghuchu", "khonghucu", "confucian"]),
-  religion("kepercayaan", "Kepercayaan Terhadap Tuhan YME", ["kepercayaan", "penghayat kepercayaan"]),
-]);
+export const SIKESRA_RELIGION_OPTIONS = Object.freeze(listSikesraReligionReferences().map((reference) => toSikesraReligionOption(reference)));
 
 export const SIKESRA_AGAMA_FIELD_CONTEXTS = Object.freeze({
   person: "Agama",
@@ -77,49 +79,25 @@ export function createSikesraAgamaSelectModel(input = {}) {
 }
 
 export function normalizeSikesraReligionValue(value) {
-  const normalized = normalizeText(value);
-  if (!normalized) return { value: "", label: "" };
+  const match = findSikesraReligionReference(value);
 
-  const match = SIKESRA_RELIGION_OPTIONS.find(
-    (option) => option.value === normalized || option.aliases.some((alias) => normalizeText(alias) === normalized),
-  );
-
-  return match ? { value: match.value, label: match.label } : { value: "", label: "" };
+  return match ? { value: match.code, label: match.displayName } : { value: "", label: "" };
 }
 
 export function mapSikesraReligionImportValue(value) {
-  const normalizedInput = normalizeText(value);
-  const mapped = normalizeSikesraReligionValue(value);
-
-  if (!normalizedInput) {
-    return { ok: false, value: "", label: "", normalizedInput, message: "Nilai agama kosong." };
-  }
-
-  if (!mapped.value) {
-    return {
-      ok: false,
-      value: "",
-      label: "",
-      normalizedInput,
-      message: "Nilai agama tidak ditemukan dalam referensi terkontrol.",
-    };
-  }
+  const mapped = mapSikesraReligionReferenceImport(value);
 
   return {
-    ok: true,
-    value: mapped.value,
-    label: mapped.label,
-    normalizedInput,
-    message: "Nilai agama berhasil dipetakan ke referensi terkontrol.",
+    ok: mapped.ok,
+    value: mapped.reference?.code ?? "",
+    label: mapped.reference?.displayName ?? "",
+    normalizedInput: mapped.normalizedInput,
+    message: mapped.message,
   };
 }
 
 function selectOptions({ includeInactive }) {
-  return SIKESRA_RELIGION_OPTIONS.filter((option) => includeInactive || option.active).map((option) => ({
-    value: option.value,
-    label: option.label,
-    active: option.active,
-  }));
+  return listSikesraReligionReferences({ includeInactive }).map((reference) => toSikesraReligionOption(reference));
 }
 
 function normalizeSubject(subject) {
@@ -132,17 +110,4 @@ function normalizeUsage(usage) {
   return SIKESRA_AGAMA_SELECT_USAGES.includes(key) ? key : "form";
 }
 
-function normalizeText(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, "_");
-}
-
-function religion(value, label, aliases = [], active = true) {
-  return Object.freeze({ value, label, aliases: Object.freeze(aliases), active });
-}
+export { normalizeReferenceText as normalizeSikesraReligionText };
