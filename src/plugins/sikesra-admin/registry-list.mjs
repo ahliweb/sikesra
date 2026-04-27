@@ -17,6 +17,7 @@
  */
 
 import { SIKESRA_MODULE_KEYS, SIKESRA_MODULE_LABELS, SIKESRA_VULNERABLE_PERSON_MODULES } from "./dashboard-widgets.mjs";
+import { SIKESRA_RELIGION_REFERENCE_OPTIONS_SOURCE } from "./religion-reference.mjs";
 
 // ---------------------------------------------------------------------------
 // Registry list filter model
@@ -251,6 +252,7 @@ export function createSikesraRegistryListModel(opts) {
     rows: opts.rows ?? [],
     totalCount: opts.totalCount ?? null,
     showReligionFilter,
+    religionFilterOptionsSource: showReligionFilter ? SIKESRA_RELIGION_REFERENCE_OPTIONS_SOURCE : null,
     stateLabel:
       opts.loadState === "loading"
         ? SIKESRA_REGISTRY_LIST_STATE_LABELS.loading

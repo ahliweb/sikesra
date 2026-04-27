@@ -595,6 +595,7 @@ test("SIKESRA registry list model hides religion filter when no explicit permiss
     totalCount: 0,
   });
   assert.equal(model.showReligionFilter, false);
+  assert.equal(model.religionFilterOptionsSource, null);
 });
 
 test("SIKESRA registry list model shows religion filter with explicit permission and module filter", () => {
@@ -606,6 +607,8 @@ test("SIKESRA registry list model shows religion filter with explicit permission
     totalCount: 0,
   });
   assert.equal(model.showReligionFilter, true);
+  assert.equal(model.religionFilterOptionsSource.kind, "reference_route_handoff");
+  assert.equal(model.religionFilterOptionsSource.route, "/api/v1/references/religions");
 });
 
 test("SIKESRA registry list model loading state label is in Indonesian", () => {
