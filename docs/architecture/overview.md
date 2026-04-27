@@ -2,62 +2,99 @@
 
 ## Purpose
 
-This document summarizes the current system shape for SIKESRA operators and contributors.
+This document summarizes the target production architecture for SIKESRA operators and contributors.
 
-## Core Split
+## Target Stack
 
-### EmDash Core
+```text
+Cloudflare Pages  (public frontend)
+        |
+        v
+Hono Backend API  (Coolify-managed VPS, Node.js service)
+        |
+        +--> PostgreSQL Docker service  (same VPS, internal Docker network)
+        |
+        +--> Cloudflare R2              (object storage, bucket: sikesra)
+        |
+        +--> Mailketing Email API       (transactional email sender)
+        |
+        +--> Starsender WhatsApp API    (WhatsApp notification sender)
+```
 
-EmDash remains the host architecture.
+## Core Principles
+
+- **EmDash-first**: EmDash remains the architectural inspiration, CMS shell, and admin plugin surface.
+- **Hono as the single backend API**: All database access, authentication, file operations, and outbound notifications go through the Hono backend.
+- **PostgreSQL through internal network only**: The database is never exposed directly to Cloudflare Pages, the public internet, or frontend clients.
+- **No Cloudflare Hyperdrive**: See `docs/architecture/no-hyperdrive-adr.md`.
+- **Cloudflare Pages for the frontend**: The Pages deployment calls the Hono API via `PUBLIC_API_BASE_URL`. It holds no database credentials, no R2 keys, and no provider API keys.
+- **Cloudflare R2 for storage**: Files are stored in R2. Metadata is stored in PostgreSQL. Protected files require API-mediated or signed access.
+- **Coolify for deployment management**: Coolify manages the Hono API service, the PostgreSQL Docker service, environment variables, secrets, and deployment lifecycle on the VPS.
+
+## EmDash Core
 
 EmDash owns:
 
 - the Astro-based runtime shell
-- the admin host and plugin surface
+- the admin host and plugin surface (`/_emdash/`)
 - the CMS-oriented route and integration model
-- the baseline auth/session boundary that Mini extends rather than replaces
+- the baseline auth/session boundary that Mini extends
 
-### Mini Overlay
+## Mini Overlay
 
-AWCMS Mini adds governance overlays on top of EmDash.
-
-Mini owns:
+AWCMS Mini adds governance overlays on top of EmDash:
 
 - user governance and lifecycle controls
 - explicit RBAC and ABAC services
 - role hierarchy metadata and protection rules
-- job hierarchy and assignment history
-- logical and administrative region governance
 - 2FA, lockouts, step-up, password-reset recovery, and session controls
 - audit logs and security events
 - governance-aware plugin contracts
 
-## Runtime Stack
+## Runtime Identifiers
 
-- Host runtime: Astro + EmDash `0.7.0`
-- Hosting baseline: Cloudflare Worker (`sikesra-kobar`) at `sikesrakobar.ahlikoding.com`
-- Database: PostgreSQL (`sikesrakobar` on VPS `202.10.45.224`)
-- Database transport: Hyperdrive (`sikesra-kobar-postgres-runtime`, ID `27eafcdafb5e4904bf083c4133a54161`)
-- Query and migration layer: Kysely
-- Extension model: internal EmDash-compatible plugins
-- Admin surface: EmDash admin extended by Mini governance pages
-- R2 bucket: `sikesra` (binding: `MEDIA_BUCKET`)
-- SESSION KV: `SESSION` (ID: `78cc94b763664d56b5ac9d34f1244304`)
+| Component            | Value                                        |
+|----------------------|----------------------------------------------|
+| Frontend host        | `sikesrakobar.ahlikoding.com`                |
+| Admin entry alias    | `/_emdash/`                                  |
+| Hono API service     | `awcms-mini-api` (Coolify service name)      |
+| PostgreSQL service   | `awcms-mini-postgres` (Coolify service name) |
+| PostgreSQL database  | `sikesrakobar`                               |
+| Internal DB hostname | `postgres` (Docker internal network)         |
+| R2 bucket            | `sikesra`                                    |
+| R2 Worker binding    | `MEDIA_BUCKET`                               |
 
 ## Layer Map
 
-### Host Layer
+### Frontend Layer
 
-EmDash provides the application shell and extension seams.
+Cloudflare Pages serves the public and admin UI. It communicates with the Hono API only through `PUBLIC_API_BASE_URL`. It never connects to PostgreSQL or calls provider APIs directly.
+
+### Backend API Layer
+
+Hono handles:
+
+- authentication (login, logout, session/JWT)
+- Cloudflare Turnstile token verification
+- TOTP-based 2FA for privileged users
+- ABAC/RBAC enforcement
+- database-backed CRUD
+- file metadata and R2 signed upload/download flows
+- audit logging
+- Mailketing and Starsender outbound message handling
+- OpenAPI 3.1 documentation (`GET /openapi.json`, `GET /docs`)
 
 ### Database Layer
 
-Mini uses PostgreSQL as the single system of record and Kysely for:
+PostgreSQL (Docker service on the same VPS) is the single source of truth. Access is through the Hono backend only. Kysely or a compatible query builder handles migrations, repositories, and transactions.
 
-- migrations
-- repositories
-- transactions
-- explicit SQL-oriented data access
+### Storage Layer
+
+Cloudflare R2 stores object bytes. PostgreSQL stores file metadata. Protected files require API-mediated access or signed URLs generated by the Hono backend.
+
+### Notification Layer
+
+Mailketing (email) and Starsender (WhatsApp) are backend-only integrations. Templates, outbound message requests, delivery status, and webhook events are stored in PostgreSQL. Provider API keys live in Coolify secrets only.
 
 ### Governance Layer
 
@@ -66,15 +103,12 @@ Mini overlays service-layer policy and support tables for:
 - roles and permissions
 - ABAC evaluation
 - jobs
-- logical regions
-- administrative regions
+- logical and administrative regions
 - security and audit concerns
 
 ### Plugin Layer
 
-Mini extends EmDash through internal plugins instead of introducing a second framework core.
-
-The current contract includes:
+Mini extends EmDash through internal plugins. Current contract:
 
 - plugin permission registration
 - plugin route authorization helper
@@ -85,13 +119,11 @@ The current contract includes:
 
 ## Primary Admin Surface
 
-The main governance extension is `awcms-users-admin`.
-
 Admin entry: `https://sikesrakobar.ahlikoding.com/_emdash/`
 
-It provides:
+Provided by the `awcms-users-admin` governance extension:
 
-- user list and user detail tabs
+- user list and detail tabs
 - roles and permission matrix views
 - jobs and titles/levels views
 - logical and administrative region views
@@ -101,8 +133,6 @@ It provides:
 
 ## Operational Priorities
 
-The current implementation is optimized for:
-
 - single-tenant simplicity
 - explicit service-layer enforcement
 - additive rollout safety
@@ -111,6 +141,9 @@ The current implementation is optimized for:
 
 ## Cross-References
 
+- `docs/architecture/no-hyperdrive-adr.md`
+- `docs/architecture/database-access.md`
+- `docs/architecture/database-migrations.md`
 - `docs/architecture/constraints.md`
 - `docs/architecture/runtime-config.md`
 - `docs/architecture/repository-layout.md`

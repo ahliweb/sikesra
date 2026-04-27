@@ -6,16 +6,35 @@ This document defines the shared database access surface for services in SIKESRA
 
 ## Source of Truth
 
-- singleton access module: `src/db/index.mjs`
-- `psql` execution seam: `src/db/client/psql.mjs`
+- Runtime DB client: `src/db/index.mjs` (current scaffold; to be replaced by the Hono backend DB layer under `apps/api/src/db/client.ts`)
+- Migration CLI: `scripts/db-migrate.mjs`
+- Migration files: `src/db/migrations/`
 
-## Rules
+## Target Architecture
 
-- services and migration tooling should acquire future database access through `src/db/index.mjs`
-- the current repository seam now exposes redacted connection summary helpers plus a non-interactive `psql` migration client
-- repositories should stay framework-neutral and avoid embedding credentials or raw connection strings in logs or operator-facing output
+PostgreSQL runs as a Docker service (`awcms-mini-postgres`) on the Coolify-managed VPS.
+
+The Hono backend API connects to it through the internal Docker network using `DATABASE_URL`:
+
+```
+postgresql://app_user:<password>@postgres:5432/sikesrakobar
+```
+
+`postgres` is the Docker service hostname assigned by Coolify. No public PostgreSQL exposure is used in the target architecture.
+
+See `docs/architecture/no-hyperdrive-adr.md` for why Cloudflare Hyperdrive is not used.
+
+## Access Rules
+
+- Only the Hono backend API may access PostgreSQL at runtime.
+- Cloudflare Pages must never connect to PostgreSQL directly.
+- Frontend clients must call the Hono API for all data operations.
+- Migration tooling (operator context) accesses PostgreSQL through `DATABASE_MIGRATION_URL` when the migration environment is separate from the runtime environment. This URL points to the same Docker service, either via internal network (from the VPS) or via a reviewed operator access path.
+- No public PostgreSQL ingress should be opened unless explicitly reviewed and time-limited.
 
 ## Current Scaffold Pattern
+
+The current scaffold (`src/db/index.mjs`) provides a migration-time `psql` execution client used by `scripts/db-migrate.mjs`. This will be superseded by the Hono backend DB layer.
 
 ```js
 import { sikesraDatabaseAccess } from "../db/index.mjs";
@@ -24,18 +43,24 @@ const summary = sikesraDatabaseAccess.getConnectionSummary();
 const client = sikesraDatabaseAccess.createMigrationClient();
 ```
 
-The repository currently uses a minimal `psql` execution client for migrations. Richer runtime PostgreSQL adapters, transactions, and error classification layers should land as later issue-scoped follow-on work once the persisted religion-reference path in `#49` is ready to use them.
+Use this pattern for migration scripts only. Runtime application code should use the Hono backend database client once it is scaffolded under `apps/api/src/db/client.ts`.
 
-## SIKESRA Database
+## SIKESRA Database Identifiers
 
-- Database: `sikesrakobar`
-- Runtime role: `sikesrakobar_runtime`
-- Transport: Hyperdrive (`sikesra-kobar-postgres-runtime`, ID `27eafcdafb5e4904bf083c4133a54161`)
-- VPS: `202.10.45.224` (SSL hostname: `id1.ahlikoding.com`)
-- Private tunnel hostname: `pg-hyperdrive.ahlikoding.com`
+| Field             | Value                               |
+|-------------------|-------------------------------------|
+| Database          | `sikesrakobar`                      |
+| Runtime role      | least-privilege application user    |
+| Internal hostname | `postgres` (Docker internal network)|
+| Migration table   | `public.sikesra_migrations`         |
+
+## Legacy Note: Hyperdrive
+
+Previous versions of this document listed Cloudflare Hyperdrive as the production database transport. Hyperdrive is no longer used. See `docs/architecture/no-hyperdrive-adr.md` for the full decision record and migration notes.
 
 ## Validation
 
 - `pnpm test:unit`
+- `pnpm db:migrate:probe`
 - `pnpm db:migrate`
 - `pnpm db:migrate:status`

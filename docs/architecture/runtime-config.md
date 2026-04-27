@@ -4,196 +4,181 @@
 
 This document defines the base runtime configuration contract for SIKESRA (awcms-mini-sikesra).
 
+## Target Runtime
+
+The production runtime is a Hono-based Node.js API service managed by Coolify on a VPS. Cloudflare Pages serves the frontend. PostgreSQL runs as a Docker service on the same VPS.
+
+See `docs/architecture/overview.md` for the full target stack.
+
 ## SIKESRA Deployment Identifiers
 
-- Worker: `sikesra-kobar`
-- Hostname: `sikesrakobar.ahlikoding.com`
-- Database: `sikesrakobar`
-- Runtime DB role: `sikesrakobar_runtime`
-- Hyperdrive: `sikesra-kobar-postgres-runtime` (ID `27eafcdafb5e4904bf083c4133a54161`)
-- R2 bucket: `sikesra` (binding: `MEDIA_BUCKET`)
-- SESSION KV: `SESSION` (ID `78cc94b763664d56b5ac9d34f1244304`)
+| Component            | Value                                          |
+|----------------------|------------------------------------------------|
+| Frontend host        | `sikesrakobar.ahlikoding.com`                  |
+| Admin entry alias    | `/_emdash/`                                    |
+| Hono API service     | `awcms-mini-api` (Coolify service name)        |
+| PostgreSQL service   | `awcms-mini-postgres` (Coolify service name)   |
+| PostgreSQL database  | `sikesrakobar`                                 |
+| Internal DB hostname | `postgres` (Docker internal network)           |
+| R2 bucket            | `sikesra`                                      |
+| R2 Worker binding    | `MEDIA_BUCKET` (retained for R2 access)        |
 
-## Current Runtime Settings
+## Backend Environment Variables
 
-### `MINI_RUNTIME_TARGET`
+The Hono backend reads the following variables at startup. Set them in Coolify environment variables or in `.env.local` for local development. Do not commit real values.
 
-- Supported production baseline: `cloudflare`.
-- `node` remains an explicit fallback target during migration and local compatibility work.
+### Core
 
-### `DATABASE_URL`
+| Variable          | Purpose                                        |
+|-------------------|------------------------------------------------|
+| `NODE_ENV`        | `production` or `development`                  |
+| `PORT`            | Port the Hono service listens on (default: `3000`) |
+| `APP_URL`         | Public frontend URL (`https://sikesrakobar.ahlikoding.com`) |
+| `API_BASE_URL`    | Public API base URL                            |
 
-- Purpose: PostgreSQL connection string used by the EmDash database adapter.
-- Production example: `postgres://sikesrakobar_runtime:<password>@id1.ahlikoding.com:5432/sikesrakobar?sslmode=verify-full`
-- VPS IP: `202.10.45.224` (for troubleshooting; prefer `id1.ahlikoding.com` for hostname validation)
-- Do not use PostgreSQL superuser credentials for the normal app runtime.
+### Database
 
-### `DATABASE_TRANSPORT`
+| Variable                 | Purpose                                           |
+|--------------------------|---------------------------------------------------|
+| `DATABASE_URL`           | PostgreSQL connection string (internal Docker network) |
+| `DATABASE_MIGRATION_URL` | Optional migration-only override when operator migration environment differs from runtime |
 
-- Supported values: `direct`, `hyperdrive`.
-- Production baseline: `hyperdrive` with the `HYPERDRIVE` binding.
-- Keep `direct` as an explicit local, rollback, or issue-scoped remediation path.
+Production template:
+```
+DATABASE_URL=postgresql://app_user:<password>@postgres:5432/sikesrakobar
+```
 
-### `DATABASE_CONNECT_TIMEOUT_MS`
+### Auth and Session
 
-- Default fallback: `10000`.
+| Variable              | Purpose                                           |
+|-----------------------|---------------------------------------------------|
+| `JWT_SECRET`          | JWT signing secret                                |
+| `SESSION_SECRET`      | Session signing secret                            |
+| `PASSWORD_PEPPER`     | Password hash pepper                              |
 
-### `HYPERDRIVE_BINDING`
+### Cloudflare R2
 
-- Default fallback: `HYPERDRIVE`.
-- This is a binding name, not a secret or connection string.
+| Variable               | Purpose                           |
+|------------------------|-----------------------------------|
+| `CLOUDFLARE_ACCOUNT_ID`| Cloudflare account ID             |
+| `R2_ACCESS_KEY_ID`     | R2 access key                     |
+| `R2_SECRET_ACCESS_KEY` | R2 secret key                     |
+| `R2_BUCKET_NAME`       | Bucket name (`sikesra`)           |
+| `R2_PUBLIC_BASE_URL`   | Public base URL for public assets |
 
-### `HEALTHCHECK_EXPECT_DATABASE_TRANSPORT`
+### CORS
 
-- Optional non-secret expectation used by `pnpm healthcheck`.
-- Supported values: `direct`, `hyperdrive`.
+| Variable               | Purpose                                                  |
+|------------------------|----------------------------------------------------------|
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins (e.g., the Pages domain) |
 
-### `HEALTHCHECK_EXPECT_DATABASE_HOSTNAME`
+### Cloudflare Turnstile
 
-- Optional non-secret expectation.
-- SIKESRA value: `id1.ahlikoding.com`.
+| Variable                | Purpose                                                       |
+|-------------------------|---------------------------------------------------------------|
+| `TURNSTILE_SITE_KEY`    | Public site key (safe to expose to frontend)                  |
+| `TURNSTILE_SECRET_KEY`  | Server-side secret for Siteverify (backend only)              |
+| `TURNSTILE_VERIFY_URL`  | `https://challenges.cloudflare.com/turnstile/v0/siteverify`   |
 
-### `HEALTHCHECK_EXPECT_DATABASE_SSLMODE`
+### Two-Factor Authentication
 
-- Optional non-secret expectation.
-- Example: `verify-full`.
+| Variable                         | Purpose                                 |
+|----------------------------------|-----------------------------------------|
+| `TWO_FACTOR_ISSUER`              | TOTP issuer name shown in authenticator apps |
+| `TWO_FACTOR_ENCRYPTION_KEY`      | Key used to encrypt stored TOTP secrets |
+| `TWO_FACTOR_RECOVERY_CODE_PEPPER`| Pepper for recovery code hashing        |
 
-### `HEALTHCHECK_EXPECT_HYPERDRIVE_BINDING`
+### OpenAPI / Swagger
 
-- Default reviewed binding name: `HYPERDRIVE`.
+| Variable            | Purpose                                             |
+|---------------------|-----------------------------------------------------|
+| `OPENAPI_ENABLED`   | `true` to serve `/openapi.json`                     |
+| `OPENAPI_JSON_PATH` | Path for OpenAPI JSON (default: `/openapi.json`)    |
+| `SWAGGER_UI_ENABLED`| `true` to serve Swagger UI                          |
+| `SWAGGER_UI_PATH`   | Path for Swagger UI (default: `/docs`)              |
 
-### `MINI_TOTP_ENCRYPTION_KEY`
+Disable Swagger UI in production if the deployment policy requires private API documentation.
 
-- Purpose: encryption key for TOTP secret storage.
-- Production deployments must set an explicit dedicated value.
-- Declared as a required Worker secret in `wrangler.jsonc`.
+### Mailketing Email API
 
-### `APP_SECRET`
+| Variable                    | Purpose                                                   |
+|-----------------------------|-----------------------------------------------------------|
+| `MAILKETING_ENABLED`        | `true` to enable Mailketing integration                   |
+| `MAILKETING_API_BASE_URL`   | Mailketing API base URL                                   |
+| `MAILKETING_API_KEY`        | Mailketing API key (backend secret only)                  |
+| `MAILKETING_SENDER_EMAIL`   | Sender email address                                      |
+| `MAILKETING_SENDER_NAME`    | Sender display name                                       |
+| `MAILKETING_WEBHOOK_SECRET` | Webhook signature secret if supported                     |
+| `MAILKETING_TIMEOUT_MS`     | Request timeout in milliseconds (default: `10000`)        |
+| `MAILKETING_MAX_RETRIES`    | Maximum retry attempts (default: `3`)                     |
 
-- Purpose: shared application secret.
-- Fallback for TOTP secret encryption when `MINI_TOTP_ENCRYPTION_KEY` is not set.
-- Do not rely on `APP_SECRET` as the steady-state TOTP key in production.
-- Declared as a required Worker secret in `wrangler.jsonc`.
+### Starsender WhatsApp API
 
-### `SITE_URL`
+| Variable                      | Purpose                                                   |
+|-------------------------------|-----------------------------------------------------------|
+| `STARSENDER_ENABLED`          | `true` to enable Starsender integration                   |
+| `STARSENDER_API_BASE_URL`     | Starsender API base URL                                   |
+| `STARSENDER_API_KEY`          | Starsender API key (backend secret only)                  |
+| `STARSENDER_DEVICE_ID`        | Device ID if required by provider                         |
+| `STARSENDER_DEFAULT_COUNTRY_CODE` | Default country code prefix (default: `62`)           |
+| `STARSENDER_WEBHOOK_SECRET`   | Webhook signature secret if supported                     |
+| `STARSENDER_TIMEOUT_MS`       | Request timeout in milliseconds (default: `10000`)        |
+| `STARSENDER_MAX_RETRIES`      | Maximum retry attempts (default: `3`)                     |
 
-- SIKESRA value: `https://sikesrakobar.ahlikoding.com`
-- Format: absolute URL.
+### Notification Defaults
 
-### `ADMIN_SITE_URL`
+| Variable                              | Purpose                                             |
+|---------------------------------------|-----------------------------------------------------|
+| `NOTIFICATION_RATE_LIMIT_PER_MINUTE`  | Rate limit for outbound messages (default: `60`)    |
+| `NOTIFICATION_RETRY_ENABLED`          | `true` to enable retry on failed sends              |
+| `NOTIFICATION_DEFAULT_PROVIDER_EMAIL` | Default email provider (`mailketing`)               |
+| `NOTIFICATION_DEFAULT_PROVIDER_WHATSAPP` | Default WhatsApp provider (`starsender`)         |
 
-- Purpose: optional dedicated admin hostname.
-- If configured, treats it as an entry hostname for the same EmDash admin surface.
+## Frontend Environment Variables (Cloudflare Pages)
 
-### `ADMIN_ENTRY_PATH`
+These are safe to expose to the browser. Never include database credentials, R2 keys, Turnstile secret keys, or provider API keys here.
 
-- Default fallback: `/_emdash/`.
+| Variable                  | Purpose                                                    |
+|---------------------------|------------------------------------------------------------|
+| `PUBLIC_API_BASE_URL`     | Hono API base URL called by the frontend                   |
+| `PUBLIC_SITE_CODE`        | Site code identifier (`main`)                              |
+| `PUBLIC_APP_ENV`          | `production` or `staging`                                  |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Public Turnstile site key for rendering widgets          |
 
-### `TRUSTED_PROXY_MODE`
+## Legacy Note: Cloudflare Worker and Hyperdrive
 
-- SIKESRA production value: `cloudflare`.
-- Required for correct `CF-Connecting-IP` trust behavior.
+Previous versions of this document listed the following as the production baseline:
 
-### `TURNSTILE_SITE_KEY`
+- `MINI_RUNTIME_TARGET=cloudflare`
+- `DATABASE_TRANSPORT=hyperdrive`
+- `HYPERDRIVE_BINDING=HYPERDRIVE`
+- `HEALTHCHECK_EXPECT_DATABASE_TRANSPORT=hyperdrive`
 
-- Public Cloudflare Turnstile site key.
-- Pair with `TURNSTILE_SECRET_KEY`.
+These settings apply only to the legacy Cloudflare Worker deployment path. They are no longer used in the target architecture. See `docs/architecture/no-hyperdrive-adr.md`.
 
-### `TURNSTILE_SECRET_KEY`
-
-- Server-side secret for mandatory Turnstile Siteverify validation.
-- Declared as a required Worker secret.
-- Turnstile enforcement activates when this value is configured.
-
-### `TURNSTILE_EXPECTED_HOSTNAME`
-
-- SIKESRA value: `sikesrakobar.ahlikoding.com`.
-
-### `TURNSTILE_EXPECTED_HOSTNAMES`
-
-- Comma-separated hostnames.
-- Falls back to hostnames derived from `SITE_URL` and `ADMIN_SITE_URL` when omitted.
-
-### `R2_MEDIA_BUCKET_BINDING`
-
-- SIKESRA value: `MEDIA_BUCKET`.
-
-### `R2_MEDIA_BUCKET_NAME`
-
-- SIKESRA value: `sikesra`.
-
-### `R2_MAX_UPLOAD_BYTES`
-
-- Default fallback: `5242880` (5 MiB).
-
-### `R2_ALLOWED_CONTENT_TYPES`
-
-- Default fallback: `image/jpeg,image/png,image/webp,application/pdf`.
-
-### `EDGE_API_ALLOWED_ORIGINS`
-
-- Default: no cross-origin browser origins allowed unless explicitly configured.
-
-### `EDGE_API_MAX_BODY_BYTES`
-
-- Default fallback: `16384` bytes.
-
-### `EDGE_API_JWT_SECRET`
-
-- Server-only runtime secret.
-- Declared as a required Worker secret.
-- Falls back to `APP_SECRET` when omitted.
-
-### `EDGE_API_JWT_ISSUER`
-
-- Falls back to `SITE_URL + /api/v1`.
-- SIKESRA value: `https://sikesrakobar.ahlikoding.com/api/v1`.
-
-### `EDGE_API_JWT_AUDIENCE`
-
-- Default fallback: `awcms-mini-edge-api`.
-
-### `EDGE_API_ACCESS_TOKEN_TTL_SECONDS`
-
-- Default fallback: `900` seconds.
-
-### `EDGE_API_REFRESH_TOKEN_TTL_SECONDS`
-
-- Default fallback: `2592000` seconds.
-
-## Source of Truth
-
-- runtime config module: `src/config/runtime.mjs`
-- Astro integration wiring: `astro.config.mjs`
-- local environment example: `.env.example`
-- Cloudflare deployment configuration: `wrangler.jsonc`
+The legacy Worker (`sikesra-kobar`) and its `wrangler.jsonc`, `[[hyperdrive]]` binding, and associated variables remain in the repository until the Worker is formally decommissioned. They must not be treated as the active production configuration.
 
 ## Rules
 
-- keep runtime connection settings isolated in `src/config/`
-- do not inline database connection strings across multiple files
-- treat `DATABASE_URL` as the canonical PostgreSQL runtime input
-- keep `HEALTHCHECK_EXPECT_*` values optional and use them only for non-secret rollout verification
-- document security-sensitive secrets explicitly when code depends on them
-- keep the Cloudflare Worker required-secret list in `wrangler.jsonc` aligned with the real runtime secret contract
-- keep R2 buckets private by default and access them through Cloudflare bindings
-- keep object metadata, ownership, and authorization state in PostgreSQL even when object bytes live in R2
+- Keep runtime connection settings isolated in `src/config/` (or `apps/api/src/config/` once the Hono scaffold lands).
+- Do not inline database connection strings across multiple files.
+- Treat `DATABASE_URL` as the canonical PostgreSQL runtime input.
+- Keep provider API keys (Mailketing, Starsender) in Coolify secrets only; never expose them to the frontend.
+- Keep `TURNSTILE_SECRET_KEY` and `TWO_FACTOR_ENCRYPTION_KEY` as backend-only secrets.
+- Keep R2 secret access keys as backend-only secrets; public assets may use public R2 URLs only if explicitly marked public.
 
-## Deployment Baseline
+## Source of Truth
 
-For SIKESRA production, configure at minimum:
+- Backend env contract: `.env.example`
+- Runtime config module: `src/config/runtime.mjs` (current); `apps/api/src/config/env.ts` (target Hono scaffold)
+- Cloudflare Pages config: Cloudflare Pages dashboard or `wrangler.toml` for Pages if used
+- Coolify service config: Coolify environment variables for the `awcms-mini-api` service
 
-- `DATABASE_URL`
-- `DATABASE_TRANSPORT=hyperdrive`
-- `MINI_RUNTIME_TARGET=cloudflare`
-- `SITE_URL=https://sikesrakobar.ahlikoding.com`
-- `MINI_TOTP_ENCRYPTION_KEY`
-- `TRUSTED_PROXY_MODE=cloudflare`
-- `TURNSTILE_SITE_KEY`
-- `TURNSTILE_SECRET_KEY`
-- `R2_MEDIA_BUCKET_BINDING=MEDIA_BUCKET`
-- `R2_MEDIA_BUCKET_NAME=sikesra`
-- `EDGE_API_JWT_SECRET`
-- `APP_SECRET`
+## Cross-References
 
-See `docs/process/cloudflare-hosted-runtime.md` for the supported hosting model and deployment checks.
+- `docs/architecture/overview.md`
+- `docs/architecture/no-hyperdrive-adr.md`
+- `docs/architecture/database-access.md`
+- `docs/process/cloudflare-coolify-origin-hardening.md`
+- `docs/process/migration-deployment-checklist.md`
+- `docs/process/sikesra-runtime-security.md`
