@@ -135,6 +135,7 @@ Before startup:
 - confirm PostgreSQL authentication and TLS posture remain unchanged
 - confirm the tunnel token is available only in the target environment's secret store
 - confirm the target environment can restart the reviewed `cloudflared` service without requiring interactive shell sessions
+- confirm `DATABASE_MIGRATION_URL` is set in ignored local env or another reviewed secret store when operator migrations should use the private route instead of the general app `DATABASE_URL`
 
 After startup:
 
@@ -143,6 +144,7 @@ After startup:
 - confirm `systemctl status cloudflared-sikesra-postgres.service` shows a healthy running process if the recommended `systemd` path is used
 - confirm recent `journalctl` output does not show repeated reconnect, token, or origin-reachability failures
 - confirm the route/config issue has the hostname or route needed for Hyperdrive
+- run `pnpm db:migrate:probe` from the operator migration environment and confirm it returns `ok=true` before retrying `pnpm db:migrate`
 - run the reviewed Hyperdrive assertion flow so runtime verification fails fast if the app is still pointed at the wrong transport target:
 
 ```bash
@@ -158,6 +160,7 @@ pnpm healthcheck
 - if the connector cannot reach PostgreSQL, fix origin-network reachability before adjusting Hyperdrive config again
 - if the tunnel remains inactive, verify the token, process supervision, and host egress path first
 - if the service starts but repeatedly reconnects, review `journalctl` output before changing PostgreSQL exposure or Hyperdrive settings
+- if `pnpm db:migrate:probe` still returns `kind=connection`, `reason=timeout`, verify that `DATABASE_MIGRATION_URL` is pointing at the reviewed private route and not an HTTPS/Cloudflare-edge hostname
 - if the tunnel token may have been exposed through shell history, issue comments, logs, or copied VPS files, rotate the token and update the server-managed secret store before retrying
 - if operators are tempted to open public PostgreSQL ingress to work around connector issues, stop and open a new reviewed fallback issue instead
 

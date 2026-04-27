@@ -104,6 +104,7 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 - `wrangler.jsonc` now contains the non-secret SIKESRA Hyperdrive ID for `sikesra-kobar-postgres-runtime`; do not replace it with the existing AWCMS Mini Hyperdrive ID.
 - Cloudflare Worker `sikesra-kobar` is now deployed with the full AWCMS Mini/EmDash Worker build, required Worker secrets, R2 binding, Hyperdrive binding, SESSION KV binding, and Worker Custom Domain `sikesrakobar.ahlikoding.com`.
 - Public smoke tests passed for base URL, `/_emdash/` admin entry redirect, setup shell, Hyperdrive binding presence, and R2 binding readiness.
+- Repository migration tooling now supports `DATABASE_MIGRATION_URL` when operator migrations need the reviewed private PostgreSQL route while the general app runtime keeps its existing `DATABASE_URL` posture.
 
 ## Remaining Runtime Secret Work
 
@@ -112,6 +113,7 @@ For the current migration workflow, prefer `DATABASE_MIGRATION_URL` in ignored l
 - Keep Worker runtime secrets synchronized in Cloudflare secrets with `scripts/sync-worker-secrets.mjs` after each secret rotation.
 - If a Coolify application is later introduced, store runtime-only secrets as Coolify locked environment variables and keep them out of build scope.
 - Keep database passwords, generated connection strings, R2 access keys, and API tokens out of GitHub issues and committed files.
+- If `pnpm db:migrate:probe` still returns a redacted timeout after setting `DATABASE_MIGRATION_URL`, treat the blocker as operator-side private-route readiness and verify the reviewed `cloudflared` connector, route, and PostgreSQL origin reachability before retrying migrations.
 
 ## OWASP-Aligned Controls
 

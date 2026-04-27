@@ -30,6 +30,7 @@ Complete these checks before applying migrations or releasing a new build.
 
 ### Schema Readiness
 
+- [ ] If operator migrations should use the reviewed private PostgreSQL route, `DATABASE_MIGRATION_URL` is set in ignored local env or another reviewed secret store
 - [ ] Review pending migrations with `pnpm db:migrate:status`
 - [ ] When issue the scoped SIKESRA issue or another EmDash migration-compatibility change is in scope, confirm the branch includes `034_emdash_compatibility_support_tables` or a reviewed equivalent before the deploy window
 - [ ] When issue the scoped SIKESRA issue or another EmDash migration-compatibility change is in scope, run `pnpm db:migrate:emdash:status` and record whether the ledger is `compatible`, `repairable`, `unsafe`, or `empty`
@@ -61,6 +62,7 @@ Complete these checks before applying migrations or releasing a new build.
 ### PostgreSQL Readiness
 
 - [ ] Run `pnpm db:migrate:probe` and record the redacted reachability result before the migration window
+- [ ] If the probe times out, verify `DATABASE_MIGRATION_URL` points at the reviewed private PostgreSQL route instead of the general app `DATABASE_URL`
 - [ ] PostgreSQL access is restricted to the intended application host or private network path
 - [ ] PostgreSQL transport security expectations are confirmed for the target environment
 - [ ] `id1.ahlikoding.com` resolves to the reviewed PostgreSQL VPS and the certificate covers that hostname when `sslmode=verify-full` is expected
@@ -116,6 +118,7 @@ If a migration fails:
 - Stop the release
 - Capture the failing migration name and error output
 - Run `pnpm db:migrate:probe` to separate PostgreSQL reachability/auth/TLS blockers from repository migration logic
+- If the probe still reports timeout, verify the reviewed private-route hostname, `DATABASE_MIGRATION_URL` selection, and connector status before retrying
 - Use the recovery runbook before attempting manual intervention
 - Only run `pnpm db:migrate:down` if the migration and operational impact have been reviewed for safe rollback
 
