@@ -28,6 +28,7 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 
 # Non-root user
+RUN apk add --no-cache wget
 RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
 # Copy compiled output and prod node_modules
