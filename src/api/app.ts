@@ -4,12 +4,15 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { requestId } from "./middleware/request-id.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { rateLimit } from "./middleware/rate-limit.js";
+import { sessionLoader } from "./middleware/session.js";
 import type { AuthVariables } from "./middleware/abac.js";
 import { health } from "./routes/health.js";
 import { me } from "./routes/me.js";
 import { users } from "./routes/users.js";
 import { roles } from "./routes/roles.js";
 import { permissions } from "./routes/permissions.js";
+import { auth } from "./routes/auth.js";
+import { security } from "./routes/security.js";
 
 // Extend Hono context with our custom variables
 type Variables = AuthVariables;
@@ -27,9 +30,13 @@ app.use(
     max: 120,
   }),
 );
+// Session loader populates userId/userRole/userPermissions from Bearer JWT.
+app.use("*", sessionLoader);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.route("/health", health);
+app.route("/api/v1/auth", auth);
+app.route("/api/v1/security", security);
 app.route("/api/v1/me", me);
 app.route("/api/v1/users", users);
 app.route("/api/v1/roles", roles);
