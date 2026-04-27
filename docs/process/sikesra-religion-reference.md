@@ -6,7 +6,7 @@ SIKESRA now has a reusable framework-neutral `AgamaSelect` view model in `src/pl
 
 The repository also now includes a minimal backend/reference-data seam in `src/backend/reference-data/religion-reference.mjs`, a repository-layer persistence seam in `src/backend/repositories/religion-reference-repository.mjs`, a real repository-owned migration contract in `src/db/migrations/index.mjs`, and a narrow backend service boundary in `src/backend/services/religion-reference-service.mjs`. The UI helper in `src/plugins/sikesra-admin/religion-reference.mjs` now consumes the service boundary for canonical values and normalization. The backend repository/service now also expose async runtime-read helpers that prefer live PostgreSQL-backed rows when the reviewed tables are available, while preserving the reviewed seed fallback when runtime persistence is unavailable.
 
-The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, executes reviewed PostgreSQL migrations through `psql`, can read runtime-backed religion reference rows through the async repository/service helpers when those tables are present, and now exposes a read-only `/api/v1/references/religions` backend handoff route for controlled option reads. The current synchronous plugin/UI contract still uses the reviewed seed-backed service methods until a dedicated consumer update lands.
+The repository now contains a repository-owned migration contract for persisted religion reference tables and seed rows, executes reviewed PostgreSQL migrations through `psql`, can read runtime-backed religion reference rows through the async repository/service helpers when those tables are present, and now exposes a read-only `/api/v1/references/religions` backend handoff route for controlled option reads. The plugin/model metadata now also advertises that reviewed route contract explicitly so future consumers can switch over without rediscovering the endpoint shape. The current synchronous plugin/UI contract still uses the reviewed seed-backed service methods until a dedicated consumer update lands.
 
 ## Rules
 
@@ -53,7 +53,8 @@ Repository dependency order:
 5. `#56` replaces the scaffold placeholder with a real religion-reference table and seed migration contract.
 6. `#69` adds the runtime-read preference with safe seed fallback.
 7. `#70` adds the read-only backend handoff route for controlled religion reference reads.
-8. `#49` should add broader runtime usage, service-layer authorization, and audit-covered write/admin flows on top of that seam, repository boundary, migration contract, service boundary, and read-only route.
+8. `#71` exposes the reviewed route metadata from the plugin/model seam for future consumers.
+9. `#49` should add broader runtime usage, service-layer authorization, and audit-covered write/admin flows on top of that seam, repository boundary, migration contract, service boundary, and read-only route.
 
 Tracked follow-up: `ahliweb/sikesra#49`.
 

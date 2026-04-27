@@ -7,7 +7,12 @@ export const SIKESRA_RELIGION_REFERENCE_SOURCE = {
   operatorLabel: "Referensi Agama",
   sourceIssue: sikesraReligionReferenceService.seam.sourceIssue,
   storage: sikesraReligionReferenceService.seam.storage,
-  note: "Gunakan referensi agama melalui service boundary backend repository; persistence runtime masih mengikuti follow-up issue.",
+  route: "/api/v1/references/religions",
+  routeQuery: {
+    includeInactive: "true|false",
+  },
+  routeUsage: "Gunakan route backend read-only ini untuk consumer async/runtime baru. Contract sinkron saat ini tetap memakai seed-backed service boundary sampai consumer follow-up diimplementasikan.",
+  note: "Gunakan referensi agama melalui service boundary backend repository; handoff route runtime read-only sudah tersedia, sementara consumer sinkron masih mengikuti follow-up issue.",
 };
 
 export const SIKESRA_RELIGION_OPTIONS = Object.freeze(sikesraReligionReferenceService.listOptions());
