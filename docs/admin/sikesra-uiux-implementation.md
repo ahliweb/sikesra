@@ -29,7 +29,7 @@ The route/menu structure is defined in `src/plugins/sikesra-admin/index.mjs`.
 - `/access`
 - `/settings`
 
-These are currently represented as plugin metadata and model-layer route placeholders. Live Worker build registration is still tracked in `ahliweb/sikesra#48`.
+These are represented in the repository as plugin metadata and model-layer route placeholders. The full EmDash Worker build replacement has already been completed in `ahliweb/sikesra#44`, while this repository continues to document the reviewed host-registration seam for future host-build maintenance.
 
 ## Reusable Components And Models
 
@@ -292,12 +292,10 @@ This runs:
 - `#36` accessibility/usability hardening
 - `#37` responsive behavior
 - `#38` UI hardening tests
-- `#48` live Worker build integration
 - `#49` controlled religion reference backend
 
 ## Current Caveats
 
-- The implemented repository state is still primarily model-layer code, not fully integrated live EmDash UI rendering.
-- Live Worker build consumption of the plugin/admin surface remains tracked in `#48`.
+- The implemented repository state is still primarily model-layer code, but the reviewed live runtime now serves the EmDash admin shell through the deployed Worker baseline documented in `#44`.
 - Backend data services for some flows remain tracked as `backend-needed`, especially `#49`.
 - Coolify/Cloudflare operator-side runtime configuration remains an operator seam; repository docs should describe the posture, not pretend that secrets were changed automatically.

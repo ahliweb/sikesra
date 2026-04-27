@@ -63,10 +63,9 @@ Completed issue groups:
 
 Open follow-on issues:
 
-- `#48` live Worker build integration
 - `#49` backend-controlled religion master data
 
-This means the remaining work is no longer broad UI planning. It is now focused on live build/runtime integration and backend reference-data completion.
+This means the remaining work is no longer broad UI planning. It is now focused on backend reference-data completion and keeping runtime/docs state aligned with the already deployed EmDash Worker baseline.
 
 ## Sprint 1 Issues
 
@@ -133,15 +132,15 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - R2 bucket `sikesra` was verified through Cloudflare MCP using a non-sensitive write/read/delete smoke object.
 - `wrangler.jsonc` exists for Worker `sikesra-kobar`, domain `sikesrakobar.ahlikoding.com`, R2 binding `MEDIA_BUCKET`, and the required AWCMS Mini Worker secret contract.
 - The SIKESRA-specific Hyperdrive ID is bound and runtime readiness passes.
-- Worker/domain/R2/Hyperdrive smoke checks are passing on the deployed temporary Worker surface.
-- Remaining deployment follow-on is replacing the temporary smoke Worker with the full AWCMS Mini/EmDash build in #44.
+- Worker/domain/R2/Hyperdrive smoke checks passed and the temporary smoke Worker was already replaced by the full AWCMS Mini/EmDash build in `#44`.
+- The deployed runtime now serves the EmDash admin shell at `/_emdash/` and the edge API health endpoint confirms Hyperdrive-backed PostgreSQL connectivity.
 
 ## Current Integration Status
 
 - `src/plugins/sikesra-admin/` now contains the implemented SIKESRA model-layer surfaces for navigation, dashboard, registry, detail, forms, ID, region, documents, verification, import/export, governance, accessibility, responsive behavior, and hardening tests.
 - `src/plugins/sikesra-admin/host-registration.mjs` documents the safe host-registration seam and patch snippet for appending `sikesraAdminPlugin()` to the EmDash plugin list.
 - The local repository validates with `pnpm check` and the unit suite currently passes.
-- The live AWCMS Mini/EmDash host build workspace needed to consume that seam is still not writable from this repository and remains the blocker captured in `#48`.
+- The reviewed host/runtime integration outcome is already live through the deployed EmDash Worker baseline documented in `#44`; the repository still keeps `host-registration.mjs` as the reviewed seam/reference for future host-build changes.
 - Backend-controlled religion reference data is still not implemented in the repository/service layer and remains the blocker captured in `#49`.
 
 ## Recommended Dependency Order
@@ -151,7 +150,7 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - Complete ahliweb/sikesra#42 before module forms that need `Agama` fields.
 - Complete ahliweb/sikesra#43 before Lansia dashboard, registry, import/export, audit, tests, and docs coverage can be closed.
 - Proceed through dashboard, registry, detail, ID, module forms, documents, verification, import/export, audit, access management, and hardening in the dependency order listed in ahliweb/sikesra#40.
-- Runtime provisioning issues ahliweb/sikesra#11, #12, and #41 are complete; proceed with #44 when the full AWCMS Mini/EmDash Worker artifact is ready.
+- Runtime provisioning issues ahliweb/sikesra#11, #12, #41, and #44 are complete.
 
 ## Remaining Dependency Order
 
@@ -159,10 +158,9 @@ The historical dependency order above has been satisfied for the model-layer imp
 
 The remaining dependency order is now:
 
-1. `#48` - apply the reviewed host-registration seam to the live AWCMS Mini/EmDash Worker build and redeploy the real host artifact.
-2. `#49` - add backend-controlled religion master/reference data so forms, imports, and reports no longer rely on local UI constants for Agama values.
+1. `#49` - add backend-controlled religion master/reference data so forms, imports, and reports no longer rely on local UI constants for Agama values.
 
-`#48` and `#49` are intentionally separate because one is a host/runtime integration seam and the other is backend reference-data work.
+The prior host/runtime integration follow-on is already satisfied by the deployed EmDash Worker build documented in `#44`.
 
 ## Security Notes
 
@@ -177,7 +175,6 @@ The remaining dependency order is now:
 
 - Cloudflare/Coolify credential posture in this repository remains env-driven. Script scans continue to show placeholder constants only, not inline live credentials.
 - If live Cloudflare Worker rollout or Coolify secret changes are required, those remain operator/runtime actions and must not be overstated as repository-only changes.
-- `#48` cannot be fully completed from this repository unless the reviewed live build workspace that owns `astro.config.mjs` and the actual Worker build artifact is available for change.
 - `#49` should be implemented with backend-controlled reference data, service-layer authorization, and audit coverage for changes and export/report access involving individual-level religion data.
 
 ## Migration Correction

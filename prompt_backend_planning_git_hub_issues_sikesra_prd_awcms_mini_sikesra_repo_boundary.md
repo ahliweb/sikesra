@@ -10,32 +10,46 @@ Repository boundary instruction:
 - Do not change, create issues in, open pull requests in, push commits to, or modify any other repositories.
 - The master repository used as a reference example is `https://github.com/ahliweb/awcms-mini`.
 - Do not modify anything in the reference repository `https://github.com/ahliweb/awcms-mini`.
-- If related work appears to belong to another repository, document it as a note or dependency inside `ahliweb/sikesra` issues, but do not perform changes outside this repository.
+- If related work appears to belong to another repository or operator-only environment, document it as a dependency or note inside `ahliweb/sikesra`, but do not perform changes outside this repository.
 - If the agent has access to multiple GitHub repositories, treat all repositories other than `ahliweb/sikesra` as read-only references unless the user gives a separate explicit instruction.
 
-Your task is to analyze the SIKESRA PRD and the previous UI/UX planning prompt, then create a complete backend planning breakdown and GitHub Issues for implementing the backend MVP of SIKESRA.
+Your task is to analyze the current repository state and the current SIKESRA PRDs, then create or update the backend GitHub issue plan for the real remaining backend MVP work of SIKESRA.
 
-SIKESRA is a single-tenant government-ready application based on AWCMS Mini for managing, validating, monitoring, reporting, importing, exporting, auditing, and mapping social, religious, educational religious, welfare-related, and vulnerable-person data.
+Primary inputs:
 
-The backend must align with:
+- `prd_mvp_sikesra_awcms_mini_single_tenant_field_kelengkapan.md`
+- `prd_ui_ux_sikesra_awcms_mini_detail.md`
+- `docs/process/ai-workflow-planning-templates.md`
+- `docs/process/sikesra-uiux-github-issue-plan.md`
+- `docs/process/sikesra-religion-reference.md`
+- `docs/admin/sikesra-uiux-implementation.md`
 
-1. AWCMS Mini single-tenant architecture.
-2. PostgreSQL as the primary database.
-3. Kysely or SQL migrations as the typed SQL/database layer.
-4. Service-layer authorization, not Supabase-first RLS.
-5. RBAC/ABAC and region scope from day one.
-6. Audit logs for all important actions.
-7. Cloudflare R2 or S3-compatible storage for document files, with metadata stored in PostgreSQL.
-8. ID SIKESRA 20-digit business identifier.
-9. Data dictionary and field rules from the SIKESRA PRD.
-10. UI/UX requirements from the previous planning prompt, including religion reference, Guru Agama terminology, and Lansia Terlantar.
-11. The implementation repository is `ahliweb/sikesra`; the master `ahliweb/awcms-mini` repository is read-only reference material only.
-
-Do not implement code immediately unless explicitly instructed later. Start with repository analysis, backend architecture planning, migration design, API/service design, security design, and GitHub Issue creation.
+Do not implement backend code immediately unless explicitly instructed later. Start with repository analysis, current-state alignment, issue-gap analysis, and issue creation or issue updates only for confirmed remaining backend work.
 
 ---
 
-## Critical Product and Terminology Rules
+## Critical Current-State Rule
+
+Do not treat this repository as greenfield backend work.
+
+The repository has already converged to this current baseline:
+
+- the UI/model-layer SIKESRA admin/plugin work under `src/plugins/sikesra-admin/` is already implemented and issue-tracked as completed;
+- the reviewed Cloudflare Worker runtime is already live on `https://sikesrakobar.ahlikoding.com` with EmDash under `/_emdash/`;
+- the prior live host-build integration follow-on tracked in `#48` is already satisfied and closed;
+- the remaining confirmed follow-on from this planning chain is `#49` for backend-controlled religion master/reference data;
+- backend persistence seams such as migrations, repositories, services, and database tables may still be absent in this repository and must be verified before planning any code issue expansion.
+
+Because of that:
+
+- do not recreate a broad backend MVP issue set unless repository analysis proves that the current repo state genuinely requires it;
+- prefer updating or refining existing issue `#49` over creating duplicate or overly broad backend issues;
+- only create new backend follow-on issues if they are directly justified by the current repository state and cannot be cleanly represented inside `#49`;
+- if the repo still lacks writable backend seams, say so explicitly and keep the plan narrow.
+
+---
+
+## Product And Terminology Rules
 
 ### 1. AWCMS Mini Single-Tenant
 
@@ -46,19 +60,27 @@ Do not implement code immediately unless explicitly instructed later. Start with
 - Use `ahliweb/awcms-mini` only as a read-only reference example.
 - If future-proofing is needed, use optional `site_id`, `app_scope`, or config patterns only after repository inspection.
 
-### 2. Guru Agama Terminology
+### 2. Runtime Baseline
+
+- Keep the app EmDash-first and single-tenant.
+- Use Cloudflare Worker runtime as the reviewed production hosting baseline.
+- Use `https://sikesrakobar.ahlikoding.com` as the reviewed public host.
+- Use `/_emdash/` as the reviewed admin entry alias on the same host.
+- Use Cloudflare R2 bucket `sikesra` through Worker binding `MEDIA_BUCKET`.
+- Use PostgreSQL database `sikesrakobar` on the Coolify-managed VPS.
+- Use Hyperdrive binding `HYPERDRIVE` as the reviewed production database transport baseline.
+
+### 3. Guru Agama Terminology
 
 Use **Guru Agama** as the general module label.
 
-Do not use **Guru Ngaji** as a general module label because guru ngaji is part of Islamic religious teaching context. If Islamic teaching details are required, represent them as contextual teaching activity/place fields inside the Guru Agama module, not as the module title.
+Do not use **Guru Ngaji** as a general module label because guru ngaji is part of an Islam-specific teaching context. If Islamic teaching details are required, represent them as contextual teaching activity/place fields inside the Guru Agama module, not as the module title.
 
-### 3. Religion Reference Requirement
-
-Add a religion reference field to all related personal data and all relevant modules.
+### 4. Religion Reference Requirement
 
 Religion must use controlled master/reference data, not arbitrary free text by default.
 
-Suggested reference values:
+Suggested normalized values:
 
 - Islam
 - Kristen
@@ -66,80 +88,38 @@ Suggested reference values:
 - Hindu
 - Buddha/Budha, normalized consistently
 - Konghucu/Konghuchu, normalized consistently
-- Lainnya/Other only if approved
-- Belum Dicatat/Unknown only if legally and operationally acceptable
+- Kepercayaan Terhadap Tuhan YME only if aligned with legal/operator requirements
+- Belum Dicatat only if legally and operationally acceptable
 
-Religion reference must support:
+Backend/reference requirements:
 
-- person-level religion;
-- institution/entity-level religion where relevant;
-- import mapping and normalization;
-- report filters and aggregate reporting;
-- access control and privacy protection for individual-level religion;
-- audit logging for create/update/export involving religion fields.
+- stable internal ID/code;
+- normalized label and operator-facing label;
+- active/inactive lifecycle;
+- alias mapping for import normalization;
+- service-layer authorization for admin changes;
+- audit coverage for changes and sensitive export/report access involving individual-level religion.
 
-### 4. Lansia Terlantar Module
+UI-facing rules that backend planning must preserve:
 
-Add a **Lansia Terlantar** module with fields and rules similar to Anak Yatim but adapted for abandoned elderly people.
+- operator labels stay Indonesian such as `Agama`, `Agama Guru`, `Agama Anak`, `Agama Lansia`, `Agama Pengurus`, and `Agama Pendamping/Penanggung Jawab`;
+- do not expose internal names such as `religion_reference_id` or `religion_code` in operator-facing UI copy;
+- treat individual-level religion as personal data;
+- keep default dashboard/report behavior aggregate-only unless explicit permission allows more.
 
-Treat Lansia Terlantar as vulnerable-person data.
+### 5. Lansia Terlantar
 
-Backend must support:
+Treat **Lansia Terlantar** as vulnerable-person data.
 
-- dedicated detail table or typed module schema;
-- person/entity registry integration;
-- NIK/No KK sensitive handling;
-- religion reference for elderly person and caregiver/guardian;
-- caregiver/guardian/pendamping data;
-- living condition and abandonment condition;
-- priority needs;
-- document support;
-- import/export;
-- verification workflow;
-- audit logging;
-- permission and region scoping;
-- privacy-preserving list/detail/report behavior.
+Backend planning must preserve the PRD expectation that this module, if and when backend persistence work becomes writable in this repository, remains privacy-aware, region-aware, audited, and permission-gated.
 
----
-
-## Backend Scope
-
-Create backend planning and issues for the following backend areas:
-
-1. Database schema and migrations.
-2. Master/reference data.
-3. ID SIKESRA 20-digit generation service.
-4. Region official and custom region data model.
-5. RBAC/ABAC permission model and region scope.
-6. Core SIKESRA entity registry.
-7. Module detail tables and services:
-   - Rumah Ibadah
-   - Lembaga Keagamaan
-   - Lembaga Pendidikan Keagamaan
-   - Lembaga Kesejahteraan Sosial
-   - Guru Agama
-   - Anak Yatim
-   - Lansia Terlantar
-   - Disabilitas
-8. Person-related data model, including pengurus, wali, pengasuh, pendamping, penanggung jawab, imam, bilal, marbot.
-9. Religion reference model and normalization.
-10. Document metadata and object storage integration.
-11. Verification workflow backend.
-12. Import Excel staging and promotion.
-13. Export/report backend.
-14. Audit logs and security events.
-15. API endpoints and service layer.
-16. Validation, duplicate detection, and transaction safety.
-17. Sensitive data handling: encryption/hash/masking-safe responses.
-18. Tests: unit, integration, migration, authorization, import/export, audit.
-19. Documentation and OpenAPI/API contract.
-20. DevOps/environment configuration for PostgreSQL, R2, secrets, backup, and CI.
+Do not reopen a broad Lansia backend program unless repository inspection proves that the current repo now contains a writable backend seam and the work is not already captured elsewhere.
 
 ---
 
 ## Required Repository Analysis
 
-Before creating GitHub Issues, inspect only this repository:
+Before creating or updating GitHub issues, inspect only this repository:
 
 `https://github.com/ahliweb/sikesra`
 
@@ -147,1233 +127,177 @@ Use this repository only as a read-only reference example:
 
 `https://github.com/ahliweb/awcms-mini`
 
-Inspect the implementation repository and identify:
+Inspect the implementation repository and identify only the seams relevant to backend planning:
 
-- current app framework structure;
-- current backend/API route structure;
-- current database migration structure;
-- current Kysely or database client usage;
-- current auth/session implementation;
-- current RBAC/ABAC implementation;
-- current user/role/permission tables;
-- current region or master data patterns;
-- current file upload/storage/R2 integration patterns;
-- current audit log/security event patterns;
-- current import/export utilities;
-- current test framework and CI scripts;
-- current environment variable conventions;
-- current documentation conventions;
-- whether SIKESRA module already exists;
-- whether religion/agama master data already exists;
-- whether vulnerable-person/person table patterns already exist.
+- whether writable backend folders such as `src/db`, migrations, repositories, services, or API handlers exist in this repository;
+- whether the repo currently contains only model-layer/admin-plugin code under `src/plugins/sikesra-admin/`;
+- whether religion/agama reference data is still UI-only, backend-backed, or partially implemented;
+- whether there are existing backend issues beyond `#49` that are still valid and not stale;
+- whether current docs already declare the remaining backend blocker;
+- whether test/package conventions support backend validation in this repo;
+- whether any operator/runtime-only steps are being incorrectly represented as repo-local work.
 
-If a capability exists in `sikesra`, create an issue to extend it.
-If a capability is missing in `sikesra`, create an issue to implement it.
+If a capability already exists in `sikesra`, update or close planning issues accordingly.
+
+If a capability is missing in `sikesra`, create a focused issue only when the missing work is still implementable from this repository.
+
+If the repo does not contain a writable backend seam, do not invent a full backend issue tree. Record the blocker and keep the issue plan narrow.
+
 If a useful pattern exists in `awcms-mini`, cite it as a read-only reference in the issue, but do not modify that repository.
-If an implementation conflicts with this prompt or the PRD, create a refactor issue in `sikesra` only.
 
 ---
 
-## Backend Architecture Principles
+## Planning Principles
 
 Use these principles:
 
+- repository-state-first, not greenfield-assumption-first;
 - simple-first-scalable-later;
-- database-first;
+- database-first where a writable database seam exists;
 - service-layer authorization;
 - secure-by-default;
 - least privilege;
-- region-aware access;
+- privacy-aware and sensitive-data-minimizing;
 - audit-friendly;
-- privacy-aware;
-- sensitive-data-minimizing;
-- typed SQL/Kysely-friendly;
-- transaction-safe;
-- import-staging-first;
-- no raw file storage in database;
-- no hardcoded secrets;
-- no public exposure of sensitive data;
-- no direct trust in client-side authorization;
-- no silent mutation of ID SIKESRA 20-digit after generation;
-- soft delete for business data;
-- deterministic reference data where possible;
-- controlled master data for religion and module subtypes;
-- explicit status transitions for verification workflow;
+- issue-driven and dependency-aware;
+- no duplicate issues for work already completed or already captured;
+- no claims of backend persistence work that the repository cannot actually support;
 - implementation changes only in `ahliweb/sikesra`;
-- `ahliweb/awcms-mini` is read-only reference material.
+- `ahliweb/awcms-mini` remains read-only reference material.
 
 ---
 
-## Core Backend Data Model Requirements
+## Current-State Planning Goal
 
-### 1. Core Tables
+The goal is not to recreate the original full backend MVP issue set blindly.
 
-Plan migrations for these core tables or repository-equivalent models:
+Instead:
 
-- `users`
-- `roles`
-- `permissions`
-- `user_roles`
-- `role_permissions`
-- `user_region_scopes`
-- `wilayah_resmi`
-- `wilayah_custom`
-- `religion_references`
-- `sikesra_object_types`
-- `sikesra_object_subtypes`
-- `sikesra_code_sequences`
-- `sikesra_entities`
-- `entity_people`
-- `dokumen_pendukung`
-- `file_objects`
-- `verification_events`
-- `audit_logs`
-- `import_batches`
-- `import_staging_rows`
-
-If the repository uses different naming conventions, adapt the names consistently but preserve the concepts.
-
-### 2. Module Detail Tables
-
-Plan migrations for:
-
-- `rumah_ibadah_details`
-- `lembaga_keagamaan_details`
-- `lembaga_pendidikan_keagamaan_details`
-- `lembaga_kesejahteraan_sosial_details`
-- `guru_agama_details`
-- `anak_yatim_details`
-- `lansia_terlantar_details`
-- `disabilitas_details`
-
-### 3. Core `sikesra_entities` Requirements
-
-Every main record should be represented in a registry table with at least:
-
-- `id` UUID primary key;
-- `sikesra_id_20` char(20), nullable before generation;
-- `object_type_code`;
-- `object_subtype_code`;
-- `entity_kind`: institution/person;
-- `display_name`;
-- `official_village_code`;
-- `wilayah_custom_id`;
-- `address_text`;
-- `phone`;
-- `email`;
-- `latitude`;
-- `longitude`;
-- `status_data`;
-- `status_verifikasi`;
-- `visibility_level`;
-- `source_input`;
-- `created_by`;
-- `updated_by`;
-- `verified_by`;
-- `created_at`;
-- `updated_at`;
-- `verified_at`;
-- `deleted_at`;
-- `catatan`.
-
-### 4. Religion Reference Requirements
-
-Create or extend reference data for religion:
-
-- stable ID/code;
-- normalized name;
-- display name;
-- aliases for import normalization;
-- active/inactive status;
-- sort order;
-- audit timestamps.
-
-Add religion references to:
-
-- `entity_people` where relevant;
-- `guru_agama_details` as `agama_guru` or reference ID;
-- `anak_yatim_details` as `agama_anak` where appropriate;
-- `lansia_terlantar_details` as `agama_lansia` where appropriate;
-- `disabilitas_details` as `agama_penyandang_disabilitas` where appropriate;
-- institution detail tables where the institution's religion is relevant;
-- wali/pengasuh/pendamping records through `entity_people`.
-
-### 5. Sensitive Data Requirements
-
-Sensitive identifiers must not be stored or exposed carelessly.
-
-Plan secure handling for:
-
-- NIK;
-- NIK/KIA;
-- No KK;
-- child data;
-- elderly/vulnerable-person data;
-- disability data;
-- individual-level religion data;
-- health-related notes;
-- contact data;
-- document previews and file metadata.
-
-Recommended backend patterns:
-
-- store encrypted value where full value is needed;
-- store hash for duplicate detection;
-- never log raw NIK/KIA/No KK;
-- return masked data by default in API responses;
-- require explicit permission for reveal/export;
-- audit reveal/export actions;
-- keep encryption keys in secret manager/environment, never in code.
+1. Compare the updated PRDs with the current repository state.
+2. Compare the current repository state with the current open and closed GitHub issues.
+3. Identify:
+   - already completed runtime or planning issues that should stay closed;
+   - the remaining valid backend blocker or blockers;
+   - whether `#49` is still the correct primary backend issue;
+   - whether `#49` should be updated, narrowed, or split into a very small number of dependency-ordered follow-ons;
+   - any docs/planning references that still need syncing.
+4. Create new issues only for real remaining backend gaps.
+5. Prefer updating existing issues instead of duplicating them.
 
 ---
 
-## ID SIKESRA 20-Digit Requirements
+## Known Baseline Expectations
 
-Implement transaction-safe generation for:
+Use these as expected current-state checks while analyzing the repo:
 
-`[kode_desa_kel_10][jenis_2][subjenis_2][id_objek_6]`
-
-Rules:
-
-- UUID remains internal primary key.
-- `sikesra_id_20` is official business identifier.
-- ID is generated only after minimum fields are valid.
-- ID must not include religion, custom region, gender, age, condition, assistance status, or sensitive attributes.
-- ID must not change after generation except through restricted correction workflow.
-- Sequence must be transaction-safe and collision-resistant.
-- Generate action must be audited.
-
-Minimum fields for code generation:
-
-- object type;
-- subtype/category;
-- display name;
-- address;
-- official village code;
-- created_by;
-- draft status.
-
-Add Lansia Terlantar object type/subtype planning if not yet in master data.
+- the SIKESRA admin/plugin surface lives under `src/plugins/sikesra-admin/`;
+- UI/model-layer work for navigation, dashboard, registry, detail, forms, ID, region, documents, verification, import/export, governance, accessibility, and responsive behavior already exists;
+- `src/plugins/sikesra-admin/religion-reference.mjs` currently provides a controlled UI contract and alias normalization;
+- `docs/process/sikesra-religion-reference.md` explicitly states that backend religion reference persistence does not yet exist;
+- `docs/process/sikesra-uiux-github-issue-plan.md` now treats `#49` as the remaining follow-on and `#48` as already satisfied;
+- the reviewed live Worker baseline is already deployed and should not be reopened as unresolved backend scope;
+- `pnpm lint` is the minimum docs/config validation path;
+- `pnpm check` remains the baseline if a planning task also changes runtime/source code.
 
 ---
 
-## Verification Workflow Backend Requirements
+## What To Avoid
 
-Support status flow:
+Do not do the following unless repository inspection proves they are still required and currently writable in this repository:
 
-- `draft`
-- `submitted`
-- `verified`
-- `need_revision`
-- `rejected`
-- `active`
-- `archived`
-
-Backend must support:
-
-- submit action;
-- verify action;
-- reject action;
-- need revision action;
-- resubmit action;
-- verification event history;
-- field/section-level verifier notes;
-- document verification;
-- permission checks;
-- region scope checks;
-- audit logging.
+- create a new 20+ issue backend program for all modules;
+- reopen deployment/runtime issues already completed by `#44` and `#48`;
+- pretend this repo already contains migrations, repositories, services, or API handlers if it does not;
+- create speculative issues for tables, services, or OpenAPI contracts with no writable backend seam;
+- restate operator-only Cloudflare or Coolify actions as repository implementation work;
+- duplicate `#49` with another issue that says the same thing.
 
 ---
 
-## Document and Storage Backend Requirements
+## Required Output
 
-Files must be stored in Cloudflare R2 or S3-compatible storage. Store metadata in PostgreSQL, not raw file bytes.
+Produce a backend planning document, issue-planning summary, or issue action set with these sections:
 
-Plan backend support for:
+### 1. Repository Analysis Summary
 
-- `file_objects` metadata;
-- `dokumen_pendukung` linkage to entity;
-- upload request/presigned upload flow where applicable;
-- file validation: MIME, extension, size, checksum;
-- access classification;
-- document status verification;
-- superseded document handling;
-- soft delete;
-- audit upload/view/download/export/delete actions;
-- secure object keys;
-- no public access for restricted documents.
+Summarize the actual current state for:
 
-Document types must include at least:
+- writable backend seams present or absent;
+- current SIKESRA model-layer/admin-plugin coverage;
+- religion-reference current state;
+- runtime/deployment current state;
+- current docs/test/package conventions relevant to backend planning.
 
-- SK Kepengurusan;
-- SK Pendirian;
-- Badan Hukum;
-- ID Masjid;
-- Foto Bangunan;
-- Dokumentasi Kegiatan;
-- Kartu Keluarga;
-- KTP Lansia;
-- Surat Keterangan Tidak Mampu;
-- Surat Keterangan Terlantar;
-- Surat Keterangan Domisili;
-- Foto Kondisi/Tempat Tinggal;
-- Dokumen Bantuan Sosial;
-- Dokumen Lain.
+### 2. Current Issue Status Map
 
----
+List:
 
-## Module Backend Field Requirements
+- completed issues that remain correctly closed;
+- still-open backend issues that remain valid;
+- outdated or duplicate issues that should be updated or closed;
+- any missing backend issues that should be created only if justified.
 
-### 1. Rumah Ibadah
+### 3. Recommended Issue Actions
 
-Support:
+For each issue to create or update, include:
 
-- type/subtype: Masjid, Musholla, Surau, Gereja, Pura, Wihara, Klenteng;
-- name;
-- address;
-- official region;
-- custom region;
-- pengurus/person links: Ketua, Sekretaris, Bendahara;
-- Imam Tetap, Bilal, Marbot repeatable person roles where relevant;
-- NIK encryption/hash for person records;
-- religion reference for related person records where relevant;
-- hibah fields: received, province year/nominal, kabupaten year/nominal;
-- ID Masjid;
-- document links.
+- title;
+- why it is still needed;
+- current repository evidence;
+- scope;
+- out of scope;
+- dependencies;
+- security/privacy notes;
+- acceptance criteria;
+- validation notes;
+- labels;
+- milestone.
 
-### 2. Lembaga Keagamaan
+### 4. Dependency Order
 
-Support:
+Provide a minimal dependency order for the remaining work only.
 
-- agama lembaga/reference;
-- master name or custom name;
-- address;
-- region;
-- bidang kegiatan;
-- pengurus/person links;
-- religion reference for pengurus where relevant;
-- SK Pendirian;
-- SK Kepengurusan;
-- Dokumentasi Kegiatan.
+### 5. Blockers And Non-Goals
 
-### 3. Lembaga Pendidikan Keagamaan
+Explicitly separate:
 
-Support:
-
-- category: TPA/TPQ, Pondok Pesantren, Lainnya;
-- agama lembaga where relevant;
-- name;
-- address;
-- region;
-- Badan Hukum;
-- SK Kepengurusan;
-- bidang kegiatan;
-- jumlah pengajar;
-- jumlah santri;
-- documentation note/file;
-- pengurus/person links and religion references.
-
-### 4. Lembaga Kesejahteraan Sosial
-
-Support:
-
-- category: Baznas, PWRI, Panti Asuhan, Panti Yatim, Panti Jompo, Rukun Kematian, Majelis Taklim;
-- agama lembaga where relevant;
-- name;
-- address;
-- region;
-- Badan Hukum;
-- SK Kepengurusan;
-- bidang kegiatan;
-- jumlah pengasuh;
-- jumlah anak asuh;
-- optional future link to Lansia Terlantar records for panti jompo/elderly care, if supported;
-- pengurus/person links and religion references.
-
-### 5. Guru Agama
-
-Use `Guru Agama` as module name.
-
-Support:
-
-- name;
-- NIK encrypted/hash;
-- TTL raw and/or split place/date;
-- agama guru reference;
-- address;
-- official/custom region;
-- institutional or non-institutional teaching context;
-- related institution name/address where relevant;
-- phone/email;
-- source input;
-- verification status;
-- audit log.
-
-Do not use Guru Ngaji as the general module/table/API label.
-
-### 6. Anak Yatim
-
-Support:
-
-- category: Anak Yatim, Anak Piatu, Anak Yatim Piatu;
-- name;
-- NIK/KIA encrypted/hash;
-- TTL raw and/or split place/date;
-- gender;
-- agama anak reference;
-- address;
-- official/custom region;
-- school level;
-- school name;
-- wali/pengasuh person link;
-- agama wali/pengasuh through person record;
-- relationship to guardian;
-- KK document;
-- phone/email guardian;
-- privacy classification as child/vulnerable data;
-- verification/audit/export restrictions.
-
-### 7. Lansia Terlantar
-
-Support:
-
-- category: Lansia Terlantar, Lansia Hidup Sendiri, Lansia Tanpa Pengampu, Lansia Rentan Sosial, Lainnya if approved;
-- name;
-- NIK encrypted/hash;
-- No KK encrypted/hash;
-- place of birth;
-- date of birth or estimated age;
-- gender;
-- agama lansia reference;
-- marital status optional;
-- identity availability status;
-- address;
-- official/custom region;
-- coordinates optional;
-- living condition;
-- abandonment condition;
-- physical condition summary;
-- has disability yes/no/unknown, optionally link to Disabilitas module;
-- priority needs;
-- assistance status;
-- caregiver/pendamping/penanggung jawab person link;
-- caregiver relationship;
-- caregiver religion reference through person record;
-- caregiver phone/email/address;
-- documents: KTP, KK, SKTM, Surat Keterangan Terlantar, Domisili, Foto Kondisi, Dokumen Bantuan, Dokumen Lain;
-- privacy classification as elderly/vulnerable data;
-- verification/audit/export restrictions.
-
-### 8. Disabilitas
-
-Support:
-
-- name;
-- NIK/KIA encrypted/hash;
-- TTL raw and/or split place/date;
-- gender;
-- agama penyandang disabilitas reference;
-- address;
-- official/custom region;
-- jenis disabilitas;
-- subjenis sensorik;
-- tingkat keparahan;
-- wali/pengasuh person link;
-- agama wali/pengasuh through person record;
-- privacy classification as disability/vulnerable data;
-- verification/audit/export restrictions.
+- true backend/data/master-reference blockers;
+- missing writable backend implementation seams;
+- operator/runtime-only work that should stay out of scope;
+- work that should not be reopened as a broad backend MVP program.
 
 ---
 
-## API and Service Layer Requirements
+## Default Expected Issue Outcome
 
-Plan service classes/modules such as:
+Unless repository analysis proves otherwise, the expected issue outcome is:
 
-- `SikesraEntityService`
-- `SikesraCodeService`
-- `SikesraDocumentService`
-- `SikesraVerificationService`
-- `SikesraImportService`
-- `SikesraReportService`
-- `SikesraAuditService`
-- `RegionAccessService`
-- `ReligionReferenceService`
-- `SensitiveDataService`
-- `LansiaTerlantarService`
-- `GuruAgamaService`
-
-Every sensitive operation must follow this flow:
-
-1. Validate input.
-2. Check authenticated session.
-3. Check permission.
-4. Check region scope.
-5. Check data classification and reveal/export rules.
-6. Execute transaction via Kysely/SQL.
-7. Write audit log.
-8. Return safe response with masked sensitive data where appropriate.
-
-Plan API endpoints or route handlers for:
-
-- list/create/update/detail per module;
-- generate ID;
-- submit verification;
-- verify/reject/need revision;
-- document upload metadata and upload flow;
-- import upload/staging/mapping/promotion;
-- export reports;
-- audit log read;
-- reference data read/manage;
-- user/role/permission/region scope backend where needed.
+1. Keep `#49` as the primary backend follow-on issue.
+2. Update `#49` with any missing repository evidence, acceptance criteria, or security notes.
+3. Create a small follow-on issue only if one of these is true:
+   - the repo now has a writable backend seam and the work needs an atomic schema issue plus a separate service/use issue;
+   - docs are still stale and need a dedicated docs sync issue;
+   - an operator/runtime dependency is blocking `#49` and should be split out clearly.
+4. Otherwise, do not create more issues.
 
 ---
 
-## GitHub Milestones to Create
+## Suggested Issue Body Template
 
-Create or reuse these milestones in `https://github.com/ahliweb/sikesra` only:
-
-1. `SIKESRA Backend MVP - Sprint 1: Database, References, and Core Registry`
-2. `SIKESRA Backend MVP - Sprint 2: Authorization, Region Scope, and ID Code Service`
-3. `SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-4. `SIKESRA Backend MVP - Sprint 4: Documents, Verification, and Audit`
-5. `SIKESRA Backend MVP - Sprint 5: Import, Export, Reports, and API Contracts`
-6. `SIKESRA Backend MVP - Hardening: Security, Tests, Backup, and Documentation`
-
----
-
-## GitHub Labels to Create or Reuse
-
-Create or reuse these labels in `https://github.com/ahliweb/sikesra` only:
-
-- `sikesra`
-- `backend`
-- `database`
-- `migration`
-- `kysely`
-- `api`
-- `service-layer`
-- `mvp`
-- `auth`
-- `rbac-abac`
-- `region-scope`
-- `id-20d`
-- `religion-reference`
-- `master-data`
-- `personal-data`
-- `sensitive-data`
-- `vulnerable-person`
-- `lansia-terlantar`
-- `guru-agama`
-- `documents`
-- `r2-storage`
-- `verification`
-- `import-excel`
-- `export-report`
-- `audit-log`
-- `security`
-- `privacy`
-- `testing`
-- `documentation`
-- `devops`
-- `backup-restore`
-- `blocked`
-
-Use priority labels:
-
-- `priority: critical`
-- `priority: high`
-- `priority: medium`
-- `priority: low`
-
-Use type labels:
-
-- `type: epic`
-- `type: feature`
-- `type: task`
-- `type: security`
-- `type: docs`
-- `type: test`
-- `type: refactor`
-
----
-
-# Backend GitHub Issues to Create
-
-Create these issues in `https://github.com/ahliweb/sikesra` only. If similar issues already exist there, update them instead of duplicating. Do not create or update any issue in `https://github.com/ahliweb/awcms-mini`.
-
----
-
-## Epic 1 — Database, References, and Core Registry
-
-### Issue 1.1 — Design and create SIKESRA core database migrations
-
-Title:
-`[SIKESRA Backend] Create core database migrations for SIKESRA registry and master data`
-
-Summary:
-Create backend database migrations for the SIKESRA core registry, object type/subtype references, official/custom regions, religion references, import staging, verification events, documents, file objects, and audit logs.
-
-Scope:
-
-- Inspect existing migration conventions in `awcms-mini-sikesra`.
-- Use `awcms-mini` only as read-only reference when useful.
-- Create or extend core SIKESRA tables.
-- Use PostgreSQL-compatible constraints and indexes.
-- Use UUID primary keys where appropriate.
-- Add timestamps and soft delete fields.
-- Add indexes for region, type/subtype, status, verification, and `sikesra_id_20`.
-- Add uniqueness constraints where needed.
-
-Acceptance criteria:
-
-- Core tables exist or are extended consistently with repository conventions.
-- `sikesra_entities` or equivalent registry table supports all core fields.
-- Migration can run cleanly on a fresh database.
-- Migration can be rolled back if project convention supports rollback.
-- Sensitive fields are not stored as plain uncontrolled fields without a plan.
-- No changes are made to `ahliweb/awcms-mini`.
-
-Labels:
-`sikesra`, `backend`, `database`, `migration`, `kysely`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 1: Database, References, and Core Registry`
-
----
-
-### Issue 1.2 — Add religion reference master data and normalization support
-
-Title:
-`[SIKESRA Backend] Add religion reference master data and import normalization support`
-
-Summary:
-Create controlled master/reference data for religion and support aliases for import normalization.
-
-Scope:
-
-- Add `religion_references` or equivalent table.
-- Add stable code, display name, normalized name, aliases, active status, and sort order.
-- Seed initial values.
-- Normalize spelling variants: Katolik/Katholik, Buddha/Budha, Konghucu/Konghuchu.
-- Provide service/helper for lookup and normalization.
-
-Acceptance criteria:
-
-- Religion values are controlled and not arbitrary free text by default.
-- Import normalization can map common aliases.
-- Inactive values cannot be selected for new data unless explicitly allowed.
-- Reference data changes are auditable if admin-managed.
-
-Labels:
-`sikesra`, `backend`, `religion-reference`, `master-data`, `database`, `migration`, `import-excel`, `privacy`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 1: Database, References, and Core Registry`
-
----
-
-### Issue 1.3 — Add person relationship model for pengurus, wali, pengasuh, pendamping, and petugas roles
-
-Title:
-`[SIKESRA Backend] Add entity_people model for related personal data and roles`
-
-Summary:
-Implement or extend a person relationship model for Ketua, Sekretaris, Bendahara, Imam Tetap, Bilal, Marbot, Wali/Pengasuh, Pendamping/Penanggung Jawab, and other related people.
-
-Scope:
-
-- Create or extend `entity_people` table.
-- Support role in entity.
-- Support person name, contact, address, relationship, religion reference.
-- Support encrypted/hash identifiers where needed.
-- Support soft delete and audit.
-- Support repeatable roles for Imam, Bilal, Marbot, etc.
-
-Acceptance criteria:
-
-- Person roles can be attached to any SIKESRA entity.
-- NIK and similar identifiers are handled through encryption/hash plan.
-- Religion reference can be attached to person records.
-- Person data respects permission and safe response requirements.
-
-Labels:
-`sikesra`, `backend`, `database`, `personal-data`, `sensitive-data`, `religion-reference`, `privacy`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 1: Database, References, and Core Registry`
-
----
-
-## Epic 2 — Authorization, Region Scope, and ID Code Service
-
-### Issue 2.1 — Implement RBAC/ABAC backend policy checks for SIKESRA
-
-Title:
-`[SIKESRA Backend] Implement RBAC/ABAC service-layer policy checks for SIKESRA`
-
-Summary:
-Implement service-layer authorization for SIKESRA operations using roles, permissions, region scope, data status, verification status, ownership, and sensitivity classification.
-
-Scope:
-
-- Inspect existing auth and permission models in `awcms-mini-sikesra`.
-- Add SIKESRA permissions.
-- Add policy checks for create/read/update/delete/submit/verify/export/audit/read documents.
-- Add sensitive data reveal/export policy.
-- Add region scope checks.
-
-Acceptance criteria:
-
-- Backend denies unauthorized access even if UI is bypassed.
-- Region-scoped users cannot access out-of-scope records.
-- Sensitive data reveal/export requires explicit permission.
-- Permission failures are safely logged without leaking sensitive data.
-
-Labels:
-`sikesra`, `backend`, `auth`, `rbac-abac`, `region-scope`, `security`, `privacy`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 2: Authorization, Region Scope, and ID Code Service`
-
----
-
-### Issue 2.2 — Implement RegionAccessService for official and custom regions
-
-Title:
-`[SIKESRA Backend] Implement RegionAccessService for wilayah resmi and wilayah custom`
-
-Summary:
-Implement backend region access logic using official Kemendagri region hierarchy and optional custom regions for operational scope.
-
-Scope:
-
-- Validate official region code hierarchy.
-- Enforce user region scope.
-- Support custom regions linked to official region.
-- Ensure custom region never replaces official region.
-- Add indexes and query helpers for region filtering.
-
-Acceptance criteria:
-
-- User region scope is enforced for list/detail/update/export.
-- Official village code drives ID 20D generation.
-- Custom region does not affect ID generation.
-- Region filters are efficient and tested.
-
-Labels:
-`sikesra`, `backend`, `region-scope`, `database`, `security`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 2: Authorization, Region Scope, and ID Code Service`
-
----
-
-### Issue 2.3 — Implement transaction-safe ID SIKESRA 20-digit generation service
-
-Title:
-`[SIKESRA Backend] Implement transaction-safe ID SIKESRA 20-digit generation service`
-
-Summary:
-Implement backend service for generating official 20-digit SIKESRA business identifiers.
-
-Scope:
-
-- Create or extend `sikesra_code_sequences`.
-- Generate format `[kode_desa_kel_10][jenis_2][subjenis_2][id_objek_6]`.
-- Use database transaction/locking to prevent duplicate sequences.
-- Validate minimum fields before generation.
-- Prevent normal users from editing generated ID.
-- Audit generate and correction actions.
-- Add support for Lansia Terlantar object type/subtype.
-
-Acceptance criteria:
-
-- Concurrent generation cannot produce duplicates.
-- ID is immutable after generation except restricted correction flow.
-- ID does not include religion, custom region, gender, age, condition, or assistance status.
-- Generate action creates audit log.
-- Tests cover transaction safety and validation.
-
-Labels:
-`sikesra`, `backend`, `id-20d`, `database`, `audit-log`, `region-scope`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 2: Authorization, Region Scope, and ID Code Service`
-
----
-
-## Epic 3 — Module Services and Detail Tables
-
-### Issue 3.1 — Implement Rumah Ibadah backend schema and service
-
-Title:
-`[SIKESRA Backend] Implement Rumah Ibadah detail schema and service`
-
-Summary:
-Implement backend persistence and service logic for Rumah Ibadah, including hibah data, ID Masjid, pengurus/person roles, and documents.
-
-Acceptance criteria:
-
-- Detail table exists.
-- Create/update/read/list service works.
-- Person roles can be attached.
-- NIK/religion data handled safely.
-- Validation matches PRD.
-- Audit logs created for create/update/delete.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `documents`, `religion-reference`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.2 — Implement Lembaga Keagamaan backend schema and service
-
-Title:
-`[SIKESRA Backend] Implement Lembaga Keagamaan detail schema and service`
-
-Summary:
-Implement backend persistence and service logic for Lembaga Keagamaan with agama lembaga, kegiatan, documents, and pengurus/person roles.
-
-Acceptance criteria:
-
-- Detail table exists.
-- Agama lembaga uses religion reference.
-- Master/custom name handling works.
-- Pengurus and document links work.
-- Validation and audit logging work.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `religion-reference`, `documents`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.3 — Implement Lembaga Pendidikan Keagamaan backend schema and service
-
-Title:
-`[SIKESRA Backend] Implement Lembaga Pendidikan Keagamaan detail schema and service`
-
-Summary:
-Implement backend persistence and service logic for educational religious institutions, including jumlah pengajar, jumlah santri, legal documents, kegiatan, and pengurus.
-
-Acceptance criteria:
-
-- Detail table exists.
-- Data validation supports numeric counts.
-- Documents are linked.
-- Pengurus/person records are supported.
-- Audit logs are written.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `documents`, `religion-reference`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.4 — Implement Lembaga Kesejahteraan Sosial backend schema and service
-
-Title:
-`[SIKESRA Backend] Implement Lembaga Kesejahteraan Sosial detail schema and service`
-
-Summary:
-Implement backend persistence and service logic for LKS categories, including panti, rukun kematian, kegiatan, pengasuh, anak asuh counts, documents, and optional future relation to Lansia Terlantar.
-
-Acceptance criteria:
-
-- Detail table exists.
-- LKS subtype validation works.
-- Counts and documents are supported.
-- Pengurus/person records are supported.
-- Audit logs are written.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `documents`, `religion-reference`, `lansia-terlantar`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.5 — Implement Guru Agama backend schema and service
-
-Title:
-`[SIKESRA Backend] Implement Guru Agama detail schema and service`
-
-Summary:
-Implement backend persistence and service logic for Guru Agama. Do not use Guru Ngaji as the general backend module/table/API label.
-
-Acceptance criteria:
-
-- Detail table/service uses Guru Agama terminology.
-- Supports identity, encrypted/hash NIK, TTL, agama guru, address, region, teaching context, institution fields, contact fields.
-- Religion reference is supported.
-- Sensitive data responses are masked by default.
-- Audit logs are written.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `guru-agama`, `religion-reference`, `sensitive-data`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.6 — Implement Anak Yatim backend schema and service
-
-Title:
-`[SIKESRA Backend][Security] Implement Anak Yatim detail schema and service with child data protections`
-
-Summary:
-Implement backend persistence and service logic for Anak Yatim/Anak Piatu/Anak Yatim Piatu with strong child-data protections.
-
-Acceptance criteria:
-
-- Detail table exists.
-- NIK/KIA encrypted/hash supported.
-- Agama Anak supported.
-- Wali/pengasuh linked via person model.
-- KK document supported.
-- API returns masked data by default.
-- Export/reveal requires permission and audit.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `sensitive-data`, `personal-data`, `vulnerable-person`, `religion-reference`, `security`, `privacy`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.7 — Implement Lansia Terlantar backend schema and service
-
-Title:
-`[SIKESRA Backend][Security] Implement Lansia Terlantar detail schema and service with vulnerable-person protections`
-
-Summary:
-Implement backend persistence and service logic for Lansia Terlantar with fields adapted from Anak Yatim for abandoned elderly people.
-
-Acceptance criteria:
-
-- `lansia_terlantar_details` or equivalent exists.
-- Supports category, identity, encrypted/hash NIK, encrypted/hash No KK, birth date or estimated age, gender, agama lansia, address, region, living condition, abandonment condition, physical condition, disability flag/link, priority needs, assistance status.
-- Supports pendamping/penanggung jawab via person model.
-- Supports caregiver relationship and religion reference.
-- Supports elderly-specific documents.
-- API returns masked/minimized data by default.
-- Export/reveal requires permission and audit.
-- Duplicate detection uses safe keys/hashes.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `lansia-terlantar`, `vulnerable-person`, `sensitive-data`, `personal-data`, `religion-reference`, `security`, `privacy`, `documents`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-### Issue 3.8 — Implement Disabilitas backend schema and service
-
-Title:
-`[SIKESRA Backend][Security] Implement Disabilitas detail schema and service with sensitive data protections`
-
-Summary:
-Implement backend persistence and service logic for Disabilitas with religion reference, disability type, severity, and guardian/caregiver support.
-
-Acceptance criteria:
-
-- Detail table exists.
-- NIK/KIA encrypted/hash supported.
-- Agama penyandang disabilitas supported.
-- Disability type/subtype/severity validation works.
-- Wali/pengasuh linked through person model.
-- API returns masked data by default.
-- Export/reveal requires permission and audit.
-
-Labels:
-`sikesra`, `backend`, `database`, `api`, `service-layer`, `sensitive-data`, `vulnerable-person`, `religion-reference`, `security`, `privacy`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 3: Module Services and Detail Tables`
-
----
-
-## Epic 4 — Documents, Verification, and Audit
-
-### Issue 4.1 — Implement document metadata, R2 storage integration, and secure access service
-
-Title:
-`[SIKESRA Backend] Implement secure document metadata and R2 storage service for SIKESRA`
-
-Summary:
-Implement backend document metadata, file object records, validation, and secure access to R2/S3-compatible object storage.
-
-Acceptance criteria:
-
-- File metadata stored in database.
-- Raw files are not stored in PostgreSQL.
-- MIME, extension, size, checksum validation exists.
-- Access classification is enforced.
-- Document preview/download is permission-aware.
-- Upload, replace, supersede, delete-soft actions are audited.
-
-Labels:
-`sikesra`, `backend`, `documents`, `r2-storage`, `security`, `privacy`, `audit-log`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 4: Documents, Verification, and Audit`
-
----
-
-### Issue 4.2 — Implement verification workflow backend service
-
-Title:
-`[SIKESRA Backend] Implement verification workflow service for SIKESRA entities and documents`
-
-Summary:
-Implement backend workflow for draft, submitted, verified, need_revision, rejected, active, and archived states.
-
-Acceptance criteria:
-
-- Submit, verify, reject, need_revision, resubmit actions are supported.
-- Field/section-level notes are supported.
-- Document verification status is supported.
-- Invalid state transitions are rejected.
-- Permission and region scope are enforced.
-- All workflow actions are audited.
-
-Labels:
-`sikesra`, `backend`, `verification`, `audit-log`, `rbac-abac`, `region-scope`, `mvp`, `type: feature`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 4: Documents, Verification, and Audit`
-
----
-
-### Issue 4.3 — Implement audit log service and safe audit viewer backend
-
-Title:
-`[SIKESRA Backend] Implement audit log service for SIKESRA actions`
-
-Summary:
-Implement audit logging for create, update, delete_soft, generate_code, submit, verify, upload, download, reveal sensitive data, export, import, and permission failures.
-
-Acceptance criteria:
-
-- Important actions write audit logs.
-- Sensitive values are masked or excluded from logs.
-- Audit log read API is permission-aware.
-- Audit filters support action, module, user, region, date range, and entity.
-- Audit logging does not leak NIK/KIA/No KK or raw sensitive values.
-
-Labels:
-`sikesra`, `backend`, `audit-log`, `security`, `privacy`, `sensitive-data`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 4: Documents, Verification, and Audit`
-
----
-
-## Epic 5 — Import, Export, Reports, and API Contracts
-
-### Issue 5.1 — Implement Import Excel backend with staging and promotion
-
-Title:
-`[SIKESRA Backend] Implement Import Excel staging, validation, mapping, and promotion service`
-
-Summary:
-Implement backend import workflow where Excel data is uploaded, staged, mapped, validated, reviewed, and promoted to master data only after validation.
-
-Acceptance criteria:
-
-- Import batches and staging rows are stored.
-- Mapping supports all MVP modules including Lansia Terlantar.
-- Religion value normalization is supported.
-- Invalid rows do not enter master data.
-- Promotion is transaction-safe and permission-aware.
-- Import actions are audited.
-- Sensitive values are not logged raw.
-
-Labels:
-`sikesra`, `backend`, `import-excel`, `database`, `religion-reference`, `lansia-terlantar`, `audit-log`, `mvp`, `type: feature`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 5: Import, Export, Reports, and API Contracts`
-
----
-
-### Issue 5.2 — Implement reports and export backend with privacy controls
-
-Title:
-`[SIKESRA Backend][Security] Implement reports and export backend with privacy controls`
-
-Summary:
-Implement backend reporting and export services for module counts, region recap, verification status, document completeness, religion aggregates, vulnerable-person aggregates, and controlled individual exports.
-
-Acceptance criteria:
-
-- Aggregate reports are supported.
-- CSV/XLSX export is supported or planned according to repository capability.
-- Individual-level export requires permission.
-- Religion, child, elderly, and disability exports require additional checks.
-- Export actions are audited.
-- Viewer roles receive aggregate/public-safe reports only.
-
-Labels:
-`sikesra`, `backend`, `export-report`, `security`, `privacy`, `sensitive-data`, `religion-reference`, `vulnerable-person`, `audit-log`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 5: Import, Export, Reports, and API Contracts`
-
----
-
-### Issue 5.3 — Define and document SIKESRA API contracts/OpenAPI
-
-Title:
-`[SIKESRA Backend] Define and document SIKESRA API contracts and service responses`
-
-Summary:
-Document API endpoints, request/response schemas, error responses, authorization rules, safe response masking, and workflow actions.
-
-Acceptance criteria:
-
-- API contract covers list/create/detail/update for all MVP modules.
-- API contract covers ID generation, verification, documents, import, export, audit, and reference data.
-- Response examples do not include real personal data.
-- Sensitive fields are shown as masked or omitted in examples.
-- Documentation matches actual or planned route conventions.
-
-Labels:
-`sikesra`, `backend`, `api`, `documentation`, `security`, `privacy`, `mvp`, `type: docs`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Sprint 5: Import, Export, Reports, and API Contracts`
-
----
-
-## Epic 6 — Hardening, Security, Tests, Backup, and Documentation
-
-### Issue 6.1 — Add backend tests for migrations, services, authorization, and sensitive data handling
-
-Title:
-`[SIKESRA Backend] Add backend tests for SIKESRA core services and security rules`
-
-Summary:
-Add tests for migrations, ID generation, RBAC/ABAC, region scope, module services, religion reference, Lansia Terlantar, verification, import/export, documents, and audit logs.
-
-Acceptance criteria:
-
-- Tests cover ID generation concurrency/uniqueness.
-- Tests cover permission denial.
-- Tests cover region scope restrictions.
-- Tests cover sensitive field masking.
-- Tests cover religion reference normalization.
-- Tests cover Lansia Terlantar validations.
-- Tests cover import staging and promotion.
-- Tests run in CI or documented local test command.
-
-Labels:
-`sikesra`, `backend`, `testing`, `security`, `privacy`, `id-20d`, `religion-reference`, `lansia-terlantar`, `mvp`, `type: test`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Hardening: Security, Tests, Backup, and Documentation`
-
----
-
-### Issue 6.2 — Add security hardening for sensitive data, secrets, rate limiting, and validation
-
-Title:
-`[SIKESRA Backend][Security] Harden SIKESRA backend security and privacy controls`
-
-Summary:
-Harden backend security controls for sensitive data, secrets, validation, file upload, rate limiting, and auditability.
-
-Acceptance criteria:
-
-- No hardcoded secrets.
-- Sensitive values are not logged raw.
-- Input validation exists for all module create/update endpoints.
-- File upload validation exists.
-- Reveal/export of sensitive data requires permission.
-- Rate limiting or abuse protection is planned/applied to sensitive endpoints.
-- Security documentation references OWASP ASVS/API Security where appropriate.
-
-Labels:
-`sikesra`, `backend`, `security`, `privacy`, `sensitive-data`, `documents`, `mvp`, `type: security`, `priority: critical`
-
-Milestone:
-`SIKESRA Backend MVP - Hardening: Security, Tests, Backup, and Documentation`
-
----
-
-### Issue 6.3 — Add backup, restore, and environment documentation for SIKESRA backend
-
-Title:
-`[SIKESRA Backend] Document backup, restore, and environment configuration for SIKESRA`
-
-Summary:
-Document environment variables, PostgreSQL backup/restore, R2 bucket configuration, secrets, and deployment assumptions for AWCMS Mini SIKESRA.
-
-Acceptance criteria:
-
-- Required environment variables are documented.
-- R2/S3-compatible storage configuration is documented.
-- PostgreSQL backup and restore process is documented.
-- Secret handling rules are documented.
-- No real credentials are included.
-- Coolify/Cloudflare-compatible deployment notes are included where relevant.
-
-Labels:
-`sikesra`, `backend`, `devops`, `backup-restore`, `documentation`, `security`, `mvp`, `type: docs`, `priority: high`
-
-Milestone:
-`SIKESRA Backend MVP - Hardening: Security, Tests, Backup, and Documentation`
-
----
-
-## Recommended Backend Issue Dependency Order
-
-Use this implementation dependency order:
-
-1. Issue 1.1 — Core database migrations.
-2. Issue 1.2 — Religion reference master data.
-3. Issue 1.3 — Entity people/person relationship model.
-4. Issue 2.1 — RBAC/ABAC policy checks.
-5. Issue 2.2 — RegionAccessService.
-6. Issue 2.3 — ID SIKESRA 20D service.
-7. Issues 3.1–3.8 — Module schemas and services.
-8. Issue 4.1 — Document storage service.
-9. Issue 4.2 — Verification workflow service.
-10. Issue 4.3 — Audit log service.
-11. Issue 5.1 — Import Excel staging/promotion.
-12. Issue 5.2 — Reports/export backend.
-13. Issue 5.3 — API contracts/OpenAPI.
-14. Issues 6.1–6.3 — Tests, security hardening, backup/docs.
-
----
-
-## GitHub Issue Body Template
-
-Use this body format for every issue:
+Use this body format for every backend issue you create or substantially update:
 
 ```markdown
 ## Summary
 
-<!-- Explain the backend feature/task briefly. -->
+<!-- Explain the backend gap briefly. -->
+
+## Current Repository State
+
+<!-- Describe the confirmed local repo evidence. -->
 
 ## PRD Context
 
-<!-- Cite the relevant SIKESRA PRD section and summarize the requirement. -->
-
-## UI/UX Alignment
-
-<!-- Explain how this backend issue supports the previous UI/UX prompt. -->
+<!-- Cite the relevant PRD requirement. -->
 
 ## Repository Boundary
 
@@ -1390,43 +314,24 @@ Use this body format for every issue:
 
 - ...
 
-## Database / Migration Requirements
+## Security And Privacy Requirements
 
-- [ ] ...
-
-## API / Service Requirements
-
-- [ ] ...
-
-## Authorization Requirements
-
-- [ ] Check authenticated session
-- [ ] Check permission
-- [ ] Check region scope
-- [ ] Check sensitive data reveal/export policy where applicable
-
-## Security and Privacy Requirements
-
+- [ ] Service-layer authorization remains required
 - [ ] Do not log raw sensitive values
-- [ ] Mask or omit sensitive fields by default
-- [ ] Audit important actions
-- [ ] Validate input server-side
-- [ ] Use soft delete where applicable
+- [ ] Mask or omit sensitive fields by default where applicable
+- [ ] Audit important changes and sensitive export/reveal actions
+- [ ] Keep credentials in ignored local env files or deployment-managed secret surfaces only
 
 ## Acceptance Criteria
 
 - [ ] ...
 - [ ] ...
 
-## Test Checklist
+## Validation
 
-- [ ] Migration test or manual migration validation
-- [ ] Unit/service tests where practical
-- [ ] Authorization tests
-- [ ] Region scope tests where applicable
-- [ ] Sensitive data masking tests where applicable
-- [ ] Audit log tests where applicable
-- [ ] Import/export tests where applicable
+- [ ] `pnpm lint` for docs/config-only issue changes
+- [ ] `pnpm check` if code or runtime/source files are changed
+- [ ] focused tests or checks where practical
 
 ## Dependencies
 
@@ -1435,29 +340,27 @@ Use this body format for every issue:
 
 ## References
 
-- SIKESRA PRD MVP AWCMS Mini Single-Tenant
-- SIKESRA UI/UX planning prompt
-- AWCMS Mini SIKESRA repository conventions
-- AWCMS Mini master repository as read-only reference example
+- `prd_mvp_sikesra_awcms_mini_single_tenant_field_kelengkapan.md`
+- `docs/process/ai-workflow-planning-templates.md`
+- `docs/process/sikesra-uiux-github-issue-plan.md`
+- `docs/process/sikesra-religion-reference.md`
 ```
 
 ---
 
-## GitHub Issue Creation Instructions
+## Issue Creation Instructions
 
 After repository analysis and planning, perform these actions in `https://github.com/ahliweb/sikesra` only:
 
-1. Check existing GitHub labels and milestones in `sikesra`.
-2. Create missing backend labels in `sikesra`.
-3. Create missing backend milestones in `sikesra`.
-4. Search existing `sikesra` issues to avoid duplicates.
-5. Create or update issues based on the backend epic structure above in `sikesra` only.
-6. Link related issues through dependencies where GitHub supports it.
-7. Add each issue to the correct milestone.
-8. Add appropriate labels.
-9. Add a final summary comment listing created issue numbers grouped by milestone.
+1. Read the current issue state first.
+2. Confirm whether `#49` already covers the remaining backend blocker.
+3. Update `#49` if it is still correct but needs sharper scope or acceptance criteria.
+4. Search for duplicates before creating anything new.
+5. Create a new issue only if it is clearly distinct, atomic, and justified by current repository evidence.
+6. Reuse existing labels and milestones whenever possible.
+7. Add a final summary comment or planning summary only if it adds new actionable information.
 
-Do not create duplicate issues. If a similar issue already exists in `sikesra`, update it with missing PRD details, backend requirements, religion-reference requirements, Guru Agama terminology requirements, Lansia Terlantar requirements, and repository-boundary requirements instead of creating a new issue.
+Do not create duplicate issues. If `#49` already covers the real backend blocker, prefer improving `#49` instead of creating another issue.
 
 Do not create or update any issue, pull request, branch, commit, workflow, label, milestone, or file in `https://github.com/ahliweb/awcms-mini`.
 
@@ -1465,30 +368,24 @@ Do not create or update any issue, pull request, branch, commit, workflow, label
 
 ## Backend Quality Bar
 
-The final backend issue set is acceptable only if:
+The final backend planning result is acceptable only if:
 
-- Every major SIKESRA PRD backend concern is represented.
-- Database schema, migration, service layer, API, authorization, audit, import/export, document storage, and tests are covered.
-- ID SIKESRA 20D has a dedicated critical backend issue.
-- Religion reference has dedicated master-data and service support.
-- Guru Agama terminology is corrected and preserved at backend/API level.
-- Lansia Terlantar has dedicated schema, service, privacy, import/export, report, and audit coverage.
-- Sensitive data handling has dedicated security issues.
-- Region scope and RBAC/ABAC are enforced server-side.
-- Import Excel uses staging before promotion.
-- Documents use metadata + object storage, not raw DB blob storage.
-- Issues are implementable within small-to-medium engineering tasks.
-- Acceptance criteria are testable.
-- No real personal data, NIK/KIA, No KK, religion data, credentials, or secrets are included in issue examples.
-- The plan respects AWCMS Mini single-tenant architecture.
-- All issues, changes, commits, branches, and PRs target only `https://github.com/ahliweb/sikesra`.
-- `https://github.com/ahliweb/awcms-mini` remains read-only reference material.
+- it reflects the real current repository state, not an outdated greenfield assumption;
+- it does not reopen already completed runtime integration work;
+- it clearly identifies whether a writable backend seam exists in this repository;
+- it keeps backend-controlled religion reference data as the confirmed remaining blocker unless newer evidence proves otherwise;
+- it preserves Guru Agama terminology and religion/privacy requirements from the PRDs;
+- it keeps individual-level religion access permission-aware and audit-covered;
+- it does not fabricate migrations, repositories, or services that are not actually present;
+- it does not create duplicate or overly broad issues;
+- it respects AWCMS Mini single-tenant architecture;
+- all issues, changes, commits, branches, and PRs target only `https://github.com/ahliweb/sikesra`.
 
 ---
 
 ## Final Response Format
 
-After creating or updating GitHub Issues, respond with:
+After creating or updating GitHub issues, respond with:
 
 ```markdown
 # SIKESRA Backend GitHub Planning Completed
@@ -1498,44 +395,20 @@ After creating or updating GitHub Issues, respond with:
 - Reference repository only: `https://github.com/ahliweb/awcms-mini`
 - Confirmation: no changes were made to any other repositories.
 
-## Backend Milestones Created/Updated
+## Current-State Findings
+- Backend writable seam: ...
+- Model-layer/admin-plugin state: ...
+- Runtime baseline: ...
+- Religion reference state: ...
+
+## Issues Updated
+- #49 ...
+
+## Issues Created
+- #... ...
+
+## Remaining Dependency Order
 1. ...
-
-## Backend Labels Created/Updated
-- ...
-
-## Issues Created/Updated
-
-### Sprint 1 — Database, References, and Core Registry
-- #... [title]
-
-### Sprint 2 — Authorization, Region Scope, and ID Code Service
-- #... [title]
-
-### Sprint 3 — Module Services and Detail Tables
-- #... [title]
-
-### Sprint 4 — Documents, Verification, and Audit
-- #... [title]
-
-### Sprint 5 — Import, Export, Reports, and API Contracts
-- #... [title]
-
-### Hardening
-- #... [title]
-
-## Backend Coverage Summary
-- Database/migrations: ...
-- Services/API: ...
-- RBAC/ABAC and region scope: ...
-- ID SIKESRA 20D: ...
-- Religion reference: ...
-- Guru Agama terminology: ...
-- Lansia Terlantar: ...
-- Documents/R2: ...
-- Import/export/reports: ...
-- Audit/security/tests/docs: ...
-- Repository boundary compliance: ...
 
 ## Risks / Blockers
 - ...
@@ -1563,4 +436,3 @@ After creating or updating GitHub Issues, respond with:
 - Use respectful and non-stigmatizing language for Lansia Terlantar.
 - Keep SIKESRA MVP aligned with AWCMS Mini single-tenant.
 - Keep all sensitive backend behavior aligned with RBAC/ABAC, region scope, auditability, privacy, and data minimization.
-
