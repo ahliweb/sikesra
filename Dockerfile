@@ -31,7 +31,7 @@ WORKDIR /app
 RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
 # Copy compiled output and prod node_modules
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist/api ./dist/api
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
