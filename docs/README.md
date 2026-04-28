@@ -49,6 +49,11 @@ SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudfla
 - `process/emdash-ledger-repair-runbook.md` - operator-only inspection and repair flow for the EmDash `_emdash_migrations` ledger
 - `process/emdash-alignment-and-security-plan-2026.md` - EmDash alignment and security recommendations backlog source
 
+## Security Runbooks
+
+- `security/coolify-secret-verification-runbook.md` - operator-only verification and rotation closure path for secret posture issue `#67`
+- `security/obsolete-tunnel-cleanup-runbook.md` - operator-only cleanup and deletion closure path for obsolete PostgreSQL tunnel issue `#82`
+
 ## Key SIKESRA Identifiers
 
 - Hostname: `sikesrakobar.ahlikoding.com`
