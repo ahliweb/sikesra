@@ -18,6 +18,10 @@ import {
   createAstroConfigRegistrationPatch,
 } from "../../src/plugins/sikesra-admin/host-registration.mjs";
 import {
+  SIKESRA_SHELL_AUTH_STATES,
+  evaluateSikesraShellDiagnostics,
+} from "../../src/plugins/sikesra-admin/shell-diagnostics.mjs";
+import {
   SIKESRA_STATUS_BADGE_CLASS_BY_TONE,
   SIKESRA_STATUS_BADGE_DEFINITIONS,
   createSikesraStatusBadgeProps,
@@ -250,6 +254,41 @@ test("SIKESRA host shell state rejects non-SIKESRA plugin descriptors", () => {
     () => createSikesraAdminHostShellState({ plugin: { id: "awcms-users-admin", adminPages: [] } }),
     /valid SIKESRA admin plugin descriptor/
   );
+});
+
+test("SIKESRA shell diagnostics treat manifest 401 as expected before login when setup is ready", () => {
+  const diagnostics = evaluateSikesraShellDiagnostics({
+    setupStatusCode: 200,
+    manifestStatusCode: 401,
+  });
+
+  assert.equal(diagnostics.state, SIKESRA_SHELL_AUTH_STATES.pre_auth_setup_ready);
+  assert.equal(diagnostics.setupReady, true);
+  assert.equal(diagnostics.manifestReady, false);
+  assert.equal(diagnostics.shouldRenderShell, false);
+  assert.equal(diagnostics.expectedPreAuthManifest401, true);
+});
+
+test("SIKESRA shell diagnostics allow shell rendering after auth when setup and manifest are ready", () => {
+  const diagnostics = evaluateSikesraShellDiagnostics({
+    setupStatusCode: 200,
+    manifestStatusCode: 200,
+  });
+
+  assert.equal(diagnostics.state, SIKESRA_SHELL_AUTH_STATES.post_auth_ready);
+  assert.equal(diagnostics.shouldRenderShell, true);
+  assert.equal(diagnostics.manifestReady, true);
+});
+
+test("SIKESRA shell diagnostics detect blocked setup state", () => {
+  const diagnostics = evaluateSikesraShellDiagnostics({
+    setupStatusCode: 503,
+    manifestStatusCode: 401,
+  });
+
+  assert.equal(diagnostics.state, SIKESRA_SHELL_AUTH_STATES.pre_auth_setup_blocked);
+  assert.equal(diagnostics.setupReady, false);
+  assert.equal(diagnostics.shouldRenderShell, false);
 });
 
 test("SIKESRA status badges cover required MVP states", () => {

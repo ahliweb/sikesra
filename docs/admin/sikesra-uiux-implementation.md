@@ -39,6 +39,7 @@ The current implementation surface is framework-neutral model code under `src/pl
 
 - `index.mjs` - plugin descriptor, permissions, menu/page metadata
 - `host-registration.mjs` - EmDash host registration seam and grouped host shell state helper
+- `shell-diagnostics.mjs` - pre-auth/post-auth setup and manifest diagnostics helper
 - `status-badges.mjs` - badge definitions with accessible Indonesian labels
 - `sensitive-fields.mjs` - masking/reveal model for sensitive values
 - `form-wizard.mjs` - shared form sections, progress, inline validation
@@ -64,6 +65,17 @@ Issue `#87` is implemented in this repository as plugin metadata integration for
 - Grouped shell generation keeps content surfaces permission-aware and in the same shell state model used by SIKESRA navigation.
 
 This preserves same-shell routing behavior and keeps storage/security ownership aligned with the reviewed backend-managed media posture.
+
+## Pre-Auth And Manifest Hardening
+
+Issue `#88` is implemented in this repository as a shell diagnostic contract for pre-auth and post-auth transitions.
+
+- `evaluateSikesraShellDiagnostics(...)` models setup/manifest transition handling with explicit status inputs.
+- `/_emdash/api/setup/status` `200` is treated as the primary setup-readiness signal.
+- `/_emdash/api/manifest` `401` is treated as expected pre-auth behavior when setup is ready and must not be reported as a false runtime failure.
+- `/_emdash/api/manifest` `200` transitions to post-auth-ready shell rendering.
+
+This keeps permission-aware UI behavior distinct from backend authorization enforcement while making setup diagnostics deterministic for integrated shell flows.
 
 ### Dashboard, registry, detail, and forms
 
