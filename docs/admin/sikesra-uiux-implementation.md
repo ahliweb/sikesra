@@ -55,6 +55,16 @@ Issue `#86` is implemented in this repository as a reviewed plugin-and-host seam
 
 This keeps the grouped navigation contract writable and testable in `awcms-mini-sikesra` while the upstream `ahliweb/awcms-mini` host remains read-only reference.
 
+## Core Content Surfaces
+
+Issue `#87` is implemented in this repository as plugin metadata integration for EmDash core content surfaces in the same SIKESRA shell contract.
+
+- The `Konten` section now includes `Pages`, `Posts`, and `Media` entries.
+- These entries use explicit permission codes: `emdash.pages.read`, `emdash.posts.read`, and `emdash.media.read`.
+- Grouped shell generation keeps content surfaces permission-aware and in the same shell state model used by SIKESRA navigation.
+
+This preserves same-shell routing behavior and keeps storage/security ownership aligned with the reviewed backend-managed media posture.
+
 ### Dashboard, registry, detail, and forms
 
 - `dashboard-widgets.mjs` - dashboard cards, distributions, activity, role visibility

@@ -2,12 +2,14 @@ export const SIKESRA_ADMIN_PLUGIN_ID = "sikesra-admin";
 
 export const SIKESRA_ADMIN_SHELL_SECTION_KEYS = Object.freeze({
   overview: "overview",
+  content: "content",
   operations: "operations",
   administration: "administration",
 });
 
 export const SIKESRA_ADMIN_SHELL_SECTIONS = [
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview, label: "Ringkasan" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.content, label: "Konten" },
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations, label: "Layanan SIKESRA" },
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration, label: "Administrasi" },
 ];
@@ -63,6 +65,21 @@ export const SIKESRA_ADMIN_PERMISSIONS = [
     label: "Kelola Pengaturan SIKESRA",
     description: "Mengelola pengaturan SIKESRA yang tidak mengandung nilai rahasia.",
   },
+  {
+    code: "emdash.pages.read",
+    label: "Lihat Halaman EmDash",
+    description: "Mengakses daftar dan detail halaman konten EmDash di shell admin terpadu.",
+  },
+  {
+    code: "emdash.posts.read",
+    label: "Lihat Post EmDash",
+    description: "Mengakses daftar dan detail post EmDash di shell admin terpadu.",
+  },
+  {
+    code: "emdash.media.read",
+    label: "Lihat Media EmDash",
+    description: "Mengakses daftar aset media EmDash melalui alur backend yang ditinjau.",
+  },
 ];
 
 const SIKESRA_MENU_GROUP = "SIKESRA";
@@ -75,6 +92,30 @@ export const SIKESRA_ADMIN_PAGES = [
     "sikesra.dashboard.read",
     [],
     SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview,
+  ),
+  page(
+    "/pages",
+    "Pages",
+    "file-text",
+    "emdash.pages.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.content,
+  ),
+  page(
+    "/posts",
+    "Posts",
+    "square-pen",
+    "emdash.posts.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.content,
+  ),
+  page(
+    "/media",
+    "Media",
+    "image",
+    "emdash.media.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.content,
   ),
   page("/registry", "Registry Data", "table", "sikesra.registry.read", [
     page("/registry/anak-yatim", "Anak Yatim/Piatu", "users", "sikesra.registry.read"),

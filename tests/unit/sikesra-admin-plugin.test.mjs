@@ -94,6 +94,9 @@ test("SIKESRA admin pages cover the MVP menu labels", () => {
   assert.deepEqual(
     [
       "Dashboard SIKESRA",
+      "Pages",
+      "Posts",
+      "Media",
       "Registry Data",
       "Verifikasi Data",
       "Dokumen Pendukung",
@@ -162,8 +165,23 @@ test("SIKESRA shell sections group overview operations and administration routes
     SIKESRA_ADMIN_SHELL_SECTIONS.map((section) => section.label),
   );
   assert.equal(navigation.sections[0].items.some((item) => item.label === "Dashboard SIKESRA"), true);
-  assert.equal(navigation.sections[1].items.some((item) => item.label === "Registry Data"), true);
-  assert.equal(navigation.sections[2].items.some((item) => item.label === "Pengguna & Akses"), true);
+  assert.equal(navigation.sections[1].items.some((item) => item.label === "Pages"), true);
+  assert.equal(navigation.sections[2].items.some((item) => item.label === "Registry Data"), true);
+  assert.equal(navigation.sections[3].items.some((item) => item.label === "Pengguna & Akses"), true);
+});
+
+test("SIKESRA content shell section only shows pages posts and media when permissions are granted", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: ["emdash.pages.read", "emdash.posts.read", "emdash.media.read"],
+    currentPath: "/media",
+  });
+
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Konten"]);
+  assert.deepEqual(
+    navigation.sections[0].items.map((item) => item.label),
+    ["Pages", "Posts", "Media"],
+  );
+  assert.equal(navigation.activeItem.label, "Media");
 });
 
 test("SIKESRA shell navigation marks parent items expanded for active child routes", () => {
