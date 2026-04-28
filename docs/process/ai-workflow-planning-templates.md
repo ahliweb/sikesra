@@ -50,7 +50,7 @@ Use these rules to keep AI-assisted work scoped, reviewable, and efficient.
 
 Use these as the default current-state assumptions when adapting any template in this document.
 
-- EmDash `0.7.0` is the current reviewed package baseline in `awcms-mini-sikesra`.
+- EmDash `0.8.0` is the current reviewed package baseline in `awcms-mini-sikesra`.
 - AWCMS Mini SIKESRA remains single-tenant and PostgreSQL-backed.
 - PostgreSQL is hosted on a protected VPS managed through Coolify.
 - Cloudflare edge and frontend delivery with a Hono backend API on Coolify is the supported app-hosting baseline.

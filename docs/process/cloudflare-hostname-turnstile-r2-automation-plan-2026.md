@@ -14,7 +14,7 @@ This revision focuses on the next operator-facing automation layer for the suppo
 It is based on:
 
 - current AWCMS Mini SIKESRA requirements, docs, and implementation
-- current EmDash-first repository constraints and current EmDash `0.7.0` alignment
+- current EmDash-first repository constraints and current EmDash `0.8.0` alignment
 - current Cloudflare Workers custom-domain guidance
 - current Cloudflare Turnstile server-side validation guidance
 - current Cloudflare R2 bucket and custom-domain guidance
