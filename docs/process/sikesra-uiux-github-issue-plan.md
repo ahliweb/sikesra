@@ -144,6 +144,19 @@ The prompt was extended with deployment/runtime work for the separate `ahliweb/s
 - The reviewed host/runtime integration outcome is already live through the current deployment baseline; the repository still keeps `host-registration.mjs` as the reviewed seam/reference for future host-build changes.
 - Backend-controlled religion reference data is still not implemented in the repository/service layer and remains the blocker captured in `#49`.
 
+## EmDash Admin Epic Status
+
+Epic `#83` child slices are now completed in the writable SIKESRA workspace and validated via `pnpm check`:
+
+- `#86` unified sidebar shell and grouped navigation
+- `#85` dashboard parity quick actions and widgets contract
+- `#87` Pages/Posts/Media content surfaces
+- `#84` editorial and taxonomy tool surfaces
+- `#89` admin and system tool surfaces with ownership separation
+- `#88` pre-auth/post-auth manifest and setup diagnostics hardening
+
+The remaining open issues are currently operator/runtime oriented (`#67`, `#82`) and are not blocked by the repository-level model integration tracked under `#83`.
+
 ## Recommended Dependency Order
 
 - Start with ahliweb/sikesra#13 through ahliweb/sikesra#16 and religion foundation issue ahliweb/sikesra#42.
