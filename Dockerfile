@@ -1,25 +1,37 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS base
 
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm once for all stages.
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 
-# Copy manifests first for layer caching
+# Copy manifests first for layer caching.
 COPY package.json pnpm-lock.yaml ./
 
-# Install all deps (including devDeps for tsc)
+FROM base AS deps
+
 RUN pnpm install --frozen-lockfile
 
-# Copy source needed by the API TypeScript build
+FROM deps AS dev
+
 COPY tsconfig.api.json ./
 COPY src ./src
 
-# Compile
+EXPOSE 3000
+
+CMD ["pnpm", "api:dev"]
+
+FROM deps AS builder
+
+# Copy source needed by the API TypeScript build.
+COPY tsconfig.api.json ./
+COPY src ./src
+
+# Compile.
 RUN pnpm api:build
 
-# Prune dev deps
+# Prune dev deps.
 RUN pnpm prune --prod
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
@@ -27,15 +39,15 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-# Non-root user
+# Non-root user.
 RUN apk add --no-cache wget
 RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
-# Copy compiled output and prod node_modules
+# Copy compiled output and runtime-only source assets.
 COPY --from=builder /app/dist/api ./dist/api
-COPY --from=builder /app/src/backend ./dist/api/backend
-COPY --from=builder /app/src/db ./dist/api/db
-COPY --from=builder /app/src/api/middleware/abac.policy.mjs ./dist/api/api/middleware/abac.policy.mjs
+COPY --from=builder /app/src/backend ./src/backend
+COPY --from=builder /app/src/db ./src/db
+COPY --from=builder /app/src/api/middleware/abac.policy.mjs ./src/api/middleware/abac.policy.mjs
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 

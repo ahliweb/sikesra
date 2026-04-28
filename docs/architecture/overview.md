@@ -30,6 +30,7 @@ Hono Backend API  (Coolify-managed VPS, Node.js service)
 - **Cloudflare Pages for the frontend**: The Pages deployment calls the Hono API via `PUBLIC_API_BASE_URL`. It holds no database credentials, no R2 keys, and no provider API keys.
 - **Cloudflare R2 for storage**: Files are stored in R2. Metadata is stored in PostgreSQL. Protected files require API-mediated or signed access.
 - **Coolify for deployment management**: Coolify manages the Hono API service, the PostgreSQL Docker service, environment variables, secrets, and deployment lifecycle on the VPS.
+- **Local Docker mirrors production shape**: local development may run PostgreSQL and Hono in Docker Compose while keeping Cloudflare-facing services and env contracts aligned with the production stack.
 
 ## EmDash Core
 

@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sikesra-local-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sikesrakobar
+      POSTGRES_USER: sikesra
+      POSTGRES_PASSWORD: ${LOCAL_POSTGRES_PASSWORD:-sikesra_local_dev_only}
+    ports:
+      - "${LOCAL_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: dev
+    container_name: sikesra-local-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${LOCAL_POSTGRES_USER:-sikesra}:${LOCAL_POSTGRES_PASSWORD:-sikesra_local_dev_only}@postgres:5432/${LOCAL_POSTGRES_DB:-sikesrakobar}
+      DATABASE_INTERNAL_URL: postgresql://${LOCAL_POSTGRES_USER:-sikesra}:${LOCAL_POSTGRES_PASSWORD:-sikesra_local_dev_only}@postgres:5432/${LOCAL_POSTGRES_DB:-sikesrakobar}
+      DATABASE_MIGRATION_URL: postgresql://${LOCAL_POSTGRES_USER:-sikesra}:${LOCAL_POSTGRES_PASSWORD:-sikesra_local_dev_only}@postgres:5432/${LOCAL_POSTGRES_DB:-sikesrakobar}
+      APP_URL: http://localhost:4321
+      API_BASE_URL: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:4321,http://127.0.0.1:4321,http://localhost:8788,http://127.0.0.1:8788
+      PUBLIC_API_BASE_URL: http://localhost:3000
+      PUBLIC_APP_ENV: local
+      JWT_SECRET: ${JWT_SECRET:-dev-placeholder-must-be-32-chars-minimum-replace}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-placeholder-must-be-32-chars-minimum-replace}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER:-dev-placeholder-16ch}
+      OPENAPI_ENABLED: ${OPENAPI_ENABLED:-true}
+      OPENAPI_JSON_PATH: ${OPENAPI_JSON_PATH:-/openapi.json}
+      SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-true}
+      SWAGGER_UI_PATH: ${SWAGGER_UI_PATH:-/docs}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_local_data:

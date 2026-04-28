@@ -8,8 +8,8 @@ SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudfla
 
 1. `../REQUIREMENTS.md`
 2. `../AGENTS.md`
-3. `../README.md`
-4. `../DOCS_INDEX.md`
+3. `../DEPLOYMENT.md`
+4. `../README.md`
 5. the focused document for your task
 
 ## Folder Map
@@ -40,6 +40,8 @@ SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudfla
 - `process/cloudflare-coolify-origin-hardening.md` - Cloudflare edge and Coolify API/database trust boundary
 - `process/coolify-mcp-secret-handling.md` - supported local-only secret handling pattern for Coolify MCP access
 - `process/github-issue-workflow.md` - issue-first workflow, atomic scope rules
+- `process/local-compose-remote-coolify-workflow.md` - recommended dev-to-deploy path using local Compose, Git promotion, and remote Coolify runtime management
+- `process/local-docker-development.md` - local Docker Compose workflow for PostgreSQL and the Hono API with Cloudflare-compatible env contracts
 - `process/migration-deployment-checklist.md` - pre/post-deploy checklist
 - `process/postgresql-vps-hardening.md` - VPS PostgreSQL access posture
 - `process/secret-hygiene-audit.md` - audit checklist and cleanup rules for scripts, config examples, and operator secret handling

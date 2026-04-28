@@ -27,6 +27,8 @@ See `docs/architecture/overview.md` for the full target stack.
 
 The Hono backend reads the following variables at startup. Set them in Coolify environment variables or in `.env.local` for local development. Do not commit real values.
 
+For the reviewed local Docker path, see `docs/process/local-docker-development.md`.
+
 ### Core
 
 | Variable          | Purpose                                        |
@@ -41,11 +43,19 @@ The Hono backend reads the following variables at startup. Set them in Coolify e
 | Variable                 | Purpose                                           |
 |--------------------------|---------------------------------------------------|
 | `DATABASE_URL`           | PostgreSQL connection string (internal Docker network) |
+| `DATABASE_INTERNAL_URL`  | Optional runtime-only override for the internal Docker hostname |
 | `DATABASE_MIGRATION_URL` | Optional migration-only override when operator migration environment differs from runtime |
 
 Production template:
 ```
 DATABASE_URL=postgresql://app_user:<password>@postgres:5432/sikesrakobar
+```
+
+Local Docker Compose template:
+```
+DATABASE_URL=postgresql://sikesra:<local-password>@postgres:5432/sikesrakobar
+DATABASE_INTERNAL_URL=postgresql://sikesra:<local-password>@postgres:5432/sikesrakobar
+DATABASE_MIGRATION_URL=postgresql://sikesra:<local-password>@postgres:5432/sikesrakobar
 ```
 
 ### Auth and Session

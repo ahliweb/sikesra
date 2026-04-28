@@ -13,6 +13,10 @@ The supported baseline production path is:
 3. Hono backend API on Coolify handles auth, database access, file access, and provider integrations
 4. PostgreSQL remains on the protected VPS and is reachable from Hono through the reviewed runtime path
 
+For local development, the reviewed equivalent is a Docker Compose stack where the Hono API reaches PostgreSQL through the same internal hostname pattern (`postgres`) while Cloudflare-managed services such as Pages, R2, and Turnstile remain external and env-driven.
+
+Use `docs/process/local-compose-remote-coolify-workflow.md` as the recommended promotion path from local development into the remote Coolify-managed runtime.
+
 ## Runtime Expectations
 
 - `APP_URL` matches the browser-facing hostname
