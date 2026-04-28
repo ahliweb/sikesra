@@ -49,7 +49,8 @@ The current implementation surface is framework-neutral model code under `src/pl
 
 Issue `#86` is implemented in this repository as a reviewed plugin-and-host seam rather than an in-place upstream runtime edit.
 
-- `SIKESRA_ADMIN_SHELL_SECTIONS` defines the sidebar groups: `Ringkasan`, `Layanan SIKESRA`, and `Administrasi`.
+- `SIKESRA_ADMIN_SHELL_SECTIONS` now follows canonical EmDash group labels and ordering: `Content`, `Manage`, and `Admin`.
+- `Dashboard SIKESRA` is modeled as a primary nav item outside section groups to match EmDash shell behavior.
 - `SIKESRA_ADMIN_PAGES` assigns each top-level route a `sectionKey` so grouped navigation stays part of the plugin metadata.
 - `createSikesraAdminShellNavigation(...)` derives visible sections, selected items, and expanded parent state from the current route and granted permissions.
 - `createSikesraAdminHostShellState(...)` is the host-facing adapter that takes the reviewed plugin descriptor and returns the grouped sidebar state a host shell can render.
@@ -60,7 +61,7 @@ This keeps the grouped navigation contract writable and testable in `awcms-mini-
 
 Issue `#87` is implemented in this repository as plugin metadata integration for EmDash core content surfaces in the same SIKESRA shell contract.
 
-- The `Konten` section now includes `Pages`, `Posts`, and `Media` entries.
+- The `Content` section includes `Pages`, `Posts`, and `Media` entries.
 - These entries use explicit permission codes: `emdash.pages.read`, `emdash.posts.read`, and `emdash.media.read`.
 - Grouped shell generation keeps content surfaces permission-aware and in the same shell state model used by SIKESRA navigation.
 
@@ -68,9 +69,9 @@ This preserves same-shell routing behavior and keeps storage/security ownership 
 
 ## Editorial And Taxonomy Tools
 
-Issue `#84` is implemented in this repository as integrated shell metadata for reviewed EmDash editorial and taxonomy surfaces under `Kelola`.
+Issue `#84` is implemented in this repository as integrated shell metadata for reviewed EmDash editorial and taxonomy surfaces under `Manage`.
 
-- Added the `Kelola` section with the following permission-aware entries:
+- Added the `Manage` section with the following permission-aware entries:
   - `Comments` (`emdash.comments.read`)
   - `Menus` (`emdash.menus.read`)
   - `Redirects` (`emdash.redirects.read`)
@@ -85,7 +86,7 @@ Unsupported runtime/tooling behavior is intentionally not faked in this reposito
 
 ## Admin And System Tools
 
-Issue `#89` is implemented in this repository as administration-group integration metadata with explicit ownership boundaries.
+Issue `#89` is implemented in this repository as `Admin`-group integration metadata with explicit ownership boundaries.
 
 - Added administration entries for reviewed EmDash core/system surfaces:
   - `Content Types` (`emdash.content_types.read`)

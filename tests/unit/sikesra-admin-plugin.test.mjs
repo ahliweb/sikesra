@@ -181,11 +181,11 @@ test("SIKESRA shell sections group overview operations and administration routes
     navigation.sections.map((section) => section.label),
     SIKESRA_ADMIN_SHELL_SECTIONS.map((section) => section.label),
   );
-  assert.equal(navigation.sections[0].items.some((item) => item.label === "Dashboard SIKESRA"), true);
-  assert.equal(navigation.sections[1].items.some((item) => item.label === "Pages"), true);
-  assert.equal(navigation.sections[2].items.some((item) => item.label === "Registry Data"), true);
-  assert.equal(navigation.sections[3].items.some((item) => item.label === "Comments"), true);
-  assert.equal(navigation.sections[4].items.some((item) => item.label === "Pengguna & Akses"), true);
+  assert.equal(navigation.primaryItems.some((item) => item.label === "Dashboard SIKESRA"), true);
+  assert.equal(navigation.sections[0].items.some((item) => item.label === "Pages"), true);
+  assert.equal(navigation.sections[1].items.some((item) => item.label === "Registry Data"), true);
+  assert.equal(navigation.sections[1].items.some((item) => item.label === "Comments"), true);
+  assert.equal(navigation.sections[2].items.some((item) => item.label === "Pengguna & Akses"), true);
 });
 
 test("SIKESRA content shell section only shows pages posts and media when permissions are granted", () => {
@@ -194,7 +194,7 @@ test("SIKESRA content shell section only shows pages posts and media when permis
     currentPath: "/media",
   });
 
-  assert.deepEqual(navigation.sections.map((section) => section.label), ["Konten"]);
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Content"]);
   assert.deepEqual(
     navigation.sections[0].items.map((item) => item.label),
     ["Pages", "Posts", "Media"],
@@ -217,7 +217,7 @@ test("SIKESRA manage shell section only shows editorial and taxonomy tools when 
     currentPath: "/tags",
   });
 
-  assert.deepEqual(navigation.sections.map((section) => section.label), ["Kelola"]);
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Manage"]);
   assert.deepEqual(
     navigation.sections[0].items.map((item) => item.label),
     ["Comments", "Menus", "Redirects", "Widgets", "Sections", "Categories", "Tags", "Bylines"],
@@ -238,7 +238,7 @@ test("SIKESRA administration section supports core admin/system tools without re
     currentPath: "/core-settings",
   });
 
-  assert.deepEqual(navigation.sections.map((section) => section.label), ["Administrasi"]);
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Admin"]);
   assert.deepEqual(
     navigation.sections[0].items.map((item) => item.label),
     ["Content Types", "Users", "Plugins", "Import", "Core Settings", "Pengaturan"],
@@ -252,7 +252,7 @@ test("SIKESRA shell navigation marks parent items expanded for active child rout
     currentPath: "/registry/guru-agama",
   });
 
-  const operations = navigation.sections.find((section) => section.label === "Layanan SIKESRA");
+  const operations = navigation.sections.find((section) => section.label === "Manage");
   const registry = operations.items.find((item) => item.label === "Registry Data");
   const teacher = registry.children.find((item) => item.label === "Guru Agama");
 
@@ -269,7 +269,8 @@ test("SIKESRA shell navigation hides empty sections after permission filtering",
     currentPath: "/",
   });
 
-  assert.deepEqual(navigation.sections.map((section) => section.label), ["Ringkasan"]);
+  assert.deepEqual(navigation.sections.map((section) => section.label), []);
+  assert.deepEqual(navigation.primaryItems.map((item) => item.label), ["Dashboard SIKESRA"]);
   assert.equal(navigation.hasNavigation, true);
   assert.equal(navigation.activeItem.label, "Dashboard SIKESRA");
 });
@@ -303,7 +304,7 @@ test("SIKESRA host shell state derives grouped navigation from the plugin descri
   assert.equal(shell.pluginId, "sikesra-admin");
   assert.equal(shell.currentPath, "/audit");
   assert.equal(shell.navigation.sections.length, 1);
-  assert.equal(shell.navigation.sections[0].label, "Administrasi");
+  assert.equal(shell.navigation.sections[0].label, "Admin");
   assert.equal(shell.navigation.activeItem.label, "Audit Log");
 });
 

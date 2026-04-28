@@ -1,19 +1,15 @@
 export const SIKESRA_ADMIN_PLUGIN_ID = "sikesra-admin";
 
 export const SIKESRA_ADMIN_SHELL_SECTION_KEYS = Object.freeze({
-  overview: "overview",
   content: "content",
-  operations: "operations",
   manage: "manage",
-  administration: "administration",
+  admin: "admin",
 });
 
 export const SIKESRA_ADMIN_SHELL_SECTIONS = [
-  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview, label: "Ringkasan" },
-  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.content, label: "Konten" },
-  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations, label: "Layanan SIKESRA" },
-  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage, label: "Kelola" },
-  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration, label: "Administrasi" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.content, label: "Content" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage, label: "Manage" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin, label: "Admin" },
 ];
 
 export const SIKESRA_ADMIN_PERMISSIONS = [
@@ -158,7 +154,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "layout-dashboard",
     "sikesra.dashboard.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview,
+    null,
   ),
   page(
     "/pages",
@@ -254,7 +250,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "shapes",
     "emdash.content_types.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/users",
@@ -262,7 +258,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "users-round",
     "emdash.users.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/plugins",
@@ -270,7 +266,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "puzzle",
     "emdash.plugins.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/import",
@@ -278,7 +274,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "database-backup",
     "emdash.import.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/core-settings",
@@ -286,25 +282,25 @@ export const SIKESRA_ADMIN_PAGES = [
     "sliders-horizontal",
     "emdash.settings.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page("/registry", "Registry Data", "table", "sikesra.registry.read", [
     page("/registry/anak-yatim", "Anak Yatim/Piatu", "users", "sikesra.registry.read"),
     page("/registry/disabilitas", "Penyandang Disabilitas", "accessibility", "sikesra.registry.read"),
     page("/registry/lansia-terlantar", "Lansia Terlantar", "heart-handshake", "sikesra.registry.read"),
     page("/registry/guru-agama", "Guru Agama", "book-open", "sikesra.registry.read"),
-  ]),
-  page("/verification", "Verifikasi Data", "badge-check", "sikesra.verification.read"),
-  page("/documents", "Dokumen Pendukung", "folder-lock", "sikesra.documents.read"),
-  page("/imports", "Import Excel", "file-spreadsheet", "sikesra.import.manage"),
-  page("/reports", "Laporan & Export", "file-down", "sikesra.reports.export"),
+  ], SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage),
+  page("/verification", "Verifikasi Data", "badge-check", "sikesra.verification.read", [], SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage),
+  page("/documents", "Dokumen Pendukung", "folder-lock", "sikesra.documents.read", [], SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage),
+  page("/imports", "Import Excel", "file-spreadsheet", "sikesra.import.manage", [], SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage),
+  page("/reports", "Laporan & Export", "file-down", "sikesra.reports.export", [], SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage),
   page(
     "/references",
     "Wilayah & Kodefikasi",
     "map",
     "sikesra.reference.manage",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/audit",
@@ -312,7 +308,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "clipboard-list",
     "sikesra.audit.read",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/access",
@@ -320,7 +316,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "shield-check",
     "sikesra.access.manage",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
   page(
     "/settings",
@@ -328,7 +324,7 @@ export const SIKESRA_ADMIN_PAGES = [
     "settings",
     "sikesra.settings.manage",
     [],
-    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
 ];
 
@@ -340,7 +336,7 @@ export const SIKESRA_ADMIN_ROUTE_PLACEHOLDERS = flattenPages(SIKESRA_ADMIN_PAGES
   implementationIssue: "ahliweb/sikesra#13",
 }));
 
-function page(path, label, icon, permissionCode, children = [], sectionKey = SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations) {
+function page(path, label, icon, permissionCode, children = [], sectionKey = SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage) {
   return {
     path,
     label,
@@ -386,6 +382,9 @@ export function filterSikesraAdminPagesByPermissions(grantedPermissions, pages =
 export function createSikesraAdminShellNavigation(input = {}) {
   const currentPath = normalizeCurrentPath(input.currentPath ?? "/");
   const visiblePages = filterSikesraAdminPagesByPermissions(input.grantedPermissions ?? [], input.pages ?? SIKESRA_ADMIN_PAGES);
+  const primaryItems = visiblePages
+    .filter((page) => !page.sectionKey)
+    .map((page) => createNavigationItem(page, currentPath));
 
   const sections = SIKESRA_ADMIN_SHELL_SECTIONS.map((section) => {
     const items = visiblePages
@@ -403,9 +402,10 @@ export function createSikesraAdminShellNavigation(input = {}) {
 
   return {
     currentPath,
+    primaryItems,
     sections,
-    activeItem: findActiveItem(sections),
-    hasNavigation: sections.length > 0,
+    activeItem: findActiveItem(primaryItems, sections),
+    hasNavigation: primaryItems.length > 0 || sections.length > 0,
   };
 }
 
@@ -426,7 +426,15 @@ function createNavigationItem(page, currentPath) {
   };
 }
 
-function findActiveItem(sections) {
+function findActiveItem(primaryItems, sections) {
+  for (const item of flattenNavigationItems(primaryItems)) {
+    if (item.selected && item.children.length === 0) return item;
+  }
+
+  for (const item of flattenNavigationItems(primaryItems)) {
+    if (item.selected) return item;
+  }
+
   for (const section of sections) {
     for (const item of flattenNavigationItems(section.items)) {
       if (item.selected && item.children.length === 0) return item;
