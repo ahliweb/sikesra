@@ -6,6 +6,8 @@ import {
   SIKESRA_ADMIN_PERMISSIONS,
   SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
   SIKESRA_ADMIN_SHELL_SECTIONS,
+  createPlugin,
+  createSikesraAdminPluginDescriptor,
   filterSikesraAdminPagesByPermissions,
   flattenSikesraAdminPages,
   createSikesraAdminShellNavigation,
@@ -86,10 +88,36 @@ test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   assert.equal(plugin.id, "sikesra-admin");
   assert.equal(plugin.format, "native");
   assert.equal(plugin.entrypoint, "/src/plugins/sikesra-admin/index.mjs");
-  assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/index.mjs");
+  assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/admin.tsx");
   assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
   assert.deepEqual(plugin.routePlaceholders, SIKESRA_ADMIN_ROUTE_PLACEHOLDERS);
+});
+
+test("SIKESRA native plugin factory resolves EmDash runtime-safe defaults", () => {
+  const plugin = createPlugin();
+
+  assert.equal(plugin.id, "sikesra-admin");
+  assert.equal(plugin.version, "0.1.0");
+  assert.deepEqual(plugin.hooks, {});
+  assert.deepEqual(plugin.routes, {});
+  assert.equal(plugin.admin.entry, "/src/plugins/sikesra-admin/admin.tsx");
+  assert.equal(Array.isArray(plugin.admin.pages), true);
+  assert.equal(plugin.admin.pages.some((page) => page.path === "/about-sikesra"), true);
+});
+
+test("SIKESRA plugin descriptor can be adapted for host-side bridge paths", () => {
+  const descriptor = createSikesraAdminPluginDescriptor({
+    entrypoint: "../awcms-mini-sikesra/src/plugins/sikesra-admin/index.mjs",
+    adminEntry: "../awcms-mini-sikesra/src/plugins/sikesra-admin/admin.tsx",
+    adminPages: [{ path: "/about-sikesra", label: "About SIKESRA", icon: "info" }],
+  });
+
+  assert.equal(descriptor.entrypoint, "../awcms-mini-sikesra/src/plugins/sikesra-admin/index.mjs");
+  assert.equal(descriptor.adminEntry, "../awcms-mini-sikesra/src/plugins/sikesra-admin/admin.tsx");
+  assert.deepEqual(descriptor.adminPages, [{ path: "/about-sikesra", label: "About SIKESRA", icon: "info" }]);
+  assert.equal(descriptor.options.adminEntry, "../awcms-mini-sikesra/src/plugins/sikesra-admin/admin.tsx");
+  assert.deepEqual(descriptor.options.adminPages, [{ path: "/about-sikesra", label: "About SIKESRA", icon: "info" }]);
 });
 
 test("SIKESRA admin pages cover the MVP menu labels", () => {
@@ -123,6 +151,7 @@ test("SIKESRA admin pages cover the MVP menu labels", () => {
       "Audit Log",
       "Pengguna & Akses",
       "Pengaturan",
+      "About SIKESRA",
       "Lansia Terlantar",
       "Guru Agama",
     ].every((label) => labels.includes(label)),

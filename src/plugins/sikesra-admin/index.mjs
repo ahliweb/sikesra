@@ -64,6 +64,11 @@ export const SIKESRA_ADMIN_PERMISSIONS = [
     description: "Mengelola pengaturan SIKESRA yang tidak mengandung nilai rahasia.",
   },
   {
+    code: "sikesra.about.read",
+    label: "Lihat Informasi SIKESRA",
+    description: "Mengakses halaman informasi integrasi SIKESRA pada shell admin.",
+  },
+  {
     code: "emdash.pages.read",
     label: "Lihat Halaman EmDash",
     description: "Mengakses daftar dan detail halaman konten EmDash di shell admin terpadu.",
@@ -326,6 +331,14 @@ export const SIKESRA_ADMIN_PAGES = [
     [],
     SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
   ),
+  page(
+    "/about-sikesra",
+    "About SIKESRA",
+    "info",
+    "sikesra.about.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.admin,
+  ),
 ];
 
 export const SIKESRA_ADMIN_ROUTE_PLACEHOLDERS = flattenPages(SIKESRA_ADMIN_PAGES).map((page) => ({
@@ -350,15 +363,49 @@ function page(path, label, icon, permissionCode, children = [], sectionKey = SIK
 }
 
 export function sikesraAdminPlugin() {
+  return createSikesraAdminPluginDescriptor();
+}
+
+export function createPlugin(options = {}) {
+  const adminEntry = options.adminEntry ?? "/src/plugins/sikesra-admin/admin.tsx";
+  const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
+
+  return {
+    id: SIKESRA_ADMIN_PLUGIN_ID,
+    version: "0.1.0",
+    capabilities: [],
+    allowedHosts: [],
+    storage: {},
+    hooks: {},
+    permissions: SIKESRA_ADMIN_PERMISSIONS,
+    routes: {},
+    admin: {
+      entry: adminEntry,
+      pages: adminPages,
+    },
+  };
+}
+
+export function createSikesraAdminPluginDescriptor(options = {}) {
+  const entrypoint = options.entrypoint ?? "/src/plugins/sikesra-admin/index.mjs";
+  const adminEntry = options.adminEntry ?? "/src/plugins/sikesra-admin/admin.tsx";
+  const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
+  const runtimeOptions = {
+    adminEntry,
+    adminPages,
+    ...(options.runtimeOptions ?? {}),
+  };
+
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
     version: "0.1.0",
     format: "native",
-    entrypoint: "/src/plugins/sikesra-admin/index.mjs",
-    adminEntry: "/src/plugins/sikesra-admin/index.mjs",
+    entrypoint,
+    adminEntry,
     permissions: SIKESRA_ADMIN_PERMISSIONS,
-    adminPages: SIKESRA_ADMIN_PAGES,
+    adminPages,
     routePlaceholders: SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
+    options: runtimeOptions,
   };
 }
 

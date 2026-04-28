@@ -28,6 +28,7 @@ The route/menu structure is defined in `src/plugins/sikesra-admin/index.mjs`.
 - `/audit`
 - `/access`
 - `/settings`
+- `/about-sikesra`
 
 These are represented in the repository as plugin metadata and model-layer route placeholders. The full EmDash Worker build replacement has already been completed in `ahliweb/sikesra#44`, while this repository continues to document the reviewed host-registration seam for future host-build maintenance.
 
@@ -95,6 +96,7 @@ Issue `#89` is implemented in this repository as `Admin`-group integration metad
   - `Import` (`emdash.import.read`)
   - `Core Settings` (`emdash.settings.read`)
 - Kept SIKESRA ownership explicit by retaining `Pengaturan` (`sikesra.settings.manage`) as a distinct administration entry.
+- Added `About SIKESRA` (`sikesra.about.read`) as a dedicated informational entry for operators.
 - Grouped shell state keeps all of these tools permission-aware and in the same integration contract.
 
 This avoids ambiguous ownership between core and SIKESRA-specific settings/access surfaces while preserving same-shell rendering conventions.
