@@ -1,4 +1,8 @@
-import { sikesraAdminPlugin, SIKESRA_ADMIN_PLUGIN_ID } from "./index.mjs";
+import {
+  createSikesraAdminShellNavigation,
+  sikesraAdminPlugin,
+  SIKESRA_ADMIN_PLUGIN_ID,
+} from "./index.mjs";
 
 export const SIKESRA_HOST_REGISTRATION = {
   pluginId: SIKESRA_ADMIN_PLUGIN_ID,
@@ -17,11 +21,32 @@ export function appendSikesraAdminPlugin(existingPlugins = []) {
   return alreadyRegistered ? existingPlugins : [...existingPlugins, sikesraAdminPlugin()];
 }
 
+export function createSikesraAdminHostShellState(input = {}) {
+  const plugin = input.plugin ?? sikesraAdminPlugin();
+
+  if (!plugin || plugin.id !== SIKESRA_ADMIN_PLUGIN_ID) {
+    throw new TypeError("A valid SIKESRA admin plugin descriptor is required.");
+  }
+
+  return {
+    pluginId: plugin.id,
+    currentPath: input.currentPath ?? "/",
+    navigation: createSikesraAdminShellNavigation({
+      currentPath: input.currentPath,
+      grantedPermissions: input.grantedPermissions,
+      pages: plugin.adminPages,
+    }),
+  };
+}
+
 export function createAstroConfigRegistrationPatch() {
   return [
     "import { sikesraAdminPlugin } from './src/plugins/sikesra-admin/index.mjs';",
     "",
     "// In the emdash({ ... }) integration options:",
     "plugins: [awcmsUsersAdminPlugin(), sikesraAdminPlugin()]",
+    "",
+    "// In the reviewed admin shell seam:",
+    "// const shell = createSikesraAdminHostShellState({ currentPath, grantedPermissions, plugin });",
   ].join("\n");
 }

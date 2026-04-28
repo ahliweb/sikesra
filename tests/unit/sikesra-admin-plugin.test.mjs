@@ -5,13 +5,16 @@ import {
   SIKESRA_ADMIN_PAGES,
   SIKESRA_ADMIN_PERMISSIONS,
   SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
+  SIKESRA_ADMIN_SHELL_SECTIONS,
   filterSikesraAdminPagesByPermissions,
   flattenSikesraAdminPages,
+  createSikesraAdminShellNavigation,
   sikesraAdminPlugin,
 } from "../../src/plugins/sikesra-admin/index.mjs";
 import {
   SIKESRA_HOST_REGISTRATION,
   appendSikesraAdminPlugin,
+  createSikesraAdminHostShellState,
   createAstroConfigRegistrationPatch,
 } from "../../src/plugins/sikesra-admin/host-registration.mjs";
 import {
@@ -146,6 +149,49 @@ test("SIKESRA admin menu can be filtered by permission metadata", () => {
   assert.equal(labels.includes("Pengaturan"), false);
 });
 
+test("SIKESRA shell sections group overview operations and administration routes", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: SIKESRA_ADMIN_PERMISSIONS.map((permission) => permission.code),
+    currentPath: "/",
+  });
+
+  assert.deepEqual(
+    navigation.sections.map((section) => section.label),
+    SIKESRA_ADMIN_SHELL_SECTIONS.map((section) => section.label),
+  );
+  assert.equal(navigation.sections[0].items.some((item) => item.label === "Dashboard SIKESRA"), true);
+  assert.equal(navigation.sections[1].items.some((item) => item.label === "Registry Data"), true);
+  assert.equal(navigation.sections[2].items.some((item) => item.label === "Pengguna & Akses"), true);
+});
+
+test("SIKESRA shell navigation marks parent items expanded for active child routes", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: ["sikesra.registry.read"],
+    currentPath: "/registry/guru-agama",
+  });
+
+  const operations = navigation.sections.find((section) => section.label === "Layanan SIKESRA");
+  const registry = operations.items.find((item) => item.label === "Registry Data");
+  const teacher = registry.children.find((item) => item.label === "Guru Agama");
+
+  assert.equal(operations.selected, true);
+  assert.equal(registry.selected, true);
+  assert.equal(registry.expanded, true);
+  assert.equal(teacher.selected, true);
+  assert.equal(navigation.activeItem.label, "Guru Agama");
+});
+
+test("SIKESRA shell navigation hides empty sections after permission filtering", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: ["sikesra.dashboard.read"],
+    currentPath: "/",
+  });
+
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Ringkasan"]);
+  assert.equal(navigation.hasNavigation, true);
+  assert.equal(navigation.activeItem.label, "Dashboard SIKESRA");
+});
+
 test("SIKESRA host registration appends the plugin once", () => {
   const existing = [{ id: "awcms-users-admin" }];
   const plugins = appendSikesraAdminPlugin(existing);
@@ -163,6 +209,27 @@ test("SIKESRA host registration documents the EmDash integration seam", () => {
   assert.equal(SIKESRA_HOST_REGISTRATION.emdashIntegrationOption, "plugins");
   assert.match(patch, /sikesraAdminPlugin/);
   assert.match(patch, /plugins: \[awcmsUsersAdminPlugin\(\), sikesraAdminPlugin\(\)\]/);
+  assert.match(patch, /createSikesraAdminHostShellState/);
+});
+
+test("SIKESRA host shell state derives grouped navigation from the plugin descriptor", () => {
+  const shell = createSikesraAdminHostShellState({
+    currentPath: "/audit",
+    grantedPermissions: ["sikesra.audit.read"],
+  });
+
+  assert.equal(shell.pluginId, "sikesra-admin");
+  assert.equal(shell.currentPath, "/audit");
+  assert.equal(shell.navigation.sections.length, 1);
+  assert.equal(shell.navigation.sections[0].label, "Administrasi");
+  assert.equal(shell.navigation.activeItem.label, "Audit Log");
+});
+
+test("SIKESRA host shell state rejects non-SIKESRA plugin descriptors", () => {
+  assert.throws(
+    () => createSikesraAdminHostShellState({ plugin: { id: "awcms-users-admin", adminPages: [] } }),
+    /valid SIKESRA admin plugin descriptor/
+  );
 });
 
 test("SIKESRA status badges cover required MVP states", () => {

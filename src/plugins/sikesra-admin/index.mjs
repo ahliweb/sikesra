@@ -1,5 +1,17 @@
 export const SIKESRA_ADMIN_PLUGIN_ID = "sikesra-admin";
 
+export const SIKESRA_ADMIN_SHELL_SECTION_KEYS = Object.freeze({
+  overview: "overview",
+  operations: "operations",
+  administration: "administration",
+});
+
+export const SIKESRA_ADMIN_SHELL_SECTIONS = [
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview, label: "Ringkasan" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations, label: "Layanan SIKESRA" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration, label: "Administrasi" },
+];
+
 export const SIKESRA_ADMIN_PERMISSIONS = [
   {
     code: "sikesra.dashboard.read",
@@ -56,7 +68,14 @@ export const SIKESRA_ADMIN_PERMISSIONS = [
 const SIKESRA_MENU_GROUP = "SIKESRA";
 
 export const SIKESRA_ADMIN_PAGES = [
-  page("/", "Dashboard SIKESRA", "layout-dashboard", "sikesra.dashboard.read"),
+  page(
+    "/",
+    "Dashboard SIKESRA",
+    "layout-dashboard",
+    "sikesra.dashboard.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview,
+  ),
   page("/registry", "Registry Data", "table", "sikesra.registry.read", [
     page("/registry/anak-yatim", "Anak Yatim/Piatu", "users", "sikesra.registry.read"),
     page("/registry/disabilitas", "Penyandang Disabilitas", "accessibility", "sikesra.registry.read"),
@@ -67,10 +86,38 @@ export const SIKESRA_ADMIN_PAGES = [
   page("/documents", "Dokumen Pendukung", "folder-lock", "sikesra.documents.read"),
   page("/imports", "Import Excel", "file-spreadsheet", "sikesra.import.manage"),
   page("/reports", "Laporan & Export", "file-down", "sikesra.reports.export"),
-  page("/references", "Wilayah & Kodefikasi", "map", "sikesra.reference.manage"),
-  page("/audit", "Audit Log", "clipboard-list", "sikesra.audit.read"),
-  page("/access", "Pengguna & Akses", "shield-check", "sikesra.access.manage"),
-  page("/settings", "Pengaturan", "settings", "sikesra.settings.manage"),
+  page(
+    "/references",
+    "Wilayah & Kodefikasi",
+    "map",
+    "sikesra.reference.manage",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/audit",
+    "Audit Log",
+    "clipboard-list",
+    "sikesra.audit.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/access",
+    "Pengguna & Akses",
+    "shield-check",
+    "sikesra.access.manage",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/settings",
+    "Pengaturan",
+    "settings",
+    "sikesra.settings.manage",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
 ];
 
 export const SIKESRA_ADMIN_ROUTE_PLACEHOLDERS = flattenPages(SIKESRA_ADMIN_PAGES).map((page) => ({
@@ -81,12 +128,13 @@ export const SIKESRA_ADMIN_ROUTE_PLACEHOLDERS = flattenPages(SIKESRA_ADMIN_PAGES
   implementationIssue: "ahliweb/sikesra#13",
 }));
 
-function page(path, label, icon, permissionCode, children = []) {
+function page(path, label, icon, permissionCode, children = [], sectionKey = SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations) {
   return {
     path,
     label,
     icon,
     group: SIKESRA_MENU_GROUP,
+    sectionKey,
     permissionCode,
     sensitivity: "restricted",
     children,
@@ -121,6 +169,78 @@ export function filterSikesraAdminPagesByPermissions(grantedPermissions, pages =
       return { ...item, children };
     })
     .filter(Boolean);
+}
+
+export function createSikesraAdminShellNavigation(input = {}) {
+  const currentPath = normalizeCurrentPath(input.currentPath ?? "/");
+  const visiblePages = filterSikesraAdminPagesByPermissions(input.grantedPermissions ?? [], input.pages ?? SIKESRA_ADMIN_PAGES);
+
+  const sections = SIKESRA_ADMIN_SHELL_SECTIONS.map((section) => {
+    const items = visiblePages
+      .filter((page) => page.sectionKey === section.key)
+      .map((page) => createNavigationItem(page, currentPath));
+    const hasSelectedChild = items.some((item) => item.selected || item.expanded);
+
+    return {
+      ...section,
+      items,
+      selected: hasSelectedChild,
+      expanded: hasSelectedChild,
+    };
+  }).filter((section) => section.items.length > 0);
+
+  return {
+    currentPath,
+    sections,
+    activeItem: findActiveItem(sections),
+    hasNavigation: sections.length > 0,
+  };
+}
+
+function createNavigationItem(page, currentPath) {
+  const children = (page.children ?? []).map((child) => createNavigationItem(child, currentPath));
+  const childSelected = children.some((child) => child.selected || child.expanded);
+  const selected = matchesPath(currentPath, page.path) || childSelected;
+
+  return {
+    path: page.path,
+    label: page.label,
+    icon: page.icon,
+    permissionCode: page.permissionCode,
+    sectionKey: page.sectionKey,
+    selected,
+    expanded: childSelected,
+    children,
+  };
+}
+
+function findActiveItem(sections) {
+  for (const section of sections) {
+    for (const item of flattenNavigationItems(section.items)) {
+      if (item.selected && item.children.length === 0) return item;
+    }
+
+    for (const item of flattenNavigationItems(section.items)) {
+      if (item.selected) return item;
+    }
+  }
+
+  return null;
+}
+
+function flattenNavigationItems(items) {
+  return items.flatMap((item) => [item, ...flattenNavigationItems(item.children ?? [])]);
+}
+
+function matchesPath(currentPath, pagePath) {
+  if (pagePath === "/") return currentPath === "/";
+  return currentPath === pagePath || currentPath.startsWith(`${pagePath}/`);
+}
+
+function normalizeCurrentPath(value) {
+  if (typeof value !== "string" || value.trim().length === 0) return "/";
+  if (value === "/") return "/";
+  return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
 function flattenPages(pages) {

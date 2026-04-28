@@ -30,6 +30,8 @@ The open SIKESRA UI/UX issues require writable admin/plugin files. A full upstre
 
 `src/plugins/sikesra-admin/host-registration.mjs` exports the reviewed host registration seam for the live AWCMS Mini/EmDash build. The intended EmDash integration change is to append `sikesraAdminPlugin()` to the existing `emdash({ plugins: [...] })` option in `astro.config.mjs` while preserving the existing `awcmsUsersAdminPlugin()` registration.
 
+For the `#86` grouped sidebar work, the same file now also exports `createSikesraAdminHostShellState(...)`, which turns the plugin descriptor plus the host's `currentPath` and granted permissions into the grouped shell navigation state consumed by a host sidebar renderer.
+
 The source of truth for the live build remains the reviewed Cloudflare-and-Hono deployment flow. Do not edit the upstream `ahliweb/awcms-mini` worktree in place from this repository; use the host registration seam in a reviewed build/integration step.
 
 The descriptor follows the upstream AWCMS Mini plugin pattern of exposing `id`, `version`, `format`, `entrypoint`, `adminEntry`, `permissions`, and `adminPages`.

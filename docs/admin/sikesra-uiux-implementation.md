@@ -38,11 +38,22 @@ The current implementation surface is framework-neutral model code under `src/pl
 ### Core plugin and shared metadata
 
 - `index.mjs` - plugin descriptor, permissions, menu/page metadata
-- `host-registration.mjs` - EmDash host registration seam
+- `host-registration.mjs` - EmDash host registration seam and grouped host shell state helper
 - `status-badges.mjs` - badge definitions with accessible Indonesian labels
 - `sensitive-fields.mjs` - masking/reveal model for sensitive values
 - `form-wizard.mjs` - shared form sections, progress, inline validation
 - `religion-reference.mjs` - controlled Agama reference UI contract
+
+## Sidebar Shell Grouping
+
+Issue `#86` is implemented in this repository as a reviewed plugin-and-host seam rather than an in-place upstream runtime edit.
+
+- `SIKESRA_ADMIN_SHELL_SECTIONS` defines the sidebar groups: `Ringkasan`, `Layanan SIKESRA`, and `Administrasi`.
+- `SIKESRA_ADMIN_PAGES` assigns each top-level route a `sectionKey` so grouped navigation stays part of the plugin metadata.
+- `createSikesraAdminShellNavigation(...)` derives visible sections, selected items, and expanded parent state from the current route and granted permissions.
+- `createSikesraAdminHostShellState(...)` is the host-facing adapter that takes the reviewed plugin descriptor and returns the grouped sidebar state a host shell can render.
+
+This keeps the grouped navigation contract writable and testable in `awcms-mini-sikesra` while the upstream `ahliweb/awcms-mini` host remains read-only reference.
 
 ### Dashboard, registry, detail, and forms
 
