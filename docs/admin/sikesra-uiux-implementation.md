@@ -66,6 +66,23 @@ Issue `#87` is implemented in this repository as plugin metadata integration for
 
 This preserves same-shell routing behavior and keeps storage/security ownership aligned with the reviewed backend-managed media posture.
 
+## Editorial And Taxonomy Tools
+
+Issue `#84` is implemented in this repository as integrated shell metadata for reviewed EmDash editorial and taxonomy surfaces under `Kelola`.
+
+- Added the `Kelola` section with the following permission-aware entries:
+  - `Comments` (`emdash.comments.read`)
+  - `Menus` (`emdash.menus.read`)
+  - `Redirects` (`emdash.redirects.read`)
+  - `Widgets` (`emdash.widgets.read`)
+  - `Sections` (`emdash.sections.read`)
+  - `Categories` (`emdash.categories.read`)
+  - `Tags` (`emdash.tags.read`)
+  - `Bylines` (`emdash.bylines.read`)
+- Grouped shell generation keeps these tools in the same admin shell contract and filters them via granted permissions.
+
+Unsupported runtime/tooling behavior is intentionally not faked in this repository; this layer only defines and validates the integration contract for reviewed host rendering.
+
 ## Pre-Auth And Manifest Hardening
 
 Issue `#88` is implemented in this repository as a shell diagnostic contract for pre-auth and post-auth transitions.

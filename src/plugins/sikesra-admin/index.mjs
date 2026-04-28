@@ -4,6 +4,7 @@ export const SIKESRA_ADMIN_SHELL_SECTION_KEYS = Object.freeze({
   overview: "overview",
   content: "content",
   operations: "operations",
+  manage: "manage",
   administration: "administration",
 });
 
@@ -11,6 +12,7 @@ export const SIKESRA_ADMIN_SHELL_SECTIONS = [
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.overview, label: "Ringkasan" },
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.content, label: "Konten" },
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.operations, label: "Layanan SIKESRA" },
+  { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage, label: "Kelola" },
   { key: SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration, label: "Administrasi" },
 ];
 
@@ -80,6 +82,46 @@ export const SIKESRA_ADMIN_PERMISSIONS = [
     label: "Lihat Media EmDash",
     description: "Mengakses daftar aset media EmDash melalui alur backend yang ditinjau.",
   },
+  {
+    code: "emdash.comments.read",
+    label: "Lihat Komentar EmDash",
+    description: "Mengakses daftar komentar untuk moderasi konten pada shell admin terpadu.",
+  },
+  {
+    code: "emdash.menus.read",
+    label: "Lihat Menu EmDash",
+    description: "Mengakses struktur menu konten EmDash yang dikelola secara terpusat.",
+  },
+  {
+    code: "emdash.redirects.read",
+    label: "Lihat Redirect EmDash",
+    description: "Mengakses daftar redirect konten EmDash sesuai kontrol akses.",
+  },
+  {
+    code: "emdash.widgets.read",
+    label: "Lihat Widget EmDash",
+    description: "Mengakses widget presentasi konten EmDash pada shell admin yang sama.",
+  },
+  {
+    code: "emdash.sections.read",
+    label: "Lihat Section EmDash",
+    description: "Mengakses section konten EmDash untuk pengelolaan struktur halaman.",
+  },
+  {
+    code: "emdash.categories.read",
+    label: "Lihat Kategori EmDash",
+    description: "Mengakses kategori konten EmDash pada shell admin terpadu.",
+  },
+  {
+    code: "emdash.tags.read",
+    label: "Lihat Tag EmDash",
+    description: "Mengakses tag konten EmDash dengan visibilitas berbasis izin.",
+  },
+  {
+    code: "emdash.bylines.read",
+    label: "Lihat Bylines EmDash",
+    description: "Mengakses bylines konten EmDash untuk atribut editorial terkontrol.",
+  },
 ];
 
 const SIKESRA_MENU_GROUP = "SIKESRA";
@@ -116,6 +158,70 @@ export const SIKESRA_ADMIN_PAGES = [
     "emdash.media.read",
     [],
     SIKESRA_ADMIN_SHELL_SECTION_KEYS.content,
+  ),
+  page(
+    "/comments",
+    "Comments",
+    "message-square",
+    "emdash.comments.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/menus",
+    "Menus",
+    "list-tree",
+    "emdash.menus.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/redirects",
+    "Redirects",
+    "route",
+    "emdash.redirects.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/widgets",
+    "Widgets",
+    "layout-grid",
+    "emdash.widgets.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/sections",
+    "Sections",
+    "rows-3",
+    "emdash.sections.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/categories",
+    "Categories",
+    "folder-tree",
+    "emdash.categories.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/tags",
+    "Tags",
+    "tags",
+    "emdash.tags.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/bylines",
+    "Bylines",
+    "signature",
+    "emdash.bylines.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
   ),
   page("/registry", "Registry Data", "table", "sikesra.registry.read", [
     page("/registry/anak-yatim", "Anak Yatim/Piatu", "users", "sikesra.registry.read"),

@@ -101,6 +101,14 @@ test("SIKESRA admin pages cover the MVP menu labels", () => {
       "Pages",
       "Posts",
       "Media",
+      "Comments",
+      "Menus",
+      "Redirects",
+      "Widgets",
+      "Sections",
+      "Categories",
+      "Tags",
+      "Bylines",
       "Registry Data",
       "Verifikasi Data",
       "Dokumen Pendukung",
@@ -171,7 +179,8 @@ test("SIKESRA shell sections group overview operations and administration routes
   assert.equal(navigation.sections[0].items.some((item) => item.label === "Dashboard SIKESRA"), true);
   assert.equal(navigation.sections[1].items.some((item) => item.label === "Pages"), true);
   assert.equal(navigation.sections[2].items.some((item) => item.label === "Registry Data"), true);
-  assert.equal(navigation.sections[3].items.some((item) => item.label === "Pengguna & Akses"), true);
+  assert.equal(navigation.sections[3].items.some((item) => item.label === "Comments"), true);
+  assert.equal(navigation.sections[4].items.some((item) => item.label === "Pengguna & Akses"), true);
 });
 
 test("SIKESRA content shell section only shows pages posts and media when permissions are granted", () => {
@@ -186,6 +195,29 @@ test("SIKESRA content shell section only shows pages posts and media when permis
     ["Pages", "Posts", "Media"],
   );
   assert.equal(navigation.activeItem.label, "Media");
+});
+
+test("SIKESRA manage shell section only shows editorial and taxonomy tools when permissions are granted", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: [
+      "emdash.comments.read",
+      "emdash.menus.read",
+      "emdash.redirects.read",
+      "emdash.widgets.read",
+      "emdash.sections.read",
+      "emdash.categories.read",
+      "emdash.tags.read",
+      "emdash.bylines.read",
+    ],
+    currentPath: "/tags",
+  });
+
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Kelola"]);
+  assert.deepEqual(
+    navigation.sections[0].items.map((item) => item.label),
+    ["Comments", "Menus", "Redirects", "Widgets", "Sections", "Categories", "Tags", "Bylines"],
+  );
+  assert.equal(navigation.activeItem.label, "Tags");
 });
 
 test("SIKESRA shell navigation marks parent items expanded for active child routes", () => {
