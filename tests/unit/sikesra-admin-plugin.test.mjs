@@ -109,6 +109,11 @@ test("SIKESRA admin pages cover the MVP menu labels", () => {
       "Categories",
       "Tags",
       "Bylines",
+      "Content Types",
+      "Users",
+      "Plugins",
+      "Import",
+      "Core Settings",
       "Registry Data",
       "Verifikasi Data",
       "Dokumen Pendukung",
@@ -218,6 +223,27 @@ test("SIKESRA manage shell section only shows editorial and taxonomy tools when 
     ["Comments", "Menus", "Redirects", "Widgets", "Sections", "Categories", "Tags", "Bylines"],
   );
   assert.equal(navigation.activeItem.label, "Tags");
+});
+
+test("SIKESRA administration section supports core admin/system tools without replacing SIKESRA settings", () => {
+  const navigation = createSikesraAdminShellNavigation({
+    grantedPermissions: [
+      "emdash.content_types.read",
+      "emdash.users.read",
+      "emdash.plugins.read",
+      "emdash.import.read",
+      "emdash.settings.read",
+      "sikesra.settings.manage",
+    ],
+    currentPath: "/core-settings",
+  });
+
+  assert.deepEqual(navigation.sections.map((section) => section.label), ["Administrasi"]);
+  assert.deepEqual(
+    navigation.sections[0].items.map((item) => item.label),
+    ["Content Types", "Users", "Plugins", "Import", "Core Settings", "Pengaturan"],
+  );
+  assert.equal(navigation.activeItem.label, "Core Settings");
 });
 
 test("SIKESRA shell navigation marks parent items expanded for active child routes", () => {

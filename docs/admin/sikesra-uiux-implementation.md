@@ -83,6 +83,21 @@ Issue `#84` is implemented in this repository as integrated shell metadata for r
 
 Unsupported runtime/tooling behavior is intentionally not faked in this repository; this layer only defines and validates the integration contract for reviewed host rendering.
 
+## Admin And System Tools
+
+Issue `#89` is implemented in this repository as administration-group integration metadata with explicit ownership boundaries.
+
+- Added administration entries for reviewed EmDash core/system surfaces:
+  - `Content Types` (`emdash.content_types.read`)
+  - `Users` (`emdash.users.read`)
+  - `Plugins` (`emdash.plugins.read`)
+  - `Import` (`emdash.import.read`)
+  - `Core Settings` (`emdash.settings.read`)
+- Kept SIKESRA ownership explicit by retaining `Pengaturan` (`sikesra.settings.manage`) as a distinct administration entry.
+- Grouped shell state keeps all of these tools permission-aware and in the same integration contract.
+
+This avoids ambiguous ownership between core and SIKESRA-specific settings/access surfaces while preserving same-shell rendering conventions.
+
 ## Pre-Auth And Manifest Hardening
 
 Issue `#88` is implemented in this repository as a shell diagnostic contract for pre-auth and post-auth transitions.

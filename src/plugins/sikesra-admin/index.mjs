@@ -122,6 +122,31 @@ export const SIKESRA_ADMIN_PERMISSIONS = [
     label: "Lihat Bylines EmDash",
     description: "Mengakses bylines konten EmDash untuk atribut editorial terkontrol.",
   },
+  {
+    code: "emdash.content_types.read",
+    label: "Lihat Content Types EmDash",
+    description: "Mengakses konfigurasi tipe konten EmDash pada shell admin terpadu.",
+  },
+  {
+    code: "emdash.users.read",
+    label: "Lihat Pengguna EmDash",
+    description: "Mengakses manajemen pengguna EmDash sesuai kontrol akses yang ditinjau.",
+  },
+  {
+    code: "emdash.plugins.read",
+    label: "Lihat Plugin EmDash",
+    description: "Mengakses daftar plugin EmDash yang tersedia pada lingkungan terkelola.",
+  },
+  {
+    code: "emdash.import.read",
+    label: "Lihat Import EmDash",
+    description: "Mengakses alur import EmDash yang terpisah dari import SIKESRA domain data.",
+  },
+  {
+    code: "emdash.settings.read",
+    label: "Lihat Pengaturan EmDash",
+    description: "Mengakses pengaturan inti EmDash tanpa menggantikan pengaturan SIKESRA spesifik.",
+  },
 ];
 
 const SIKESRA_MENU_GROUP = "SIKESRA";
@@ -222,6 +247,46 @@ export const SIKESRA_ADMIN_PAGES = [
     "emdash.bylines.read",
     [],
     SIKESRA_ADMIN_SHELL_SECTION_KEYS.manage,
+  ),
+  page(
+    "/content-types",
+    "Content Types",
+    "shapes",
+    "emdash.content_types.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/users",
+    "Users",
+    "users-round",
+    "emdash.users.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/plugins",
+    "Plugins",
+    "puzzle",
+    "emdash.plugins.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/import",
+    "Import",
+    "database-backup",
+    "emdash.import.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
+  ),
+  page(
+    "/core-settings",
+    "Core Settings",
+    "sliders-horizontal",
+    "emdash.settings.read",
+    [],
+    SIKESRA_ADMIN_SHELL_SECTION_KEYS.administration,
   ),
   page("/registry", "Registry Data", "table", "sikesra.registry.read", [
     page("/registry/anak-yatim", "Anak Yatim/Piatu", "users", "sikesra.registry.read"),
