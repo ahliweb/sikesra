@@ -47,6 +47,8 @@ import {
   SIKESRA_MODULE_KEYS,
   SIKESRA_MODULE_LABELS,
   SIKESRA_VULNERABLE_PERSON_MODULES,
+  SIKESRA_DASHBOARD_QUICK_ACTIONS,
+  createSikesraDashboardQuickActions,
   createSikesraDashboardFilter,
   createSikesraStatCard,
   createSikesraStatCards,
@@ -512,6 +514,29 @@ test("SIKESRA dashboard filter defaults all fields to null", () => {
   assert.equal(filter.period_year, null);
 });
 
+test("SIKESRA dashboard quick actions map to reviewed EmDash parity actions", () => {
+  assert.deepEqual(
+    SIKESRA_DASHBOARD_QUICK_ACTIONS.map((action) => action.label),
+    ["Halaman Baru", "Post Baru", "Unggah Media"],
+  );
+});
+
+test("SIKESRA dashboard quick actions are permission-aware", () => {
+  const hidden = createSikesraDashboardQuickActions(["sikesra.dashboard.read"]);
+  const visible = createSikesraDashboardQuickActions([
+    "sikesra.dashboard.read",
+    "emdash.pages.write",
+    "emdash.posts.write",
+    "emdash.media.upload",
+  ]);
+
+  assert.equal(hidden.length, 0);
+  assert.deepEqual(
+    visible.map((action) => action.key),
+    ["create_page", "create_post", "upload_media"],
+  );
+});
+
 test("SIKESRA verification status widget has all required status keys", () => {
   const widget = createVerificationStatusWidget({ verified: 10, draft: 3 });
   assert.equal(widget.widgetType, "verification_status_distribution");
@@ -569,6 +594,25 @@ test("SIKESRA dashboard layout suppresses religion distribution without explicit
   assert.equal(layout.canRender, true);
   assert.equal(layout.visibility.showReligionDistribution, false);
   assert.equal(layout.religionDistribution, null);
+  assert.equal(layout.quickActions.length, 0);
+});
+
+test("SIKESRA dashboard layout includes quick actions when permissions are granted", () => {
+  const layout = createSikesraDashboardLayout({
+    roleContext: "admin",
+    grantedPermissions: [
+      "sikesra.dashboard.read",
+      "emdash.pages.write",
+      "emdash.posts.write",
+      "emdash.media.upload",
+    ],
+    filter: createSikesraDashboardFilter(),
+  });
+
+  assert.deepEqual(
+    layout.quickActions.map((action) => action.key),
+    ["create_page", "create_post", "upload_media"],
+  );
 });
 
 test("SIKESRA pimpinan dashboard suppresses attention summary but shows stat cards", () => {

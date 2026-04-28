@@ -308,6 +308,38 @@ export const SIKESRA_DASHBOARD_ROLE_CONTEXTS = {
   },
 };
 
+export const SIKESRA_DASHBOARD_QUICK_ACTIONS = [
+  {
+    key: "create_page",
+    label: "Halaman Baru",
+    routeTarget: "/pages/new",
+    icon: "file-plus",
+    requiredPermissions: ["emdash.pages.write"],
+  },
+  {
+    key: "create_post",
+    label: "Post Baru",
+    routeTarget: "/posts/new",
+    icon: "square-pen",
+    requiredPermissions: ["emdash.posts.write"],
+  },
+  {
+    key: "upload_media",
+    label: "Unggah Media",
+    routeTarget: "/media/upload",
+    icon: "image-up",
+    requiredPermissions: ["emdash.media.upload"],
+  },
+];
+
+export function createSikesraDashboardQuickActions(grantedPermissions = []) {
+  const permissionSet = new Set(grantedPermissions ?? []);
+
+  return SIKESRA_DASHBOARD_QUICK_ACTIONS.filter((action) =>
+    action.requiredPermissions.every((permissionCode) => permissionSet.has(permissionCode))
+  );
+}
+
 /**
  * Creates the full dashboard layout model for a given role context and permissions.
  *
@@ -330,6 +362,7 @@ export function createSikesraDashboardLayout(opts) {
   const showReligionDistribution =
     visibility.showReligionDistribution &&
     permissions.has("sikesra.dashboard.religion_aggregate.read");
+  const quickActions = createSikesraDashboardQuickActions(opts.grantedPermissions ?? []);
 
   return {
     roleContext: role,
@@ -340,6 +373,7 @@ export function createSikesraDashboardLayout(opts) {
       showReligionDistribution,
     },
     // Widget slot stubs — actual data is fetched by API layer, not this model.
+    quickActions,
     statCards: canReadDashboard ? createSikesraStatCards(opts.filter?.wilayah_kecamatan ?? null) : [],
     verificationDistribution: visibility.showVerificationDistribution
       ? createVerificationStatusWidget()

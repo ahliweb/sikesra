@@ -64,6 +64,16 @@ This keeps the grouped navigation contract writable and testable in `awcms-mini-
 - `region-model.mjs` - official/custom region and scope-constrained selection
 - `module-forms.mjs` - module form models for Rumah Ibadah, Lembaga Keagamaan, Lembaga Pendidikan Keagamaan, LKS, Guru Agama, Anak Yatim, Disabilitas, Lansia Terlantar
 
+## Dashboard Parity Notes
+
+Issue `#85` is implemented in this repository through dashboard model parity surfaces that stay permission-aware and privacy-safe.
+
+- `SIKESRA_DASHBOARD_QUICK_ACTIONS` now models the reviewed top-right quick actions: `Halaman Baru`, `Post Baru`, and `Unggah Media`.
+- `createSikesraDashboardQuickActions(...)` only returns actions when the corresponding EmDash content permissions are granted.
+- `createSikesraDashboardLayout(...)` now includes `quickActions` so host dashboard renderers can show or hide parity actions without mixing UI visibility with backend authorization.
+
+These parity actions remain model-layer contracts in `awcms-mini-sikesra`; the live upstream host implementation still follows the reviewed host-registration seam.
+
 ### Documents, verification, import, export, governance, and quality
 
 - `review-workflows.mjs` - document upload/list, verification, need_revision UX
