@@ -44,10 +44,11 @@ RUN apk add --no-cache wget
 RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
 # Copy compiled output and runtime-only source assets.
+# .mjs files must land at the paths the compiled JS expects relative to dist/api/.
 COPY --from=builder /app/dist/api ./dist/api
-COPY --from=builder /app/src/backend ./src/backend
-COPY --from=builder /app/src/db ./src/db
-COPY --from=builder /app/src/api/middleware/abac.policy.mjs ./src/api/middleware/abac.policy.mjs
+COPY --from=builder /app/src/backend ./dist/api/backend
+COPY --from=builder /app/src/db ./dist/api/db
+COPY --from=builder /app/src/api/middleware/abac.policy.mjs ./dist/api/api/middleware/abac.policy.mjs
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
