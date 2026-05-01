@@ -45,6 +45,7 @@ RUN addgroup -S sikesra && adduser -S sikesra -G sikesra
 
 # Copy compiled output and runtime-only source assets.
 # .mjs files must land at the paths the compiled JS expects relative to dist/api/.
+COPY --from=builder /app/package.json ./dist/package.json
 COPY --from=builder /app/dist/api ./dist/api
 COPY --from=builder /app/src/backend ./dist/api/backend
 COPY --from=builder /app/src/db ./dist/api/db
