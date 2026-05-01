@@ -8,11 +8,15 @@ export function getDb(): ReturnType<typeof postgres> {
 
   const env = getEnv();
   const url = process.env["DATABASE_INTERNAL_URL"] ?? env.DATABASE_URL;
+  const isInternalDockerUrl = Boolean(process.env["DATABASE_INTERNAL_URL"]);
   _sql = postgres(url, {
     max: 10,
     idle_timeout: 30,
     connect_timeout: 15,
-    ssl: env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+    ssl:
+      env.NODE_ENV === "production" && !isInternalDockerUrl
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
   return _sql;
 }
