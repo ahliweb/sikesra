@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { checkDbConnectivity } from "../config/database.js";
-import { SIKESRA_VERSION } from "../../version.mjs";
+import { SIKESRA_VERSION } from "../version.js";
 
 type Variables = { requestId: string };
 
