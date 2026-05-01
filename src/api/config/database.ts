@@ -33,7 +33,19 @@ export async function checkDbConnectivity(): Promise<"ok" | "error"> {
     const sql = getDb();
     await sql`SELECT 1`;
     return "ok";
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          msg: "Database connectivity failed",
+          error: {
+            name: error.name,
+            message: error.message,
+          },
+        }),
+      );
+    }
     return "error";
   }
 }
