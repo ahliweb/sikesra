@@ -98,7 +98,7 @@ curl -i https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status
   - `refused`: verify PostgreSQL is listening and ingress rules allow the current source path
   - `tls`: verify certificate, hostname, and `sslmode` alignment
 - if the repair command fails, capture the output and stop the release
-- if the target environment is production, keep the current shared setup-status compatibility seam in place until runtime initialization is proven stable
+- if the target environment is production, validate the current setup-status and runtime initialization behavior against the reviewed baseline before attempting a repair
 - if post-repair smoke tests fail, restore from the reviewed database backup or transactionally revert using the incident runbook rather than ad hoc SQL edits
 
 ## Security Notes

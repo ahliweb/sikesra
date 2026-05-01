@@ -25,8 +25,8 @@ It is based on:
 
 - AWCMS Mini SIKESRA remains structurally aligned with EmDash-first architecture.
 - The installed `emdash` package version is now `0.8.0`, which matches the current local EmDash core package version inspected in `/home/data/dev_react/emdash-awcms/`.
-- The current sync gap is no longer package-version drift at the dependency pin. The confirmed local EmDash divergence now lives in the tracked `pnpm` patch and the reviewed Mini compatibility seams it still carries.
-- The tracked patch currently covers the reviewed Mini-local setup/runtime seams, including setup-safe middleware routing, setup route database/config fallbacks, and the fail-fast runtime-init safeguard.
+- The current sync gap is no longer package-version drift at the dependency pin. The reviewed setup/runtime compatibility behavior is now reflected in the current EmDash reference baseline.
+- The Mini-local notes now focus on the remaining deployment-specific seams and operational guidance rather than an out-of-tree setup/runtime workaround.
 - Beyond that patch surface, the bigger gap remains operational and architectural maturity around runtime configuration, security controls, and plugin/admin integration conventions.
 
 ### Confirmed Target Deployment Shape

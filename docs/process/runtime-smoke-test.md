@@ -78,19 +78,6 @@ The deployed runtime health step reads `/_emdash/api/setup/status` from the live
 
 This avoids depending on workstation-level direct reachability to the private PostgreSQL origin during deployed-runtime verification.
 
-Local EmDash migration-compatibility verification remains a separate step:
-
-```bash
-pnpm db:migrate:emdash:verify
-```
-
-Run it only from an environment with reviewed database reachability. If an operator intentionally wants the combined live command to include that local database step, set:
-
-```bash
-VERIFY_LIVE_RUNTIME_INCLUDE_LOCAL_EMDASH_VERIFY=1 \
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
-```
-
 Focused automation path:
 
 ```bash
