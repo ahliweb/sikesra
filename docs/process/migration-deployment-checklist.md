@@ -21,7 +21,7 @@ Complete these checks before applying migrations or releasing a new build.
 - [ ] `pnpm build` passes
 - [ ] `pnpm healthcheck` passes against the target environment or an equivalent pre-production environment
 - [ ] If the reviewed target posture is known for the release, `pnpm healthcheck` is run with the non-secret expectation variables needed to fail fast on the wrong transport target
-- [ ] `pnpm verify:live-runtime -- <base-url>` is available as the combined deployed-runtime verification path for database posture and the admin/setup smoke seam when live deployment verification is in scope
+- [ ] `docs/process/runtime-smoke-test.md` is the canonical deployed-runtime verification path for database posture and the admin/setup smoke seam when live deployment verification is in scope
 - [ ] `DATABASE_URL` points to the intended PostgreSQL instance
 - [ ] `DATABASE_CONNECT_TIMEOUT_MS` is set to a reviewed fail-fast value for the target environment
 - [ ] `APP_URL`, `API_BASE_URL`, and `PUBLIC_API_BASE_URL` match the reviewed frontend and API origins
@@ -83,7 +83,7 @@ Perform these steps during the release window.
 8. Confirm no unexpected pending migrations remain
 9. Deploy the application build
 10. Run `pnpm healthcheck`
-11. Prefer `pnpm verify:live-runtime -- <base-url>` as the combined post-deploy deployed-runtime verification path when live deployment verification is in scope
+11. Prefer the canonical flow in `docs/process/runtime-smoke-test.md` as the combined post-deploy deployed-runtime verification path when live deployment verification is in scope
 
 Use expectation variables when the release has a reviewed target posture.
 
@@ -203,7 +203,7 @@ Use these focused checks when the release touches governance or security surface
 - [ ] The live PostgreSQL service still reports the intended SSL posture after the release
 - [ ] If credential rotation was triggered by live exposure or management-plane disclosure, the old credential no longer works and the new secret is stored only in reviewed deployment-managed locations
 - [ ] During direct-path remediation, `pnpm healthcheck` is re-run with the reviewed direct hostname and `sslmode` assertion variables
-- [ ] `pnpm verify:live-runtime -- <base-url>` or `pnpm healthcheck` is re-run after credential rotation or direct-posture remediation
+- [ ] The canonical flow in `docs/process/runtime-smoke-test.md` or `pnpm healthcheck` is re-run after credential rotation or direct-posture remediation
 
 ### Security Settings
 
@@ -244,13 +244,9 @@ Roll back or pause the release if any of these occur:
 pnpm typecheck
 pnpm test:unit
 pnpm build
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
-pnpm db:migrate:status
-pnpm db:migrate:emdash:status
-pnpm db:migrate:emdash:verify
-pnpm db:migrate
-pnpm db:migrate:status
-pnpm db:migrate:emdash:status
-pnpm db:migrate:emdash:verify
 pnpm healthcheck
 ```
+
+For the canonical deployed-runtime verification flow, see `docs/process/runtime-smoke-test.md`.
+
+For the reviewed EmDash compatibility checks, see `docs/process/emdash-ledger-repair-runbook.md` and `docs/process/runtime-smoke-test.md`.

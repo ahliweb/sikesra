@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { SIKESRA_VERSION } from "../../src/version.mjs";
+
 import {
   SIKESRA_ADMIN_PAGES,
   SIKESRA_ADMIN_PERMISSIONS,
@@ -17,7 +19,6 @@ import {
   SIKESRA_HOST_REGISTRATION,
   appendSikesraAdminPlugin,
   createSikesraAdminHostShellState,
-  createAstroConfigRegistrationPatch,
 } from "../../src/plugins/sikesra-admin/host-registration.mjs";
 import {
   SIKESRA_SHELL_AUTH_STATES,
@@ -98,7 +99,7 @@ test("SIKESRA native plugin factory resolves EmDash runtime-safe defaults", () =
   const plugin = createPlugin();
 
   assert.equal(plugin.id, "sikesra-admin");
-  assert.equal(plugin.version, "0.1.0");
+  assert.equal(plugin.version, SIKESRA_VERSION);
   assert.deepEqual(plugin.hooks, {});
   assert.deepEqual(plugin.routes, {});
   assert.equal(plugin.admin.entry, "/src/plugins/sikesra-admin/admin.tsx");
@@ -315,13 +316,21 @@ test("SIKESRA host registration appends the plugin once", () => {
 });
 
 test("SIKESRA host registration documents the EmDash integration seam", () => {
-  const patch = createAstroConfigRegistrationPatch();
-
-  assert.equal(SIKESRA_HOST_REGISTRATION.upstreamConfigFile, "astro.config.mjs");
-  assert.equal(SIKESRA_HOST_REGISTRATION.emdashIntegrationOption, "plugins");
-  assert.match(patch, /sikesraAdminPlugin/);
-  assert.match(patch, /plugins: \[awcmsUsersAdminPlugin\(\), sikesraAdminPlugin\(\)\]/);
-  assert.match(patch, /createSikesraAdminHostShellState/);
+  assert.deepEqual(SIKESRA_HOST_REGISTRATION, {
+    plugin: {
+      id: "sikesra-admin",
+      importPath: "./src/plugins/sikesra-admin/index.mjs",
+      importName: "sikesraAdminPlugin",
+    },
+    astro: {
+      upstreamConfigFile: "astro.config.mjs",
+      emdashIntegrationOption: "plugins",
+    },
+    guidance: {
+      integration: "plugins: [awcmsUsersAdminPlugin(), sikesraAdminPlugin()]",
+      shellState: "createSikesraAdminHostShellState({ currentPath, grantedPermissions, plugin });",
+    },
+  });
 });
 
 test("SIKESRA host shell state derives grouped navigation from the plugin descriptor", () => {

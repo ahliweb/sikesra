@@ -46,6 +46,7 @@ SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudfla
 - `process/postgresql-vps-hardening.md` - VPS PostgreSQL access posture
 - `process/secret-hygiene-audit.md` - audit checklist and cleanup rules for scripts, config examples, and operator secret handling
 - `process/runtime-smoke-test.md` - `pnpm healthcheck` with optional posture assertion env vars
+- `process/emdash-drift-gate.md` - repository-side gate for the reviewed EmDash plugin and smoke seams
 - `process/emdash-ledger-repair-runbook.md` - operator-only inspection and repair flow for the EmDash `_emdash_migrations` ledger
 - `process/emdash-alignment-and-security-plan-2026.md` - EmDash alignment and security recommendations backlog source
 

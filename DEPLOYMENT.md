@@ -92,8 +92,9 @@ Do not use local Coolify as a sync source.
 
 ```bash
 node scripts/verify-runtime-readiness.mjs
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
 ```
+
+See `docs/process/runtime-smoke-test.md` for the canonical live EmDash verification commands.
 
 - Confirm:
   - public host responds through Cloudflare

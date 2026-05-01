@@ -136,8 +136,9 @@ Run the reviewed validation path after any secret change:
 ```bash
 pnpm check:secret-hygiene
 pnpm healthcheck
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
 ```
+
+See `docs/process/runtime-smoke-test.md` for the canonical live EmDash verification commands.
 
 Then confirm:
 

@@ -147,6 +147,8 @@ For live deployment smoke checks:
 pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
 ```
 
+That wrapper delegates to the canonical runtime smoke flow in `docs/process/runtime-smoke-test.md`.
+
 Confirm:
 
 - the public hostname still serves through Cloudflare

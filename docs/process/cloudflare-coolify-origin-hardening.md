@@ -72,7 +72,7 @@ After deployment:
 - Load the public hostname and confirm the app responds through the reviewed Cloudflare-served frontend path.
 - Confirm admin routes load through the same public hostname.
 - Confirm auth logging and lockout behavior record the expected client IP source using `CF-Connecting-IP`.
-- Run `pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com` to confirm the combined database posture, EmDash compatibility, and admin/setup smoke seam.
+- Use `docs/process/runtime-smoke-test.md` for the canonical combined database posture, EmDash compatibility, and admin/setup smoke seam verification.
 
 ## Cross-References
 

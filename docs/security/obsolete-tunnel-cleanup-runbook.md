@@ -74,8 +74,9 @@ If using API-based deletion, keep output redacted and do not print account token
 ```bash
 pnpm check:secret-hygiene
 pnpm healthcheck
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
 ```
+
+See `docs/process/runtime-smoke-test.md` for the canonical live EmDash verification commands.
 
 ### 5. Record redacted operator evidence
 

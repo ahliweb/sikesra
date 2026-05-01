@@ -19,6 +19,7 @@ Each plugin permission declaration should include:
 ```js
 import { collectRegisteredPluginPermissions } from "../../src/plugins/permission-registration.mjs";
 import { definePlugin } from "emdash";
+import { SIKESRA_VERSION } from "../../src/version.mjs";
 
 const SAMPLE_PLUGIN_PERMISSIONS = collectRegisteredPluginPermissions([
   {
@@ -46,7 +47,7 @@ const SAMPLE_PLUGIN_PERMISSIONS = collectRegisteredPluginPermissions([
 export function createPlugin() {
   return definePlugin({
     id: "sample-plugin",
-    version: "0.1.0",
+    version: SIKESRA_VERSION,
     permissions: SAMPLE_PLUGIN_PERMISSIONS,
     routes: {},
   });

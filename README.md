@@ -23,8 +23,9 @@ docker build -t sikesra-local-test .
 
 ```bash
 node scripts/verify-runtime-readiness.mjs
-pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com
 ```
+
+See `docs/process/runtime-smoke-test.md` for the canonical live EmDash verification commands.
 
 ## Core Docs
 

@@ -1,3 +1,5 @@
+import { SIKESRA_VERSION } from "../../version.mjs";
+
 export const SIKESRA_ADMIN_PLUGIN_ID = "sikesra-admin";
 
 export const SIKESRA_ADMIN_SHELL_SECTION_KEYS = Object.freeze({
@@ -372,7 +374,7 @@ export function createPlugin(options = {}) {
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
-    version: "0.1.0",
+    version: SIKESRA_VERSION,
     capabilities: [],
     allowedHosts: [],
     storage: {},
@@ -398,7 +400,7 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
-    version: "0.1.0",
+    version: SIKESRA_VERSION,
     format: "native",
     entrypoint,
     adminEntry,

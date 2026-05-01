@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { checkDbConnectivity } from "../config/database.js";
+import { SIKESRA_VERSION } from "../../version.mjs";
 
 type Variables = { requestId: string };
 
@@ -15,7 +16,7 @@ health.get("/", async (c) => {
       success: true,
       data: {
         status,
-        version: process.env["npm_package_version"] ?? "0.1.0",
+        version: SIKESRA_VERSION,
         timestamp: new Date().toISOString(),
         services: {
           database: db,

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the baseline smoke-test path for the current scaffold.
+This document is the canonical baseline smoke-test path for the current scaffold.
 
 ## Validation Path
 

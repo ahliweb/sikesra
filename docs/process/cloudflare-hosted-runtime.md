@@ -93,9 +93,7 @@ Run these in order after a deployment or after Cloudflare-side automation change
 - Request `https://sikesrakobar.ahlikoding.com/_emdash/`.
 - Confirm the alias redirects to `/_emdash/admin` on the same host.
 - Confirm the EmDash admin surface loads there without introducing a second admin shell or alternate API surface.
-- Prefer `pnpm verify:live-runtime -- https://sikesrakobar.ahlikoding.com` when the deploy window needs the reviewed combined verification path for deployed database posture and the admin/setup smoke seam.
-- Prefer `pnpm smoke:cloudflare-admin` as the focused regression check for the reviewed admin-entry alias and setup-shell path.
-- Prefer `pnpm smoke:deployed-runtime-health -- https://sikesrakobar.ahlikoding.com` when operators need the deployed Hono runtime to report its non-secret database posture without depending on workstation-level direct reachability to the private PostgreSQL origin.
+- Use `docs/process/runtime-smoke-test.md` for the canonical live verification flow and the focused smoke commands that cover this alias and setup shell.
 
 ### 3. Turnstile-Protected Flows
 
@@ -124,6 +122,8 @@ Run these in order after a deployment or after Cloudflare-side automation change
 ## Focused Admin Smoke Script
 
 Use `pnpm smoke:cloudflare-admin` after reviewed Cloudflare-side changes that could affect the admin entry alias or setup shell.
+
+For the canonical command sequence and the combined live verification wrapper, see `docs/process/runtime-smoke-test.md`.
 
 The script checks:
 
