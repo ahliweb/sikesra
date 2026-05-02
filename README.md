@@ -10,6 +10,7 @@ SIKESRA runs with Cloudflare as the browser-facing layer and a Hono API plus Pos
 pnpm docker:local:up
 pnpm docker:local:migrate
 pnpm check
+pnpm build
 docker build -t sikesra-local-test .
 ```
 

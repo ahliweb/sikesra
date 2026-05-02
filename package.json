@@ -21,6 +21,7 @@
     "db:migrate:probe": "tsx scripts/db-migrate.ts probe",
     "db:migrate:status": "tsx scripts/db-migrate.ts status",
     "db:seed": "tsx scripts/db-seed.ts",
+    "build": "pnpm api:build",
     "smoke:cloudflare-admin": "node scripts/smoke-cloudflare-admin.mjs",
     "smoke:deployed-runtime-health": "node scripts/smoke-deployed-runtime-health.mjs",
     "verify:live-runtime": "node scripts/verify-live-runtime.mjs",
