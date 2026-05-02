@@ -7,11 +7,11 @@ import { DEFAULT_EDGE_HEALTH_PATH } from "../../scripts/smoke-deployed-runtime-h
 import { SIKESRA_HOST_REGISTRATION } from "../../src/plugins/sikesra-admin/host-registration.mjs";
 
 test("EmDash drift gate keeps the reviewed plugin and smoke seams aligned", () => {
-  assert.equal(SIKESRA_HOST_REGISTRATION.plugin.id, "sikesra-admin");
+  assert.equal(SIKESRA_HOST_REGISTRATION.descriptor.id, "sikesra-admin");
   assert.equal(SIKESRA_HOST_REGISTRATION.astro.upstreamConfigFile, "astro.config.mjs");
   assert.equal(SIKESRA_HOST_REGISTRATION.astro.emdashIntegrationOption, "plugins");
   assert.equal(SIKESRA_HOST_REGISTRATION.guidance.integration, "plugins: [awcmsUsersAdminPlugin(), sikesraAdminPlugin()]");
-  assert.equal(SIKESRA_HOST_REGISTRATION.guidance.shellState, "createSikesraAdminHostShellState({ currentPath, grantedPermissions, plugin });");
+  assert.equal(SIKESRA_HOST_REGISTRATION.guidance.shellState, "createSikesraAdminHostShellState({ currentPath, grantedPermissions, descriptor });");
 
   assert.equal(DEFAULT_ADMIN_ENTRY_ALIAS_PATH, "/_emdash/");
   assert.equal(DEFAULT_ADMIN_ROUTE_PATH, "/_emdash/admin");

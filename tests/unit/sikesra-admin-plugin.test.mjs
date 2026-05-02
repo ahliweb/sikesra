@@ -6,9 +6,8 @@ import { SIKESRA_VERSION } from "../../src/version.mjs";
 import {
   SIKESRA_ADMIN_PAGES,
   SIKESRA_ADMIN_PERMISSIONS,
-  SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
   SIKESRA_ADMIN_SHELL_SECTIONS,
-  createPlugin,
+  createSikesraAdminPluginDefinition,
   createSikesraAdminPluginDescriptor,
   filterSikesraAdminPagesByPermissions,
   flattenSikesraAdminPages,
@@ -83,7 +82,7 @@ import {
   SIKESRA_DETAIL_SENSITIVE_FIELD_KEYS,
 } from "../../src/plugins/sikesra-admin/detail-page.mjs";
 
-test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
+test("SIKESRA admin descriptor exposes the canonical host shape", () => {
   const plugin = sikesraAdminPlugin();
 
   assert.equal(plugin.id, "sikesra-admin");
@@ -92,15 +91,14 @@ test("SIKESRA admin plugin exposes an EmDash-compatible descriptor", () => {
   assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/admin.tsx");
   assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
-  assert.deepEqual(plugin.routePlaceholders, SIKESRA_ADMIN_ROUTE_PLACEHOLDERS);
 });
 
-test("SIKESRA native plugin factory resolves EmDash runtime-safe defaults", () => {
-  const plugin = createPlugin();
+test("SIKESRA plugin definition keeps the runtime contract minimal", () => {
+  const plugin = createSikesraAdminPluginDefinition();
 
   assert.equal(plugin.id, "sikesra-admin");
   assert.equal(plugin.version, SIKESRA_VERSION);
-  assert.deepEqual(plugin.hooks, {});
+  assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.routes, {});
   assert.equal(plugin.admin.entry, "/src/plugins/sikesra-admin/admin.tsx");
   assert.equal(Array.isArray(plugin.admin.pages), true);
@@ -117,8 +115,6 @@ test("SIKESRA plugin descriptor can be adapted for host-side bridge paths", () =
   assert.equal(descriptor.entrypoint, "../awcms-mini-sikesra/src/plugins/sikesra-admin/index.mjs");
   assert.equal(descriptor.adminEntry, "../awcms-mini-sikesra/src/plugins/sikesra-admin/admin.tsx");
   assert.deepEqual(descriptor.adminPages, [{ path: "/about-sikesra", label: "About SIKESRA", icon: "info" }]);
-  assert.equal(descriptor.options.adminEntry, "../awcms-mini-sikesra/src/plugins/sikesra-admin/admin.tsx");
-  assert.deepEqual(descriptor.options.adminPages, [{ path: "/about-sikesra", label: "About SIKESRA", icon: "info" }]);
 });
 
 test("SIKESRA admin pages cover the MVP menu labels", () => {
@@ -177,17 +173,19 @@ test("SIKESRA permissions use one permission code per top-level admin page", () 
   }
 });
 
-test("SIKESRA admin route placeholders mirror the flattened menu", () => {
-  const pagePaths = flattenSikesraAdminPages().map((page) => page.path).sort();
-  const routePaths = SIKESRA_ADMIN_ROUTE_PLACEHOLDERS.map((route) => route.path).sort();
+test("SIKESRA admin descriptor stays on the reviewed host contract", () => {
+  const descriptor = createSikesraAdminPluginDescriptor();
 
-  assert.deepEqual(routePaths, pagePaths);
-
-  for (const route of SIKESRA_ADMIN_ROUTE_PLACEHOLDERS) {
-    assert.equal(route.status, "placeholder");
-    assert.equal(route.implementationIssue, "ahliweb/sikesra#13");
-    assert.equal(typeof route.permissionCode, "string");
-  }
+  assert.deepEqual(Object.keys(descriptor).sort(), [
+    "adminEntry",
+    "adminPages",
+    "entrypoint",
+    "format",
+    "id",
+    "permissions",
+    "version",
+  ]);
+  assert.equal("routePlaceholders" in descriptor, false);
 });
 
 test("SIKESRA admin menu can be filtered by permission metadata", () => {
@@ -317,7 +315,7 @@ test("SIKESRA host registration appends the plugin once", () => {
 
 test("SIKESRA host registration documents the EmDash integration seam", () => {
   assert.deepEqual(SIKESRA_HOST_REGISTRATION, {
-    plugin: {
+    descriptor: {
       id: "sikesra-admin",
       importPath: "./src/plugins/sikesra-admin/index.mjs",
       importName: "sikesraAdminPlugin",
@@ -328,7 +326,7 @@ test("SIKESRA host registration documents the EmDash integration seam", () => {
     },
     guidance: {
       integration: "plugins: [awcmsUsersAdminPlugin(), sikesraAdminPlugin()]",
-      shellState: "createSikesraAdminHostShellState({ currentPath, grantedPermissions, plugin });",
+      shellState: "createSikesraAdminHostShellState({ currentPath, grantedPermissions, descriptor });",
     },
   });
 });
@@ -348,7 +346,7 @@ test("SIKESRA host shell state derives grouped navigation from the plugin descri
 
 test("SIKESRA host shell state rejects non-SIKESRA plugin descriptors", () => {
   assert.throws(
-    () => createSikesraAdminHostShellState({ plugin: { id: "awcms-users-admin", adminPages: [] } }),
+    () => createSikesraAdminHostShellState({ descriptor: { id: "awcms-users-admin", adminPages: [] } }),
     /valid SIKESRA admin plugin descriptor/
   );
 });

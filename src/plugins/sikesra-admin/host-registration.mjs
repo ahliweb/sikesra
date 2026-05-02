@@ -5,7 +5,7 @@ import {
 } from "./index.mjs";
 
 export const SIKESRA_HOST_REGISTRATION = {
-  plugin: {
+  descriptor: {
     id: SIKESRA_ADMIN_PLUGIN_ID,
     importPath: "./src/plugins/sikesra-admin/index.mjs",
     importName: "sikesraAdminPlugin",
@@ -16,7 +16,7 @@ export const SIKESRA_HOST_REGISTRATION = {
   },
   guidance: {
     integration: "plugins: [awcmsUsersAdminPlugin(), sikesraAdminPlugin()]",
-    shellState: "createSikesraAdminHostShellState({ currentPath, grantedPermissions, plugin });",
+    shellState: "createSikesraAdminHostShellState({ currentPath, grantedPermissions, descriptor });",
   },
 };
 
@@ -30,19 +30,19 @@ export function appendSikesraAdminPlugin(existingPlugins = []) {
 }
 
 export function createSikesraAdminHostShellState(input = {}) {
-  const plugin = input.plugin ?? sikesraAdminPlugin();
+  const descriptor = input.descriptor ?? sikesraAdminPlugin();
 
-  if (!plugin || plugin.id !== SIKESRA_ADMIN_PLUGIN_ID) {
+  if (!descriptor || descriptor.id !== SIKESRA_ADMIN_PLUGIN_ID) {
     throw new TypeError("A valid SIKESRA admin plugin descriptor is required.");
   }
 
   return {
-    pluginId: plugin.id,
+    pluginId: descriptor.id,
     currentPath: input.currentPath ?? "/",
     navigation: createSikesraAdminShellNavigation({
       currentPath: input.currentPath,
       grantedPermissions: input.grantedPermissions,
-      pages: plugin.adminPages,
+      pages: descriptor.adminPages,
     }),
   };
 }

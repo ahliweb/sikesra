@@ -368,17 +368,13 @@ export function sikesraAdminPlugin() {
   return createSikesraAdminPluginDescriptor();
 }
 
-export function createPlugin(options = {}) {
+export function createSikesraAdminPluginDefinition(options = {}) {
   const adminEntry = options.adminEntry ?? "/src/plugins/sikesra-admin/admin.tsx";
   const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
     version: SIKESRA_VERSION,
-    capabilities: [],
-    allowedHosts: [],
-    storage: {},
-    hooks: {},
     permissions: SIKESRA_ADMIN_PERMISSIONS,
     routes: {},
     admin: {
@@ -392,11 +388,6 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
   const entrypoint = options.entrypoint ?? "/src/plugins/sikesra-admin/index.mjs";
   const adminEntry = options.adminEntry ?? "/src/plugins/sikesra-admin/admin.tsx";
   const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
-  const runtimeOptions = {
-    adminEntry,
-    adminPages,
-    ...(options.runtimeOptions ?? {}),
-  };
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
@@ -406,10 +397,10 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
     adminEntry,
     permissions: SIKESRA_ADMIN_PERMISSIONS,
     adminPages,
-    routePlaceholders: SIKESRA_ADMIN_ROUTE_PLACEHOLDERS,
-    options: runtimeOptions,
   };
 }
+
+export const createPlugin = createSikesraAdminPluginDefinition;
 
 export function flattenSikesraAdminPages(pages = SIKESRA_ADMIN_PAGES) {
   return flattenPages(pages);
