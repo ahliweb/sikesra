@@ -35,7 +35,7 @@ For the `#86` grouped sidebar work, the same file now also exports `createSikesr
 
 The source of truth for the live build remains the reviewed Cloudflare-and-Hono deployment flow. Do not edit the upstream `ahliweb/awcms-mini` worktree in place from this repository; use the host registration seam in a reviewed build/integration step.
 
-The descriptor follows the upstream AWCMS Mini plugin pattern of exposing `id`, `version`, `format`, `entrypoint`, `adminEntry`, `permissions`, and `adminPages`, without the older placeholder-only route shim.
+The descriptor follows the upstream AWCMS Mini plugin pattern of exposing `id`, `version`, `entrypoint`, `options`, `adminEntry`, `adminPages`, and `adminWidgets`, without the older placeholder-only route shim.
 
 ## Security Rules
 

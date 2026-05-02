@@ -38,7 +38,7 @@ The current implementation surface is framework-neutral model code under `src/pl
 
 ### Core plugin and shared metadata
 
-- `index.mjs` - plugin descriptor, permissions, menu/page metadata
+- `index.mjs` - plugin descriptor plus menu/page metadata
 - `host-registration.mjs` - EmDash host registration seam and grouped host shell state helper
 - `shell-diagnostics.mjs` - pre-auth/post-auth setup and manifest diagnostics helper
 - `status-badges.mjs` - badge definitions with accessible Indonesian labels

@@ -379,11 +379,11 @@ export function createSikesraAdminPluginDefinition(options = {}) {
     allowedHosts: [],
     storage: {},
     hooks: {},
-    permissions: SIKESRA_ADMIN_PERMISSIONS,
     routes: {},
     admin: {
       entry: adminEntry,
       pages: adminPages,
+      widgets: [],
     },
   };
 }
@@ -392,15 +392,17 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
   const entrypoint = options.entrypoint ?? "/src/plugins/sikesra-admin/index.mjs";
   const adminEntry = options.adminEntry ?? "/src/plugins/sikesra-admin/admin.tsx";
   const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
+  const adminWidgets = options.adminWidgets ?? [];
+  const pluginOptions = options.options ?? {};
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
     version: SIKESRA_VERSION,
-    format: "native",
     entrypoint,
+    options: pluginOptions,
     adminEntry,
-    permissions: SIKESRA_ADMIN_PERMISSIONS,
     adminPages,
+    adminWidgets,
   };
 }
 

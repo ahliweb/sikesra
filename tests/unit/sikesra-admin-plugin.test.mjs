@@ -86,11 +86,11 @@ test("SIKESRA admin descriptor exposes the canonical host shape", () => {
   const plugin = sikesraAdminPlugin();
 
   assert.equal(plugin.id, "sikesra-admin");
-  assert.equal(plugin.format, "native");
   assert.equal(plugin.entrypoint, "/src/plugins/sikesra-admin/index.mjs");
   assert.equal(plugin.adminEntry, "/src/plugins/sikesra-admin/admin.tsx");
-  assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
+  assert.deepEqual(plugin.adminWidgets, []);
+  assert.deepEqual(plugin.options, {});
 });
 
 test("SIKESRA plugin definition keeps the runtime contract minimal", () => {
@@ -102,9 +102,9 @@ test("SIKESRA plugin definition keeps the runtime contract minimal", () => {
   assert.deepEqual(plugin.allowedHosts, []);
   assert.deepEqual(plugin.storage, {});
   assert.deepEqual(plugin.hooks, {});
-  assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.routes, {});
   assert.equal(plugin.admin.entry, "/src/plugins/sikesra-admin/admin.tsx");
+  assert.deepEqual(plugin.admin.widgets, []);
   assert.equal(Array.isArray(plugin.admin.pages), true);
   assert.equal(plugin.admin.pages.some((page) => page.path === "/about-sikesra"), true);
 });
@@ -183,13 +183,12 @@ test("SIKESRA admin descriptor stays on the reviewed host contract", () => {
   assert.deepEqual(Object.keys(descriptor).sort(), [
     "adminEntry",
     "adminPages",
+    "adminWidgets",
     "entrypoint",
-    "format",
     "id",
-    "permissions",
+    "options",
     "version",
   ]);
-  assert.equal("routePlaceholders" in descriptor, false);
 });
 
 test("SIKESRA admin menu can be filtered by permission metadata", () => {

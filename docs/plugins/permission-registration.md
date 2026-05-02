@@ -1,6 +1,6 @@
 # Plugin Permission Registration
 
-Plugins should declare permissions through the plugin definition and descriptor `permissions` arrays so plugin-defined capabilities can be normalized into the same catalog shape as core permissions.
+Plugins should keep permission catalogs separate from the native EmDash plugin descriptor/definition shape. In this repository, permissions are managed as overlay metadata and reused by host navigation, route guards, and UI models.
 
 ## Contract
 
@@ -48,13 +48,12 @@ export function createPlugin() {
   return definePlugin({
     id: "sample-plugin",
     version: SIKESRA_VERSION,
-    permissions: SAMPLE_PLUGIN_PERMISSIONS,
     routes: {},
   });
 }
 ```
 
-The same normalized permission array should be reused by the plugin definition and the plugin descriptor so route guards and host registration stay aligned.
+The same normalized permission array should be reused by host registration, route guards, and permission-aware UI models so the overlay stays aligned.
 
 ## Normalized Shape
 
