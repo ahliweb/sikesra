@@ -98,6 +98,10 @@ test("SIKESRA plugin definition keeps the runtime contract minimal", () => {
 
   assert.equal(plugin.id, "sikesra-admin");
   assert.equal(plugin.version, SIKESRA_VERSION);
+  assert.deepEqual(plugin.capabilities, []);
+  assert.deepEqual(plugin.allowedHosts, []);
+  assert.deepEqual(plugin.storage, {});
+  assert.deepEqual(plugin.hooks, {});
   assert.deepEqual(plugin.permissions, SIKESRA_ADMIN_PERMISSIONS);
   assert.deepEqual(plugin.routes, {});
   assert.equal(plugin.admin.entry, "/src/plugins/sikesra-admin/admin.tsx");

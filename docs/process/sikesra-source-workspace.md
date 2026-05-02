@@ -24,7 +24,7 @@ The open SIKESRA UI/UX issues require writable admin/plugin files. A full upstre
 
 `src/plugins/sikesra-admin/index.mjs` exports:
 
-- `createSikesraAdminPluginDefinition()` as the runtime plugin definition helper
+- `createSikesraAdminPluginDefinition()` as the runtime plugin definition helper with the native EmDash fields (`capabilities`, `allowedHosts`, `storage`, `hooks`, `routes`, `admin`)
 - `sikesraAdminPlugin()` as the EmDash-compatible plugin descriptor
 - `SIKESRA_ADMIN_PERMISSIONS` as the first SIKESRA permission catalog seed
 - `SIKESRA_ADMIN_PAGES` as the admin navigation seed for issue-driven UI work

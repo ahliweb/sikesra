@@ -375,6 +375,10 @@ export function createSikesraAdminPluginDefinition(options = {}) {
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
     version: SIKESRA_VERSION,
+    capabilities: [],
+    allowedHosts: [],
+    storage: {},
+    hooks: {},
     permissions: SIKESRA_ADMIN_PERMISSIONS,
     routes: {},
     admin: {
