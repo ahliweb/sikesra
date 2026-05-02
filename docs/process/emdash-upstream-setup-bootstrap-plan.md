@@ -6,6 +6,8 @@ This is the local SIKESRA reference for upstream issue `ahliweb/awcms-mini#282` 
 
 The plan stays in this repository so SIKESRA can keep independent smoke scripts, runbooks, and docs while treating the upstream EmDash repo as the implementation source of truth.
 
+Upstream issue `ahliweb/awcms-mini#282` is now closed.
+
 ## Current Reading
 
 - `/_emdash/api/setup/status` should respond `200`
@@ -37,6 +39,6 @@ The plan stays in this repository so SIKESRA can keep independent smoke scripts,
 
 ## Exit Criteria
 
-- Upstream issue `#282` has code and tests merged.
+- Upstream issue `#282` is closed with code and tests merged.
 - SIKESRA smoke/runbook docs continue to treat `needsSetup: true` as expected first-run bootstrap state.
 - The local drift-gate and smoke scripts still match the reviewed route seams.
