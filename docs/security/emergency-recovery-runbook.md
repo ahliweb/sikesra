@@ -173,7 +173,7 @@ The reviewed Coolify-managed VPS uses key-only root SSH recovery. Do not store o
 Database-path recovery:
 
 - If the application can no longer reach PostgreSQL, inspect the Coolify-managed Hono service and PostgreSQL resource first.
-- Do not reintroduce a Cloudflare Tunnel or Hyperdrive path as an emergency workaround.
+- Do not reintroduce a Cloudflare Tunnel path as an emergency workaround.
 - After restoring the reviewed runtime path, verify health with:
 
   ```bash

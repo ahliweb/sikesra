@@ -18,7 +18,7 @@ Treat every other repository as read-only reference unless the user explicitly s
 - Use `/_emdash/` as the reviewed admin entry alias on the same host.
 - Use R2 bucket `sikesra` through reviewed backend-managed access.
 - Use PostgreSQL database `sikesrakobar` on the Coolify-managed VPS.
-- Use direct reviewed PostgreSQL connectivity from the Hono backend over the internal Docker network; do not use Hyperdrive or a Cloudflare Tunnel database path.
+- Use direct reviewed PostgreSQL connectivity from the Hono backend over the internal Docker network; do not use a Cloudflare Tunnel database path.
 
 ## Security Rules
 

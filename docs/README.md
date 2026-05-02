@@ -34,8 +34,7 @@ SIKESRA is an EmDash-first single-tenant deployment of AWCMS Mini where Cloudfla
 ## Upstream Process Docs (adapted for SIKESRA)
 
 - `process/ai-workflow-planning-templates.md` - reusable AI workflow templates for docs, planning, implementation, and review tasks
-- `process/cloudflare-hosted-runtime.md` - Cloudflare edge, frontend, and Hono runtime expectations for the active no-Hyperdrive architecture
-- `architecture/no-hyperdrive-adr.md` - canonical decision record for removing Hyperdrive from the active architecture
+- `process/cloudflare-hosted-runtime.md` - Cloudflare edge, frontend, and Hono runtime expectations for the current direct PostgreSQL architecture
 - `process/cloudflare-pages-vs-workers-decision.md` - historical architecture comparison context
 - `process/cloudflare-coolify-origin-hardening.md` - Cloudflare edge and Coolify API/database trust boundary
 - `process/coolify-mcp-secret-handling.md` - supported local-only secret handling pattern for Coolify MCP access

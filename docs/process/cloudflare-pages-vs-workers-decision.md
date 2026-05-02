@@ -22,7 +22,7 @@ For the current SIKESRA baseline:
 ## Why This Is The Decision
 
 - it keeps PostgreSQL access behind one reviewed backend boundary
-- it avoids reintroducing Hyperdrive, Tunnel, or direct edge-to-database transport complexity
+- it avoids reintroducing Tunnel or direct edge-to-database transport complexity
 - it lets Pages, Workers, and Edge Functions stay thin and interactive without duplicating core backend logic
 - it preserves the EmDash-first single-host admin experience
 

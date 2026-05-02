@@ -26,7 +26,6 @@ Hono Backend API  (Coolify-managed VPS, Node.js service)
 - **EmDash-first**: EmDash remains the architectural inspiration, CMS shell, and admin plugin surface.
 - **Hono as the single backend API**: All database access, authentication, file operations, and outbound notifications go through the Hono backend.
 - **PostgreSQL through internal network only**: The database is never exposed directly to Cloudflare Pages, the public internet, or frontend clients.
-- **No Cloudflare Hyperdrive**: See `docs/architecture/no-hyperdrive-adr.md`.
 - **Cloudflare Pages for the frontend**: The Pages deployment calls the Hono API via `PUBLIC_API_BASE_URL`. It holds no database credentials, no R2 keys, and no provider API keys.
 - **Cloudflare R2 for storage**: Files are stored in R2. Metadata is stored in PostgreSQL. Protected files require API-mediated or signed access.
 - **Coolify for deployment management**: Coolify manages the Hono API service, the PostgreSQL Docker service, environment variables, secrets, and deployment lifecycle on the VPS.
@@ -142,7 +141,6 @@ Provided by the `awcms-users-admin` governance extension:
 
 ## Cross-References
 
-- `docs/architecture/no-hyperdrive-adr.md`
 - `docs/architecture/database-access.md`
 - `docs/architecture/database-migrations.md`
 - `docs/architecture/constraints.md`

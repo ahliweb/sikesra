@@ -75,7 +75,7 @@ Use these as the default current-state assumptions when adapting any template in
 - Keep Turnstile, edge auth, and R2 guidance consistent with the current Cloudflare-and-Hono runtime docs.
 - Keep PostgreSQL recovery, transport, and access-control assumptions aligned with the Coolify-managed VPS baseline.
 - Treat Coolify API responses as management-plane data: redact passwords, connection strings, tokens, private keys, and URLs before copying findings into docs or issue comments.
-- Keep no-Hyperdrive guidance aligned with the Hono-to-PostgreSQL runtime baseline.
+- Keep the direct Hono-to-PostgreSQL runtime baseline aligned across planning and documentation.
 - Keep VPS recovery guidance aligned with the current key-only SSH posture.
 - Keep passwords and connection strings out of copied build arguments or generic shell snippets when Coolify-managed resources can store them as locked runtime secrets instead.
 - Prefer host-only cookies unless a reviewed operator workflow requires cross-host sharing.
@@ -96,7 +96,7 @@ Requirements:
 - Confirm the current implementation state before editing docs.
 - Do not overstate rollout completeness.
 - Keep the docs aligned with EmDash-first architecture, the Cloudflare-and-Hono baseline, and PostgreSQL on a Coolify-managed VPS.
-- Reflect the current single-host, Turnstile, R2, edge-auth, and no-Hyperdrive baselines when they are relevant to the task.
+- Reflect the current single-host, Turnstile, R2, edge-auth, and direct PostgreSQL baselines when they are relevant to the task.
 - Reflect the current deployment-managed secret guidance when the task touches credentials or operator configuration.
 - Update index or cross-reference docs when adding a new maintained document.
 - Update repository-local skills when core documentation guidance materially changes.

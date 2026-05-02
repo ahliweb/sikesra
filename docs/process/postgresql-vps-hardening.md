@@ -114,7 +114,7 @@ If the app reaches PostgreSQL through a private subnet instead of a single host,
 - Prefer VPS firewall rules or provider network controls in addition to PostgreSQL configuration.
 - Review both the app host egress path and the database host ingress policy during deployment changes.
 - Keep the reviewed runtime path on the Coolify-managed VPS or private network rather than introducing Cloudflare-to-database transport layers.
-- Do not use Hyperdrive or Cloudflare Tunnel as the database path for the active architecture.
+- Do not use Cloudflare Tunnel as the database path for the active architecture.
 
 ## Coolify Operator Sequence
 

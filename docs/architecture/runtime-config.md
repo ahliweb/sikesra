@@ -155,10 +155,6 @@ These are safe to expose to the browser. Never include database credentials, R2 
 | `PUBLIC_APP_ENV`          | `production` or `staging`                                  |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Public Turnstile site key for rendering widgets          |
 
-## No-Hyperdrive Note
-
-Cloudflare Hyperdrive is not part of the active SIKESRA repository architecture. Use `DATABASE_URL` and `DATABASE_MIGRATION_URL` for reviewed PostgreSQL connectivity instead. See `docs/architecture/no-hyperdrive-adr.md`.
-
 ## Rules
 
 - Keep runtime connection settings isolated in `src/config/` (or `apps/api/src/config/` once the Hono scaffold lands).
@@ -178,7 +174,6 @@ Cloudflare Hyperdrive is not part of the active SIKESRA repository architecture.
 ## Cross-References
 
 - `docs/architecture/overview.md`
-- `docs/architecture/no-hyperdrive-adr.md`
 - `docs/architecture/database-access.md`
 - `docs/process/cloudflare-coolify-origin-hardening.md`
 - `docs/process/migration-deployment-checklist.md`

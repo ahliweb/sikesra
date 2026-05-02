@@ -22,8 +22,6 @@ postgresql://app_user:<password>@postgres:5432/sikesrakobar
 
 `postgres` is the Docker service hostname assigned by Coolify. No public PostgreSQL exposure is used in the target architecture.
 
-See `docs/architecture/no-hyperdrive-adr.md` for why Cloudflare Hyperdrive is not used.
-
 ## Access Rules
 
 - Only the Hono backend API may access PostgreSQL at runtime.
@@ -53,10 +51,6 @@ Use this pattern for migration scripts only. Runtime application code should use
 | Runtime role      | least-privilege application user    |
 | Internal hostname | `postgres` (Docker internal network)|
 | Migration table   | `public.sikesra_migrations`         |
-
-## Legacy Note: Hyperdrive
-
-Previous versions of this document listed Cloudflare Hyperdrive as the production database transport. Hyperdrive is no longer used. See `docs/architecture/no-hyperdrive-adr.md` for the full decision record and migration notes.
 
 ## Validation
 
