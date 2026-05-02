@@ -31,7 +31,7 @@ It is based on:
 
 ### Confirmed EmDash Alignment Notes
 
-- The installed `emdash` package is now aligned to the reviewed `0.8.0` baseline.
+- The installed `emdash` package is now aligned to the reviewed `0.9.0` baseline.
 - The local EmDash workspace continues to emphasize a split between plugin descriptors and runtime plugin definitions.
 - EmDash exposes explicit auth-provider descriptors and capability-gated plugin contexts rather than encouraging ad hoc auth or plugin-specific security models.
 - Mini should keep extending those seams rather than creating a second auth or permission platform beside EmDash.
