@@ -34,6 +34,7 @@ Complete these checks before applying migrations or releasing a new build.
 - [ ] Review pending migrations with `pnpm db:migrate:status`
 - [ ] When issue the scoped SIKESRA issue or another EmDash migration-compatibility change is in scope, confirm the branch includes `034_emdash_compatibility_support_tables` or a reviewed equivalent before the deploy window
 - [ ] When issue the scoped SIKESRA issue or another EmDash migration-compatibility change is in scope, run `pnpm db:migrate:emdash:status` and record whether the ledger is `compatible`, `repairable`, `unsafe`, or `empty`
+- [ ] A fresh setup response with `needsSetup: true` is treated as first-run bootstrap state, not as a ledger repair failure
 - [ ] Confirm the release does not rely on ad hoc schema edits outside Kysely migrations
 - [ ] Confirm rollback impact for the newest migration is understood before deployment
 
@@ -76,7 +77,7 @@ Perform these steps during the release window.
 1. Run `pnpm db:migrate`
 2. Run `pnpm db:migrate:status`
 3. When issue the scoped SIKESRA issue or another EmDash migration-compatibility change is in scope, run `pnpm db:migrate:emdash:status`
-4. If the EmDash ledger state is `empty` after `pnpm db:migrate`, stop the release and investigate the compatibility bootstrap path instead of forcing manual ledger edits
+4. If the EmDash ledger state is `empty` after `pnpm db:migrate`, stop the release and investigate the compatibility bootstrap path instead of forcing manual ledger edits; do not confuse that with a fresh setup response that still reports `needsSetup: true`
 5. If the EmDash ledger state is `repairable`, run `pnpm db:migrate:emdash:repair`
 6. Re-run `pnpm db:migrate:emdash:status` and confirm the ledger state is `compatible`
 7. Run `pnpm db:migrate:emdash:verify` so the release fails fast unless the ledger is deploy-safe
@@ -122,6 +123,7 @@ Validate the live system in this order.
 - [ ] No unexpected migration drift is present between environments
 - [ ] When the release touched EmDash runtime compatibility, `pnpm db:migrate:emdash:status` reports `compatible`
 - [ ] When the release touched EmDash runtime compatibility, `_emdash_migrations` is not left `empty` after the reviewed compatibility bootstrap migration path
+- [ ] A live `/_emdash/api/setup/status` response that returns `needsSetup: true` is documented as expected only during first-run bootstrap
 
 ### Auth
 
@@ -191,6 +193,7 @@ Use these focused checks when the release touches governance or security surface
 
 - [ ] `https://sikesrakobar.ahlikoding.com/` responds through the current reviewed deployment path
 - [ ] `https://sikesrakobar.ahlikoding.com/_emdash/` redirects to `/_emdash/admin` on the same host
+- [ ] `https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status` returns `200`; on a fresh site, `needsSetup: true` is expected until the first admin is created
 - [ ] Turnstile-protected public flows behave correctly for the reviewed hostname set
 - [ ] The deployed runtime can still reach bucket `sikesra` through the reviewed backend configuration
 - [ ] The deployed runtime secret for `DATABASE_URL` matches the reviewed PostgreSQL hostname and SSL mode for the environment

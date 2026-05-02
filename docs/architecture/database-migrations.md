@@ -33,6 +33,7 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 - this scaffold does not yet inspect or mutate the EmDash `_emdash_migrations` ledger
 - any future EmDash-ledger compatibility tooling must land as a separate issue-scoped follow-on after the repository-owned migration surface is wired to a real PostgreSQL client
+- a fresh-site `/_emdash/api/setup/status` response that reports `needsSetup: true` is normal first-run bootstrap state and should not be treated as a ledger repair signal
 
 ## Runtime Input
 

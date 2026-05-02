@@ -11,6 +11,7 @@ Use it only for issue-scoped work such as the scoped SIKESRA issue, where the li
 - `pnpm db:migrate:emdash:status` reports `repairable`
 - the current issue is explicitly about EmDash migration compatibility or runtime bootstrap repair
 - the team has reviewed the current deployment state and captured rollback notes
+- the setup-status endpoint reports `needsSetup: true` on a fresh site but the admin setup shell otherwise behaves normally
 
 Do not use this runbook for routine releases that do not touch EmDash runtime compatibility.
 
@@ -55,33 +56,35 @@ pnpm db:migrate:emdash:status
 
 3. If the state is `empty` after `pnpm db:migrate`, stop and investigate instead of forcing a repair. The current reviewed branch expects `034_emdash_compatibility_support_tables` to seed the canonical EmDash compatibility prefix on empty ledgers.
 
-4. If the state is `repairable`, apply the repair:
+4. If `/_emdash/api/setup/status` returns `200` with `needsSetup: true`, treat that as first-run bootstrap state, not as a ledger repair condition.
+
+5. If the state is `repairable`, apply the repair:
 
 ```bash
 pnpm db:migrate:emdash:repair
 ```
 
-5. Re-run the status check:
+6. Re-run the status check:
 
 ```bash
 pnpm db:migrate:emdash:status
 ```
 
-6. Confirm the state is now `compatible`.
+7. Confirm the state is now `compatible`.
 
-7. Use the repo-owned verification command to fail fast if the ledger is still not deploy-safe:
+8. Use the repo-owned verification command to fail fast if the ledger is still not deploy-safe:
 
 ```bash
 pnpm db:migrate:emdash:verify
 ```
 
-8. Re-run the current release validation path:
+9. Re-run the current release validation path:
 
 ```bash
 pnpm healthcheck
 ```
 
-9. For Cloudflare-hosted validation, confirm the current setup path still responds:
+10. For Cloudflare-hosted validation, confirm the current setup path still responds:
 
 ```bash
 curl -i https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status

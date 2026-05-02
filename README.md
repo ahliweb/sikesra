@@ -61,6 +61,7 @@ pnpm dev:emdash-core:stop
 Expected local setup behavior:
 
 - `/_emdash/api/setup/status` should return `200` before the first admin is created.
+- On a fresh site, `needsSetup: true` is expected and is not the same as a failed migration banner.
 - `/_emdash/api/manifest` may return `401 Not authenticated` on the setup page before login. That is expected and not the setup blocker.
 
 ## Security Basics

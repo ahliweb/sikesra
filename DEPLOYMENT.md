@@ -40,6 +40,7 @@ pnpm dev:emdash-core:stop
 Expected local setup diagnostics:
 
 - `/_emdash/api/setup/status` should respond `200`.
+- On a fresh bootstrap, `needsSetup: true` is expected and means the setup flow still needs an admin, not that the runtime is broken.
 - unauthenticated `/_emdash/api/manifest` requests may return `401` on the setup screen before an admin session exists.
 
 or run API+DB only:

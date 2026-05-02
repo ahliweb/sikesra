@@ -102,6 +102,7 @@ The smoke result reports separate checks for:
 - `adminEntry` for the reviewed `/_emdash/` redirect into `/_emdash/admin`
 - `setupShell` for the reviewed `/_emdash/admin/setup` shell render path
 - `setupStatus` as a diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
+- `setupStatus.needsSetup: true` is an expected first-run state when the admin account has not been created yet
 
 1. Load the public hostname and confirm it responds through the active reviewed deployment.
 2. Load `https://sikesrakobar.ahlikoding.com/_emdash/` and confirm it redirects to `/_emdash/admin` on the same host.
@@ -115,6 +116,7 @@ The smoke result reports separate checks for:
 7. When issue the scoped SIKESRA issue or related EmDash compatibility work is in scope, run `pnpm db:migrate` first so `034_emdash_compatibility_support_tables` can backfill any missing reviewed support tables and seed the canonical EmDash prefix on empty ledgers.
 8. Then run `pnpm db:migrate:emdash:status` against the target database and confirm the reported state is `compatible` before removing any temporary setup-path fallback.
 9. Run `pnpm db:migrate:emdash:verify` so the release window fails fast unless the ledger is already deploy-safe.
+10. If `/_emdash/api/setup/status` returns `200` with `needsSetup: true`, treat that as normal first-run bootstrap state and not as a ledger repair trigger.
 
 ## Failure Modes
 
