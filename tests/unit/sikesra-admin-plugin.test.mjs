@@ -91,6 +91,7 @@ test("SIKESRA admin descriptor exposes the canonical host shape", () => {
   assert.deepEqual(plugin.adminPages, SIKESRA_ADMIN_PAGES);
   assert.deepEqual(plugin.adminWidgets, []);
   assert.deepEqual(plugin.options, {});
+  assert.equal(plugin.componentsEntry, null);
 });
 
 test("SIKESRA plugin definition keeps the runtime contract minimal", () => {
@@ -184,6 +185,7 @@ test("SIKESRA admin descriptor stays on the reviewed host contract", () => {
     "adminEntry",
     "adminPages",
     "adminWidgets",
+    "componentsEntry",
     "entrypoint",
     "id",
     "options",

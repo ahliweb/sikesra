@@ -15,7 +15,7 @@ Mini adds governance-aware contract helpers so plugins can participate in the sa
 Mini currently provides:
 
 - EmDash plugin definitions created with `definePlugin(...)`
-- first-party plugin descriptors that register `id`, `entrypoint`, `options`, `adminEntry`, `adminPages`, and `adminWidgets` with the host
+- first-party plugin descriptors that register `id`, `entrypoint`, `options`, `adminEntry`, `adminPages`, `adminWidgets`, and `componentsEntry` with the host
 - plugin permission registration helper
 - plugin route authorization helper
 - plugin service authorization helper

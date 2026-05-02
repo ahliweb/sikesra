@@ -394,6 +394,7 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
   const adminPages = options.adminPages ?? SIKESRA_ADMIN_PAGES;
   const adminWidgets = options.adminWidgets ?? [];
   const pluginOptions = options.options ?? {};
+  const componentsEntry = options.componentsEntry ?? null;
 
   return {
     id: SIKESRA_ADMIN_PLUGIN_ID,
@@ -403,6 +404,7 @@ export function createSikesraAdminPluginDescriptor(options = {}) {
     adminEntry,
     adminPages,
     adminWidgets,
+    componentsEntry,
   };
 }
 
