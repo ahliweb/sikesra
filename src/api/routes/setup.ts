@@ -15,10 +15,10 @@ type SetupPayload = {
 
 type SetupStateRow = {
   id: string;
-  site_title: string | null;
-  tagline: string | null;
-  payload: Record<string, unknown> | null;
-  completed_at: string | Date | null;
+  slug: string;
+  name: string;
+  description: string | null;
+  config: Record<string, unknown> | null;
 };
 
 export function createSetupRouter() {
@@ -32,17 +32,18 @@ export function createSetupRouter() {
 
     const row = await readSetupState(db);
     const posture = getDatabaseRuntimePosture();
+    const setupConfig = readSetupConfig(row?.config);
 
     return c.json(
       {
         success: true,
         data: {
-          needsSetup: row ? row.completed_at === null : true,
+          needsSetup: setupConfig.completedAt === null,
           setupState: row
             ? {
-                siteTitle: row.site_title,
-                tagline: row.tagline,
-                completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null,
+                siteTitle: row.name,
+                tagline: row.description,
+                completedAt: setupConfig.completedAt,
               }
             : null,
           runtimeHealth: {
@@ -65,37 +66,11 @@ export function createSetupRouter() {
     const siteTitle = normalizeText(rawBody.siteTitle ?? rawBody.title) ?? "SIKESRA KOBAR";
     const tagline = normalizeText(rawBody.tagline);
     const completed = rawBody.complete === true || rawBody.finished === true;
+    const setupConfig = buildSetupConfig(rawBody, siteTitle, tagline, completed);
 
     await ensureSetupTables(db);
 
     const result = await db.begin(async (tx) => {
-      await tx`
-        insert into public.sikesra_setup_state (
-          id,
-          site_title,
-          tagline,
-          payload,
-          completed_at,
-          updated_at
-        ) values (
-          'default',
-          ${siteTitle},
-          ${tagline},
-          ${JSON.stringify(rawBody)}::jsonb,
-          ${completed ? new Date() : null},
-          now()
-        )
-        on conflict (id) do update set
-          site_title = excluded.site_title,
-          tagline = excluded.tagline,
-          payload = excluded.payload,
-          completed_at = case
-            when excluded.completed_at is not null then excluded.completed_at
-            else public.sikesra_setup_state.completed_at
-          end,
-          updated_at = now()
-      `;
-
       await tx`
         insert into public.sites (
           slug,
@@ -107,13 +82,13 @@ export function createSetupRouter() {
           'default',
           ${siteTitle},
           ${tagline},
-          ${JSON.stringify(rawBody)}::jsonb,
+          ${JSON.stringify(setupConfig)}::jsonb,
           now()
         )
         on conflict (slug) do update set
           name = excluded.name,
           description = excluded.description,
-          config = excluded.config,
+          config = public.sites.config || excluded.config,
           updated_at = now()
       `;
 
@@ -126,12 +101,12 @@ export function createSetupRouter() {
       {
         success: true,
         data: {
-          needsSetup: result ? result.completed_at === null : true,
+          needsSetup: readSetupConfig(result?.config).completedAt === null,
           setupState: result
             ? {
-                siteTitle: result.site_title,
-                tagline: result.tagline,
-                completedAt: result.completed_at ? new Date(result.completed_at).toISOString() : null,
+                siteTitle: result.name,
+                tagline: result.description,
+                completedAt: readSetupConfig(result.config).completedAt,
               }
             : null,
           runtimeHealth: {
@@ -155,18 +130,6 @@ async function ensureSetupTables(db: any): Promise<void> {
   await db`create extension if not exists pgcrypto`;
 
   await db`
-    create table if not exists public.sikesra_setup_state (
-      id text primary key,
-      site_title text,
-      tagline text,
-      payload jsonb not null default '{}'::jsonb,
-      completed_at timestamptz,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )
-  `;
-
-  await db`
     create table if not exists public.sites (
       id uuid primary key default gen_random_uuid(),
       slug text not null unique default 'default',
@@ -185,13 +148,36 @@ async function ensureSetupTables(db: any): Promise<void> {
 
 async function readSetupState(db: any): Promise<SetupStateRow | null> {
   const rows = await db<SetupStateRow[]>`
-    select id, site_title, tagline, payload, completed_at
-    from public.sikesra_setup_state
-    where id = 'default'
+    select id, slug, name, description, config
+    from public.sites
+    where slug = 'default'
     limit 1
   `;
 
   return rows[0] ?? null;
+}
+
+function readSetupConfig(config: Record<string, unknown> | null | undefined) {
+  const setup = config && config.setup && typeof config.setup === "object" ? (config.setup as Record<string, unknown>) : null;
+  const completedAt = setup ? normalizeText(setup.completedAt) : null;
+
+  return {
+    completedAt,
+  };
+}
+
+function buildSetupConfig(rawBody: SetupPayload, siteTitle: string, tagline: string | null, completed: boolean) {
+  const now = completed ? new Date().toISOString() : null;
+
+  return {
+    setup: {
+      payload: rawBody,
+      siteTitle,
+      tagline,
+      completedAt: now,
+      step: normalizeText(rawBody.step) ?? (completed ? "complete" : "site"),
+    },
+  };
 }
 
 function normalizeText(value: unknown): string | null {
