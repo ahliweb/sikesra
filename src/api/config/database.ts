@@ -21,6 +21,34 @@ export function getDb(): ReturnType<typeof postgres> {
   return _sql;
 }
 
+export function resolveRuntimeDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return env["DATABASE_INTERNAL_URL"] ?? env["DATABASE_URL"];
+}
+
+export function getDatabaseRuntimePosture(env: NodeJS.ProcessEnv = process.env) {
+  const raw = resolveRuntimeDatabaseUrl(env);
+
+  if (!raw) {
+    return { ok: false, posture: null };
+  }
+
+  try {
+    const url = new URL(raw);
+
+    return {
+      ok: true,
+      posture: {
+        transport: "direct",
+        hostname: url.hostname,
+        sslmode: normalizeOptionalString(url.searchParams.get("sslmode")),
+        source: env.DATABASE_INTERNAL_URL ? "DATABASE_INTERNAL_URL" : "DATABASE_URL",
+      },
+    };
+  } catch {
+    return { ok: false, posture: null };
+  }
+}
+
 export async function closeDb(): Promise<void> {
   if (_sql) {
     await _sql.end();
@@ -48,4 +76,10 @@ export async function checkDbConnectivity(): Promise<"ok" | "error"> {
     }
     return "error";
   }
+}
+
+function normalizeOptionalString(value: string | null): string | null {
+  if (typeof value !== "string") return null;
+  const next = value.trim();
+  return next.length > 0 ? next : null;
 }

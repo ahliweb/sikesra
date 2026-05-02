@@ -2,9 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createSikesraPsqlDatabaseClient } from "../../src/db/client/psql.mjs";
+import { getDatabaseRuntimePosture } from "../../src/api/config/database.ts";
 import { renderSikesraMigrationSql } from "../../src/db/migrations/sql.mjs";
 import { createSikesraMigrationRunner } from "../../src/db/migrations/runner.mjs";
 import { SIKESRA_DB_MIGRATIONS } from "../../src/db/migrations/index.mjs";
+
+function buildDatabaseUrl(hostname, username) {
+  return `postgresql://${username}:placeholder-secret@${hostname}:5432/sikesrakobar`;
+}
 
 test("SIKESRA psql client uses non-interactive redacted execution settings", () => {
   const calls = [];
@@ -62,6 +67,20 @@ test("SIKESRA psql client exposes a redacted reachability probe", () => {
     ok: true,
     kind: "connection",
     reason: "reachable",
+  });
+});
+
+test("SIKESRA API database posture helper reports the reviewed direct PostgreSQL shape", () => {
+  const posture = getDatabaseRuntimePosture({
+    DATABASE_URL: `${buildDatabaseUrl("postgres", "app_user")}?sslmode=require`,
+  });
+
+  assert.equal(posture.ok, true);
+  assert.deepEqual(posture.posture, {
+    transport: "direct",
+    hostname: "postgres",
+    sslmode: "require",
+    source: "DATABASE_URL",
   });
 });
 

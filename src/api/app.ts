@@ -14,6 +14,7 @@ import { permissions } from "./routes/permissions.js";
 import { auth } from "./routes/auth.js";
 import { security } from "./routes/security.js";
 import { references } from "./routes/references.js";
+import { setup } from "./routes/setup.js";
 
 // Extend Hono context with our custom variables
 type Variables = AuthVariables;
@@ -43,6 +44,7 @@ app.route("/api/v1/me", me);
 app.route("/api/v1/users", users);
 app.route("/api/v1/roles", roles);
 app.route("/api/v1/permissions", permissions);
+app.route("/_emdash/api/setup", setup);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.notFound((c) => {

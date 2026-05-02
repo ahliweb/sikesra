@@ -125,6 +125,7 @@ Validate the live system in this order.
 - [ ] When the release touched EmDash runtime compatibility, `pnpm db:migrate:emdash:status` reports `compatible`
 - [ ] When the release touched EmDash runtime compatibility, `_emdash_migrations` is not left `empty` after the reviewed compatibility bootstrap migration path
 - [ ] A live `/_emdash/api/setup/status` response that returns `needsSetup: true` is documented as expected only during first-run bootstrap
+- [ ] The Hono setup route can reach PostgreSQL directly through the reviewed backend database connection during first-run bootstrap
 
 ### Auth
 

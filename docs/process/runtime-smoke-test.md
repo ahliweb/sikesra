@@ -101,7 +101,7 @@ The smoke result reports separate checks for:
 
 - `adminEntry` for the reviewed `/_emdash/` redirect into `/_emdash/admin`
 - `setupShell` for the reviewed `/_emdash/admin/setup` shell render path
-- `setupStatus` as a diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
+- `setupStatus` as the Hono-backed PostgreSQL diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
 - `setupStatus.needsSetup: true` is an expected first-run state when the admin account has not been created yet
 
 1. Load the public hostname and confirm it responds through the active reviewed deployment.

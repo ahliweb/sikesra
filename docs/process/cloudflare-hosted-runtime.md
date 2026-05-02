@@ -70,7 +70,7 @@ After deployment:
 - Confirm the public hostname responds through the reviewed Cloudflare frontend path
 - Confirm `https://sikesrakobar.ahlikoding.com/_emdash/` redirects to `/_emdash/admin` on the same host
 - Confirm `https://sikesrakobar.ahlikoding.com/_emdash/admin/setup` renders the EmDash setup shell instead of a generic backend initialization failure
-- Confirm `https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status` returns `200`; on a fresh site, `needsSetup: true` is expected until the first admin is created
+- Confirm `https://sikesrakobar.ahlikoding.com/_emdash/api/setup/status` returns `200` from the Hono-backed PostgreSQL setup seam; on a fresh site, `needsSetup: true` is expected until the first admin is created
 - Confirm admin routes load through the public hostname
 - Confirm auth logging and lockout behavior reflect the expected Cloudflare client IP source
 - Confirm the Hono runtime can reach R2 for `sikesra`
@@ -129,7 +129,7 @@ The script checks:
 
 - `/_emdash/` returns the reviewed same-host redirect into `/_emdash/admin`
 - `/_emdash/admin/setup` returns HTML without the reviewed runtime error markers that previously surfaced blanket startup failures
-- `/_emdash/api/setup/status` as a diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
+- `/_emdash/api/setup/status` as the Hono-backed PostgreSQL diagnostic seam so setup-shell failures are easier to distinguish from broader runtime or database initialization failures
 - `needsSetup: true` on a fresh bootstrap is an expected readiness state, not a migration repair condition
 
 Target selection order:
