@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 
+import { renderSikesraMigrationSql } from "../migrations/sql.mjs";
+
 export const SIKESRA_PSQL_CLIENT_SEAM = Object.freeze({
   status: "repository_psql_execution_ready",
   followUpIssue: "ahliweb/sikesra#49",
@@ -45,7 +47,17 @@ export function createSikesraPsqlDatabaseClient({ env = process.env, spawn = spa
       executeSql({ env, spawn, sql, timeoutMs: resolveTimeoutMs(env, 30000) });
       return { name: migration.name, applied: true };
     },
+    applyMigrationsAtomically(migrations) {
+      const sql = buildAtomicMigrationSql(migrations);
+      executeSql({ env, spawn, sql, timeoutMs: resolveTimeoutMs(env, 30000) });
+      return { applied: migrations.map((migration) => migration.name) };
+    },
   });
+}
+
+function buildAtomicMigrationSql(migrations) {
+  const statements = migrations.map((migration) => renderSikesraMigrationSql(migration)).join("\n\n");
+  return `begin;\n\n${statements}\n\ncommit;\n`;
 }
 
 function executeSql({ env, spawn, sql, timeoutMs = resolveTimeoutMs(env, 10000) }) {

@@ -112,6 +112,8 @@ test("db migrate CLI keeps SQL migration list in sync with repository files", ()
 test("db migrate CLI renders the repository-owned first migration instead of skipping it", async () => {
   const sql = await loadMigrationSql("001_create_religion_reference_tables");
 
+  assert.doesNotMatch(sql, /\bbegin;/i);
+  assert.doesNotMatch(sql, /\bcommit;/i);
   assert.match(sql, /create table if not exists public\.religion_references/i);
   assert.match(sql, /create table if not exists public\.religion_reference_aliases/i);
   assert.match(sql, /insert into public\.sikesra_migrations/i);

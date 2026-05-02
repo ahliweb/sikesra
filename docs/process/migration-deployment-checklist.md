@@ -102,6 +102,7 @@ If a migration fails:
 - Stop the release
 - Capture the failing migration name and error output
 - Run `pnpm db:migrate:probe` to separate PostgreSQL reachability/auth/TLS blockers from repository migration logic
+- Re-run `pnpm db:migrate` only after the root cause is fixed; the reviewed migration path is atomic, so a failed attempt should not leave a partially applied repository-owned batch behind
 - If the probe still reports timeout, verify the reviewed private-route hostname, `DATABASE_MIGRATION_URL` selection, and connector status before retrying
 - Use the recovery runbook before attempting manual intervention
 - Only run `pnpm db:migrate:down` if the migration and operational impact have been reviewed for safe rollback

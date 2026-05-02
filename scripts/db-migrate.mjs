@@ -2,7 +2,7 @@ import { loadLocalEnv } from "./_local-env.mjs";
 import { createSikesraDatabaseAccess } from "../src/db/index.mjs";
 import { createSikesraMigrationRunner } from "../src/db/migrations/runner.mjs";
 
-function main() {
+async function main() {
   loadLocalEnv();
 
   const command = process.argv[2] ?? "status";
@@ -48,7 +48,7 @@ function main() {
               connection: database.getConnectionSummary(),
               migrationConnection: database.getMigrationConnectionSummary(),
             },
-            migrations: runner.applyPending(client),
+            migrations: await runner.applyPendingAtomically(client),
             redaction: "No passwords, tokens, or connection strings are printed.",
           }
         : {
@@ -90,4 +90,7 @@ function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

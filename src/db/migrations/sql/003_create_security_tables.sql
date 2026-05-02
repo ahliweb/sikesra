@@ -1,8 +1,6 @@
 -- Migration 003: Security tables (2FA, login attempts, recovery codes)
 -- Issue: ahliweb/sikesra#64
 
-begin;
-
 -- -------------------------------------------------------------------------
 -- user_security_settings
 -- -------------------------------------------------------------------------
@@ -55,5 +53,3 @@ create index if not exists login_attempts_ip_hash_idx on public.login_attempts (
 insert into public.sikesra_migrations (name, applied_at)
 values ('003_create_security_tables', now())
 on conflict (name) do nothing;
-
-commit;

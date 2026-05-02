@@ -7,7 +7,7 @@
  * Usage:
  *   pnpm db:migrate:probe     — test connectivity
  *   pnpm db:migrate:status    — list applied / pending migrations
- *   pnpm db:migrate           — apply all pending migrations (up)
+ *   pnpm db:migrate           — apply all pending migrations as one atomic batch
  *   tsx scripts/db-migrate.ts down <name>  — (not yet implemented)
  *
  * Reads DATABASE_MIGRATION_URL (preferred) or DATABASE_URL from environment.
@@ -200,23 +200,25 @@ async function cmdUp(): Promise<void> {
       process.exit(0);
     }
 
-    const justApplied: string[] = [];
+    const justApplied = await sql.begin(async (transaction) => {
+      const appliedNames: string[] = [];
 
-    for (const name of pending) {
-      let sqlText: string;
-      try {
-        sqlText = await loadMigrationSql(name);
-      } catch {
-        console.error(`  [error] SQL migration not found: ${name}`);
-        process.exit(1);
+      for (const name of pending) {
+        let sqlText: string;
+        try {
+          sqlText = await loadMigrationSql(name);
+        } catch {
+          throw new Error(`SQL migration not found: ${name}`);
+        }
+
+        console.log(`  [applying] ${name}…`);
+        await transaction.unsafe(sqlText);
+        appliedNames.push(name);
+        console.log(`  [done]     ${name}`);
       }
 
-      console.log(`  [applying] ${name}…`);
-      // Execute the SQL as a raw unsafe query (the file contains its own transaction).
-      await sql.unsafe(sqlText);
-      justApplied.push(name);
-      console.log(`  [done]     ${name}`);
-    }
+      return appliedNames;
+    });
 
     console.log(
       JSON.stringify(

@@ -1,8 +1,6 @@
 -- Migration 002: Auth and user tables
 -- Issue: ahliweb/sikesra#64
 
-begin;
-
 create extension if not exists pgcrypto;
 
 -- -------------------------------------------------------------------------
@@ -99,5 +97,3 @@ create index if not exists abac_policy_attributes_subject_idx
 insert into public.sikesra_migrations (name, applied_at)
 values ('002_create_auth_tables', now())
 on conflict (name) do nothing;
-
-commit;

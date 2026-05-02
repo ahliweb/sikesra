@@ -17,9 +17,7 @@ export function renderSikesraMigrationSql(migration) {
     )
     .join(",\n  ");
 
-  return `begin;
-
-create table if not exists public.sikesra_migrations (
+  return `create table if not exists public.sikesra_migrations (
   name text primary key,
   applied_at timestamptz not null default now()
 );
@@ -82,8 +80,6 @@ set
 insert into public.sikesra_migrations (name, applied_at)
 values (${quote(migration.name)}, now())
 on conflict (name) do nothing;
-
-commit;
 `;
 }
 

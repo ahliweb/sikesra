@@ -27,6 +27,27 @@ test("SIKESRA psql client uses non-interactive redacted execution settings", () 
   assert.equal(calls[0].options.env.PGCONNECT_TIMEOUT, "5");
 });
 
+test("SIKESRA psql client batches migrations inside one transaction", () => {
+  const calls = [];
+  const client = createSikesraPsqlDatabaseClient({
+    env: {
+      DATABASE_URL: "postgresql://runtime_user:super-secret@example.com:5432/sikesrakobar",
+    },
+    spawn(command, args, options) {
+      calls.push({ command, args, options });
+      return { status: 0, stdout: "", stderr: "" };
+    },
+  });
+
+  const result = client.applyMigrationsAtomically([SIKESRA_DB_MIGRATIONS[0]]);
+
+  assert.deepEqual(result, { applied: ["001_create_religion_reference_tables"] });
+  assert.equal(calls[0].command, "psql");
+  assert.match(calls[0].options.input, /^begin;/i);
+  assert.match(calls[0].options.input, /create table if not exists public\.religion_references/i);
+  assert.match(calls[0].options.input, /commit;\s*$/i);
+});
+
 test("SIKESRA psql client exposes a redacted reachability probe", () => {
   const client = createSikesraPsqlDatabaseClient({
     env: {
@@ -102,4 +123,23 @@ test("SIKESRA migration runner applies only pending repository-owned migrations"
   assert.deepEqual(result.applied, ["001_create_religion_reference_tables"]);
   assert.equal(appliedSql.length, 1);
   assert.match(appliedSql[0].sql, /religion_references/);
+});
+
+test("SIKESRA migration runner can apply pending migrations atomically", async () => {
+  const runner = createSikesraMigrationRunner();
+  const applied = [];
+
+  const result = await runner.applyPendingAtomically({
+    listAppliedMigrationNames() {
+      return [];
+    },
+    async applyMigrationsAtomically(migrations) {
+      applied.push(...migrations.map((migration) => migration.name));
+      return { applied: applied.slice() };
+    },
+  });
+
+  assert.deepEqual(applied, ["001_create_religion_reference_tables"]);
+  assert.deepEqual(result.applied, ["001_create_religion_reference_tables"]);
+  assert.deepEqual(result.pending, []);
 });

@@ -1,8 +1,6 @@
 -- Migration 004: Content and site configuration tables
 -- Issue: ahliweb/sikesra#64
 
-begin;
-
 -- -------------------------------------------------------------------------
 -- sites (single-tenant config store)
 -- -------------------------------------------------------------------------
@@ -69,5 +67,3 @@ create index if not exists audit_logs_created_at_idx on public.audit_logs (creat
 insert into public.sikesra_migrations (name, applied_at)
 values ('004_create_content_tables', now())
 on conflict (name) do nothing;
-
-commit;

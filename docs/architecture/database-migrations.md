@@ -7,7 +7,7 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 ## Current Migration Commands
 
 - `pnpm db:migrate`
-  - applies pending repository-owned SIKESRA migrations to PostgreSQL through non-interactive `psql`
+  - applies pending repository-owned SIKESRA migrations as one atomic transaction batch through non-interactive `psql`
 - `pnpm db:migrate:probe`
   - checks PostgreSQL reachability for the repository migration path and returns a redacted structured result
 - `pnpm db:migrate:status`
@@ -26,7 +26,7 @@ This document defines the canonical migration runner workflow for SIKESRA (awcms
 
 - the current repository-owned registry registers `001_create_religion_reference_tables`
 - this first entry defines the persisted table contract and reviewed seed rows for religion references and aliases
-- `pnpm db:migrate` now renders and executes the repository-owned SQL through `psql`, recording applied entries in `public.sikesra_migrations`
+- `pnpm db:migrate` now wraps the pending repository-owned SQL batch in one transaction, recording applied entries in `public.sikesra_migrations` only when the full batch succeeds
 - live persistence, rollback, and EmDash-ledger compatibility work remain follow-on scope for `#49`
 
 ## Current EmDash Runtime Caveat
@@ -68,6 +68,7 @@ pnpm db:migrate:probe
 - keep migration files ordered and descriptive
 - do not introduce ad hoc schema changes outside the repository-owned migration registry
 - use non-interactive `psql` execution with env-managed credentials only for the current repository-owned migration path
+- keep the migration batch atomic: if any statement fails, the whole pending set rolls back and no partial schema change is left behind from that run
 - prefer `DATABASE_MIGRATION_URL` for operator migration workflows when the Coolify-managed private DB route differs from the app runtime connection path
 - keep status output redacted: never print passwords, full connection strings, or tokens
 - fail fast on unreachable PostgreSQL and return operator-safe error classifications instead of leaking raw driver/process details

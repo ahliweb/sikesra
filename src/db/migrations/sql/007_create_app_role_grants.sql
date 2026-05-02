@@ -3,8 +3,6 @@
 -- NOTE: This migration is idempotent. The awcms_mini_app role is created
 --       only if it does not already exist. Run as the migration superuser.
 
-begin;
-
 do $$
 begin
   if not exists (select 1 from pg_roles where rolname = 'awcms_mini_app') then
@@ -50,5 +48,3 @@ alter default privileges in schema public
 insert into public.sikesra_migrations (name, applied_at)
 values ('007_create_app_role_grants', now())
 on conflict (name) do nothing;
-
-commit;

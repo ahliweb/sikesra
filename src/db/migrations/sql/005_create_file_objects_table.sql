@@ -1,8 +1,6 @@
 -- Migration 005: File objects table
 -- Issue: ahliweb/sikesra#64
 
-begin;
-
 create table if not exists public.file_objects (
   id                uuid        primary key default gen_random_uuid(),
   entity_type       text        not null,
@@ -41,5 +39,3 @@ create index if not exists file_objects_deleted_at_idx on public.file_objects (d
 insert into public.sikesra_migrations (name, applied_at)
 values ('005_create_file_objects_table', now())
 on conflict (name) do nothing;
-
-commit;

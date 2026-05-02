@@ -1,8 +1,6 @@
 -- Migration 006: Notification tables
 -- Issue: ahliweb/sikesra#64
 
-begin;
-
 -- -------------------------------------------------------------------------
 -- message_templates
 -- -------------------------------------------------------------------------
@@ -105,5 +103,3 @@ create index if not exists provider_webhook_events_message_id_idx
 insert into public.sikesra_migrations (name, applied_at)
 values ('006_create_notification_tables', now())
 on conflict (name) do nothing;
-
-commit;

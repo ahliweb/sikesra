@@ -38,7 +38,59 @@ export function createSikesraMigrationRunner() {
         pending: [],
       };
     },
+    async applyPendingAtomically(databaseClient) {
+      const appliedNames = new Set(databaseClient.listAppliedMigrationNames());
+      const pending = SIKESRA_DB_MIGRATIONS.filter((migration) => !appliedNames.has(migration.name));
+
+      if (pending.length === 0) {
+        return {
+          seam: SIKESRA_DB_MIGRATION_SEAM,
+          applied: [],
+          skipped: SIKESRA_DB_MIGRATIONS.filter((migration) => appliedNames.has(migration.name)).map((migration) => migration.name),
+          pending: [],
+        };
+      }
+
+      let applied;
+
+      if (typeof databaseClient.applyMigrationsAtomically === "function") {
+        const result = await databaseClient.applyMigrationsAtomically(pending);
+        applied = normalizeAppliedMigrationNames(result, pending);
+      } else if (typeof databaseClient.begin === "function") {
+        applied = await databaseClient.begin(async (transaction) => {
+          const names = [];
+
+          for (const migration of pending) {
+            await transaction.unsafe(renderSikesraMigrationSql(migration));
+            names.push(migration.name);
+          }
+
+          return names;
+        });
+      } else {
+        applied = pending.map((migration) => databaseClient.applyMigration(migration, renderSikesraMigrationSql(migration)).name);
+      }
+
+      return {
+        seam: SIKESRA_DB_MIGRATION_SEAM,
+        applied: normalizeAppliedMigrationNames(applied, pending),
+        skipped: SIKESRA_DB_MIGRATIONS.filter((migration) => appliedNames.has(migration.name)).map((migration) => migration.name),
+        pending: [],
+      };
+    },
   });
+}
+
+function normalizeAppliedMigrationNames(value, pending) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value?.applied)) {
+    return value.applied;
+  }
+
+  return pending.map((migration) => migration.name);
 }
 
 export const sikesraMigrationRunner = createSikesraMigrationRunner();

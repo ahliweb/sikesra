@@ -113,7 +113,7 @@ The smoke result reports separate checks for:
    - hostname validation matches the reviewed hostname set for the environment
 5. Confirm the deployed runtime still has the `MEDIA_BUCKET` binding for `sikesra`.
 6. Re-run `pnpm healthcheck` or the target-environment equivalent after Cloudflare-side changes complete.
-7. When issue the scoped SIKESRA issue or related EmDash compatibility work is in scope, run `pnpm db:migrate` first so `034_emdash_compatibility_support_tables` can backfill any missing reviewed support tables and seed the canonical EmDash prefix on empty ledgers.
+7. When issue the scoped SIKESRA issue or related EmDash compatibility work is in scope, run `pnpm db:migrate` first so the atomic repository-owned batch can backfill any missing reviewed support tables and seed the canonical EmDash prefix on empty ledgers.
 8. Then run `pnpm db:migrate:emdash:status` against the target database and confirm the reported state is `compatible` before removing any temporary setup-path fallback.
 9. Run `pnpm db:migrate:emdash:verify` so the release window fails fast unless the ledger is already deploy-safe.
 10. If `/_emdash/api/setup/status` returns `200` with `needsSetup: true`, treat that as normal first-run bootstrap state and not as a ledger repair trigger.
