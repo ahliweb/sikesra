@@ -209,7 +209,38 @@ describe("SIKESRA Architecture Validation", () => {
         input: {},
         requestMeta: { ip: "1.2.3.4", userAgent: "test" },
         site: { id: "site-1", tenantId: "tenant-1" },
-      });
+  describe("Route Guard", () => {
+    it("should deny unauthenticated public access", () => {
+      const { guardRoute } = require("../security/route-guard");
+      const ctx = makeContext({ userId: "public", roles: ["public"], permissions: [] });
+      const result = guardRoute(ctx, "entity:read");
+      expect(result.allowed).toBe(false);
+      expect(result.reasonCode).toBe("UNAUTHENTICATED");
+    });
+
+    it("should deny without required permission", () => {
+      const { guardRoute } = require("../security/route-guard");
+      const ctx = makeContext({ roles: ["editor"], permissions: ["awcms:sikesra:entity:read"] });
+      const result = guardRoute(ctx, "settings:update");
+      expect(result.allowed).toBe(false);
+      expect(result.reasonCode).toBe("FORBIDDEN");
+    });
+
+    it("should allow with correct permission", () => {
+      const { guardRoute } = require("../security/route-guard");
+      const ctx = makeContext({ permissions: ["awcms:sikesra:entity:read"] });
+      const result = guardRoute(ctx, "entity:read");
+      expect(result.allowed).toBe(true);
+    });
+
+    it("should check region scope for village access", () => {
+      const { checkRegionScope } = require("../security/route-guard");
+      const ctx = makeContext({ regionScope: { villageCodes: ["6201021005", "6201021006"] } });
+      expect(checkRegionScope(ctx, "6201021005")).toBe(true);
+      expect(checkRegionScope(ctx, "6201021007")).toBe(false);
+    });
+  });
+});
       expect(ctx.tenantId).toBe("tenant-1");
       expect(ctx.siteId).toBe("site-1");
       expect(ctx.ipAddress).toBe("1.2.3.4");

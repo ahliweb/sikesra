@@ -20,6 +20,7 @@ export {
 } from "./security/masking";
 export { writeAuditEvent, AUDIT_ACTIONS, isHighRiskAction } from "./services/audit";
 export { evaluateAbac, buildAbacSubject, evaluateAbacWithDb } from "./security/abac";
+export { guardRoute, checkRegionScope } from "./security/route-guard";
 export {
   getPublicMetadata,
   getPublicFilters,
