@@ -65,7 +65,7 @@ function withInsightsScriptSource(cspValue) {
       return group.includes(source) ? match : `script-src-elem ${group} ${source}`;
     });
   } else {
-    next += `; script-src-elem 'self' ${source}`;
+    next += `; script-src-elem 'self' 'unsafe-inline' ${source}`;
   }
 
   return next;
