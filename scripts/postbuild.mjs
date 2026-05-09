@@ -158,4 +158,55 @@ function patchSidebarSpacing(source) {
 
 const sidebarPatched = patchAdminSidebar();
 
-console.log(`[postbuild] patched wrangler.json + worker-wrapper.mjs${sidebarPatched ? " + admin sidebar" : ""}`);
+// 5.5 Patch compiled emdash output for publish resilience
+function patchCompiledEmdash() {
+  let patched = 0;
+  const chunksDir = resolve(DIST_SERVER_DIR, "chunks");
+  if (!existsSync(chunksDir)) return patched;
+
+  // Use dynamic import for readdirSync (already imported at top)
+  for (const file of readdirSync(chunksDir)) {
+    if (!file.endsWith(".mjs")) continue;
+    const filePath = resolve(chunksDir, file);
+    let source = readFileSync(filePath, "utf8");
+    if (!source.includes("CONTENT_PUBLISH_ERROR")) continue;
+
+    let changed = false;
+
+    // Patch collectionHasSeo to be resilient to missing has_seo column
+    const oldHasSeo = `async function collectionHasSeo(db, collection) {
+  return (await db.selectFrom("_emdash_collections").select("has_seo").where("slug", "=", collection).executeTakeFirst())?.has_seo === 1;
+}`;
+    const newHasSeo = `async function collectionHasSeo(db, collection) {
+  try {
+    return (await db.selectFrom("_emdash_collections").select("has_seo").where("slug", "=", collection).executeTakeFirst())?.has_seo === 1;
+  } catch {
+    return false;
+  }
+}`;
+    if (source.includes(oldHasSeo)) {
+      source = source.replaceAll(oldHasSeo, newHasSeo);
+      changed = true;
+      patched++;
+    }
+
+    // Include actual error message in CONTENT_PUBLISH_ERROR response
+    const oldErrMsg = `message: "Failed to publish content"`;
+    const newErrMsg = `message: \`Failed to publish content: \${error instanceof Error ? error.message : String(error)}\``;
+    if (source.includes(oldErrMsg) && !source.includes(newErrMsg)) {
+      source = source.replace(oldErrMsg, newErrMsg);
+      changed = true;
+      patched++;
+    }
+
+    if (changed) writeFileSync(filePath, source);
+  }
+  return patched;
+}
+
+const emdashPatched = patchCompiledEmdash();
+
+const parts = ["wrangler.json + worker-wrapper.mjs"];
+if (sidebarPatched) parts.push("admin sidebar");
+if (emdashPatched) parts.push(`emdash publish (${emdashPatched})`);
+console.log(`[postbuild] patched ${parts.join(" + ")}`);
