@@ -46,6 +46,31 @@ async function clearRootCache(request) {
   }
 }
 
+function withInsightsScriptSource(cspValue) {
+  const source = "https://static.cloudflareinsights.com";
+  if (!cspValue || cspValue.includes(source)) return cspValue;
+
+  let next = cspValue;
+
+  if (/script-src\s/i.test(next)) {
+    next = next.replace(/script-src\s+([^;]+)/i, (match, group) => {
+      return group.includes(source) ? match : `script-src ${group} ${source}`;
+    });
+  } else {
+    next += `; script-src 'self' 'unsafe-inline' ${source}`;
+  }
+
+  if (/script-src-elem\s/i.test(next)) {
+    next = next.replace(/script-src-elem\s+([^;]+)/i, (match, group) => {
+      return group.includes(source) ? match : `script-src-elem ${group} ${source}`;
+    });
+  } else {
+    next += `; script-src-elem 'self' ${source}`;
+  }
+
+  return next;
+}
+
 async function handleSikesra(request, env) {
   const url = new URL(request.url);
   const reqId = crypto.randomUUID();
@@ -202,6 +227,10 @@ export default {
     if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
       try {
         const resp = await emdashWorker.fetch(request, env, ctx);
+        const csp = resp.headers.get("content-security-policy");
+        if (csp) {
+          resp.headers.set("content-security-policy", withInsightsScriptSource(csp));
+        }
         resp.headers.set("X-Route", path === "/" ? "emdash-root" : "emdash");
         resp.headers.set("CDN-Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
         resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
