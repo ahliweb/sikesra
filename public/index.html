@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIKESRA — Sistem Informasi Kesejahteraan Rakyat</title>
+<style>
+  :root { --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #0369a1; --border: #e2e8f0; --success: #16a34a; }
+  @media(prefers-color-scheme:dark) { :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --border: #334155; --success: #22c55e; } }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  .container { max-width:1000px; margin:0 auto; padding:1rem; }
+  header { background:var(--card); border-bottom:1px solid var(--border); padding:1.5rem 1rem; text-align:center; }
+  header h1 { font-size:1.5rem; color:var(--accent); }
+  header p { color:var(--muted); font-size:.9rem; margin-top:.25rem; }
+  .notice { background:#fef3c7; color:#92400e; padding:.75rem 1rem; border-radius:6px; margin:1rem 0; font-size:.85rem; text-align:center; }
+  @media(prefers-color-scheme:dark){ .notice { background:#422006; color:#fde68a; } }
+  .kpigrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin:1.5rem 0; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1.25rem; text-align:center; }
+  .kpi .value { font-size:2rem; font-weight:700; color:var(--accent); }
+  .kpi .label { font-size:.8rem; color:var(--muted); margin-top:.25rem; }
+  h2 { font-size:1.1rem; margin:1.5rem 0 .75rem; }
+  .chart { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1rem; }
+  .bar { display:flex; align-items:center; margin:.5rem 0; gap:.5rem; }
+  .bar .barlabel { width:150px; font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar .bartrack { flex:1; height:20px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .bar .barfill { height:100%; background:var(--accent); border-radius:4px; min-width:4px; }
+  .bar .barval { width:50px; font-size:.8rem; text-align:right; color:var(--muted); }
+  .caveat { margin-top:2rem; padding:1rem; background:var(--card); border:1px solid var(--border); border-radius:8px; font-size:.8rem; color:var(--muted); }
+  .caveat h3 { font-size:.9rem; color:var(--text); margin-bottom:.5rem; }
+  .loading { text-align:center; padding:2rem; color:var(--muted); }
+  .error { text-align:center; padding:1rem; color:#dc2626; background:#fef2f2; border-radius:6px; }
+  footer { text-align:center; padding:1.5rem; font-size:.75rem; color:var(--muted); border-top:1px solid var(--border); margin-top:2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SIKESRA</h1>
+  <p id="meta-desc">Sistem Informasi Kesejahteraan Rakyat</p>
+  <small id="meta-update" style="color:var(--muted)"></small>
+</header>
+<div class="container">
+  <div class="notice">
+    Halaman ini menampilkan data agregat yang telah diverifikasi. Data pribadi, alamat detail, dan informasi sensitif tidak ditampilkan.
+  </div>
+  <div class="kpigrid" id="kpi-grid">
+    <div class="kpi"><div class="value" id="kpi-total">—</div><div class="label">Total Data</div></div>
+    <div class="kpi"><div class="value" id="kpi-verified">—</div><div class="label">Terverifikasi</div></div>
+    <div class="kpi"><div class="value" id="kpi-villages">—</div><div class="label">Desa/Kel Aktif</div></div>
+    <div class="kpi"><div class="value" id="kpi-update">—</div><div class="label">Pembaruan</div></div>
+  </div>
+  <h2>Kategori Data</h2>
+  <div class="chart" id="chart-types"><div class="loading">Memuat data…</div></div>
+  <div class="caveat">
+    <h3>Catatan</h3>
+    <p id="caveat-text">Data pada halaman ini merupakan rekapitulasi agregat yang telah melalui proses verifikasi. Sebagian data tidak ditampilkan secara rinci karena jumlah data terlalu kecil atau berpotensi membuka identitas individu/kelompok rentan.</p>
+    <p id="caveat-scope" style="margin-top:.5rem"></p>
+  </div>
+</div>
+<footer>
+  <p id="footer-contact"></p>
+  <p style="margin-top:.25rem">Didukung oleh AWCMS-Micro &amp; EmDash</p>
+</footer>
+<script>
+const API = "https://awcms-micro.ahliweb.workers.dev/_emdash/api/plugins/sikesra";
+
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error?.message ?? "Gagal memuat data");
+  return json.data;
+}
+
+function formatNumber(n) { return n?.toLocaleString("id-ID") ?? "—"; }
+function relativeDate(d) {
+  if (!d) return "—";
+  const diff = Date.now() - new Date(d).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Hari ini";
+  if (days === 1) return "Kemarin";
+  return days + " hari lalu";
+}
+
+(async function load() {
+  try {
+    const [meta, summary, filters] = await Promise.all([
+      fetchJSON(API + "/public/metadata"),
+      fetchJSON(API + "/public/summary"),
+      fetchJSON(API + "/public/filters"),
+    ]);
+
+    document.getElementById("meta-desc").textContent = meta.description ?? meta.title;
+    document.getElementById("meta-update").textContent = meta.latestUpdateAt ? "Diperbarui " + relativeDate(meta.latestUpdateAt) : "";
+    document.getElementById("footer-contact").textContent = meta.officialContact ? "Kontak: " + meta.officialContact : "";
+
+    const kpis = summary.kpis;
+    document.getElementById("kpi-total").textContent = formatNumber(kpis.totalEntities);
+    document.getElementById("kpi-verified").textContent = formatNumber(kpis.verifiedEntities);
+    document.getElementById("kpi-villages").textContent = formatNumber(kpis.activeVillages);
+    document.getElementById("kpi-update").textContent = relativeDate(kpis.latestUpdateAt);
+
+    document.getElementById("caveat-text").textContent = summary.caveat;
+
+    const typesDiv = document.getElementById("chart-types");
+    if (filters.objectTypes?.length) {
+      const max = Math.max(...filters.objectTypes.map(() => 1), 1);
+      typesDiv.innerHTML = filters.objectTypes.map(t =>
+        `<div class="bar"><span class="barlabel">${t.name}</span><div class="bartrack"><div class="barfill" style="width:100%"></div></div><span class="barval">—</span></div>`
+      ).join("");
+    } else {
+      typesDiv.innerHTML = "<div class='loading'>Belum ada data kategori</div>";
+    }
+
+    document.getElementById("caveat-scope").textContent = meta.dataScopeNote ?? "";
+  } catch (err) {
+    document.getElementById("kpi-grid").innerHTML = `<div class="error">Gagal memuat data: ${err.message}</div>`;
+    console.error(err);
+  }
+})();
+</script>
+</body>
+</html>
