@@ -108,7 +108,7 @@ export default {
 
     try {
       // Health check
-      if (path === "/" || path === "/health") {
+      if (path === "/health") {
         const dbCheck = await env.SIKESRA_DB.prepare("SELECT 1 as ok").first();
         return ok({ service: "SIKESRA", status: "operational", database: dbCheck ? "connected" : "error", timestamp: new Date().toISOString() }, reqId);
       }

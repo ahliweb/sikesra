@@ -23,7 +23,7 @@ async function handleSikesra(request, env) {
   const path = url.pathname;
 
   try {
-    if (path === "/" || path === "/health") {
+    if (path === "/health") {
       const dbCheck = await env.SIKESRA_DB.prepare("SELECT 1 as ok").first();
       return ok({ service: "SIKESRA", status: "operational", database: dbCheck ? "connected" : "error", timestamp: new Date().toISOString() }, reqId);
     }
@@ -150,7 +150,7 @@ export default {
     const path = url.pathname;
 
     const isSIKESRA = path.startsWith("/_emdash/api/plugins/sikesra");
-    if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro"))) {
+    if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
       return emdashWorker.fetch(request, env, ctx);
     }
 
