@@ -38,6 +38,17 @@ import {
 } from "./audit-routes";
 
 import {
+  importListHandler,
+  importCreateHandler,
+} from "./import-routes";
+
+import {
+  reportListHandler,
+  exportListHandler,
+  exportCreateHandler,
+} from "./report-routes";
+
+import {
   pluginAdminHandler,
 } from "./admin-routes";
 
@@ -78,4 +89,14 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
 
   // Audit
   "v1/audit": { handler: auditListHandler },
+
+  // Imports
+  "v1/imports": { handler: importListHandler },
+  "v1/imports/create": { handler: importCreateHandler },
+
+  // Reports & Exports
+  "v1/reports": { handler: reportListHandler },
+  "v1/exports": { handler: exportListHandler },
+  "v1/exports/create": { handler: exportCreateHandler },
 };
+
