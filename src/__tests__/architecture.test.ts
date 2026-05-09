@@ -12,6 +12,9 @@ import { maskNikKia, maskPhone, maskR2Key } from "../security/masking";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { AUDIT_ACTIONS, isHighRiskAction } from "../services/audit";
 import { applySmallCellSuppression } from "../services/public";
+import { evaluateAbac } from "../security/abac";
+import { buildContextFromEmDash, handleAdminRequest } from "../routes/handler-utils";
+import { guardRoute, checkRegionScope } from "../security/route-guard";
 
 function makeContext(overrides?: Partial<SikesraRequestContext>): SikesraRequestContext {
   return buildTrustedRequestContext({
@@ -137,7 +140,7 @@ describe("SIKESRA Architecture Validation", () => {
 
     it("should freeze roles and permissions copies", () => {
       const ctx = makeContext({ roles: ["editor"], permissions: ["awcms:sikesra:entity:read"] });
-      ctx.roles.push("admin");
+      expect(() => ctx.roles.push("admin")).toThrow();
       expect(ctx.roles).toEqual(["editor"]);
     });
   });
@@ -146,10 +149,9 @@ describe("SIKESRA Architecture Validation", () => {
     const ctx = makeContext();
 
     it("should deny public from entity detail", () => {
-      const { evaluateAbac } = require("../security/abac");
       const result = evaluateAbac(
         {
-          subject: { roles: ["public"], permissions: [], tenantId: "t1", siteId: "s1" },
+          subject: { roles: ["public"], permissions: [], tenantId: "test-tenant", siteId: "test-site" },
           resource: { resourceType: "entity" },
           action: "read",
           environment: {},
@@ -162,7 +164,6 @@ describe("SIKESRA Architecture Validation", () => {
     });
 
     it("should allow when no policies and not public", () => {
-      const { evaluateAbac } = require("../security/abac");
       const result = evaluateAbac(
         {
           subject: { roles: ["admin"], permissions: ["awcms:sikesra:entity:read"], tenantId: "default", siteId: "default" },
@@ -177,7 +178,6 @@ describe("SIKESRA Architecture Validation", () => {
     });
 
     it("should enforce deny precedence", () => {
-      const { evaluateAbac } = require("../security/abac");
       const result = evaluateAbac(
         {
           subject: { roles: ["editor"], permissions: [], tenantId: "default", siteId: "default" },
@@ -203,7 +203,6 @@ describe("SIKESRA Architecture Validation", () => {
 
   describe("Handler Sequence", () => {
     it("should build context from EmDash route context", () => {
-      const { buildContextFromEmDash } = require("../routes/handler-utils");
       const ctx = buildContextFromEmDash({
         request: new Request("https://example.com"),
         input: {},
@@ -217,7 +216,6 @@ describe("SIKESRA Architecture Validation", () => {
     });
 
     it("should handle errors gracefully via ABAC handler", async () => {
-      const { handleAdminRequest } = require("../routes/handler-utils");
       const result = await handleAdminRequest(
         { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
         { resourceType: "entity" },
@@ -227,13 +225,14 @@ describe("SIKESRA Architecture Validation", () => {
         },
       );
       expect(result.ok).toBe(false);
-      expect(result.error.code).toBe("INTERNAL_ERROR");
+      if (!result.ok) {
+        expect(result.error.code).toBe("INTERNAL_ERROR");
+      }
     });
   });
 
   describe("Route Guard", () => {
     it("should deny unauthenticated public access", () => {
-      const { guardRoute } = require("../security/route-guard");
       const ctx = makeContext({ userId: "public", roles: ["public"], permissions: [] });
       const result = guardRoute(ctx, "entity:read");
       expect(result.allowed).toBe(false);
@@ -241,7 +240,6 @@ describe("SIKESRA Architecture Validation", () => {
     });
 
     it("should deny without required permission", () => {
-      const { guardRoute } = require("../security/route-guard");
       const ctx = makeContext({ roles: ["editor"], permissions: ["awcms:sikesra:entity:read"] });
       const result = guardRoute(ctx, "settings:update");
       expect(result.allowed).toBe(false);
@@ -249,14 +247,12 @@ describe("SIKESRA Architecture Validation", () => {
     });
 
     it("should allow with correct permission", () => {
-      const { guardRoute } = require("../security/route-guard");
       const ctx = makeContext({ permissions: ["awcms:sikesra:entity:read"] });
       const result = guardRoute(ctx, "entity:read");
       expect(result.allowed).toBe(true);
     });
 
     it("should check region scope for village access", () => {
-      const { checkRegionScope } = require("../security/route-guard");
       const ctx = makeContext({ regionScope: { villageCodes: ["6201021005", "6201021006"] } });
       expect(checkRegionScope(ctx, "6201021005")).toBe(true);
       expect(checkRegionScope(ctx, "6201021007")).toBe(false);

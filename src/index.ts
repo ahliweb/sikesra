@@ -52,6 +52,7 @@ export { loadAbacPolicies } from "./repositories/abac-repository";
 
 export interface SikesraPluginOptions {
   enabled?: boolean;
+  [key: string]: unknown;
 }
 
 import { SIKESRA_ROUTES } from "./routes/registry";

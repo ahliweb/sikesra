@@ -35,13 +35,15 @@ export interface SikesraRequestContext {
 }
 
 export function buildTrustedRequestContext(input: SikesraTrustedContextInput): SikesraRequestContext {
+  const roles = Object.freeze([...input.roles]);
+  const permissions = Object.freeze([...input.permissions]);
   return {
     requestId: input.requestId,
     tenantId: input.tenantId,
     siteId: input.siteId,
     userId: input.userId,
-    roles: [...input.roles],
-    permissions: [...input.permissions],
+    roles: roles as unknown as string[],
+    permissions: permissions as unknown as string[],
     subjectAttributes: input.subjectAttributes ?? {},
     regionScope: input.regionScope ?? {},
     ipAddress: input.ipAddress,
