@@ -57,9 +57,7 @@ function overviewBlocks(): Block[] {
     { type: "section", text: "3. Verifikator meninjau, melengkapi dokumen, dan mengambil keputusan (verifikasi/perbaiki/tolak)." },
     { type: "section", text: "4. Data terverifikasi tampil di halaman publik /sikesra secara agregat dengan small-cell suppression." },
     { type: "divider" },
-    {
-      type: "context",
-    },
+    { type: "header", text: "Navigasi" },
     {
       type: "section",
       text: "Gunakan menu sidebar SIKESRA (Overview, Entities, Verification, Documents, Settings) untuk navigasi antar halaman admin.",
@@ -72,7 +70,10 @@ function entitiesBlocks(): Block[] {
     { type: "banner", variant: "default", title: "Data Utama", description: "Registri entitas kesejahteraan rakyat" },
     { type: "header", text: "Entitas Terdaftar" },
     {
-      type: "table",
+      type: "empty",
+      title: "Tidak ada data",
+      description: "Data entitas akan tampil di sini setelah diinput melalui wizard.",
+      size: "sm",
     },
     { type: "divider" },
     { type: "header", text: "Fitur Registri" },
@@ -199,10 +200,10 @@ function settingsBlocks(): Block[] {
     {
       type: "actions",
       elements: [
-        { type: "checkbox", label: "Verifikasi Berjenjang", action_id: "feature_verification", initial_value: ["enabled"] },
-        { type: "checkbox", label: "Import Excel", action_id: "feature_import", initial_value: ["enabled"] },
-        { type: "checkbox", label: "Ekspor Data", action_id: "feature_export", initial_value: ["enabled"] },
-        { type: "checkbox", label: "Generate 20-digit ID", action_id: "feature_codegen", initial_value: ["enabled"] },
+        { type: "checkbox", label: "Verifikasi Berjenjang", action_id: "feature_verification", options: [{ value: "enabled", label: "Aktif" }], initial_value: ["enabled"] },
+        { type: "checkbox", label: "Import Excel", action_id: "feature_import", options: [{ value: "enabled", label: "Aktif" }], initial_value: ["enabled"] },
+        { type: "checkbox", label: "Ekspor Data", action_id: "feature_export", options: [{ value: "enabled", label: "Aktif" }], initial_value: ["enabled"] },
+        { type: "checkbox", label: "Generate 20-digit ID", action_id: "feature_codegen", options: [{ value: "enabled", label: "Aktif" }], initial_value: ["enabled"] },
       ],
     },
   ];
