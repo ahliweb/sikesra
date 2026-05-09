@@ -1,12 +1,14 @@
 # SIKESRA MVP Go/No-Go Report
 
-Date: 2026-05-09 | Repository: `ahliweb/awcms-micro-sikesra` @ `a7c7e3a`
+Date: 2026-05-09 | Current runtime repository: `ahliweb/sikesra`
+
+Status: historical go/no-go snapshot, updated with current runtime/deployment facts. For route, binding, and build authority, also read `docs/core/SIKESRA_INTEGRATION_OVERLAY.md`.
 
 ## Executive Summary
 
 **Recommendation: Conditional Go for controlled internal testing only.**
 
-The SIKESRA MVP scaffold and deployed worker provide a functional but minimal foundation. Core data management workflows (entity CRUD, verification, settings) are operational. Production deployment requires completing remaining gaps before public release.
+The SIKESRA MVP scaffold and deployed hybrid worker provide a functional but minimal foundation. Public `/sikesra`, versioned/public APIs, plugin activation gating, and EmDash-admin Block Kit pages are wired through the current deployment. Production use still requires completing the remaining data, security, and workflow gaps before public release with real personal data.
 
 ## MVP Checklist
 
@@ -20,7 +22,7 @@ The SIKESRA MVP scaffold and deployed worker provide a functional but minimal fo
 | Entity CRUD | ✓ | Create, list (paginated), detail, patch (autosave) — all deployed |
 | Verification workflow | ✓ | Submit (draft→submitted_village), queue (level-filtered) — deployed |
 | Settings management | ✓ | Get + update with upsert — deployed |
-| Public dashboard | ✓ | `/sikesra` page at sikesra.ahliweb.workers.dev |
+| Public dashboard | ✓ | `/sikesra` page at `https://sikesrakobar.ahlikoding.com/sikesra` |
 | Public API | ✓ | Metadata, filters, summary endpoints |
 | ABAC evaluator | ✓ | Deny precedence, 10 operators, D1 policy loading |
 | Masking utility | ✓ | 12 functions covering all sensitive data types |
@@ -28,8 +30,10 @@ The SIKESRA MVP scaffold and deployed worker provide a functional but minimal fo
 | Route guard | ✓ | Auth + RBAC + region scope enforcement |
 | Audit service | ✓ | 43 action catalog, high-risk tagging |
 | Backend architecture | ✓ | Services → Repositories → D1, with scope enforcement |
-| Worker deployment | ✓ | Cloudflare Workers with D1 + R2 bindings |
-| Architecture tests | ✓ | 20 test cases across all layers |
+| Worker deployment | ✓ | Cloudflare hybrid Worker with EmDash `DB`, SIKESRA `SIKESRA_DB`, KV, and R2 bindings |
+| EmDash admin plugin pages | ✓ | Block Kit pages under `/_emdash/admin/plugins/sikesra/*`, backed by `/_emdash/api/plugins/sikesra/admin` returning `data.blocks` |
+| Root route ownership | ✓ | `/` is EmDash-owned; `/sikesra` is SIKESRA-owned |
+| Architecture tests | ✓ | 24 test cases across architecture and route boundaries |
 | Backup/restore docs | ✓ | `OPERATIONS.md` with procedures |
 | Operator docs | ✓ | `OPERATOR_TRAINING.md` with quick reference |
 
@@ -37,13 +41,13 @@ The SIKESRA MVP scaffold and deployed worker provide a functional but minimal fo
 
 | Area | Priority | Notes |
 |---|---|---|
-| Admin UI pages | P0 | No React/Kumo admin dashboard, wizard, or verification review UI |
-| Auth/session integration | P0 | Worker uses stub user — no real EmDash session derivation |
+| Full React/Kumo admin UI | P1 | Current admin pages use EmDash Block Kit; build richer React pages only if Block Kit becomes insufficient |
+| Auth/session integration for all admin APIs | P0 | Admin Block Kit endpoint delegates to EmDash auth first; remaining non-public API context must keep using trusted server-side session derivation |
 | Document upload (R2) | P0 | R2 bucket bound but no upload/download endpoints |
 | Excel import workflow | P0 | Import service stub exists but no parsing or promotion |
 | Export jobs | P1 | Export service stub exists but no file generation |
 | 20-digit ID generation | P1 | Code service stub exists but no sequence table integration |
-| Integration tests | P1 | Unit tests only; no D1 integration or e2e tests |
+| Integration tests | P1 | Architecture/unit tests only; add D1 integration, authenticated admin, activation, and e2e checks |
 | Rate limiting | P2 | Not configured on worker |
 
 ## Go Conditions
@@ -69,14 +73,13 @@ The MVP must NOT be used for production if:
 
 | Order | Action |
 |---|---|
-| 1 | Wire auth/session context from EmDash or Cloudflare Access |
-| 2 | Build admin dashboard and entity list UI |
-| 3 | Implement document upload/download with R2 |
-| 4 | Build verification review UI |
-| 5 | Implement 20-digit ID generation |
-| 6 | Build import center with staging |
-| 7 | Add integration and e2e tests |
-| 8 | Production deployment with rate limiting |
+| 1 | Finish trusted auth/session context for every non-public SIKESRA API path |
+| 2 | Implement document upload/download with R2 proxy/signed access |
+| 3 | Implement 20-digit ID generation with sequence persistence |
+| 4 | Build import center with staging, validation, duplicate review, and promotion |
+| 5 | Add integration/e2e tests for D1, activation, admin Block Kit, auth, and public suppression |
+| 6 | Expand admin UI beyond Block Kit only where operator workflows require it |
+| 7 | Production deployment hardening, including rate limiting and security review |
 
 ## Approval
 

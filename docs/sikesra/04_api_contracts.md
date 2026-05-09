@@ -102,13 +102,28 @@ type SikesraEntitySummary = {
 
 ## Endpoint Summary
 
-All paths below are relative to `/_emdash/api/plugins/sikesra/v1` unless marked public route/loader.
+Admin v1 paths below are relative to `/_emdash/api/plugins/sikesra/v1`.
+
+Public paths are not under `v1`; they are mounted at `/_emdash/api/plugins/sikesra/public/*` and are activation-gated by the hybrid wrapper.
+
+The EmDash admin Block Kit route is a special compatibility endpoint at `/_emdash/api/plugins/sikesra/admin`. It must return EmDash's plugin API envelope:
+
+```json
+{
+  "data": {
+    "blocks": []
+  }
+}
+```
+
+Do not return raw `{ "blocks": [] }` from this route; the EmDash admin client reads `(await response.json()).data.blocks`.
 
 | Group | Method and Path | Permission | Purpose |
 |---|---|---|---|
-| Public | `GET /public/metadata` | Public-safe | Public title, description, status, update timestamp. |
-| Public | `GET /public/filters` | Public-safe | Safe public filter options. |
-| Public | `GET /public/summary` | Public-safe | Public KPIs and charts with suppression. |
+| Public | `GET /metadata` under public mount | Public-safe | Public title, description, status, update timestamp. |
+| Public | `GET /filters` under public mount | Public-safe | Safe public filter options. |
+| Public | `GET /summary` under public mount | Public-safe | Public KPIs and charts with suppression. |
+| Admin Block Kit | `POST /_emdash/api/plugins/sikesra/admin` | EmDash plugin route auth | Render requested SIKESRA admin page as `data.blocks`. |
 | Dashboard | `GET /dashboard` | `dashboard:read` | Scoped admin KPIs, queues, summaries. |
 | Entities | `GET /entities` | `entity:read` | Registry list. |
 | Entities | `POST /entities` | `entity:create` | Create draft shell. |
@@ -145,6 +160,12 @@ All paths below are relative to `/_emdash/api/plugins/sikesra/v1` unless marked 
 Implementation must use full permission names such as `awcms:sikesra:entity:read`.
 
 ## Public Contracts
+
+Public contract base path:
+
+```txt
+/_emdash/api/plugins/sikesra/public
+```
 
 ### `GET /public/metadata`
 

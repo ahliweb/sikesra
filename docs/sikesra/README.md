@@ -4,6 +4,20 @@ SIKESRA, or Sistem Informasi Kesejahteraan Rakyat, is planned as a native AWCMS-
 
 This folder is the canonical implementation documentation set. It replaces earlier overlapping drafts with a non-duplicated structure: each document owns one topic and links to the other documents instead of repeating them.
 
+## Core Sync
+
+SIKESRA must stay synchronized with the AWCMS-Micro core documentation in `docs/core/`. Because this repository is the self-contained SIKESRA deployment rather than the generic reusable scaffold, always read [`../core/SIKESRA_INTEGRATION_OVERLAY.md`](../core/SIKESRA_INTEGRATION_OVERLAY.md) before applying generic core examples.
+
+Current repository-specific facts:
+
+1. Runtime/deploy repository: `ahliweb/sikesra`.
+2. SIKESRA plugin/runtime source: local `src/`, not `packages/plugins/sikesra/`.
+3. Hybrid worker template: `scripts/worker-wrapper-template.mjs`.
+4. Postbuild integration adapter: `scripts/postbuild.mjs`.
+5. Build/test/deploy commands use `npm` scripts and `npx wrangler`, not generic scaffold `pnpm` examples.
+6. Root `/` is EmDash host-owned; SIKESRA public output is only `/sikesra`.
+7. Admin Block Kit responses must use EmDash's `data.blocks` plugin API envelope.
+
 ## Reading Order
 
 | Order | Document | Use It For |
@@ -41,6 +55,7 @@ Source attachments may be stored in this folder when they support future mapping
 13. Excel import must go through upload, staging, mapping, validation, duplicate review, and explicit promotion.
 14. Public output must not expose NIK/KIA, hashes, protected names, exact addresses, individual desil, disability details, document links, or small-cell aggregates.
 15. Verification, document access, restricted exports, import promotion, duplicate overrides, ID generation/correction, policy changes, and settings changes must be audited.
+16. Any documentation or implementation change that touches routes, bindings, admin rendering, deployment, or security must update both SIKESRA docs and `docs/core/SIKESRA_INTEGRATION_OVERLAY.md` when the core integration contract changes.
 
 ## Implementation Handoff
 

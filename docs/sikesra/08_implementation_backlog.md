@@ -13,8 +13,8 @@ Task Title:
 Implement <feature> for SIKESRA
 
 Read First:
-- advance/sikesra/<doc>.md section <x>
-- advance/sikesra/11_ai_implementation_handoff.md Universal Safety Rules
+- docs/sikesra/<doc>.md section <x>
+- docs/sikesra/11_ai_implementation_handoff.md Universal Safety Rules
 
 Files To Create/Edit:
 - <exact path after repository discovery>

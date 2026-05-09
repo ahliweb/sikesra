@@ -18,7 +18,7 @@ This log captures confirmed repository conventions and synchronization rules for
 
 | Area | Decision | Source / Evidence | Notes |
 |---|---|---|---|
-| Target module folder | Confirmed runtime plugin source is local `src/` with plugin entry export in `src/plugin-entry.ts` | `package.json` export map + local runtime deployment | This repository is self-contained runtime/deploy target. |
+| Target module folder | Confirmed runtime plugin source is local `src/` with plugin entry export in `src/plugin-entry.ts` | `package.json` export map + local runtime deployment + `docs/core/SIKESRA_INTEGRATION_OVERLAY.md` | This repository is self-contained runtime/deploy target. Do not create `packages/plugins/sikesra/` here without an approved refactor. |
 | Plugin registration convention | Use EmDash native plugin pattern: descriptor factory + runtime `createPlugin()` with `definePlugin(...)` | Native plugin guide | SIKESRA should be a native plugin (admin pages + internal runtime access). |
 | Manifest convention | EmDash plugin descriptor in `astro.config.mjs` via `plugins: [sikesraPlugin(...)]`; local `module.manifest.json` remains AWCMS governance artifact | Config reference + native plugin guide | `module.manifest.json` is for AWCMS governance docs/process; EmDash runtime uses descriptor registration. |
 | Admin route convention | EmDash plugin API routes mount under `/_emdash/api/plugins/<plugin-id>/<route-name>`; SIKESRA admin UI path remains `/_emdash/admin/plugins/sikesra/*` by project rule | API routes doc + SIKESRA docs | Build SIKESRA route group aligned to project-required namespace. |
@@ -26,7 +26,7 @@ This log captures confirmed repository conventions and synchronization rules for
 | Public route convention | Public page is `/sikesra`; root `/` is EmDash-owned and must not be served by SIKESRA | `scripts/worker-wrapper-template.mjs` route split + `src/worker.ts` root guard | Keep aggregate-safe only on `/sikesra`. |
 | D1 migration path | Migrations live in repository `migrations/` with SIKESRA-prefixed SQL files | local repository structure | Deployment uses this repository only. |
 | Seed path | Seeds live in repository `seeds/` and EmDash seed behavior is host-managed | local repository structure + EmDash setup routes | Custom seed files must validate against EmDash schema. |
-| Test command | Host baseline commands confirmed: `pnpm typecheck`, `pnpm build`, `pnpm test` | `ahliweb/awcms-micro/package.json` + `docs/CONVENTIONS.md` | `pnpm test` is currently placeholder output in host scaffold and must be replaced by real tests as suites are added. |
+| Test command | Repository commands are `npm run typecheck`, `npm test`, and `npm run build` | local `package.json` + active runtime validation | Generic core/scaffold docs may show `pnpm`; use `npm` scripts in this deployment repo. |
 | Auth/session helper | EmDash passkey-first auth and provider model; use trusted server context (session/cookie or Cloudflare Access JWT) | Authentication + config reference | Implement a SIKESRA request-context builder that reads trusted session data only. |
 | Permission registry helper | Not implemented yet in host scaffold; define at `packages/awcms/permissions` (planned) and consumed by plugin package | Host scaffold structure (`packages/awcms/`) + SIKESRA security namespace rule | Current status: host path family confirmed, concrete helper file not yet created. |
 | ABAC extension point | Not provided as first-class EmDash core feature; use module-local ABAC service first, later bridge to shared AWCMS ABAC if available | EmDash docs scope + SIKESRA security docs | Local fallback approved. |
@@ -49,7 +49,7 @@ This log captures confirmed repository conventions and synchronization rules for
 
 | Missing Extension Point | Impact | Smallest Adapter Proposal | Approved? |
 |---|---|---|---|
-| Host repo exact plugin package path and workspace wiring | Resolved to host convention | Use `packages/plugins/sikesra/` and host `astro.config.mjs` `plugins: []` integration point | Resolved |
+| Host repo exact plugin package path and workspace wiring | Resolved for this repository | Use local `src/` runtime source, `src/plugin-entry.ts`, and `astro.config.mjs` plugin registration | Generic `packages/plugins/sikesra/` is a reusable scaffold convention, not active here. |
 | Host permission registry location for custom namespaces | Cannot wire `awcms:sikesra:*` into central UI/role assignment yet | Add thin registration adapter that imports SIKESRA permission catalog | Pending |
 | Host shared audit adapter compatibility | Cannot decide shared vs local audit persistence definitively | Start local `awcms_sikesra_audit_logs`; add optional adapter interface for shared writer | Pending |
 | Host shared ABAC engine compatibility | Cannot decide shared vs local ABAC evaluator definitively | Start local evaluator with pluggable policy provider; later bridge if shared engine exists | Pending |
@@ -60,12 +60,12 @@ Current state:
 
 1. Upstream EmDash conventions are confirmed from docs.
 2. SIKESRA architectural constraints remain unchanged.
-3. Host-repo-specific base paths and command conventions are now confirmed from `ahliweb/awcms-micro` scaffold.
+3. Repository-specific base paths and command conventions are confirmed for `ahliweb/sikesra` in `docs/core/SIKESRA_INTEGRATION_OVERLAY.md`.
 
 Host repository audit update:
 
-1. `ahliweb/awcms-micro` now has runtime scaffold files (`astro.config.mjs`, `package.json`, `src/live.config.ts`, `wrangler.jsonc`) and conventions (`docs/CONVENTIONS.md`).
-2. Remaining unresolved items are helper-implementation specifics (permission registry helper file, shared ABAC/audit adapter implementation), not path-discovery blockers.
+1. This repository now has runtime scaffold files (`astro.config.mjs`, `package.json`, `src/`, `scripts/worker-wrapper-template.mjs`, `scripts/postbuild.mjs`, migrations, seeds, and docs).
+2. Remaining unresolved items are helper-implementation specifics (shared permission registry helper, shared ABAC/audit adapter implementation), not path-discovery blockers.
 
 Phase 0 is fully complete only when:
 
@@ -92,11 +92,11 @@ Completed layers:
 
 Remaining for MVP:
 
-1. Wire D1/R2 bindings from Cloudflare Worker env.
-2. Implement auth/session context derivation from EmDash session.
-3. Wire ABAC policy loading from D1.
-4. Complete R2 document upload integration.
-5. Build full admin UI pages under EmDash plugin admin shell.
+1. Complete auth/session context derivation from EmDash session for all non-public APIs.
+2. Complete R2 document upload/download integration through backend proxy/signed routes.
+3. Expand integration/e2e tests around D1, auth, activation, admin Block Kit, and public suppression.
+4. Build full React/Kumo admin pages if/when Block Kit is insufficient.
+5. Validate backup/restore procedures with live D1/R2 references.
 6. Add repository-level integration tests.
 7. Validate backup/restore procedures.
 

@@ -9,7 +9,8 @@ Use this document before implementation starts, before each phase merge, and bef
 - [ ] Product requirements, architecture, data model, API, UI, security, SOP, backlog, sprint plan, and validation checklist exist.
 - [ ] AI and junior implementation handoff exists and is linked from `README.md`.
 - [ ] Source attachments, when present, are treated only as reference artifacts.
-- [ ] Parent `advance/README.md` links to the SIKESRA documentation set.
+- [ ] `docs/core/SIKESRA_INTEGRATION_OVERLAY.md` exists and is linked from both `docs/core/README.md` and `docs/sikesra/README.md`.
+- [ ] Any route, binding, wrapper, admin, deployment, or security integration change is reflected in both SIKESRA docs and the core overlay.
 
 ## Repository Discovery Validation
 
@@ -31,10 +32,15 @@ Use this document before implementation starts, before each phase merge, and bef
 - [ ] SIKESRA is a plugin/module named `sikesra`.
 - [ ] No unnecessary EmDash core changes.
 - [ ] Admin UI route is `/_emdash/admin/plugins/sikesra/*`.
+- [ ] Admin Block Kit route `/_emdash/api/plugins/sikesra/admin` returns EmDash `data.blocks` envelope for authenticated admin users.
 - [ ] API route is `/_emdash/api/plugins/sikesra/v1/*`.
+- [ ] Public API route is `/_emdash/api/plugins/sikesra/public/*` and aggregate-safe.
 - [ ] Public route is `/sikesra`.
-- [ ] `module.manifest.json` declares routes, permissions, storage scopes, migrations, dependencies, and rollback behavior.
+- [ ] Root `/` remains EmDash host-owned and is not shadowed by SIKESRA static assets.
+- [ ] Runtime plugin registration is synchronized through `src/index.ts`, `src/plugin-entry.ts`, and `astro.config.mjs`.
+- [ ] Governance manifest, if present, declares routes, permissions, storage scopes, migrations, dependencies, and rollback behavior.
 - [ ] Frontend calls typed API client only, not D1/R2 directly.
+- [ ] Hybrid worker routing in `scripts/worker-wrapper-template.mjs` preserves EmDash routes and SIKESRA activation gates.
 
 ## Database Validation
 
@@ -65,6 +71,7 @@ Use this document before implementation starts, before each phase merge, and bef
 ## Public Page Validation
 
 - [ ] `/sikesra` loads without login.
+- [ ] Inactive plugin state returns `404` for `/sikesra` and SIKESRA plugin APIs.
 - [ ] Public page uses only public-safe service or loader.
 - [ ] Public summary filters active, verified, non-deleted records only.
 - [ ] Public output contains no names, NIK/KIA, addresses, documents, individual desil, disability detail, or protected exact coordinates.
@@ -151,6 +158,11 @@ Use this document before implementation starts, before each phase merge, and bef
 
 ## Operations Validation
 
+- [ ] `node --check scripts/worker-wrapper-template.mjs` passes.
+- [ ] `node --check scripts/postbuild.mjs` passes.
+- [ ] `npm run typecheck` passes.
+- [ ] `npm test` passes.
+- [ ] `npm run build` completes and reports wrapper/sidebar postbuild patching.
 - [ ] D1 backup/export procedure documented.
 - [ ] R2 lifecycle/backup/retention policy documented.
 - [ ] Restore test validates D1 metadata and R2 object linkage.

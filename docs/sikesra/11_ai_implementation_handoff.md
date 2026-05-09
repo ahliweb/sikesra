@@ -13,6 +13,23 @@ Each implementation ticket must be small enough to complete with only:
 
 Do not ask a limited-context implementer to load the full documentation set for every ticket.
 
+For this repository, every implementation ticket that touches routes, admin UI, bindings, deployment, storage, or security must also reference `docs/core/SIKESRA_INTEGRATION_OVERLAY.md`.
+
+## Current Repository Context
+
+Use these concrete paths and commands unless a later decision log supersedes them:
+
+1. Module/runtime source: `src/`.
+2. Plugin factory and admin pages: `src/index.ts`.
+3. Plugin entrypoint: `src/plugin-entry.ts`.
+4. Route registry: `src/routes/registry.ts`.
+5. Hybrid worker template: `scripts/worker-wrapper-template.mjs`.
+6. Postbuild integration adapter: `scripts/postbuild.mjs`.
+7. Migrations: `migrations/sikesra/`.
+8. Seeds: `seeds/sikesra/`.
+9. Tests: `src/__tests__/`.
+10. Validation commands: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## Required Phase 0 Output
 
 Before creating implementation tickets beyond discovery, complete `SIKESRA-001` and `SIKESRA-002` from `08_implementation_backlog.md` and write a decision log.
@@ -63,14 +80,15 @@ Goal:
 Implement <single behavior> for the SIKESRA module.
 
 Read Only These Docs First:
-- advance/sikesra/<doc>.md: <exact section>
-- advance/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/sikesra/<doc>.md: <exact section>
+- docs/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/core/SIKESRA_INTEGRATION_OVERLAY.md: <only if route/admin/binding/deploy/security integration is touched>
 
 Repository Context From Phase 0:
-- Module path: <real path>
+- Module path: src/
 - Migration path: <real path or not applicable>
 - Route path: <real path or not applicable>
-- Test command: <real command or manual check>
+- Test command: npm run typecheck && npm test && npm run build, or a narrower documented check if appropriate
 - Shared helpers: <auth/audit/permission/media helpers or local fallback>
 
 Files To Create/Edit:
@@ -172,9 +190,9 @@ Goal:
 Find the real extension points for implementing SIKESRA and write a decision log. Do not implement business features yet.
 
 Read Only These Docs First:
-- advance/sikesra/02_architecture.md: Recommended Module Layout, Plugin Manifest Requirements
-- advance/sikesra/08_implementation_backlog.md: Phase 0
-- advance/sikesra/11_ai_implementation_handoff.md: Required Phase 0 Output, Universal Safety Rules
+- docs/sikesra/02_architecture.md: Recommended Module Layout, Plugin Manifest Requirements
+- docs/sikesra/08_implementation_backlog.md: Phase 0
+- docs/sikesra/11_ai_implementation_handoff.md: Required Phase 0 Output, Universal Safety Rules
 
 Files To Create/Edit:
 - <decision log path chosen after repository discovery>
@@ -208,12 +226,13 @@ Goal:
 Create the smallest compile-safe SIKESRA module shell.
 
 Read Only These Docs First:
-- advance/sikesra/02_architecture.md: Route Boundaries, Recommended Module Layout
-- advance/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/sikesra/02_architecture.md: Route Boundaries, Recommended Module Layout
+- docs/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
 
 Files To Create/Edit:
-- <real module path>/src/plugin.ts
-- <real module path>/README.md if the repository convention uses per-module notes
+- src/plugin-entry.ts
+- src/index.ts
+- README.md or docs only if registration behavior changes
 
 Acceptance Checks:
 - Module exports or registers using the discovered convention.
@@ -229,11 +248,11 @@ Goal:
 Add `module.manifest.json` or the repository equivalent for SIKESRA.
 
 Read Only These Docs First:
-- advance/sikesra/02_architecture.md: Plugin Manifest Requirements
-- advance/sikesra/06_security_rbac_abac.md: Permission Catalog
+- docs/sikesra/02_architecture.md: Plugin Manifest Requirements
+- docs/sikesra/06_security_rbac_abac.md: Permission Catalog
 
 Files To Create/Edit:
-- <real module path>/module.manifest.json
+- module.manifest.json if the governance manifest changes
 
 Acceptance Checks:
 - Module ID is `sikesra`.
@@ -248,12 +267,13 @@ Goal:
 Implement common success/failure helpers with request ID support.
 
 Read Only These Docs First:
-- advance/sikesra/04_api_contracts.md: Response Envelope
-- advance/sikesra/02_architecture.md: Request Handling Sequence
+- docs/sikesra/04_api_contracts.md: Response Envelope
+- docs/sikesra/02_architecture.md: Request Handling Sequence
 
 Files To Create/Edit:
-- <real module path>/src/api/response.ts
-- <real test path>/response.test.ts
+- src/api/envelope.ts
+- src/api/request-id.ts
+- src/__tests__/architecture.test.ts or a focused new test file if behavior expands
 
 Acceptance Checks:
 - Success and failure responses match `ApiSuccess<T>` and `ApiFailure`.
@@ -269,12 +289,13 @@ Goal:
 Build SIKESRA request context from trusted EmDash session and site configuration.
 
 Read Only These Docs First:
-- advance/sikesra/02_architecture.md: Request Context
-- advance/sikesra/06_security_rbac_abac.md: ABAC Inputs
+- docs/sikesra/02_architecture.md: Request Context
+- docs/sikesra/06_security_rbac_abac.md: ABAC Inputs
 
 Files To Create/Edit:
-- <real module path>/src/security/context.ts
-- <real test path>/context.test.ts
+- src/security/request-context.ts
+- src/security/route-guard.ts if enforcement changes
+- src/__tests__/architecture.test.ts or a focused new test file if behavior expands
 
 Acceptance Checks:
 - Context includes request ID, tenant, site, user, roles, permissions, region scope, and request metadata.
@@ -294,8 +315,8 @@ Goal:
 Create the D1 migration for <specific tables only>.
 
 Read Only These Docs First:
-- advance/sikesra/03_data_model.md: <exact table definitions>
-- advance/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/sikesra/03_data_model.md: <exact table definitions>
+- docs/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
 
 Files To Create/Edit:
 - <real migration path>/<migration_name>.sql
@@ -321,9 +342,9 @@ Goal:
 Implement one API behavior behind the SIKESRA route namespace.
 
 Read Only These Docs First:
-- advance/sikesra/04_api_contracts.md: Endpoint Summary and relevant endpoint section
-- advance/sikesra/06_security_rbac_abac.md: API Permission Matrix
-- advance/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/sikesra/04_api_contracts.md: Endpoint Summary and relevant endpoint section
+- docs/sikesra/06_security_rbac_abac.md: API Permission Matrix
+- docs/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
 
 Files To Create/Edit:
 - <real route file>
@@ -351,9 +372,9 @@ Goal:
 Build one SIKESRA UI screen using existing API client methods.
 
 Read Only These Docs First:
-- advance/sikesra/05_ui_ux.md: <relevant screen section>
-- advance/sikesra/04_api_contracts.md: <relevant response types>
-- advance/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
+- docs/sikesra/05_ui_ux.md: <relevant screen section>
+- docs/sikesra/04_api_contracts.md: <relevant response types>
+- docs/sikesra/11_ai_implementation_handoff.md: Universal Safety Rules
 
 Files To Create/Edit:
 - <real UI route/component path>

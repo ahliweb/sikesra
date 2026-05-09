@@ -1,6 +1,6 @@
 # SIKESRA Phase 0 Discovery Report
 
-Status: completed for Phase 0 path/convention discovery after host-repository scaffold was added.
+Status: historical Phase 0 discovery record. Current runtime conventions are superseded by `docs/core/SIKESRA_INTEGRATION_OVERLAY.md` and `docs/sikesra/IMPLEMENTATION_DECISIONS.md`.
 
 Date: 2026-05-09
 
@@ -17,6 +17,21 @@ Sources:
 5. EmDash plugin/API/config/auth/deployment references used in `docs/sikesra/IMPLEMENTATION_DECISIONS.md`
 
 ## Repository Reality Check (Current Repo)
+
+Current update:
+
+This repository is now the self-contained SIKESRA deployment target (`ahliweb/sikesra`). It contains the EmDash/Astro host scaffold, SIKESRA runtime source in local `src/`, migrations, seeds, tests, the hybrid worker wrapper, postbuild adapters, and deployment documentation. Do not use the older conclusions in this section as current implementation guidance.
+
+Current authority:
+
+1. Runtime/deploy repository: this repository, `ahliweb/sikesra`.
+2. SIKESRA runtime source path: `src/`, not `packages/plugins/sikesra/`.
+3. Hybrid worker template: `scripts/worker-wrapper-template.mjs`.
+4. Postbuild adapter: `scripts/postbuild.mjs`.
+5. Validation commands: `npm run typecheck`, `npm test`, `npm run build`.
+6. Route ownership: `/` is EmDash host-owned; `/sikesra` is SIKESRA public output.
+
+Historical snapshot follows.
 
 Observed structure in this repo:
 
@@ -98,6 +113,8 @@ Impact:
 
 ## Host Repository Re-Audit Result (Post-Scaffold)
 
+Historical note: the `ahliweb/awcms-micro` repository is now reference-only for this project. Do not deploy SIKESRA from that repository, and do not add SIKESRA business logic there. Current SIKESRA deployment and documentation live in this repository.
+
 Repository audited: `ahliweb/awcms-micro` after scaffold update (commit `4237045` on `main`).
 
 Confirmed files now present:
@@ -110,9 +127,9 @@ Confirmed files now present:
 6. `packages/plugins/` and `packages/awcms/`
 7. `migrations/` and `seeds/`
 
-Resolved from host repo:
+Resolved from historical host repo audit:
 
-1. Plugin path convention: `packages/plugins/<plugin-id>/`.
+1. Plugin path convention in the generic/reference scaffold: `packages/plugins/<plugin-id>/`.
 2. Host integration point for plugin registration: `astro.config.mjs` via EmDash `plugins: []`.
 3. Migration path convention: `migrations/`.
 4. Seed path convention: `seeds/`.
@@ -129,3 +146,24 @@ Final acceptance update for `SIKESRA-001`:
 2. Missing extension points listed: **Complete**.
 3. No business implementation added: **Complete**.
 4. No EmDash core change made: **Complete**.
+
+## Current Superseding Result
+
+For future implementation tickets, use these current paths and commands instead of the historical host-repo audit:
+
+| Area | Current Result |
+|---|---|
+| Runtime repository | `ahliweb/sikesra` |
+| Local plugin/runtime source | `src/` |
+| Plugin entry | `src/plugin-entry.ts` |
+| Plugin descriptor/factory | `src/index.ts` |
+| Route registry | `src/routes/registry.ts` |
+| Admin Block Kit route registration | `src/routes/admin-routes.ts` |
+| Deployed env-aware admin rendering | `scripts/worker-wrapper-template.mjs` |
+| Postbuild/sidebar adapter | `scripts/postbuild.mjs` |
+| D1 migrations | `migrations/` |
+| Seeds | `seeds/` |
+| Tests | `src/__tests__/architecture.test.ts` |
+| Validation commands | `npm run typecheck`, `npm test`, `npm run build` |
+
+No EmDash core source modification is approved by this discovery report.

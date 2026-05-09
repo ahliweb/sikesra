@@ -4,52 +4,49 @@
 
 SIKESRA must be built as a modular EmDash/AWCMS-Micro plugin. It contributes admin pages, public page data, API routes, D1 migrations, R2 storage scopes, permissions, services, repositories, validators, security helpers, and tests without changing EmDash core unless an extension point is truly missing.
 
+This architecture is applied through the repository-specific integration rules in `../core/SIKESRA_INTEGRATION_OVERLAY.md`. That overlay takes precedence over generic core examples when paths, commands, or deployment details differ.
+
 ## Route Boundaries
 
 | Surface | Route | Rule |
 |---|---|---|
 | Public page | `/sikesra` | No login. Aggregate-safe data only. |
 | Admin UI | `/_emdash/admin/plugins/sikesra/*` | Login and permission required. |
+| Admin Block Kit API | `/_emdash/api/plugins/sikesra/admin` | Login required. Wrapper delegates to EmDash first, then returns `data.blocks`. |
 | Admin API | `/_emdash/api/plugins/sikesra/v1/*` | Login, RBAC, ABAC, region scope, masking, audit. |
-| Public data | Astro loader or `/public/*` under plugin API | Must not expose admin/internal detail. |
+| Public data | `/_emdash/api/plugins/sikesra/public/*` | Activation-gated, public-safe aggregates only. |
+| Root public site | `/` | EmDash host-owned, never served by SIKESRA business logic. |
 
-## Recommended Module Layout
+## Current Repository Layout
 
-Use the actual repository convention discovered in Phase 0. If no convention exists, use this target layout:
+The generic core docs describe package-style module paths such as `packages/plugins/<plugin-id>/`. In this repository, SIKESRA is already integrated as a self-contained deployment with local source paths:
 
 ```txt
-packages/plugins/sikesra/
-  module.manifest.json
-  src/
-    plugin.ts
-    api/
-      client.ts
-      types.ts
-      endpoints.ts
-    routes/
-      admin-api.ts
-      public-api.ts
-    admin/
-      pages/
-      components/
-    public/
-      SikesraPublicPage.astro
-      components/
-    services/
-    repositories/
-    validators/
-    security/
-    storage/
-    migrations/
-    seeds/
-    tests/
+src/
+  index.ts                    EmDash native plugin factory and registration
+  plugin-entry.ts             package export entrypoint
+  routes/                     SIKESRA API/admin route handlers and registry
+  services/                   business workflows
+  repositories/               D1 SQL access
+  security/                   permissions, masking, ABAC, request context
+  api/                        response envelope and request ID utilities
+  pages/index.astro           EmDash-owned root public page
+scripts/
+  worker-wrapper-template.mjs hybrid runtime route split and SIKESRA public/API handling
+  postbuild.mjs               generated worker/admin bundle integration adapter
+migrations/sikesra/           D1 migrations
+seeds/sikesra/                seed data
+docs/core/                    generic core docs + SIKESRA integration overlay
+docs/sikesra/                 SIKESRA product/runtime docs
 ```
+
+Do not create `packages/plugins/sikesra/` in this repository unless a future refactor explicitly moves the local runtime source there and updates `docs/core/SIKESRA_INTEGRATION_OVERLAY.md`.
 
 ## Layer Responsibilities
 
 | Layer | Responsibility |
 |---|---|
-| Presentation | Public Astro page, admin React pages, EmDash/Kumo components. |
+| Presentation | EmDash-owned root page, SIKESRA public page, EmDash admin shell, Block Kit admin payloads, EmDash/Kumo-compatible generated UI. |
 | API/Routes | Request ID, auth, input validation, route permission, response envelope. |
 | Context | Trusted tenant, site, user, role, permission, region, request metadata. |
 | Security | RBAC, ABAC, masking, sensitivity decisions, denied access handling. |
@@ -120,7 +117,7 @@ Public context must be reduced and must resolve tenant/site from trusted host/si
 
 ## Plugin Manifest Requirements
 
-`module.manifest.json` must declare:
+`module.manifest.json` remains a governance artifact if/when added. Runtime registration currently uses `src/index.ts`, `src/plugin-entry.ts`, and `astro.config.mjs`. The governance manifest should declare:
 
 1. Module ID `sikesra`.
 2. Version and lifecycle metadata.
@@ -150,19 +147,20 @@ tenants/{tenant_id}/sites/{site_id}/modules/sikesra/exports/{year}/{month}/{safe
 
 | Component | Role |
 |---|---|
-| Cloudflare Pages/Workers | Runtime for public page, admin app, and plugin APIs. |
-| Cloudflare D1 | Relational data, metadata, settings, staging, audit. |
-| Cloudflare R2 | Documents, import workbooks, export files. |
+| Cloudflare Worker `sikesra` | Single deployed runtime for EmDash host and SIKESRA routes. |
+| `dist/server/worker-wrapper.mjs` | Hybrid route dispatcher generated from `scripts/worker-wrapper-template.mjs`. |
+| `DB` binding | EmDash core D1 binding and plugin state source. |
+| `SIKESRA_DB` binding | SIKESRA application D1 binding for module data. |
+| `MEDIA` / `SIKESRA_DOCUMENTS` bindings | EmDash media and SIKESRA private document/import/export R2 scopes. |
 | EmDash Core | Admin/plugin/auth/session foundation. |
-| AWCMS-Micro Layer | Governance and module boundaries. |
-| SIKESRA Plugin | All SIKESRA-specific logic and UI. |
+| SIKESRA Plugin | SIKESRA-specific logic, public page, APIs, D1 schema, and Block Kit admin payloads. |
 
 ## Architecture Open Decisions
 
 | Decision | Default Recommendation |
 |---|---|
-| Exact plugin folder | Use repository convention found in Phase 0; otherwise `packages/plugins/sikesra/`. |
+| Exact plugin folder | Resolved for this repo: local `src/`; generic `packages/plugins/sikesra/` is not active here. |
 | Shared audit vs module-local audit | Prefer shared audit if compatible; otherwise `awcms_sikesra_audit_logs`. |
 | Shared media vs SIKESRA file table | Prefer shared media if compatible; otherwise `awcms_sikesra_file_objects`. |
 | ABAC integration | Prefer core ABAC Matrix if available; otherwise module-local ABAC service first. |
-| Public data delivery | Prefer Astro loader backed by public-safe service; plugin public endpoint is acceptable if strictly safe. |
+| Public data delivery | Resolved for this repo: `/sikesra` page calls same-origin public endpoints under `/_emdash/api/plugins/sikesra/public/*`. |

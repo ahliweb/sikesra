@@ -78,8 +78,8 @@ Goal: create the smallest compile-safe SIKESRA module shell.
 
 Deliverables:
 
-1. Module folder using the discovered convention, defaulting to `packages/plugins/sikesra/` only if no convention exists.
-2. Plugin entrypoint, for example `src/plugin.ts`, using the discovered EmDash `definePlugin()` pattern.
+1. Module/runtime source using this repository's discovered convention: local `src/`.
+2. Plugin entrypoint using this repository's discovered files: `src/plugin-entry.ts` re-exporting `createPlugin` from `src/index.ts`.
 3. `module.manifest.json` declaring module ID `sikesra`, version, lifecycle metadata, admin routes, public route, API namespace, permissions, migrations, seeds, storage scopes, dependencies, and rollback behavior.
 4. Common API response envelope helpers with `requestId`.
 5. Trusted request context builder deriving tenant, site, user, roles, permissions, ABAC subject attributes, region scope, IP, user agent, and current timestamp from backend/session state.
