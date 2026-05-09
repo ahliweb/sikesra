@@ -1,6 +1,6 @@
 # SIKESRA Implementation Decisions
 
-Status: Phase 0 (Option B) initialized from upstream EmDash docs via `https://docs.emdashcms.com/llms.txt`.
+Status: Phase 0 through Phase 10 foundation scaffolded and pushed. Host runtime implemented in `ahliweb/awcms-micro`.
 
 This log captures what is already confirmed from upstream documentation and what still requires repository-specific confirmation when integrating with the target AWCMS-Micro host repo.
 
@@ -73,3 +73,29 @@ Phase 0 is fully complete only when:
 2. Later tickets can name exact files instead of placeholders.
 3. Missing extension points are either resolved or tracked with approved adapter plans.
 4. No SIKESRA business feature is implemented in EmDash core.
+
+## Implementation Scaffold Status (2026-05-09)
+
+Host repository: `ahliweb/awcms-micro` pushed to commit `f1b1802`.
+
+Completed layers:
+
+1. 11 D1 migration files in `migrations/sikesra/` covering all table groups.
+2. 3 seed files in `seeds/sikesra/` (types/subtypes, attributes, ABAC policies).
+3. 8 repository modules with real D1 SQL and tenant/site/scope enforcement.
+4. 13 service modules with full API contract types (entity/region/settings/documents wired to repos).
+5. 4 security modules (ABAC evaluator, masking, permissions, request context).
+6. 2 API utility modules (response envelope, request ID).
+7. 17 registered API route handlers auto-mounted to EmDash plugin via SIKESRA_ROUTES registry.
+8. Architecture validation test file in `src/__tests__/architecture.test.ts`.
+9. Plugin is registered as a native EmDash plugin in host `astro.config.mjs`.
+
+Remaining for MVP:
+
+1. Wire D1/R2 bindings from Cloudflare Worker env.
+2. Implement auth/session context derivation from EmDash session.
+3. Wire ABAC policy loading from D1.
+4. Complete R2 document upload integration.
+5. Build UI pages (public `/sikesra` + admin panel).
+6. Add repository-level integration tests.
+7. Validate backup/restore procedures.
