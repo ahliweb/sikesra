@@ -32,6 +32,11 @@ export interface EmDashRouteContext<TInput = unknown> {
   env?: RouteEnv;
 }
 
+export interface RouteHandlerInput {
+  request: Request;
+  input?: unknown;
+}
+
 // Build trusted request context from EmDash route context
 // Tenant/site/user must come from session/server state, never from query params
 export function buildContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {

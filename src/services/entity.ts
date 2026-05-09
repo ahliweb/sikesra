@@ -176,16 +176,35 @@ export async function createEntity(
     sourceInput: input.sourceInput, sourceInstitution: input.sourceInstitution,
     createdBy: ctx.userId,
   }, ctx);
+  const safeRow = row ?? {
+    id,
+    sikesra_id_20: null,
+    object_type_code: input.objectTypeCode,
+    object_subtype_code: input.objectSubtypeCode,
+    entity_kind: inferEntityKind(input.objectTypeCode),
+    display_name: input.displayName,
+    official_village_code: input.officialVillageCode,
+    status_data: "draft",
+    status_verification: "unverified",
+    verification_level: "desa",
+    sensitivity_level: input.sensitivityLevel ?? "internal",
+    completeness_percent: 0,
+    duplicate_status: "unknown",
+    source_input: input.sourceInput ?? "manual",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
   return {
-    id: row.id, sikesraId20: row.sikesra_id_20,
-    objectTypeCode: row.object_type_code, objectTypeName: "",
-    objectSubtypeCode: row.object_subtype_code, objectSubtypeName: "",
-    entityKind: row.entity_kind, displayName: row.display_name, masked: false,
-    officialRegion: {}, statusData: row.status_data,
-    statusVerification: row.status_verification, verificationLevel: row.verification_level,
-    sensitivityLevel: row.sensitivity_level, completenessPercent: row.completeness_percent,
-    duplicateStatus: row.duplicate_status, sourceInput: row.source_input,
-    createdAt: row.created_at, updatedAt: row.updated_at,
+    id: safeRow.id, sikesraId20: safeRow.sikesra_id_20,
+    objectTypeCode: safeRow.object_type_code, objectTypeName: "",
+    objectSubtypeCode: safeRow.object_subtype_code, objectSubtypeName: "",
+    entityKind: safeRow.entity_kind, displayName: safeRow.display_name, masked: false,
+    officialRegion: {}, statusData: safeRow.status_data,
+    statusVerification: safeRow.status_verification, verificationLevel: safeRow.verification_level,
+    sensitivityLevel: safeRow.sensitivity_level, completenessPercent: safeRow.completeness_percent,
+    duplicateStatus: safeRow.duplicate_status, sourceInput: safeRow.source_input,
+    createdAt: safeRow.created_at, updatedAt: safeRow.updated_at,
   };
 }
 

@@ -2,8 +2,6 @@
 // Maps route names to handler functions for EmDash plugin registration
 // Source: docs/sikesra/02_architecture.md, docs/sikesra/04_api_contracts.md
 
-import type { D1Binding } from "../repositories/db";
-
 import {
   entityListHandler,
   entityCreateHandler,
@@ -40,7 +38,7 @@ import {
 } from "./audit-routes";
 
 export interface RouteDefinition {
-  handler: (input: { request: Request; input?: unknown }, db: D1Binding) => Promise<unknown>;
+  handler: (...args: any[]) => Promise<unknown>;
   public?: boolean;
 }
 
