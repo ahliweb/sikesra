@@ -14,6 +14,7 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 8. Admin CSP compatibility fixed: `script-src-elem` now preserves required inline script execution for EmDash admin while still allowing Cloudflare Insights source.
 9. Root route ownership re-synchronized: removed SIKESRA static root asset so `/` resolves through EmDash host runtime instead of SIKESRA static page.
 10. EmDash public homepage established at root: added host-owned `src/pages/index.astro` so `/` serves public web content instead of a 404.
+11. Root homepage visual sync updated to match EmDash admin look-and-feel (dark chrome, brand accents, and host-first navigation cues).
 
 Current validation target for each release cycle:
 

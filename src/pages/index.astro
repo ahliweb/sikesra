@@ -6,36 +6,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EmDash Public Web</title>
+    <title>EmDash Home</title>
     <style>
       :root {
-        --bg: #f4f7fb;
-        --card: #ffffff;
-        --text: #0f172a;
-        --muted: #475569;
-        --border: #d9e2ec;
-        --brand: #0f766e;
+        --bg: #0f1419;
+        --panel: #1d2327;
+        --card: #232a30;
+        --text: #f5f7fa;
+        --muted: #b9c4d1;
+        --border: rgba(255, 255, 255, 0.1);
+        --brand: #2271b1;
+        --brand-hover: #2f89d3;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         color: var(--text);
-        background: radial-gradient(circle at top right, #dff7f4 0%, var(--bg) 45%);
+        background: linear-gradient(160deg, #151a20 0%, var(--bg) 42%, #0f1419 100%);
+      }
+      .topbar {
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        padding: 12px 20px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #dce5ee;
       }
       .wrap {
-        max-width: 860px;
+        max-width: 980px;
         margin: 0 auto;
-        padding: 48px 20px;
+        padding: 42px 20px;
       }
       .card {
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 28px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
       }
-      h1 { margin: 0 0 10px; }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 2rem;
+        line-height: 1.2;
+      }
       p { margin: 0 0 14px; color: var(--muted); line-height: 1.6; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .tile {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .tile h2 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+      .tile p {
+        margin: 0;
+        font-size: 0.92rem;
+      }
       .actions {
         margin-top: 20px;
         display: flex;
@@ -48,21 +84,33 @@
         padding: 10px 14px;
         border: 1px solid var(--border);
         color: var(--text);
-        background: #fff;
+        background: rgba(255, 255, 255, 0.04);
       }
       a.primary {
         background: var(--brand);
         border-color: var(--brand);
         color: #fff;
       }
+      a.primary:hover { background: var(--brand-hover); }
     </style>
   </head>
   <body>
+    <header class="topbar">EmDash Host</header>
     <main class="wrap">
       <section class="card">
-        <h1>EmDash Public Web</h1>
-        <p>This root homepage is served by the EmDash host, not SIKESRA.</p>
-        <p>SIKESRA public aggregate data remains available only at <code>/sikesra</code>.</p>
+        <h1>EmDash Public Homepage</h1>
+        <p>This homepage is aligned to the EmDash admin visual language and is served by the host runtime.</p>
+        <p>SIKESRA remains isolated as a plugin surface under <code>/sikesra</code> and <code>/_emdash/api/plugins/sikesra/*</code>.</p>
+        <div class="grid">
+          <article class="tile">
+            <h2>Admin Console</h2>
+            <p>Manage content, users, plugins, and operational workflows from the EmDash dashboard.</p>
+          </article>
+          <article class="tile">
+            <h2>Public Surface</h2>
+            <p>SIKESRA publishes aggregate-safe public data and keeps sensitive operations in protected admin APIs.</p>
+          </article>
+        </div>
         <div class="actions">
           <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
           <a href="/sikesra">Open SIKESRA Public Page</a>
