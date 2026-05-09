@@ -5,5 +5,5 @@
     "moduleResolution": "Bundler",
     "noEmit": true
   },
-  "include": ["src", "scripts", "astro.config.mjs"]
+  "include": ["src", "scripts", "astro.config.mjs", "worker-configuration.d.ts", ".astro/types.d.ts"]
 }

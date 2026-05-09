@@ -25,5 +25,8 @@ bucket_name = "sikesra"
 binding = "SESSION"
 id = "29e3fd9bbf2f448fa3b36185b8be299a"
 
+[[worker_loaders]]
+binding = "LOADER"
+
 [observability]
 enabled = true

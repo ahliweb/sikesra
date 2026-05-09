@@ -12,9 +12,11 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "astro check && tsc --noEmit",
     "dev": "astro dev",
-    "build": "astro build && node scripts/postbuild.mjs",
+    "sync:emdash": "node scripts/sync-emdash-upstream.mjs",
+    "build": "astro build",
+    "postbuild": "node scripts/postbuild.mjs",
     "preview": "astro preview",
     "deploy": "npm run build && wrangler deploy"
   },
@@ -23,7 +25,9 @@
     "@astrojs/react": "^5.0.4",
     "@emdash-cms/cloudflare": "latest",
     "astro": "^6.3.1",
-    "emdash": "latest"
+    "emdash": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
