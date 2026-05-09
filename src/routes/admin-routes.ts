@@ -1,5 +1,3 @@
-import { withHandlerSequence } from "./handler-utils";
-
 interface PluginAdminInteraction {
   type?: string;
   page?: string;
@@ -7,8 +5,10 @@ interface PluginAdminInteraction {
 
 // EmDash Block Kit admin interaction route
 // POST /_emdash/api/plugins/sikesra/admin
-export const pluginAdminHandler = withHandlerSequence(async (input?: PluginAdminInteraction) => {
-  const currentPage = input?.page || "overview";
+// Must return plain data (not a Response) — EmDash PluginRouteHandler wraps the envelope.
+export async function pluginAdminHandler(routeCtx: { input?: PluginAdminInteraction }) {
+  const input = routeCtx?.input ?? {};
+  const currentPage = input.page || "overview";
 
   return {
     blocks: [
@@ -47,4 +47,4 @@ export const pluginAdminHandler = withHandlerSequence(async (input?: PluginAdmin
       },
     ],
   };
-});
+}
