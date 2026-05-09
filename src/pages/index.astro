@@ -1,0 +1,73 @@
+---
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EmDash Public Web</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: #d9e2ec;
+        --brand: #0f766e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top right, #dff7f4 0%, var(--bg) 45%);
+      }
+      .wrap {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 48px 20px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+      }
+      h1 { margin: 0 0 10px; }
+      p { margin: 0 0 14px; color: var(--muted); line-height: 1.6; }
+      .actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      a {
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: #fff;
+      }
+      a.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>EmDash Public Web</h1>
+        <p>This root homepage is served by the EmDash host, not SIKESRA.</p>
+        <p>SIKESRA public aggregate data remains available only at <code>/sikesra</code>.</p>
+        <div class="actions">
+          <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
+          <a href="/sikesra">Open SIKESRA Public Page</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
