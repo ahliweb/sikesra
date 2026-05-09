@@ -91,6 +91,10 @@ async function handleSikesra(request, env) {
       return ok({ kpis: { totalEntities: total?.cnt ?? 0, verifiedEntities: total?.cnt ?? 0, activeVillages: villages?.cnt ?? 0, latestUpdateAt: new Date().toISOString() }, charts: { byObjectType: [], byRegion: [], byVerificationStatus: [], bySafeAttribute: [] }, suppression: { threshold: 5, suppressedCells: 0 }, caveat: "Data pada halaman ini merupakan rekapitulasi agregat yang telah diverifikasi. Data pribadi tidak ditampilkan." }, reqId);
     }
 
+    if (path === "/_emdash/api/plugins/sikesra/admin" && request.method === "POST") {
+      return ok({ blocks: [] }, reqId);
+    }
+
     if (path === "/_emdash/api/plugins/sikesra/v1/entities" && request.method === "GET") {
       const page = parseInt(url.searchParams.get("page") ?? "1", 10);
       const perPage = Math.min(parseInt(url.searchParams.get("per_page") ?? "50", 10), 100);

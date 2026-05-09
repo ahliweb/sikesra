@@ -164,6 +164,11 @@ export default {
         }, reqId);
       }
 
+      // EmDash Block Kit admin interaction endpoint
+      if (path === "/_emdash/api/plugins/sikesra/admin" && request.method === "POST") {
+        return ok({ blocks: [] }, reqId);
+      }
+
       // Entity list
       if (path === "/_emdash/api/plugins/sikesra/v1/entities") {
         const page = parseInt(url.searchParams.get("page") ?? "1", 10);

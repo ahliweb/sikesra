@@ -82,6 +82,15 @@ export function createPlugin(_options: SikesraPluginOptions = {}) {
   return definePlugin({
     id: "sikesra",
     version: "0.1.0",
+    admin: {
+      pages: [
+        { path: "/", label: "Overview" },
+        { path: "/entities", label: "Entities" },
+        { path: "/verification", label: "Verification" },
+        { path: "/documents", label: "Documents" },
+        { path: "/settings", label: "Settings" },
+      ],
+    },
     routes,
     hooks: {},
   });
