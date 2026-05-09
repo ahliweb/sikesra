@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync, renameSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { readFile } from "fs/promises";
+import { readdirSync, readFileSync, renameSync, writeFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createHash } from "crypto";
@@ -7,9 +6,28 @@ import { createHash } from "crypto";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
-// 1. Patch generated wrangler.json to use our wrapper as main entry
-const wranglerPath = resolve(root, "dist/server/wrangler.json");
-const cfg = JSON.parse(readFileSync(wranglerPath, "utf8"));
+const DIST_SERVER_DIR = resolve(root, "dist/server");
+const DIST_CLIENT_ASTRO_DIR = resolve(root, "dist/client/_astro");
+const WRAPPER_PLACEHOLDER = "__SIKESRA_PUBLIC_HTML__";
+
+function readRequired(path, label) {
+  if (!existsSync(path)) {
+    throw new Error(`[postbuild] missing ${label}: ${path}`);
+  }
+
+  return readFileSync(path, "utf8");
+}
+
+function escapeTemplateLiteral(value) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "\\`")
+    .replace(/\$\{/g, "\\${");
+}
+
+// 1. Patch generated wrangler.json to use our wrapper as main entry.
+const wranglerPath = resolve(DIST_SERVER_DIR, "wrangler.json");
+const cfg = JSON.parse(readRequired(wranglerPath, "generated wrangler config"));
 cfg.main = "worker-wrapper.mjs";
 writeFileSync(wranglerPath, JSON.stringify(cfg));
 
@@ -23,12 +41,12 @@ const htmlPath = resolve(__dirname, "sikesra-public-html.txt");
 try { publicHtml = readFileSync(htmlPath, "utf8"); } catch {}
 
 // 4. Load the wrapper template and inject the HTML
-let wrapper = readFileSync(resolve(__dirname, "worker-wrapper-template.mjs"), "utf8");
-wrapper = wrapper.replace("__SIKESRA_PUBLIC_HTML__", publicHtml
-  .replace(/\\/g, "\\\\")
-  .replace(/`/g, "\\`")
-  .replace(/\${/g, "\\${"));
-writeFileSync(resolve(root, "dist/server/worker-wrapper.mjs"), wrapper);
+let wrapper = readRequired(resolve(__dirname, "worker-wrapper-template.mjs"), "worker wrapper template");
+if (!wrapper.includes(WRAPPER_PLACEHOLDER)) {
+  throw new Error(`[postbuild] wrapper template is missing placeholder ${WRAPPER_PLACEHOLDER}`);
+}
+wrapper = wrapper.replace(WRAPPER_PLACEHOLDER, escapeTemplateLiteral(publicHtml));
+writeFileSync(resolve(DIST_SERVER_DIR, "worker-wrapper.mjs"), wrapper);
 
 // 5. Patch generated EmDash admin sidebar ordering for this self-contained host.
 // EmDash currently groups all plugin admin pages under a generic Plugins group
@@ -36,7 +54,7 @@ writeFileSync(resolve(root, "dist/server/worker-wrapper.mjs"), wrapper);
 // so keep the runtime plugin APIs intact while moving that generated group near
 // the top and labelling it explicitly.
 function patchAdminSidebar() {
-  const astroDir = resolve(root, "dist/client/_astro");
+  const astroDir = DIST_CLIENT_ASTRO_DIR;
   if (!existsSync(astroDir)) return false;
 
   for (const file of readdirSync(astroDir)) {

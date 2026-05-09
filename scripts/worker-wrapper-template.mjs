@@ -3,26 +3,67 @@ import emdashMod from "./entry.mjs";
 const emdashWorker = emdashMod;
 
 const SIKESRA_PUBLIC_HTML = `__SIKESRA_PUBLIC_HTML__`;
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  "CDN-Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+const SIKESRA_ADMIN_BLOCKKIT_PATH = "/_emdash/api/plugins/sikesra/admin";
+
+function errorMessage(err, fallback = "unknown") {
+  return err instanceof Error ? err.message : fallback;
+}
+
+function withNoStoreHeaders(headers = {}) {
+  return { ...NO_STORE_HEADERS, ...headers };
+}
+
+function routeResponse(body, init = {}, route) {
+  const headers = new Headers(init.headers || {});
+  headers.set("X-Route", route);
+  return new Response(body, { ...init, headers });
+}
+
+function cloneResponseWithHeaders(response, route, extraHeaders = {}) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Route", route);
+  for (const [key, value] of Object.entries(extraHeaders)) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function notFoundResponse(route = "sikesra") {
+  return routeResponse("Not Found", {
+    status: 404,
+    headers: withNoStoreHeaders(),
+  }, route);
+}
 
 
 
 function ok(data, requestId, meta) {
   return new Response(JSON.stringify({ ok: true, requestId, data, meta }), {
-    headers: { "Content-Type": "application/json" },
+    headers: withNoStoreHeaders({ "Content-Type": "application/json" }),
   });
 }
 
 function fail(requestId, code, message, status = 400) {
   return new Response(JSON.stringify({ ok: false, requestId, error: { code, message } }), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: withNoStoreHeaders({ "Content-Type": "application/json" }),
   });
 }
 
 function emdashPluginOk(data, status = 200) {
   return new Response(JSON.stringify({ data }), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: withNoStoreHeaders({ "Content-Type": "application/json" }),
   });
 }
 
@@ -89,13 +130,7 @@ async function handleSikesra(request, env) {
     if (path === "/sikesra" || path === "/sikesra/" || path.startsWith("/_emdash/api/plugins/sikesra/public/")) {
       const active = await isSikesraPluginActive(env);
       if (!active) {
-        return new Response("Not Found", {
-          status: 404,
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-            "CDN-Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-          },
-        });
+        return notFoundResponse();
       }
     }
 
@@ -105,7 +140,7 @@ async function handleSikesra(request, env) {
     }
 
     if (path === "/sikesra" || path === "/sikesra/") {
-      return new Response(SIKESRA_PUBLIC_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return new Response(SIKESRA_PUBLIC_HTML, { headers: withNoStoreHeaders({ "Content-Type": "text/html; charset=utf-8" }) });
     }
 
     if (path === "/_emdash/api/plugins/sikesra/public/metadata") {
@@ -679,20 +714,18 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const isSikesraAdminBlockKit = path === "/_emdash/api/plugins/sikesra/admin";
+  const isSikesraAdminBlockKit = path === SIKESRA_ADMIN_BLOCKKIT_PATH;
 
     if (isSikesraAdminBlockKit) {
       try {
         const authResp = await emdashWorker.fetch(request.clone(), env, ctx);
         if (!authResp.ok) return authResp;
         const active = await isSikesraPluginActive(env);
-        if (!active) return new Response("Not Found", { status: 404 });
+        if (!active) return notFoundResponse("sikesra-admin");
         const resp = await handleSikesraAdminBlockKit(request, env);
-        resp.headers.set("X-Route", "sikesra-admin");
-        resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-        return resp;
+        return cloneResponseWithHeaders(resp, "sikesra-admin", NO_STORE_HEADERS);
       } catch (e) {
-        return new Response("SIKESRA admin error: " + (e && e.message || "unknown"), { status: 500 });
+        return routeResponse(`SIKESRA admin error: ${errorMessage(e)}`, { status: 500, headers: withNoStoreHeaders() }, "sikesra-admin");
       }
     }
 
@@ -704,27 +737,25 @@ export default {
     if (goToEmDash) {
       try {
         const resp = await emdashWorker.fetch(request, env, ctx);
-        const csp = resp.headers.get("content-security-policy");
+        const headers = new Headers(resp.headers);
+        const csp = headers.get("content-security-policy");
         if (csp) {
-          resp.headers.set("content-security-policy", withInsightsScriptSource(csp));
+          headers.set("content-security-policy", withInsightsScriptSource(csp));
         }
-        resp.headers.set("X-Route", path === "/" ? "emdash-root" : "emdash");
-        resp.headers.set("CDN-Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-        resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-        resp.headers.set("Pragma", "no-cache");
-        resp.headers.set("Expires", "0");
-        return resp;
+        for (const [key, value] of Object.entries(NO_STORE_HEADERS)) {
+          headers.set(key, value);
+        }
+        return cloneResponseWithHeaders(resp, path === "/" ? "emdash-root" : "emdash", Object.fromEntries(headers.entries()));
       } catch (e) {
-        return new Response("EmDash error: " + (e && e.message || "unknown"), { status: 500 });
+        return routeResponse(`EmDash error: ${errorMessage(e)}`, { status: 500, headers: withNoStoreHeaders() }, path === "/" ? "emdash-root" : "emdash");
       }
     }
 
     try {
       const resp = await handleSikesra(request, env);
-      resp.headers.set("X-Route", "sikesra");
-      return resp;
+      return cloneResponseWithHeaders(resp, "sikesra");
     } catch (e) {
-      return new Response("Handler error: " + (e && e.message || "unknown"), { status: 500 });
+      return routeResponse(`Handler error: ${errorMessage(e)}`, { status: 500, headers: withNoStoreHeaders() }, "sikesra");
     }
   },
 };
