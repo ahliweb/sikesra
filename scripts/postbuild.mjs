@@ -12,11 +12,9 @@ const cfg = JSON.parse(readFileSync(wranglerPath, "utf8"));
 cfg.main = "worker-wrapper.mjs";
 writeFileSync(wranglerPath, JSON.stringify(cfg));
 
-// 2. Strip import "cloudflare:workers" from generated entry
-const entryPath = resolve(root, "dist/server/entry.mjs");
-let entry = readFileSync(entryPath, "utf8");
-entry = entry.replace(/^import "cloudflare:workers";\n/gm, "");
-writeFileSync(entryPath, entry);
+// 2. Keep generated entry as-is.
+// EmDash Cloudflare adapters rely on cloudflare:workers runtime bindings,
+// so we do not strip that import.
 
 // 3. Load the SIKESRA public HTML from the template file
 let publicHtml = "";
@@ -31,4 +29,4 @@ wrapper = wrapper.replace("__SIKESRA_PUBLIC_HTML__", publicHtml
   .replace(/\${/g, "\\${"));
 writeFileSync(resolve(root, "dist/server/worker-wrapper.mjs"), wrapper);
 
-console.log("[postbuild] patched wrangler.json + entry.mjs + worker-wrapper.mjs");
+console.log("[postbuild] patched wrangler.json + worker-wrapper.mjs");

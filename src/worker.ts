@@ -107,6 +107,22 @@ export default {
     const path = url.pathname;
 
     try {
+      // Never serve SIKESRA content from root path.
+      // Root is reserved for EmDash host routing.
+      if (path === "/") {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: "/_emdash/admin",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "CDN-Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            Pragma: "no-cache",
+            Expires: "0",
+            "X-Route": "emdash-root-only",
+          },
+        });
+      }
+
       // Health check
       if (path === "/health") {
         const dbCheck = await env.SIKESRA_DB.prepare("SELECT 1 as ok").first();
