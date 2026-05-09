@@ -1,5 +1,4 @@
 name = "sikesra"
-main = "dist/server/worker-wrapper.mjs"
 compatibility_date = "2026-05-09"
 compatibility_flags = ["nodejs_compat"]
 

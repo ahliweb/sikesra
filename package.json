@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "description": "SIKESRA — Sistem Informasi Kesejahteraan Rakyat as an EmDash-native plugin (self-contained host)",
-  "main": "src/index.ts",
+  "main": "src/plugin-entry.ts",
   "exports": {
     ".": {
-      "import": "./src/index.ts"
+      "import": "./src/plugin-entry.ts"
     }
   },
   "scripts": {

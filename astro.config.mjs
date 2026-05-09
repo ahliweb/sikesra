@@ -16,7 +16,15 @@ export default defineConfig({
     emdash({
       database: d1({ binding: "DB", session: "auto" }),
       storage: r2({ binding: "MEDIA" }),
-      plugins: [],
+      plugins: [
+        {
+          id: "sikesra",
+          version: "0.1.0",
+          format: "native",
+          entrypoint: "@ahliweb/plugin-sikesra",
+          adminPages: [{ path: "/", label: "SIKESRA" }],
+        },
+      ],
     }),
   ],
   devToolbar: { enabled: false },
