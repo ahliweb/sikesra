@@ -209,6 +209,28 @@ describe("SIKESRA Architecture Validation", () => {
         input: {},
         requestMeta: { ip: "1.2.3.4", userAgent: "test" },
         site: { id: "site-1", tenantId: "tenant-1" },
+      });
+      expect(ctx.tenantId).toBe("tenant-1");
+      expect(ctx.siteId).toBe("site-1");
+      expect(ctx.ipAddress).toBe("1.2.3.4");
+      expect(ctx.requestId).toBeTruthy();
+    });
+
+    it("should handle errors gracefully via ABAC handler", async () => {
+      const { handleAdminRequest } = require("../routes/handler-utils");
+      const result = await handleAdminRequest(
+        { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
+        { resourceType: "entity" },
+        "read",
+        async () => {
+          throw new Error("test error");
+        },
+      );
+      expect(result.ok).toBe(false);
+      expect(result.error.code).toBe("INTERNAL_ERROR");
+    });
+  });
+
   describe("Route Guard", () => {
     it("should deny unauthenticated public access", () => {
       const { guardRoute } = require("../security/route-guard");
@@ -238,25 +260,6 @@ describe("SIKESRA Architecture Validation", () => {
       const ctx = makeContext({ regionScope: { villageCodes: ["6201021005", "6201021006"] } });
       expect(checkRegionScope(ctx, "6201021005")).toBe(true);
       expect(checkRegionScope(ctx, "6201021007")).toBe(false);
-    });
-  });
-});
-      expect(ctx.tenantId).toBe("tenant-1");
-      expect(ctx.siteId).toBe("site-1");
-      expect(ctx.ipAddress).toBe("1.2.3.4");
-      expect(ctx.requestId).toBeTruthy();
-    });
-
-    it("should handle errors gracefully via ABAC handler", async () => {
-      const { handleAdminRequest } = require("../routes/handler-utils");
-      const result = await handleAdminRequest(
-        { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
-        { resourceType: "entity" },
-        "read",
-        async () => { throw new Error("test error"); },
-      );
-      expect(result.ok).toBe(false);
-      expect(result.error.code).toBe("INTERNAL_ERROR");
     });
   });
 });

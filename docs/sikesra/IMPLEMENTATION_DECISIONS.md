@@ -1,8 +1,8 @@
 # SIKESRA Implementation Decisions
 
-Status: Phase 0 through Phase 10 foundation scaffolded and pushed. Host runtime implemented in `ahliweb/awcms-micro`.
+Status: Active in `ahliweb/sikesra` (this repository). Hybrid worker deployment is the runtime source of truth.
 
-This log captures what is already confirmed from upstream documentation and what still requires repository-specific confirmation when integrating with the target AWCMS-Micro host repo.
+This log captures confirmed repository conventions and synchronization rules for EmDash host + SIKESRA plugin behavior in this repository.
 
 ## EmDash Docs Sources Used
 
@@ -18,14 +18,14 @@ This log captures what is already confirmed from upstream documentation and what
 
 | Area | Decision | Source / Evidence | Notes |
 |---|---|---|---|
-| Target module folder | Confirmed host plugin path convention: `packages/plugins/sikesra/` | `ahliweb/awcms-micro/docs/CONVENTIONS.md` + host scaffold commit `4237045` | Use this as the default implementation root for SIKESRA plugin package in host runtime. |
+| Target module folder | Confirmed runtime plugin source is local `src/` with plugin entry export in `src/plugin-entry.ts` | `package.json` export map + local runtime deployment | This repository is self-contained runtime/deploy target. |
 | Plugin registration convention | Use EmDash native plugin pattern: descriptor factory + runtime `createPlugin()` with `definePlugin(...)` | Native plugin guide | SIKESRA should be a native plugin (admin pages + internal runtime access). |
 | Manifest convention | EmDash plugin descriptor in `astro.config.mjs` via `plugins: [sikesraPlugin(...)]`; local `module.manifest.json` remains AWCMS governance artifact | Config reference + native plugin guide | `module.manifest.json` is for AWCMS governance docs/process; EmDash runtime uses descriptor registration. |
 | Admin route convention | EmDash plugin API routes mount under `/_emdash/api/plugins/<plugin-id>/<route-name>`; SIKESRA admin UI path remains `/_emdash/admin/plugins/sikesra/*` by project rule | API routes doc + SIKESRA docs | Build SIKESRA route group aligned to project-required namespace. |
 | API route convention | Use project namespace `/_emdash/api/plugins/sikesra/v1/*`; map to EmDash route handlers in plugin runtime | SIKESRA architecture/API docs + API routes doc | EmDash default route shape is supported; add `v1/*` route names to keep versioned boundary. |
-| Public route convention | Public page must be `/sikesra`, served from host Astro routes/loader (not admin API client) | SIKESRA architecture/UI docs | Keep aggregate-safe only. |
-| D1 migration path | Host migration convention directory confirmed: `migrations/` (module subfolders allowed) | `ahliweb/awcms-micro/docs/CONVENTIONS.md` | SIKESRA migrations should live under `migrations/sikesra/` in host runtime integration phase. |
-| Seed path | Host seed convention directory confirmed: `seeds/` | `ahliweb/awcms-micro/docs/CONVENTIONS.md` + host `package.json` scripts | SIKESRA seeds should live under `seeds/sikesra/`; host script baseline includes `pnpm seed` (`emdash seed`). |
+| Public route convention | Public page is `/sikesra`; root `/` is EmDash-owned and must not be served by SIKESRA | `scripts/worker-wrapper-template.mjs` route split + `src/worker.ts` root guard | Keep aggregate-safe only on `/sikesra`. |
+| D1 migration path | Migrations live in repository `migrations/` with SIKESRA-prefixed SQL files | local repository structure | Deployment uses this repository only. |
+| Seed path | Seeds live in repository `seeds/` and EmDash seed behavior is host-managed | local repository structure + EmDash setup routes | Custom seed files must validate against EmDash schema. |
 | Test command | Host baseline commands confirmed: `pnpm typecheck`, `pnpm build`, `pnpm test` | `ahliweb/awcms-micro/package.json` + `docs/CONVENTIONS.md` | `pnpm test` is currently placeholder output in host scaffold and must be replaced by real tests as suites are added. |
 | Auth/session helper | EmDash passkey-first auth and provider model; use trusted server context (session/cookie or Cloudflare Access JWT) | Authentication + config reference | Implement a SIKESRA request-context builder that reads trusted session data only. |
 | Permission registry helper | Not implemented yet in host scaffold; define at `packages/awcms/permissions` (planned) and consumed by plugin package | Host scaffold structure (`packages/awcms/`) + SIKESRA security namespace rule | Current status: host path family confirmed, concrete helper file not yet created. |
@@ -76,7 +76,7 @@ Phase 0 is fully complete only when:
 
 ## Implementation Scaffold Status (2026-05-09)
 
-Host repository: `ahliweb/awcms-micro` pushed to commit `f1b1802`.
+Runtime repository: `ahliweb/sikesra`.
 
 Completed layers:
 
@@ -96,6 +96,13 @@ Remaining for MVP:
 2. Implement auth/session context derivation from EmDash session.
 3. Wire ABAC policy loading from D1.
 4. Complete R2 document upload integration.
-5. Build UI pages (public `/sikesra` + admin panel).
+5. Build full admin UI pages under EmDash plugin admin shell.
 6. Add repository-level integration tests.
 7. Validate backup/restore procedures.
+
+## Synchronization Rules (Runtime)
+
+1. Plugin activation state in `_plugin_state` controls `/sikesra` and `/_emdash/api/plugins/sikesra/*` availability.
+2. When plugin status is `inactive`, public/API SIKESRA routes must return `404`.
+3. Root `/` is always EmDash host-owned; SIKESRA must never inject root HTML.
+4. Plugin descriptor and runtime entry must stay synchronized via `sikesraPlugin()` in `astro.config.mjs` and `createPlugin` export in `src/plugin-entry.ts`.
