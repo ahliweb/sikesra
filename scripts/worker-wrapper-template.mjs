@@ -4,6 +4,38 @@ const emdashWorker = emdashMod;
 
 const SIKESRA_PUBLIC_HTML = `__SIKESRA_PUBLIC_HTML__`;
 
+const SIKESRA_ADMIN_BLOCKS = [
+  {
+    type: "banner",
+    variant: "default",
+    title: "SIKESRA plugin active",
+    description: "Admin plugin route is responding and ready.",
+  },
+  {
+    type: "header",
+    text: "SIKESRA Admin",
+  },
+  {
+    type: "section",
+    text: "Use the EmDash plugin sidebar entries (Overview, Entities, Verification, Documents, Settings) to access SIKESRA workflows.",
+  },
+  {
+    type: "stats",
+    items: [
+      {
+        label: "Public page",
+        value: "/sikesra",
+        description: "Aggregate-safe public output",
+      },
+      {
+        label: "Admin API",
+        value: "online",
+        description: "/_emdash/api/plugins/sikesra/v1/*",
+      },
+    ],
+  },
+];
+
 function ok(data, requestId, meta) {
   return new Response(JSON.stringify({ ok: true, requestId, data, meta }), {
     headers: { "Content-Type": "application/json" },
@@ -117,7 +149,16 @@ async function handleSikesra(request, env) {
     }
 
     if (path === "/_emdash/api/plugins/sikesra/admin" && request.method === "POST") {
-      return ok({ blocks: [] }, reqId);
+      const body = await request.json().catch(() => ({}));
+      const page = typeof body?.page === "string" && body.page ? body.page : "overview";
+      const blocks = [
+        ...SIKESRA_ADMIN_BLOCKS,
+        {
+          type: "section",
+          text: `Current page: ${page}`,
+        },
+      ];
+      return ok({ blocks }, reqId);
     }
 
     if (path === "/_emdash/api/plugins/sikesra/v1/entities" && request.method === "GET") {
