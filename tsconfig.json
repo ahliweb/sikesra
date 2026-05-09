@@ -1,0 +1,9 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "types": ["vitest/globals", "@cloudflare/workers-types"],
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  "include": ["src", "scripts", "astro.config.mjs"]
+}

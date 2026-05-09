@@ -2,6 +2,19 @@
 
 This plan is derived from the AWCMS-Micro core EmDash compatibility documentation in `docs/core/` and the SIKESRA module documentation in `docs/sikesra/`.
 
+## Execution Retry Notes (2026-05-09)
+
+1. Plugin activation synchronization fixed: deactivating `sikesra` now disables `/sikesra` and `/_emdash/api/plugins/sikesra/*` at runtime.
+2. Root route ownership fixed: `/` remains EmDash host route boundary; SIKESRA public output is limited to `/sikesra`.
+3. Plugin entry synchronization fixed: `src/plugin-entry.ts` now exports real `createPlugin` from `src/index.ts`.
+4. Build/test reliability fixed: malformed architecture test block corrected and repository `tsconfig.json` restored.
+
+Current validation target for each release cycle:
+
+1. Active plugin -> `/sikesra` returns `200`, public metadata returns `200`.
+2. Inactive plugin -> `/sikesra` and `/_emdash/api/plugins/sikesra/*` return `404`.
+3. `/_emdash/admin` remains EmDash-managed and authenticated.
+
 ## Implementation Principle
 
 SIKESRA must be implemented as an isolated EmDash/AWCMS-Micro plugin or module named `sikesra`. EmDash remains the architectural authority; SIKESRA business logic, data tables, APIs, UI, permissions, audit, storage, and workflows must live in module/plugin boundaries unless a missing extension point is documented and approved.
