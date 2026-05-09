@@ -9,6 +9,7 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 3. Plugin entry synchronization fixed: `src/plugin-entry.ts` now exports real `createPlugin` from `src/index.ts`.
 4. Build/test reliability fixed: malformed architecture test block corrected and repository `tsconfig.json` restored.
 5. EmDash admin interaction compatibility fixed: `/_emdash/api/plugins/sikesra/admin` now responds with a valid Block Kit payload, preventing admin UI retry loops and repeated `404` errors.
+6. CSP synchronization fixed at hybrid wrapper: EmDash admin responses now keep existing CSP directives while adding Cloudflare Insights script source to avoid blocked beacon script logs.
 
 Current validation target for each release cycle:
 
