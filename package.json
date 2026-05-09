@@ -23,9 +23,10 @@
     "@astrojs/react": "^5.0.4",
     "@emdash-cms/cloudflare": "latest",
     "astro": "^6.3.1",
-    "emdash": "latest",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "emdash": "latest"
+  },
+  "overrides": {
+    "kysely": "0.28.14"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
