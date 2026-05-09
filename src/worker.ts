@@ -159,9 +159,27 @@ export default {
         return ok(row, reqId);
       }
 
-      // Entity detail
+      // Entity detail and submit
       if (path.startsWith("/_emdash/api/plugins/sikesra/v1/entities/") && !path.includes("/create")) {
-        const entityId = path.split("/").pop()!;
+        const parts = path.split("/");
+        const entIdx = parts.indexOf("entities");
+        const entityId = parts[entIdx + 1];
+        const action = parts[entIdx + 2];
+
+        if (!entityId) return fail(reqId, "NOT_FOUND", "Entity ID not found", 404);
+
+        // Submit endpoint
+        if (action === "submit" && request.method === "POST") {
+          const existing = await env.SIKESRA_DB.prepare("SELECT status_data FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<{ status_data: string }>();
+          if (!existing) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
+          if (existing.status_data !== "draft") return fail(reqId, "INVALID_STATE", "Only draft entities can be submitted");
+          await env.SIKESRA_DB.prepare("UPDATE awcms_sikesra_entities SET status_data = 'submitted', status_verification = 'submitted_village', verification_level = 'desa', updated_at = datetime('now') WHERE id = ?").bind(entityId).run();
+          const evtId = `vevt_${Date.now()}`;
+          await env.SIKESRA_DB.prepare("INSERT INTO awcms_sikesra_verification_events (id, tenant_id, site_id, entity_id, actor_id, actor_role, verification_level, action, previous_status, next_status, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(evtId, "default", "default", entityId, "api-user", "admin", "desa", "submit", "draft", "submitted_village", reqId).run();
+          return ok({ entityId, newStatus: "submitted", verificationStatus: "submitted_village", eventId: evtId }, reqId);
+        }
+
+        // Detail endpoint
         const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<Record<string, unknown>>();
         if (!row) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
         return ok({
@@ -173,20 +191,8 @@ export default {
             sourceInput: row.source_input, createdAt: row.created_at, updatedAt: row.updated_at,
           },
           summary: {}, attributes: [], documents: [], verification: [], benefits: [], audit: [],
-          access: { canEdit: true, canSubmit: false, canVerify: false, canGenerateCode: false, canRevealSensitive: false, canDownloadDocuments: false, deniedActions: [] },
+          access: { canEdit: true, canSubmit: true, canVerify: false, canGenerateCode: false, canRevealSensitive: false, canDownloadDocuments: false, deniedActions: [] },
         }, reqId);
-      }
-
-      // Entity submit (draft → submitted_village)
-      if (path.startsWith("/_emdash/api/plugins/sikesra/v1/entities/") && path.endsWith("/submit") && request.method === "POST") {
-        const entityId = path.split("/").slice(-2)[0];
-        const existing = await env.SIKESRA_DB.prepare("SELECT status_data FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<{ status_data: string }>();
-        if (!existing) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
-        if (existing.status_data !== "draft") return fail(reqId, "INVALID_STATE", "Only draft entities can be submitted");
-        await env.SIKESRA_DB.prepare("UPDATE awcms_sikesra_entities SET status_data = 'submitted', status_verification = 'submitted_village', verification_level = 'desa', updated_at = datetime('now') WHERE id = ?").bind(entityId).run();
-        const evtId = `vevt_${Date.now()}`;
-        await env.SIKESRA_DB.prepare("INSERT INTO awcms_sikesra_verification_events (id, tenant_id, site_id, entity_id, actor_id, actor_role, verification_level, action, previous_status, next_status, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(evtId, "default", "default", entityId, "api-user", "admin", "desa", "submit", "draft", "submitted_village", reqId).run();
-        return ok({ entityId, newStatus: "submitted", verificationStatus: "submitted_village", eventId: evtId }, reqId);
       }
 
       // Verification queue
