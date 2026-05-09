@@ -109,7 +109,7 @@ async function handleSikesra(request, env) {
   const path = url.pathname;
 
   try {
-    if (path === "/sikesra" || path === "/sikesra/" || path.startsWith("/_emdash/api/plugins/sikesra/")) {
+    if (path === "/sikesra" || path === "/sikesra/" || path.startsWith("/_emdash/api/plugins/sikesra/public/")) {
       const active = await isSikesraPluginActive(env);
       if (!active) {
         return new Response("Not Found", {
@@ -264,8 +264,13 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const isSIKESRA = path.startsWith("/_emdash/api/plugins/sikesra");
-    if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
+    const isSikesraPublicSurface =
+      path === "/sikesra" ||
+      path === "/sikesra/" ||
+      path === "/health" ||
+      path.startsWith("/_emdash/api/plugins/sikesra/public/");
+
+    if (!isSikesraPublicSurface && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
       try {
         const resp = await emdashWorker.fetch(request, env, ctx);
         const csp = resp.headers.get("content-security-policy");
