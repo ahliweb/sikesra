@@ -1,0 +1,27 @@
+{
+  "name": "@ahliweb/plugin-sikesra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SIKESRA — Sistem Informasi Kesejahteraan Rakyat as an EmDash-native plugin",
+  "main": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "emdash": "*"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.1",
+    "typescript": "^5.8.3"
+  },
+  "keywords": ["sikesra", "welfare", "emdash", "awcms"],
+  "license": "SEE LICENSE IN LICENSE"
+}

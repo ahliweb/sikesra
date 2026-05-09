@@ -1,0 +1,126 @@
+// SIKESRA Audit Service Baseline
+// Immutable critical-action event writer
+// Source: docs/sikesra/06_security_rbac_abac.md
+
+export interface AuditEventInput {
+  tenantId: string;
+  siteId: string;
+  actorId?: string;
+  actorRole?: string;
+  action: AuditAction;
+  resourceType?: string;
+  resourceId?: string;
+  requestId?: string;
+  success?: boolean;
+  reason?: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface AuditEvent extends AuditEventInput {
+  id: string;
+  createdAt: string;
+}
+
+// Audit action catalog from docs/sikesra/06_security_rbac_abac.md
+export const AUDIT_ACTIONS = {
+  // Entity
+  ENTITY_CREATE: "entity.create",
+  ENTITY_UPDATE: "entity.update",
+  ENTITY_ARCHIVE: "entity.archive",
+  ENTITY_RESTORE: "entity.restore",
+
+  // Code
+  CODE_GENERATE: "code.generate",
+  CODE_CORRECT: "code.correct",
+  CODE_GENERATE_FAILED: "code.generate_failed",
+
+  // Verification
+  VERIFICATION_SUBMIT: "verification.submit",
+  VERIFICATION_VERIFY: "verification.verify",
+  VERIFICATION_NEED_REVISION: "verification.need_revision",
+  VERIFICATION_REJECT: "verification.reject",
+
+  // Document
+  DOCUMENT_UPLOAD: "document.upload",
+  DOCUMENT_PREVIEW: "document.preview",
+  DOCUMENT_DOWNLOAD: "document.download",
+  DOCUMENT_REPLACE: "document.replace",
+  DOCUMENT_VERIFY: "document.verify",
+  DOCUMENT_REJECT: "document.reject",
+  DOCUMENT_SUPERSEDE: "document.supersede",
+
+  // Import
+  IMPORT_CREATE: "import.create",
+  IMPORT_MAP: "import.map",
+  IMPORT_VALIDATE: "import.validate",
+  IMPORT_PROMOTE: "import.promote",
+  IMPORT_SKIP_ROW: "import.skip_row",
+  IMPORT_OVERRIDE_DUPLICATE: "import.override_duplicate",
+
+  // Export
+  EXPORT_CREATE: "export.create",
+  EXPORT_DOWNLOAD: "export.download",
+  EXPORT_RESTRICTED_CREATE: "export.restricted_create",
+  EXPORT_FAILED: "export.failed",
+
+  // Security / Access
+  ACCESS_DENIED: "security.access_denied",
+  SENSITIVE_REVEAL: "security.sensitive_reveal",
+  ABAC_DENIED: "security.abac_denied",
+
+  // Region
+  REGION_OFFICIAL_IMPORT: "region.official_import",
+  REGION_LOCAL_CREATE: "region.local_create",
+  REGION_LOCAL_UPDATE: "region.local_update",
+  REGION_LOCAL_DEACTIVATE: "region.local_deactivate",
+
+  // ABAC / Policy
+  ATTRIBUTE_CREATE: "attribute.create",
+  ATTRIBUTE_UPDATE: "attribute.update",
+  POLICY_CREATE: "policy.create",
+  POLICY_UPDATE: "policy.update",
+  POLICY_PREVIEW: "policy.preview",
+  POLICY_ACTIVATE: "policy.activate",
+  POLICY_DISABLE: "policy.disable",
+
+  // Settings
+  SETTINGS_UPDATE: "settings.update",
+} as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+
+export type AuditWriteResult = { ok: true; auditEventId: string } | { ok: false; message: string };
+
+// Stub: actual D1 persistence to be wired in Phase 2 repository implementation
+export async function writeAuditEvent(input: AuditEventInput): Promise<AuditWriteResult> {
+  const event: AuditEvent = {
+    ...input,
+    id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    success: input.success ?? true,
+    createdAt: input.before?.["nowIso"] as string ?? new Date().toISOString(),
+  };
+
+  // TODO: persist to awcms_sikesra_audit_logs table
+  // db.insert("awcms_sikesra_audit_logs", event);
+  return { ok: true, auditEventId: event.id };
+}
+
+// High-risk actions requiring audit (future enforcement hook)
+export const HIGH_RISK_AUDIT_REQUIRED: Set<AuditAction> = new Set([
+  AUDIT_ACTIONS.CODE_CORRECT,
+  AUDIT_ACTIONS.VERIFICATION_VERIFY,
+  AUDIT_ACTIONS.VERIFICATION_REJECT,
+  AUDIT_ACTIONS.DOCUMENT_DOWNLOAD,
+  AUDIT_ACTIONS.EXPORT_RESTRICTED_CREATE,
+  AUDIT_ACTIONS.IMPORT_PROMOTE,
+  AUDIT_ACTIONS.IMPORT_OVERRIDE_DUPLICATE,
+  AUDIT_ACTIONS.SENSITIVE_REVEAL,
+  AUDIT_ACTIONS.SETTINGS_UPDATE,
+]);
+
+export function isHighRiskAction(action: AuditAction): boolean {
+  return HIGH_RISK_AUDIT_REQUIRED.has(action);
+}
