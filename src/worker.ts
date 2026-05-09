@@ -177,6 +177,31 @@ export default {
         }, reqId);
       }
 
+      // Entity submit (draft → submitted_village)
+      if (path.startsWith("/_emdash/api/plugins/sikesra/v1/entities/") && path.endsWith("/submit") && request.method === "POST") {
+        const entityId = path.split("/").slice(-2)[0];
+        const existing = await env.SIKESRA_DB.prepare("SELECT status_data FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<{ status_data: string }>();
+        if (!existing) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
+        if (existing.status_data !== "draft") return fail(reqId, "INVALID_STATE", "Only draft entities can be submitted");
+        await env.SIKESRA_DB.prepare("UPDATE awcms_sikesra_entities SET status_data = 'submitted', status_verification = 'submitted_village', verification_level = 'desa', updated_at = datetime('now') WHERE id = ?").bind(entityId).run();
+        const evtId = `vevt_${Date.now()}`;
+        await env.SIKESRA_DB.prepare("INSERT INTO awcms_sikesra_verification_events (id, tenant_id, site_id, entity_id, actor_id, actor_role, verification_level, action, previous_status, next_status, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(evtId, "default", "default", entityId, "api-user", "admin", "desa", "submit", "draft", "submitted_village", reqId).run();
+        return ok({ entityId, newStatus: "submitted", verificationStatus: "submitted_village", eventId: evtId }, reqId);
+      }
+
+      // Verification queue
+      if (path === "/_emdash/api/plugins/sikesra/v1/verification/queue") {
+        const level = url.searchParams.get("level") ?? "desa";
+        const rows = await env.SIKESRA_DB.prepare(
+          "SELECT id, sikesra_id_20, object_type_code, object_subtype_code, entity_kind, display_name, official_village_code, status_verification, verification_level, completeness_percent, duplicate_status, created_at FROM awcms_sikesra_entities WHERE status_verification IN ('submitted_village','submitted_subdistrict','submitted_regency') AND verification_level = ? AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 50"
+        ).bind(level).all<Record<string, unknown>>();
+        return ok(rows.results.map((r) => ({
+          entityId: r.id, displayName: r.display_name, objectTypeCode: r.object_type_code, objectSubtypeCode: r.object_subtype_code,
+          officialVillageCode: r.official_village_code, verificationLevel: r.verification_level, currentStatus: r.status_verification,
+          submittedAt: r.created_at, completenessPercent: r.completeness_percent, duplicateStatus: r.duplicate_status,
+        })), reqId);
+      }
+
       // Settings
       if (path === "/_emdash/api/plugins/sikesra/v1/settings") {
         const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<Record<string, unknown>>();
