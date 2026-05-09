@@ -12,6 +12,7 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 6. CSP synchronization fixed at hybrid wrapper: EmDash admin responses now keep existing CSP directives while adding Cloudflare Insights script source to avoid blocked beacon script logs.
 7. Public API origin synchronization fixed: static public page now resolves SIKESRA API base from the active domain origin, preventing `workers.dev` cross-origin calls from custom domains.
 8. Admin CSP compatibility fixed: `script-src-elem` now preserves required inline script execution for EmDash admin while still allowing Cloudflare Insights source.
+9. Root route ownership re-synchronized: removed SIKESRA static root asset so `/` resolves through EmDash host runtime instead of SIKESRA static page.
 
 Current validation target for each release cycle:
 

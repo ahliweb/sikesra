@@ -109,3 +109,4 @@ Remaining for MVP:
 5. EmDash plugin admin surfaces require plugin route `admin` (`/_emdash/api/plugins/sikesra/admin`) for Block Kit page/widget interaction; missing this route causes repeated admin `404` retries.
 6. Hybrid wrapper must preserve EmDash CSP hardening while appending `https://static.cloudflareinsights.com` to `script-src` and a compatible `script-src-elem` policy (including inline script compatibility required by EmDash admin shell) for admin responses.
 7. Public SIKESRA page clients must call plugin public APIs using same-origin paths (`window.location.origin + /_emdash/api/plugins/sikesra/*` or relative paths), never hardcoded workers.dev hosts, to avoid route drift and CORS failures on custom domains.
+8. Root homepage (`/`) is EmDash host-owned and must not be shadowed by static `public/index.html` assets from SIKESRA; SIKESRA public surface remains `/sikesra`.
