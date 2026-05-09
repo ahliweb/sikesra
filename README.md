@@ -6,9 +6,11 @@ SIKESRA is planned as a governed public-service data module for welfare, religio
 
 ## Repository Status
 
-Current status: documentation and implementation planning.
+**Current status: MVP scaffold deployed, controlled internal testing ready.**
 
-The codebase is intentionally not scaffolded yet. The next engineering step is Phase 0 discovery: identify the real EmDash/AWCMS-Micro extension points, write the implementation decision log, then scaffold the smallest compatible SIKESRA plugin/module shell.
+The SIKESRA worker is deployed at `https://sikesra.ahliweb.workers.dev` with 14 live API endpoints backed by D1 database (34 tables) and R2 storage.
+
+See `docs/sikesra/MVP_GO_NOGO_REPORT.md` for completion status.
 
 ## Architecture Rule
 
