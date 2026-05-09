@@ -223,13 +223,15 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const isSikesraPublicSurface =
-      path === "/sikesra" ||
-      path === "/sikesra/" ||
-      path === "/health" ||
-      path.startsWith("/_emdash/api/plugins/sikesra/public/");
+    const isSikesraAdminBlockKit = path === "/_emdash/api/plugins/sikesra/admin";
 
-    if (!isSikesraPublicSurface && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
+    // Send to EmDash: admin Block Kit, EmDash routes, Astro assets, root
+    // Keep v1 API, public API, health, /sikesra in the wrapper
+    const goToEmDash = isSikesraAdminBlockKit ||
+      (!path.startsWith("/_emdash/api/plugins/sikesra/") &&
+       (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/"));
+
+    if (goToEmDash) {
       try {
         const resp = await emdashWorker.fetch(request, env, ctx);
         const csp = resp.headers.get("content-security-policy");
