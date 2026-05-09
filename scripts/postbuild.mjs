@@ -48,8 +48,9 @@ function patchAdminSidebar() {
     if (!hasPluginSidebar || !hasPluginLabel) continue;
 
     const original = source;
+    source = patchSidebarSpacing(source);
     const pluginGroup = 'visiblePlugins.length > 0 && (0, import_jsx_runtime83.jsxs)(import_jsx_runtime83.Fragment, { children: [(0, import_jsx_runtime83.jsx)(Je5.Separator, {}), (0, import_jsx_runtime83.jsxs)(Je5.Group, {\n          collapsible: true,\n          defaultOpen: true,\n          children: [(0, import_jsx_runtime83.jsx)(Je5.GroupLabel, {\n            className: "[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",\n            children: _t6({\n              id: "ohUJJM",\n              message: "Plugins"\n            })\n          }), (0, import_jsx_runtime83.jsx)(Je5.GroupContent, { children: (0, import_jsx_runtime83.jsx)(Je5.Menu, { children: renderNavItems(visiblePlugins) }) })]\n        })] })';
-    const topPluginGroup = pluginGroup.replace('message: "Plugins"', 'message: "SIKESRA"');
+    const topPluginGroup = 'visiblePlugins.length > 0 && (0, import_jsx_runtime83.jsxs)(Je5.Group, {\n          collapsible: true,\n          defaultOpen: true,\n          children: [(0, import_jsx_runtime83.jsx)(Je5.GroupLabel, {\n            className: "[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",\n            children: _t6({\n              id: "ohUJJM",\n              message: "SIKESRA"\n            })\n          }), (0, import_jsx_runtime83.jsx)(Je5.GroupContent, { children: (0, import_jsx_runtime83.jsx)(Je5.Menu, { children: renderNavItems(visiblePlugins) }) })]\n        })';
     const dashboardGroup = '(0, import_jsx_runtime83.jsx)(Je5.Group, { children: (0, import_jsx_runtime83.jsx)(Je5.Menu, { children: (0, import_jsx_runtime83.jsx)(NavMenuLink, {\n          item: {\n            to: "/",\n            label: _t6({\n              id: "7p5kLi",\n              message: "Dashboard"\n            }),\n            icon: n193\n          },\n          isActive: isItemActive("/", currentPath)\n        }) }) }),\n        (0, import_jsx_runtime83.jsx)(Je5.Separator, {})';
 
     if (source.includes(pluginGroup) && source.includes(dashboardGroup)) {
@@ -58,7 +59,7 @@ function patchAdminSidebar() {
     }
 
     const minifiedPluginGroup = 'v.length>0&&c.jsxs(c.Fragment,{children:[c.jsx(vn.Separator,{}),c.jsxs(vn.Group,{collapsible:!0,defaultOpen:!0,children:[c.jsx(vn.GroupLabel,{className:"[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",children:t({id:"ohUJJM",message:"Plugins"})}),c.jsx(vn.GroupContent,{children:c.jsx(vn.Menu,{children:x(v)})})]})]})';
-    const minifiedTopPluginGroup = minifiedPluginGroup.replace('message:"Plugins"', 'message:"SIKESRA"');
+    const minifiedTopPluginGroup = 'v.length>0&&c.jsxs(vn.Group,{collapsible:!0,defaultOpen:!0,children:[c.jsx(vn.GroupLabel,{className:"[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",children:t({id:"ohUJJM",message:"SIKESRA"})}),c.jsx(vn.GroupContent,{children:c.jsx(vn.Menu,{children:x(v)})})]})';
     const minifiedDashboardSeparator = 'c.jsx(vn.Group,{children:c.jsx(vn.Menu,{children:c.jsx(_F,{item:{to:"/",label:t({id:"7p5kLi",message:"Dashboard"}),icon:vp},isActive:TF("/",n)})})}),c.jsx(vn.Separator,{})';
 
     if (source.includes(minifiedPluginGroup) && source.includes(minifiedDashboardSeparator)) {
@@ -104,6 +105,37 @@ function* walkFiles(dir) {
       yield path;
     }
   }
+}
+
+function patchSidebarSpacing(source) {
+  if (source.includes("SIKESRA sidebar spacing")) return source;
+
+  const css = `
+      /* SIKESRA sidebar spacing: compact WordPress-like grouping */
+      .emdash-sidebar [data-sidebar="content"] {
+        gap: 0 !important;
+      }
+      .emdash-sidebar [data-sidebar="group"] {
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+        gap: 0.125rem !important;
+      }
+      .emdash-sidebar [data-sidebar="group-label"] {
+        padding-top: 0.4rem !important;
+        padding-bottom: 0.35rem !important;
+        min-height: 1.75rem !important;
+      }
+      .emdash-sidebar [data-sidebar="group-content"] [data-sidebar="menu"] {
+        gap: 0.125rem !important;
+      }
+      .emdash-sidebar [data-sidebar="separator"] {
+        margin: 0.35rem 0.75rem !important;
+      }
+    `;
+
+  return source.includes("/* Header/footer borders */")
+    ? source.replace("/* Header/footer borders */", `${css}\n\t\t\t/* Header/footer borders */`)
+    : source;
 }
 
 const sidebarPatched = patchAdminSidebar();

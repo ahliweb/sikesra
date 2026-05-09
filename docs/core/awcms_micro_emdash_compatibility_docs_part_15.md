@@ -11,6 +11,8 @@
 
 Part 15 consolidates Parts 1–14 into one implementation master index and final roadmap.
 
+For this self-contained SIKESRA deployment, also read `docs/core/SIKESRA_INTEGRATION_OVERLAY.md`. The overlay maps every generic core part to the current runtime: local `src/` plugin source, hybrid worker wrapper, SIKESRA D1/R2 bindings, EmDash admin delegation, postbuild sidebar adapter, and repository-specific build/deploy commands.
+
 This document helps the implementation team answer:
 
 1. What has been documented?

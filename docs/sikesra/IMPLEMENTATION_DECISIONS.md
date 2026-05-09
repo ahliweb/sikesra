@@ -113,3 +113,5 @@ Remaining for MVP:
 9. Runtime SIKESRA admin Block Kit rendering for `/_emdash/api/plugins/sikesra/admin` is handled in `scripts/worker-wrapper-template.mjs` after delegating to EmDash for route/auth checks, because native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`.
 10. SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload, because the admin client reads `(await response.json()).data.blocks`.
 11. `scripts/postbuild.mjs` patches the generated EmDash admin bundle so SIKESRA plugin pages render as a top `SIKESRA` sidebar group while leaving EmDash source packages unchanged.
+12. The same postbuild patch also applies compact SIKESRA sidebar spacing and cache-busts the patched admin bundle filename so browsers load the updated sidebar group label/layout after deploy.
+13. Until full React/admin route pages exist, SIKESRA Block Kit buttons should return workflow panels or navigate between pages; backend APIs remain authoritative for mutations and high-risk actions.

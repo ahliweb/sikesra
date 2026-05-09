@@ -274,6 +274,47 @@ function emptyTable(columns, title, description) {
   };
 }
 
+function navActions(active) {
+  const pages = [
+    ["entities", "Data Utama"],
+    ["verification", "Verifikasi"],
+    ["imports", "Import Excel"],
+    ["documents", "Dokumen"],
+    ["reports", "Laporan"],
+    ["regions", "Wilayah"],
+    ["access", "Atribut & Akses"],
+    ["audit", "Audit"],
+    ["settings", "Pengaturan"],
+  ];
+
+  return {
+    type: "actions",
+    elements: pages
+      .filter(([page]) => page !== active)
+      .slice(0, 6)
+      .map(([page, label], index) => ({
+        type: "button",
+        label,
+        style: index === 0 ? "primary" : "secondary",
+        action_id: `nav_${page}`,
+      })),
+  };
+}
+
+function workflowPanel(title, description, steps, endpoint, backPage) {
+  return blockPage(title, description, [
+    { type: "header", text: "Alur Kerja" },
+    { type: "fields", fields: steps.map((step, index) => ({ label: `Langkah ${index + 1}`, value: step })) },
+    { type: "header", text: "Endpoint Terkait" },
+    { type: "section", text: endpoint },
+    { type: "section", text: "Aksi final tetap divalidasi server-side: autentikasi, izin, ABAC, region scope, masking, alasan wajib, dan audit sesuai konfigurasi." },
+    { type: "actions", elements: [
+      { type: "button", label: "Kembali", style: "primary", action_id: `nav_${backPage}` },
+      { type: "button", label: "Dashboard", style: "secondary", action_id: "nav_overview" },
+    ] },
+  ]);
+}
+
 async function handleSikesraAdminBlockKit(request, env) {
   const input = request.method === "POST" ? await request.json().catch(() => ({})) : {};
   const actionId = input?.action_id;
@@ -287,7 +328,68 @@ async function handleSikesraAdminBlockKit(request, env) {
   }
 
   if (actionId && !actionId.startsWith("nav_")) {
-    return emdashPluginOk(blockPage("Aksi SIKESRA", `Aksi ${actionId} diterima. Gunakan endpoint API SIKESRA terkait untuk menyelesaikan workflow operasional.`));
+    switch (actionId) {
+      case "entity_create":
+        return emdashPluginOk(workflowPanel(
+          "Tambah Entitas",
+          "Wizard input mengikuti dokumen SIKESRA: jenis data, wilayah, identitas utama, atribut inti, detail modul, dokumen, validasi, ID, dan review.",
+          ["Pilih jenis dan subjenis data.", "Isi wilayah resmi dan wilayah lokal operasional.", "Lengkapi identitas utama dan atribut inti.", "Tambahkan detail modul dan dokumen pendukung.", "Jalankan validasi, cek duplikasi, generate ID, lalu submit."],
+          "POST /_emdash/api/plugins/sikesra/v1/entities/create",
+          "entities",
+        ));
+      case "verify_approve":
+      case "verify_revise":
+      case "verify_reject":
+        return emdashPluginOk(workflowPanel(
+          actionId === "verify_approve" ? "Verifikasi Data" : actionId === "verify_revise" ? "Minta Perbaikan" : "Tolak Data",
+          "Keputusan verifikasi memerlukan resource terpilih, status yang valid, dan alasan untuk revisi atau penolakan.",
+          ["Pilih entitas dari antrean verifikasi.", "Periksa ringkasan, checklist, dokumen, dan duplikasi.", "Isi catatan atau alasan bila diperlukan.", "Konfirmasi aksi dan tulis audit event."],
+          "POST /_emdash/api/plugins/sikesra/v1/entities/{id}/verify",
+          "verification",
+        ));
+      case "import_upload":
+        return emdashPluginOk(workflowPanel(
+          "Upload Workbook Import",
+          "Import Excel wajib melewati staging sebelum promosi data final.",
+          ["Upload workbook .xlsx sesuai template.", "Pilih sheet dan mapping kolom.", "Validasi mapping dan preview staging.", "Koreksi baris invalid dan review duplikasi.", "Promosikan hanya baris valid terpilih."],
+          "POST /_emdash/api/plugins/sikesra/v1/imports/create",
+          "imports",
+        ));
+      case "doc_upload":
+        return emdashPluginOk(workflowPanel(
+          "Unggah Dokumen",
+          "Dokumen pendukung disimpan via backend/R2 dan tidak pernah menampilkan raw storage key.",
+          ["Pilih entitas dan tipe dokumen.", "Tetapkan klasifikasi: internal, restricted, atau highly restricted.", "Minta upload URL backend.", "Upload file dan konfirmasi checksum.", "Tunggu verifikasi dokumen."],
+          "POST /_emdash/api/plugins/sikesra/v1/documents/upload-url",
+          "documents",
+        ));
+      case "export_create":
+        return emdashPluginOk(workflowPanel(
+          "Buat Ekspor",
+          "Ekspor restricted memerlukan izin khusus, alasan, masking, dan audit.",
+          ["Pilih jenis laporan dan format.", "Terapkan filter wilayah/status yang diizinkan.", "Isi alasan untuk ekspor restricted.", "Buat job ekspor.", "Ambil hasil hanya melalui URL/proxy backend."],
+          "POST /_emdash/api/plugins/sikesra/v1/exports/create",
+          "reports",
+        ));
+      case "region_create":
+        return emdashPluginOk(workflowPanel(
+          "Tambah Wilayah Lokal",
+          "Wilayah lokal mendukung operasional lapangan dan tidak mengubah struktur ID SIKESRA 20 digit.",
+          ["Pilih parent wilayah resmi.", "Tentukan tipe lokal: dusun, lingkungan, RW, RT, blok, zona, atau area petugas.", "Isi nama dan metadata operasional.", "Simpan dan audit perubahan."],
+          "POST /_emdash/api/plugins/sikesra/v1/regions/local/create",
+          "regions",
+        ));
+      case "settings_update":
+        return emdashPluginOk(workflowPanel(
+          "Ubah Pengaturan",
+          "Pengaturan publik, threshold, upload, ekspor, dan highly restricted harus ditulis lewat endpoint settings dengan izin yang sesuai.",
+          ["Review nilai aktif.", "Ubah hanya konfigurasi yang diperlukan.", "Validasi threshold dan limit.", "Simpan perubahan dan tulis audit event."],
+          "PATCH /_emdash/api/plugins/sikesra/v1/settings/update",
+          "settings",
+        ));
+      default:
+        return emdashPluginOk(blockPage("Aksi SIKESRA", `Aksi ${actionId} belum memiliki workflow UI khusus.`, [navActions("overview")]));
+    }
   }
 
   if (page === "entities") {
@@ -315,6 +417,7 @@ async function handleSikesraAdminBlockKit(request, env) {
         complete: `${r.completeness_percent ?? 0}%`,
       })) } : emptyTable(columns, "Belum ada data", "Data entitas akan tampil setelah diinput."),
       { type: "actions", elements: [{ type: "button", label: "Tambah Entitas", style: "primary", action_id: "entity_create" }] },
+      navActions("entities"),
     ]));
   }
 
@@ -350,6 +453,12 @@ async function handleSikesraAdminBlockKit(request, env) {
         complete: `${r.completeness_percent ?? 0}%`,
         date: String(r.updated_at ?? "").slice(0, 10),
       })) } : emptyTable(columns, "Antrean kosong", "Tidak ada data menunggu verifikasi."),
+      { type: "actions", elements: [
+        { type: "button", label: "Verifikasi", style: "primary", action_id: "verify_approve" },
+        { type: "button", label: "Perlu Perbaikan", style: "secondary", action_id: "verify_revise" },
+        { type: "button", label: "Tolak", style: "destructive", action_id: "verify_reject" },
+      ] },
+      navActions("verification"),
     ]));
   }
 
@@ -382,6 +491,7 @@ async function handleSikesraAdminBlockKit(request, env) {
       })) } : emptyTable(columns, "Belum ada import", "Upload workbook Excel untuk memulai."),
       { type: "section", text: "Alur import: upload, mapping, validasi, staging, koreksi, duplikat, promosi, laporan." },
       { type: "actions", elements: [{ type: "button", label: "Upload Workbook", style: "primary", action_id: "import_upload" }] },
+      navActions("imports"),
     ]));
   }
 
@@ -395,6 +505,8 @@ async function handleSikesraAdminBlockKit(request, env) {
         { label: "Menunggu", value: String(total - verified) },
       ] },
       { type: "section", text: "Format didukung: PDF, JPG, PNG. Dokumen restricted tidak menampilkan R2 key atau URL privat." },
+      { type: "actions", elements: [{ type: "button", label: "Unggah Dokumen", style: "primary", action_id: "doc_upload" }] },
+      navActions("documents"),
     ]));
   }
 
@@ -428,6 +540,7 @@ async function handleSikesraAdminBlockKit(request, env) {
         date: String(r.created_at ?? "").slice(0, 10),
       })) } : emptyTable(columns, "Belum ada ekspor", "Buat ekspor pertama."),
       { type: "actions", elements: [{ type: "button", label: "Buat Ekspor", style: "primary", action_id: "export_create" }] },
+      navActions("reports"),
     ]));
   }
 
@@ -447,6 +560,7 @@ async function handleSikesraAdminBlockKit(request, env) {
       { type: "fields", fields: levels.results.map((r) => ({ label: String(r.level), value: String(r.cnt) })) },
       { type: "section", text: "Wilayah lokal bersifat operasional dan tidak mempengaruhi SIKESRA ID 20 digit." },
       { type: "actions", elements: [{ type: "button", label: "Tambah Wilayah Lokal", style: "primary", action_id: "region_create" }] },
+      navActions("regions"),
     ]));
   }
 
@@ -467,6 +581,7 @@ async function handleSikesraAdminBlockKit(request, env) {
       ] },
       { type: "fields", fields: categories.results.map((r) => ({ label: String(r.category), value: String(r.cnt) })) },
       { type: "section", text: "Kebijakan ABAC dievaluasi server-side. Deny selalu menang atas allow." },
+      navActions("access"),
     ]));
   }
 
@@ -497,6 +612,7 @@ async function handleSikesraAdminBlockKit(request, env) {
         ok: r.success ? "OK" : "Failed",
       })) } : emptyTable(columns, "Belum ada log", "Audit events akan muncul setelah ada aksi kritikal."),
       { type: "section", text: "Nilai before/after yang sensitif harus disamarkan sebelum ditampilkan." },
+      navActions("audit"),
     ]));
   }
 
@@ -515,6 +631,8 @@ async function handleSikesraAdminBlockKit(request, env) {
         { label: "Maks. Baris Ekspor", value: String(settings?.export_max_sync_rows ?? 5000) },
         { label: "Alasan Highly Restricted", value: Number(settings?.require_reason_for_highly_restricted_download) === 1 ? "Wajib" : "Tidak wajib" },
       ] },
+      { type: "actions", elements: [{ type: "button", label: "Ubah Pengaturan", style: "primary", action_id: "settings_update" }] },
+      navActions("settings"),
     ]));
   }
 
@@ -549,6 +667,7 @@ async function handleSikesraAdminBlockKit(request, env) {
       { type: "button", label: "Dokumen", style: "secondary", action_id: "nav_documents" },
       { type: "button", label: "Pengaturan", style: "secondary", action_id: "nav_settings" },
     ] },
+    navActions("overview"),
   ]));
 }
 

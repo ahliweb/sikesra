@@ -17,6 +17,7 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 11. Root homepage visual sync updated to match EmDash admin look-and-feel (dark chrome, brand accents, and host-first navigation cues).
 12. SIKESRA admin Block Kit rendering is wrapper-owned for `/_emdash/api/plugins/sikesra/admin` after EmDash route/auth delegation, so live admin pages can read `env.SIKESRA_DB` and return the `data.blocks` envelope expected by the admin client.
 13. Generated EmDash admin sidebar output is postbuild-patched so the SIKESRA pages appear in a top `SIKESRA` sidebar group instead of a generic bottom `Plugins` group.
+14. SIKESRA admin page actions now render deterministic workflow panels for create, verify, import, document upload, export, region, and settings actions instead of generic acknowledgements.
 
 Current validation target for each release cycle:
 
