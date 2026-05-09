@@ -1,6 +1,7 @@
 name = "sikesra"
-main = "src/index.ts"
-compatibility_date = "2026-01-01"
+main = "src/worker.ts"
+compatibility_date = "2026-05-09"
+compatibility_flags = ["nodejs_compat"]
 
 [[r2_buckets]]
 binding = "SIKESRA_DOCUMENTS"
