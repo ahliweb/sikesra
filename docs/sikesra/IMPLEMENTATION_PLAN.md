@@ -15,13 +15,15 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 9. Root route ownership re-synchronized: removed SIKESRA static root asset so `/` resolves through EmDash host runtime instead of SIKESRA static page.
 10. EmDash public homepage established at root: added host-owned `src/pages/index.astro` so `/` serves public web content instead of a 404.
 11. Root homepage visual sync updated to match EmDash admin look-and-feel (dark chrome, brand accents, and host-first navigation cues).
+12. SIKESRA admin Block Kit rendering is wrapper-owned for `/_emdash/api/plugins/sikesra/admin` after EmDash route/auth delegation, so live admin pages can read `env.SIKESRA_DB` and return the `data.blocks` envelope expected by the admin client.
+13. Generated EmDash admin sidebar output is postbuild-patched so the SIKESRA pages appear in a top `SIKESRA` sidebar group instead of a generic bottom `Plugins` group.
 
 Current validation target for each release cycle:
 
 1. Active plugin -> `/sikesra` returns `200`, public metadata returns `200`.
 2. Inactive plugin -> `/sikesra` and `/_emdash/api/plugins/sikesra/*` return `404`.
 3. `/_emdash/admin` remains EmDash-managed and authenticated.
-4. `/_emdash/api/plugins/sikesra/admin` returns `200` for authenticated admin requests.
+4. `/_emdash/api/plugins/sikesra/admin` returns `200` for authenticated admin requests and includes `data.blocks` for the requested SIKESRA admin page.
 
 ## Implementation Principle
 

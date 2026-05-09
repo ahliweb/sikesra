@@ -110,3 +110,6 @@ Remaining for MVP:
 6. Hybrid wrapper must preserve EmDash CSP hardening while appending `https://static.cloudflareinsights.com` to `script-src` and a compatible `script-src-elem` policy (including inline script compatibility required by EmDash admin shell) for admin responses.
 7. Public SIKESRA page clients must call plugin public APIs using same-origin paths (`window.location.origin + /_emdash/api/plugins/sikesra/*` or relative paths), never hardcoded workers.dev hosts, to avoid route drift and CORS failures on custom domains.
 8. Root homepage (`/`) is EmDash host-owned and must not be shadowed by static `public/index.html` assets from SIKESRA; SIKESRA public surface remains `/sikesra`.
+9. Runtime SIKESRA admin Block Kit rendering for `/_emdash/api/plugins/sikesra/admin` is handled in `scripts/worker-wrapper-template.mjs` after delegating to EmDash for route/auth checks, because native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`.
+10. SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload, because the admin client reads `(await response.json()).data.blocks`.
+11. `scripts/postbuild.mjs` patches the generated EmDash admin bundle so SIKESRA plugin pages render as a top `SIKESRA` sidebar group while leaving EmDash source packages unchanged.

@@ -19,6 +19,13 @@ function fail(requestId, code, message, status = 400) {
   });
 }
 
+function emdashPluginOk(data, status = 200) {
+  return new Response(JSON.stringify({ data }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 let cacheCleared = false;
 let pluginStateCache = { active: true, expiresAt: 0 };
 
@@ -243,6 +250,308 @@ async function handleSikesra(request, env) {
   }
 }
 
+async function countWhere(db, table, extra = "") {
+  const row = await db.prepare(`SELECT COUNT(*) as cnt FROM ${table} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL ${extra}`)
+    .bind("default", "default")
+    .first();
+  return row?.cnt ?? 0;
+}
+
+function blockPage(title, description, blocks = []) {
+  return {
+    blocks: [
+      { type: "banner", variant: "default", title, description },
+      ...blocks,
+    ],
+  };
+}
+
+function emptyTable(columns, title, description) {
+  return {
+    type: "table",
+    columns,
+    rows: [{ [columns[0].key]: title, [columns[1]?.key ?? columns[0].key]: description }],
+  };
+}
+
+async function handleSikesraAdminBlockKit(request, env) {
+  const input = request.method === "POST" ? await request.json().catch(() => ({})) : {};
+  const actionId = input?.action_id;
+  const page = actionId?.startsWith("nav_")
+    ? actionId.replace("nav_", "")
+    : String(input?.page || "overview").replace(/^\//, "") || "overview";
+  const db = env.SIKESRA_DB;
+
+  if (!db) {
+    return emdashPluginOk(blockPage("SIKESRA", "Database SIKESRA tidak tersedia."));
+  }
+
+  if (actionId && !actionId.startsWith("nav_")) {
+    return emdashPluginOk(blockPage("Aksi SIKESRA", `Aksi ${actionId} diterima. Gunakan endpoint API SIKESRA terkait untuk menyelesaikan workflow operasional.`));
+  }
+
+  if (page === "entities") {
+    const total = await countWhere(db, "awcms_sikesra_entities");
+    const rows = await db.prepare(
+      `SELECT e.display_name, e.object_type_code, ot.name as type_name, e.status_data, e.status_verification, e.completeness_percent
+       FROM awcms_sikesra_entities e
+       LEFT JOIN awcms_sikesra_object_types ot ON ot.code = e.object_type_code
+       WHERE e.tenant_id = 'default' AND e.site_id = 'default' AND e.deleted_at IS NULL
+       ORDER BY e.updated_at DESC LIMIT 20`
+    ).all();
+    const columns = [
+      { key: "name", label: "Nama" },
+      { key: "type", label: "Tipe" },
+      { key: "data", label: "Data" },
+      { key: "verification", label: "Verifikasi" },
+      { key: "complete", label: "%" },
+    ];
+    return emdashPluginOk(blockPage("Data Utama", `${total} entitas terdaftar`, [
+      rows.results.length ? { type: "table", columns, rows: rows.results.map((r) => ({
+        name: String(r.display_name),
+        type: String(r.type_name ?? r.object_type_code),
+        data: String(r.status_data),
+        verification: String(r.status_verification),
+        complete: `${r.completeness_percent ?? 0}%`,
+      })) } : emptyTable(columns, "Belum ada data", "Data entitas akan tampil setelah diinput."),
+      { type: "actions", elements: [{ type: "button", label: "Tambah Entitas", style: "primary", action_id: "entity_create" }] },
+    ]));
+  }
+
+  if (page === "verification") {
+    const village = await countWhere(db, "awcms_sikesra_entities", "AND status_verification = 'submitted_village'");
+    const subdistrict = await countWhere(db, "awcms_sikesra_entities", "AND status_verification = 'submitted_subdistrict'");
+    const regency = await countWhere(db, "awcms_sikesra_entities", "AND status_verification = 'submitted_regency'");
+    const queue = await db.prepare(
+      `SELECT e.display_name, ot.name as type_name, e.status_verification, e.completeness_percent, e.updated_at
+       FROM awcms_sikesra_entities e
+       LEFT JOIN awcms_sikesra_object_types ot ON ot.code = e.object_type_code
+       WHERE e.tenant_id = 'default' AND e.site_id = 'default' AND e.deleted_at IS NULL
+         AND e.status_verification IN ('submitted_village','submitted_subdistrict','submitted_regency')
+       ORDER BY e.updated_at ASC LIMIT 15`
+    ).all();
+    const columns = [
+      { key: "name", label: "Nama" },
+      { key: "type", label: "Tipe" },
+      { key: "level", label: "Tingkat" },
+      { key: "complete", label: "Kelengkapan" },
+      { key: "date", label: "Submit" },
+    ];
+    return emdashPluginOk(blockPage("Verifikasi", "Antrean dan proses verifikasi berjenjang", [
+      { type: "stats", items: [
+        { label: "Desa", value: String(village), description: "submitted_village" },
+        { label: "Kecamatan", value: String(subdistrict), description: "submitted_subdistrict" },
+        { label: "Kabupaten", value: String(regency), description: "submitted_regency" },
+      ] },
+      queue.results.length ? { type: "table", columns, rows: queue.results.map((r) => ({
+        name: String(r.display_name),
+        type: String(r.type_name ?? "-"),
+        level: String(r.status_verification).replace("submitted_", ""),
+        complete: `${r.completeness_percent ?? 0}%`,
+        date: String(r.updated_at ?? "").slice(0, 10),
+      })) } : emptyTable(columns, "Antrean kosong", "Tidak ada data menunggu verifikasi."),
+    ]));
+  }
+
+  if (page === "imports") {
+    const total = await countWhere(db, "awcms_sikesra_import_batches");
+    const rows = await db.prepare(
+      `SELECT original_filename, status, row_count, valid_row_count, invalid_row_count, promoted_row_count, created_at
+       FROM awcms_sikesra_import_batches
+       WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL
+       ORDER BY created_at DESC LIMIT 10`
+    ).all();
+    const columns = [
+      { key: "file", label: "File" },
+      { key: "status", label: "Status" },
+      { key: "rows", label: "Baris" },
+      { key: "valid", label: "Valid" },
+      { key: "invalid", label: "Invalid" },
+      { key: "promoted", label: "Promoted" },
+      { key: "date", label: "Tanggal" },
+    ];
+    return emdashPluginOk(blockPage("Import Excel", `${total} batch import`, [
+      rows.results.length ? { type: "table", columns, rows: rows.results.map((r) => ({
+        file: String(r.original_filename),
+        status: String(r.status),
+        rows: String(r.row_count ?? 0),
+        valid: String(r.valid_row_count ?? 0),
+        invalid: String(r.invalid_row_count ?? 0),
+        promoted: String(r.promoted_row_count ?? 0),
+        date: String(r.created_at ?? "").slice(0, 10),
+      })) } : emptyTable(columns, "Belum ada import", "Upload workbook Excel untuk memulai."),
+      { type: "section", text: "Alur import: upload, mapping, validasi, staging, koreksi, duplikat, promosi, laporan." },
+      { type: "actions", elements: [{ type: "button", label: "Upload Workbook", style: "primary", action_id: "import_upload" }] },
+    ]));
+  }
+
+  if (page === "documents") {
+    const total = await countWhere(db, "awcms_sikesra_file_objects");
+    const verified = await countWhere(db, "awcms_sikesra_file_objects", "AND is_verified = 1");
+    return emdashPluginOk(blockPage("Dokumen", "Manajemen dokumen pendukung entitas", [
+      { type: "stats", items: [
+        { label: "Total Dokumen", value: String(total) },
+        { label: "Terverifikasi", value: String(verified) },
+        { label: "Menunggu", value: String(total - verified) },
+      ] },
+      { type: "section", text: "Format didukung: PDF, JPG, PNG. Dokumen restricted tidak menampilkan R2 key atau URL privat." },
+    ]));
+  }
+
+  if (page === "reports") {
+    const total = await countWhere(db, "awcms_sikesra_export_jobs");
+    const rows = await db.prepare(
+      `SELECT report_type, format, status, total_rows, created_at
+       FROM awcms_sikesra_export_jobs
+       WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL
+       ORDER BY created_at DESC LIMIT 10`
+    ).all();
+    const columns = [
+      { key: "type", label: "Jenis" },
+      { key: "format", label: "Format" },
+      { key: "status", label: "Status" },
+      { key: "rows", label: "Baris" },
+      { key: "date", label: "Tanggal" },
+    ];
+    return emdashPluginOk(blockPage("Laporan", "Laporan dan ekspor data", [
+      { type: "fields", fields: [
+        { label: "Ringkasan Entitas", value: "Agregat per jenis, subjenis, dan wilayah" },
+        { label: "Status Verifikasi", value: "Daftar status verifikasi tanpa nilai sangat terbatas" },
+        { label: "Bukti Audit", value: "Log audit dengan nilai sensitif tersamarkan" },
+      ] },
+      { type: "header", text: `Job Ekspor (${total})` },
+      rows.results.length ? { type: "table", columns, rows: rows.results.map((r) => ({
+        type: String(r.report_type),
+        format: String(r.format).toUpperCase(),
+        status: String(r.status),
+        rows: String(r.total_rows ?? 0),
+        date: String(r.created_at ?? "").slice(0, 10),
+      })) } : emptyTable(columns, "Belum ada ekspor", "Buat ekspor pertama."),
+      { type: "actions", elements: [{ type: "button", label: "Buat Ekspor", style: "primary", action_id: "export_create" }] },
+    ]));
+  }
+
+  if (page === "regions") {
+    const official = await countWhere(db, "awcms_sikesra_official_regions");
+    const local = await countWhere(db, "awcms_sikesra_local_regions");
+    const levels = await db.prepare(
+      `SELECT level, COUNT(*) as cnt FROM awcms_sikesra_official_regions
+       WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL
+       GROUP BY level ORDER BY level`
+    ).all();
+    return emdashPluginOk(blockPage("Wilayah", "Manajemen wilayah resmi dan lokal", [
+      { type: "stats", items: [
+        { label: "Wilayah Resmi", value: String(official) },
+        { label: "Wilayah Lokal", value: String(local) },
+      ] },
+      { type: "fields", fields: levels.results.map((r) => ({ label: String(r.level), value: String(r.cnt) })) },
+      { type: "section", text: "Wilayah lokal bersifat operasional dan tidak mempengaruhi SIKESRA ID 20 digit." },
+      { type: "actions", elements: [{ type: "button", label: "Tambah Wilayah Lokal", style: "primary", action_id: "region_create" }] },
+    ]));
+  }
+
+  if (page === "access") {
+    const policies = await countWhere(db, "awcms_sikesra_abac_policies");
+    const active = await countWhere(db, "awcms_sikesra_abac_policies", "AND is_active = 1");
+    const attributes = await countWhere(db, "awcms_sikesra_attribute_definitions");
+    const categories = await db.prepare(
+      `SELECT category, COUNT(*) as cnt FROM awcms_sikesra_attribute_definitions
+       WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL
+       GROUP BY category ORDER BY cnt DESC`
+    ).all();
+    return emdashPluginOk(blockPage("Atribut & Akses", "Definisi atribut dan kebijakan ABAC", [
+      { type: "stats", items: [
+        { label: "Total Kebijakan", value: String(policies) },
+        { label: "Kebijakan Aktif", value: String(active) },
+        { label: "Definisi Atribut", value: String(attributes) },
+      ] },
+      { type: "fields", fields: categories.results.map((r) => ({ label: String(r.category), value: String(r.cnt) })) },
+      { type: "section", text: "Kebijakan ABAC dievaluasi server-side. Deny selalu menang atas allow." },
+    ]));
+  }
+
+  if (page === "audit") {
+    const total = await db.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_audit_logs WHERE tenant_id = 'default' AND site_id = 'default'").first();
+    const rows = await db.prepare(
+      `SELECT action, resource_type, resource_id, actor_id, actor_role, success, created_at
+       FROM awcms_sikesra_audit_logs
+       WHERE tenant_id = 'default' AND site_id = 'default'
+       ORDER BY created_at DESC LIMIT 20`
+    ).all();
+    const columns = [
+      { key: "time", label: "Waktu" },
+      { key: "action", label: "Aksi" },
+      { key: "resource", label: "Resource" },
+      { key: "actor", label: "Aktor" },
+      { key: "role", label: "Role" },
+      { key: "ok", label: "OK" },
+    ];
+    return emdashPluginOk(blockPage("Audit", "Log audit aksi kritikal", [
+      { type: "header", text: `Log Audit (${total?.cnt ?? 0})` },
+      rows.results.length ? { type: "table", columns, rows: rows.results.map((r) => ({
+        time: String(r.created_at ?? "").slice(0, 16).replace("T", " "),
+        action: String(r.action),
+        resource: `${String(r.resource_type)}/${String(r.resource_id).slice(0, 15)}`,
+        actor: String(r.actor_id),
+        role: String(r.actor_role),
+        ok: r.success ? "OK" : "Failed",
+      })) } : emptyTable(columns, "Belum ada log", "Audit events akan muncul setelah ada aksi kritikal."),
+      { type: "section", text: "Nilai before/after yang sensitif harus disamarkan sebelum ditampilkan." },
+    ]));
+  }
+
+  if (page === "settings") {
+    const settings = await db.prepare(
+      `SELECT public_enabled, public_title, small_cell_threshold, max_upload_bytes, export_max_sync_rows, require_reason_for_highly_restricted_download
+       FROM awcms_sikesra_settings WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL LIMIT 1`
+    ).first();
+    const maxUploadMb = Math.round(Number(settings?.max_upload_bytes ?? 10485760) / 1048576);
+    return emdashPluginOk(blockPage("Pengaturan", "Konfigurasi plugin SIKESRA", [
+      { type: "fields", fields: [
+        { label: "Halaman Publik", value: Number(settings?.public_enabled) === 1 ? "Aktif" : "Nonaktif" },
+        { label: "Judul Publik", value: String(settings?.public_title ?? "SIKESRA") },
+        { label: "Small-Cell Threshold", value: String(settings?.small_cell_threshold ?? 5) },
+        { label: "Maks. Upload", value: `${maxUploadMb} MB` },
+        { label: "Maks. Baris Ekspor", value: String(settings?.export_max_sync_rows ?? 5000) },
+        { label: "Alasan Highly Restricted", value: Number(settings?.require_reason_for_highly_restricted_download) === 1 ? "Wajib" : "Tidak wajib" },
+      ] },
+    ]));
+  }
+
+  const [total, draft, submitted, verified, pending] = await Promise.all([
+    countWhere(db, "awcms_sikesra_entities"),
+    countWhere(db, "awcms_sikesra_entities", "AND status_data = 'draft'"),
+    countWhere(db, "awcms_sikesra_entities", "AND status_data = 'submitted'"),
+    countWhere(db, "awcms_sikesra_entities", "AND status_verification = 'verified'"),
+    countWhere(db, "awcms_sikesra_entities", "AND status_verification IN ('submitted_village','submitted_subdistrict','submitted_regency')"),
+  ]);
+  const byType = await db.prepare(
+    `SELECT ot.name, COUNT(e.id) as cnt
+     FROM awcms_sikesra_object_types ot
+     LEFT JOIN awcms_sikesra_entities e ON e.object_type_code = ot.code AND e.deleted_at IS NULL AND e.tenant_id = 'default' AND e.site_id = 'default'
+     WHERE ot.deleted_at IS NULL AND ot.is_active = 1
+     GROUP BY ot.code, ot.name ORDER BY ot.sort_order`
+  ).all();
+
+  return emdashPluginOk(blockPage("SIKESRA", "Dashboard operasional Sistem Informasi Kesejahteraan Rakyat", [
+    { type: "stats", items: [
+      { label: "Total Entitas", value: String(total) },
+      { label: "Draft", value: String(draft) },
+      { label: "Submitted", value: String(submitted) },
+      { label: "Terverifikasi", value: String(verified) },
+      { label: "Menunggu Verifikasi", value: String(pending) },
+    ] },
+    { type: "fields", fields: byType.results.map((r) => ({ label: String(r.name), value: String(r.cnt) })) },
+    { type: "actions", elements: [
+      { type: "button", label: "Data Utama", style: "primary", action_id: "nav_entities" },
+      { type: "button", label: "Verifikasi", style: "secondary", action_id: "nav_verification" },
+      { type: "button", label: "Import Excel", style: "secondary", action_id: "nav_imports" },
+      { type: "button", label: "Dokumen", style: "secondary", action_id: "nav_documents" },
+      { type: "button", label: "Pengaturan", style: "secondary", action_id: "nav_settings" },
+    ] },
+  ]));
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Clear any stale cache for root path on first request
@@ -253,11 +562,25 @@ export default {
 
     const isSikesraAdminBlockKit = path === "/_emdash/api/plugins/sikesra/admin";
 
-    // Send to EmDash: admin Block Kit, EmDash routes, Astro assets, root
+    if (isSikesraAdminBlockKit) {
+      try {
+        const authResp = await emdashWorker.fetch(request.clone(), env, ctx);
+        if (!authResp.ok) return authResp;
+        const active = await isSikesraPluginActive(env);
+        if (!active) return new Response("Not Found", { status: 404 });
+        const resp = await handleSikesraAdminBlockKit(request, env);
+        resp.headers.set("X-Route", "sikesra-admin");
+        resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        return resp;
+      } catch (e) {
+        return new Response("SIKESRA admin error: " + (e && e.message || "unknown"), { status: 500 });
+      }
+    }
+
+    // Send to EmDash: EmDash routes, Astro assets, root
     // Keep v1 API, public API, health, /sikesra in the wrapper
-    const goToEmDash = isSikesraAdminBlockKit ||
-      (!path.startsWith("/_emdash/api/plugins/sikesra/") &&
-       (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/"));
+    const goToEmDash = !path.startsWith("/_emdash/api/plugins/sikesra/") &&
+       (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/");
 
     if (goToEmDash) {
       try {

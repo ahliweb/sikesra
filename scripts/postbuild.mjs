@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { readdirSync, readFileSync, renameSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createHash } from "crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -29,4 +30,82 @@ wrapper = wrapper.replace("__SIKESRA_PUBLIC_HTML__", publicHtml
   .replace(/\${/g, "\\${"));
 writeFileSync(resolve(root, "dist/server/worker-wrapper.mjs"), wrapper);
 
-console.log("[postbuild] patched wrangler.json + worker-wrapper.mjs");
+// 5. Patch generated EmDash admin sidebar ordering for this self-contained host.
+// EmDash currently groups all plugin admin pages under a generic Plugins group
+// after the Admin group. SIKESRA is the primary app surface in this deployment,
+// so keep the runtime plugin APIs intact while moving that generated group near
+// the top and labelling it explicitly.
+function patchAdminSidebar() {
+  const astroDir = resolve(root, "dist/client/_astro");
+  if (!existsSync(astroDir)) return false;
+
+  for (const file of readdirSync(astroDir)) {
+    if (!file.endsWith(".js")) continue;
+    const path = resolve(astroDir, file);
+    let source = readFileSync(path, "utf8");
+    const hasPluginSidebar = source.includes("visiblePlugins.length > 0") || source.includes("v.length>0&&c.jsxs(c.Fragment");
+    const hasPluginLabel = source.includes('message: "Plugins"') || source.includes('message:"Plugins"');
+    if (!hasPluginSidebar || !hasPluginLabel) continue;
+
+    const original = source;
+    const pluginGroup = 'visiblePlugins.length > 0 && (0, import_jsx_runtime83.jsxs)(import_jsx_runtime83.Fragment, { children: [(0, import_jsx_runtime83.jsx)(Je5.Separator, {}), (0, import_jsx_runtime83.jsxs)(Je5.Group, {\n          collapsible: true,\n          defaultOpen: true,\n          children: [(0, import_jsx_runtime83.jsx)(Je5.GroupLabel, {\n            className: "[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",\n            children: _t6({\n              id: "ohUJJM",\n              message: "Plugins"\n            })\n          }), (0, import_jsx_runtime83.jsx)(Je5.GroupContent, { children: (0, import_jsx_runtime83.jsx)(Je5.Menu, { children: renderNavItems(visiblePlugins) }) })]\n        })] })';
+    const topPluginGroup = pluginGroup.replace('message: "Plugins"', 'message: "SIKESRA"');
+    const dashboardGroup = '(0, import_jsx_runtime83.jsx)(Je5.Group, { children: (0, import_jsx_runtime83.jsx)(Je5.Menu, { children: (0, import_jsx_runtime83.jsx)(NavMenuLink, {\n          item: {\n            to: "/",\n            label: _t6({\n              id: "7p5kLi",\n              message: "Dashboard"\n            }),\n            icon: n193\n          },\n          isActive: isItemActive("/", currentPath)\n        }) }) }),\n        (0, import_jsx_runtime83.jsx)(Je5.Separator, {})';
+
+    if (source.includes(pluginGroup) && source.includes(dashboardGroup)) {
+      source = source.replace(`,\n        ${pluginGroup}`, "");
+      source = source.replace(dashboardGroup, `${dashboardGroup},\n        ${topPluginGroup}`);
+    }
+
+    const minifiedPluginGroup = 'v.length>0&&c.jsxs(c.Fragment,{children:[c.jsx(vn.Separator,{}),c.jsxs(vn.Group,{collapsible:!0,defaultOpen:!0,children:[c.jsx(vn.GroupLabel,{className:"[&>span]:text-start [&_svg]:rtl:-scale-x-100 [&_svg]:rtl:-scale-y-100",children:t({id:"ohUJJM",message:"Plugins"})}),c.jsx(vn.GroupContent,{children:c.jsx(vn.Menu,{children:x(v)})})]})]})';
+    const minifiedTopPluginGroup = minifiedPluginGroup.replace('message:"Plugins"', 'message:"SIKESRA"');
+    const minifiedDashboardSeparator = 'c.jsx(vn.Group,{children:c.jsx(vn.Menu,{children:c.jsx(_F,{item:{to:"/",label:t({id:"7p5kLi",message:"Dashboard"}),icon:vp},isActive:TF("/",n)})})}),c.jsx(vn.Separator,{})';
+
+    if (source.includes(minifiedPluginGroup) && source.includes(minifiedDashboardSeparator)) {
+      source = source.replace(`,${minifiedPluginGroup}`, "");
+      source = source.replace(minifiedDashboardSeparator, `${minifiedDashboardSeparator},${minifiedTopPluginGroup}`);
+    }
+
+    if (source !== original) {
+      const hash = createHash("sha256").update(source).digest("hex").slice(0, 8);
+      const nextFile = file.replace(/\.js$/, `.sikesra-${hash}.js`);
+      const nextPath = resolve(astroDir, nextFile);
+
+      writeFileSync(path, source);
+      renameSync(path, nextPath);
+      patchDistReferences(file, nextFile);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function patchDistReferences(fromFile, toFile) {
+  const roots = [resolve(root, "dist/server"), resolve(root, "dist/client")];
+
+  for (const base of roots) {
+    if (!existsSync(base)) continue;
+    for (const file of walkFiles(base)) {
+      if (!/\.(mjs|js|json|html|css)$/.test(file)) continue;
+      const source = readFileSync(file, "utf8");
+      if (!source.includes(fromFile)) continue;
+      writeFileSync(file, source.split(fromFile).join(toFile));
+    }
+  }
+}
+
+function* walkFiles(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      yield* walkFiles(path);
+    } else if (entry.isFile()) {
+      yield path;
+    }
+  }
+}
+
+const sidebarPatched = patchAdminSidebar();
+
+console.log(`[postbuild] patched wrangler.json + worker-wrapper.mjs${sidebarPatched ? " + admin sidebar" : ""}`);
