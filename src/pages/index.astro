@@ -1,142 +1,71 @@
 ---
-import { env } from "cloudflare:workers";
+import { getEmDashCollection, getSiteSettings } from "emdash";
+import { Image } from "emdash/ui";
+import Base from "../layouts/Base.astro";
+import { resolveStarterSiteIdentity } from "../utils/site-identity";
 
-let pages: Array<{
-  id: string;
-  slug: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  published_at: string | null;
-}> = [];
-let hasContent = false;
+const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+  orderBy: { published_at: "desc" },
+});
+const { siteTitle, siteTagline } = resolveStarterSiteIdentity(await getSiteSettings());
+Astro.cache.set(cacheHint);
 
-try {
-  const db = env.DB as D1Database;
-  const result = await db.prepare(`
-    SELECT id, slug, status, created_at, updated_at, published_at
-    FROM ec_pages
-    WHERE status = 'published' AND deleted_at IS NULL
-    ORDER BY published_at DESC
-    LIMIT 10
-  `).all<{
-    id: string;
-    slug: string;
-    status: string;
-    created_at: string;
-    updated_at: string;
-    published_at: string | null;
-  }>();
-  pages = result.results || [];
-  hasContent = pages.length > 0;
-} catch {
-  // Table may not exist yet — render fallback
-}
+const recentPosts = posts.map((post) => {
+  const data = post.data as {
+    title?: string;
+    excerpt?: string;
+    featured_image?: unknown;
+    publishedAt?: Date | string | null;
+  };
+  const href = `/posts/${post.id}`;
+  const publishedAt = data.publishedAt
+    ? data.publishedAt instanceof Date
+      ? data.publishedAt
+      : new Date(data.publishedAt)
+    : null;
+
+  return {
+    id: post.id,
+    href,
+    title: data.title ?? post.id,
+    excerpt: data.excerpt ?? null,
+    featuredImage: data.featured_image,
+    publishedAt,
+  };
+});
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SIKESRA Public</title>
-    <style>
-      :root {
-        --bg: #f8fafc;
-        --text: #0f172a;
-        --muted: #475569;
-        --card: #ffffff;
-        --border: #dbe2ea;
-        --brand: #2271b1;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        color: var(--text);
-        background: var(--bg);
-      }
-      .wrap {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 48px 20px;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 24px;
-        margin-bottom: 16px;
-      }
-      h1 {
-        margin: 0 0 8px;
-        font-size: 1.6rem;
-      }
-      h2 {
-        margin: 0 0 8px;
-        font-size: 1.15rem;
-        font-weight: 600;
-      }
-      p { margin: 0 0 8px; color: var(--muted); line-height: 1.55; }
-      .meta {
-        font-size: 0.82rem;
-        color: var(--muted);
-      }
-      .actions {
-        margin-top: 16px;
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      a {
-        text-decoration: none;
-        border-radius: 8px;
-        padding: 10px 14px;
-        border: 1px solid var(--border);
-        color: var(--text);
-        background: #fff;
-      }
-      a.primary {
-        background: var(--brand);
-        border-color: var(--brand);
-        color: #fff;
-      }
-      .empty {
-        text-align: center;
-        padding: 32px 0;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-      {hasContent ? (
-        <>
-          {pages.map((page) => (
-            <section class="card">
-              <h2>{page.slug}</h2>
-              <p class="meta">
-                Published {page.published_at ? new Date(page.published_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : page.updated_at}
-              </p>
-            </section>
-          ))}
-          <div class="actions">
-            <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
-            <a href="/sikesra">SIKESRA Public Page</a>
-          </div>
-        </>
-      ) : (
-        <section class="card">
-          <h1>SIKESRA Public</h1>
-          <div class="empty">
-            <p>No published content yet.</p>
-            <p>Create content in the admin panel to populate this page.</p>
-          </div>
-          <div class="actions">
-            <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
-            <a href="/sikesra">SIKESRA Public Page</a>
-          </div>
-        </section>
-      )}
-    </main>
-  </body>
-</html>
+<Base title={siteTitle} description={siteTagline}>
+  <h1>Recent Posts</h1>
+
+  {
+    recentPosts.length === 0 ? (
+      <p>
+        No posts yet. <a href="/_emdash/admin/content/posts/new">Create one</a>.
+      </p>
+    ) : (
+      <ul>
+        {recentPosts.map((post) => (
+          <li>
+            <a href={post.href}>
+              {post.featuredImage && (
+                <Image image={post.featuredImage as never} />
+              )}
+              <h2>{post.title}</h2>
+            </a>
+            {post.excerpt && <p>{post.excerpt}</p>}
+            {post.publishedAt && (
+              <time datetime={post.publishedAt.toISOString()}>
+                {post.publishedAt.toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            )}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Base>
