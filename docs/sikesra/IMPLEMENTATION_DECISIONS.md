@@ -62,6 +62,11 @@ Current state:
 2. SIKESRA architectural constraints remain unchanged.
 3. Host-repo-specific paths/helpers are still pending and must be confirmed in the actual integration repository.
 
+Host repository audit update:
+
+1. `ahliweb/awcms-micro` currently has no runtime scaffold files (`astro.config`, `package.json`, plugin workspace, migrations, seeds, tests).
+2. Therefore, all `TBD in host repo` decisions remain blocked pending host scaffold or approved temporary runtime reference.
+
 Phase 0 is fully complete only when:
 
 1. The remaining `TBD in host repo` items are filled with concrete file paths/commands.
