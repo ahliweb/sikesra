@@ -70,6 +70,36 @@ function ge(id){return document.getElementById(id)}
 </script>
 </body></html>`;
 
+const EMDASH_ADMIN_MISSING_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EmDash Admin Not Available</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#0f172a;--muted:#475569;--accent:#0f766e;--border:#dbe3ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{min-height:100vh;display:grid;place-items:center;padding:1rem}
+.card{max-width:700px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.25rem 1rem}
+h1{margin:.25rem 0 1rem;font-size:1.3rem}
+p{margin:.5rem 0;color:var(--muted);line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:#eef2f7;padding:.1rem .35rem;border-radius:4px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="card">
+    <h1>EmDash admin shell is not deployed on this worker</h1>
+    <p>This repository contains the SIKESRA plugin service/API worker, not the full EmDash host admin runtime.</p>
+    <p>Available on this domain:</p>
+    <p>- Public page: <a href="/sikesra">/sikesra</a><br>- API base: <code>/_emdash/api/plugins/sikesra/*</code></p>
+    <p>If you need the full admin UI at <code>/_emdash/admin</code>, deploy or route the EmDash host worker for this domain.</p>
+  </section>
+</main>
+</body></html>`;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);

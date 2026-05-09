@@ -1,20 +1,28 @@
 name = "sikesra"
-main = "src/worker.ts"
+main = "dist/server/worker-wrapper.mjs"
 compatibility_date = "2026-05-09"
 compatibility_flags = ["nodejs_compat"]
-
-[[r2_buckets]]
-binding = "SIKESRA_DOCUMENTS"
-bucket_name = "sikesra"
 
 [[d1_databases]]
 binding = "SIKESRA_DB"
 database_name = "sikesra"
 database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
 
-[env.production]
+[[d1_databases]]
+binding = "DB"
+database_name = "sikesra"
+database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
 
-[env.staging]
+[[r2_buckets]]
+binding = "SIKESRA_DOCUMENTS"
+bucket_name = "sikesra"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "sikesra"
+
+[[kv_namespaces]]
+binding = "SESSION"
 
 [observability]
 enabled = true

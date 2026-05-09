@@ -1,18 +1,49 @@
 # AGENTS.md
 
 > **CRITICAL: Repository boundary warning.** Before making any modifications or executing any command, confirm which repository you are working in:
-> - **This repository** (`ahliweb/awcms-micro-sikesra`): SIKESRA plugin code, migrations, seeds, worker, and documentation.
-> - **`ahliweb/awcms-micro`**: EmDash-compatible host runtime only. Do not add SIKESRA business logic, migrations, seeds, or API endpoints to that repository.
+> - **This repository** (`ahliweb/awcms-micro-sikesra`): **Self-contained SIKESRA + EmDash host.** This is the deployment target. Contains SIKESRA plugin code, migrations, seeds, worker, the full EmDash admin scaffolding (astro.config.mjs, package.json with astro/emdash deps), and all documentation.
+> - **`ahliweb/awcms-micro`**: **Upstream reference only.** Contains the original EmDash core host scaffold. Used only for patching core EmDash behavior. Do NOT add SIKESRA business logic, migrations, seeds, or API endpoints there. Do NOT deploy from there.
 >
 > Use `git remote -v` and `pwd` to verify the active repository before writing code or running commands.
-
-This file defines repository instructions for AI agents and human implementers working on AWCMS-Micro SIKESRA.
+>
+> **Deployment note:** The `sikesra` worker (`sikesrakobar.ahlikoding.com`) is deployed from THIS repository. It is a hybrid worker: EmDash admin at `/_emdash/*`, SIKESRA routes at all other paths. The build pipeline is `astro build` followed by `wrangler deploy`.
 
 ## Role of This Repository
 
-This repository exists to implement SIKESRA as an EmDash-compatible AWCMS-Micro plugin/module. The canonical documentation lives in `docs/core/` and `docs/sikesra/`.
+This repository is the **self-contained SIKESRA deployment**. It includes:
+- The full EmDash admin scaffolding (Astro + EmDash host)
+- SIKESRA plugin code and business logic
+- All D1 migrations and seeds
+- The hybrid worker wrapper (`dist/server/worker-wrapper.mjs`)
+- All documentation
 
-Do not treat SIKESRA as a standalone app. It must integrate through EmDash/AWCMS-Micro module and plugin boundaries.
+The EmDash admin is built via `astro build` and served alongside SIKESRA routes through a single worker entry point (`dist/server/worker-wrapper.mjs`).
+
+## Build Pipeline
+
+```bash
+npm run build           # astro build (generates dist/)
+node scripts/postbuild.mjs  # patches wrangler.json + strips cloudflare:workers import
+npm run deploy          # wrangler deploy
+```
+
+Or:
+```bash
+npm run build && npm run deploy
+```
+
+The postbuild script (`scripts/postbuild.mjs`):
+1. Patches `dist/server/wrangler.json` to set `main: "worker-wrapper.mjs"`
+2. Strips `import "cloudflare:workers"` from `dist/server/entry.mjs` (required for hybrid worker compatibility)
+
+## Hybrid Worker Architecture
+
+The deployed worker (`dist/server/worker-wrapper.mjs`) routes requests as follows:
+- `/_emdash/api/plugins/sikesra/*` → SIKESRA handler (D1-backed API)
+- `/_emdash/*`, `/_astro/*` → EmDash handler (admin UI, admin API, static assets)
+- All other paths → SIKESRA handler (health, /sikesra page, etc.)
+
+The EmDash handler is imported from the Astro build output (`chunks/worker-entry_*.mjs`).
 
 ## Required Reading Order
 
