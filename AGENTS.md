@@ -1,5 +1,11 @@
 # AGENTS.md
 
+> **CRITICAL: Repository boundary warning.** Before making any modifications or executing any command, confirm which repository you are working in:
+> - **This repository** (`ahliweb/awcms-micro-sikesra`): SIKESRA plugin code, migrations, seeds, worker, and documentation.
+> - **`ahliweb/awcms-micro`**: EmDash-compatible host runtime only. Do not add SIKESRA business logic, migrations, seeds, or API endpoints to that repository.
+>
+> Use `git remote -v` and `pwd` to verify the active repository before writing code or running commands.
+
 This file defines repository instructions for AI agents and human implementers working on AWCMS-Micro SIKESRA.
 
 ## Role of This Repository
