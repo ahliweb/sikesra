@@ -37,6 +37,10 @@ import {
   auditListHandler,
 } from "./audit-routes";
 
+import {
+  pluginAdminHandler,
+} from "./admin-routes";
+
 export interface RouteDefinition {
   handler: (...args: any[]) => Promise<unknown>;
   public?: boolean;
@@ -50,6 +54,7 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
 
   // Admin dashboard
   "dashboard": { handler: dashboardHandler },
+  "admin": { handler: pluginAdminHandler },
 
   // Entity CRUD
   "v1/entities": { handler: entityListHandler },

@@ -106,3 +106,4 @@ Remaining for MVP:
 2. When plugin status is `inactive`, public/API SIKESRA routes must return `404`.
 3. Root `/` is always EmDash host-owned; SIKESRA must never inject root HTML.
 4. Plugin descriptor and runtime entry must stay synchronized via `sikesraPlugin()` in `astro.config.mjs` and `createPlugin` export in `src/plugin-entry.ts`.
+5. EmDash plugin admin surfaces require plugin route `admin` (`/_emdash/api/plugins/sikesra/admin`) for Block Kit page/widget interaction; missing this route causes repeated admin `404` retries.
