@@ -1,0 +1,19 @@
+name = "sikesra"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[[r2_buckets]]
+binding = "SIKESRA_DOCUMENTS"
+bucket_name = "sikesra"
+
+[[d1_databases]]
+binding = "SIKESRA_DB"
+database_name = "sikesra"
+database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
+
+[env.production]
+
+[env.staging]
+
+[observability]
+enabled = true
