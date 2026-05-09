@@ -23,6 +23,7 @@ bucket_name = "sikesra"
 
 [[kv_namespaces]]
 binding = "SESSION"
+id = "29e3fd9bbf2f448fa3b36185b8be299a"
 
 [observability]
 enabled = true

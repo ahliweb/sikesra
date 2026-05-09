@@ -1,1 +1,1 @@
-export { createPlugin } from "./index";
+export { createPlugin, sikesraPlugin } from "./index";

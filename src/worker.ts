@@ -164,10 +164,9 @@ export default {
         }, reqId);
       }
 
-      // EmDash Block Kit admin interaction endpoint
-      if (path === "/_emdash/api/plugins/sikesra/admin" && request.method === "POST") {
-        return ok({ blocks: [] }, reqId);
-      }
+      // Note: admin Block Kit endpoint is handled by EmDash plugin system
+      // via definePlugin routes — not this worker directly.
+
 
       // Entity list
       if (path === "/_emdash/api/plugins/sikesra/v1/entities") {

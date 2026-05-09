@@ -215,19 +215,17 @@ describe("SIKESRA Architecture Validation", () => {
       expect(ctx.requestId).toBeTruthy();
     });
 
-    it("should handle errors gracefully via ABAC handler", async () => {
-      const result = await handleAdminRequest(
-        { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
-        { resourceType: "entity" },
-        "read",
-        async () => {
-          throw new Error("test error");
-        },
-      );
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.code).toBe("INTERNAL_ERROR");
-      }
+    it("should propagate errors from handler", async () => {
+      await expect(
+        handleAdminRequest(
+          { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
+          { resourceType: "entity" },
+          "read",
+          async () => {
+            throw new Error("test error");
+          },
+        ),
+      ).rejects.toThrow("test error");
     });
   });
 
