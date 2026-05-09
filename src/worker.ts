@@ -168,6 +168,25 @@ export default {
 
         if (!entityId) return fail(reqId, "NOT_FOUND", "Entity ID not found", 404);
 
+        // Patch endpoint (autosave section updates)
+        if ((!action || action === "patch") && request.method === "PATCH") {
+          const body: Record<string, unknown> = await request.json();
+          const sets: string[] = [];
+          const params: unknown[] = [];
+          const fieldMap: Record<string, string> = { displayName: "display_name", localRegionId: "local_region_id", addressText: "address_text", latitude: "latitude", longitude: "longitude", sensitivityLevel: "sensitivity_level" };
+          for (const [key, col] of Object.entries(fieldMap)) {
+            if (body[key] !== undefined) { sets.push(`${col} = ?`); params.push(body[key]); }
+          }
+          if (sets.length) {
+            sets.push("updated_at = datetime('now')");
+            params.push(entityId);
+            await env.SIKESRA_DB.prepare(`UPDATE awcms_sikesra_entities SET ${sets.join(", ")} WHERE id = ? AND deleted_at IS NULL`).bind(...params).run();
+          }
+          const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<Record<string, unknown>>();
+          if (!row) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
+          return ok(row, reqId);
+        }
+
         // Submit endpoint
         if (action === "submit" && request.method === "POST") {
           const existing = await env.SIKESRA_DB.prepare("SELECT status_data FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<{ status_data: string }>();
@@ -208,10 +227,36 @@ export default {
         })), reqId);
       }
 
-      // Settings
-      if (path === "/_emdash/api/plugins/sikesra/v1/settings") {
+      // Settings get
+      if (path === "/_emdash/api/plugins/sikesra/v1/settings" && request.method === "GET") {
         const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<Record<string, unknown>>();
         return ok(row ?? { publicEnabled: false, publicTitle: "SIKESRA", smallCellThreshold: 5, maxUploadBytes: 10485760, exportMaxSyncRows: 5000, requireReasonForHighlyRestrictedDownload: true }, reqId);
+      }
+
+      // Settings update
+      if (path === "/_emdash/api/plugins/sikesra/v1/settings/update" && request.method === "PATCH") {
+        const body: Record<string, unknown> = await request.json();
+        const existing = await env.SIKESRA_DB.prepare("SELECT id FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<{ id: string }>();
+        const fieldMap: Record<string, string> = { publicEnabled: "public_enabled", publicTitle: "public_title", publicDescription: "public_description", dataScopeNote: "data_scope_note", officialContact: "official_contact", smallCellThreshold: "small_cell_threshold", maxUploadBytes: "max_upload_bytes", exportMaxSyncRows: "export_max_sync_rows", requireReasonForHighlyRestrictedDownload: "require_reason_for_highly_restricted_download" };
+        const sets: string[] = [];
+        const params: unknown[] = [];
+        for (const [key, col] of Object.entries(fieldMap)) {
+          if (body[key] !== undefined) { sets.push(`${col} = ?`); params.push(typeof body[key] === "boolean" ? (body[key] ? 1 : 0) : body[key]); }
+        }
+        if (body.allowedMimeTypes !== undefined) { sets.push("allowed_mime_types_json = ?"); params.push(JSON.stringify(body.allowedMimeTypes)); }
+        if (body.featureFlags !== undefined) { sets.push("feature_flags_json = ?"); params.push(JSON.stringify(body.featureFlags)); }
+        if (sets.length === 0) return fail(reqId, "NO_CHANGES", "No fields to update");
+        sets.push("updated_at = datetime('now')");
+        if (existing) {
+          params.push(existing.id);
+          await env.SIKESRA_DB.prepare(`UPDATE awcms_sikesra_settings SET ${sets.join(", ")} WHERE id = ?`).bind(...params).run();
+        } else {
+          const id = crypto.randomUUID();
+          params.unshift(id);
+          await env.SIKESRA_DB.prepare(`INSERT INTO awcms_sikesra_settings (id, tenant_id, site_id, ${Object.keys(fieldMap).filter(k => body[k] !== undefined).join(", ")}) VALUES (?, 'default', 'default', ${Object.values(fieldMap).filter((_, i) => body[Object.keys(fieldMap)[i]] !== undefined).map(() => "?").join(", ")})`).bind(...params).run();
+        }
+        const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<Record<string, unknown>>();
+        return ok(row, reqId);
       }
 
       return fail(reqId, "NOT_FOUND", "Route not found", 404);
