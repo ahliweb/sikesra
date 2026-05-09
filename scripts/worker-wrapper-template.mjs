@@ -151,9 +151,23 @@ export default {
 
     const isSIKESRA = path.startsWith("/_emdash/api/plugins/sikesra");
     if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
-      return emdashWorker.fetch(request, env, ctx);
+      try {
+        const resp = await emdashWorker.fetch(request, env, ctx);
+        resp.headers.set("X-Route", "emdash");
+        resp.headers.set("CDN-Cache-Control", "no-cache");
+        resp.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+        return resp;
+      } catch (e) {
+        return new Response("EmDash error: " + (e && e.message || "unknown"), { status: 500 });
+      }
     }
 
-    return handleSikesra(request, env);
+    try {
+      const resp = await handleSikesra(request, env);
+      resp.headers.set("X-Route", "sikesra");
+      return resp;
+    } catch (e) {
+      return new Response("Handler error: " + (e && e.message || "unknown"), { status: 500 });
+    }
   },
 };

@@ -1,0 +1,61 @@
+{
+  "site": {
+    "title": "SIKESRA",
+    "description": "Sistem Informasi Kesejahteraan Rakyat",
+    "language": "id"
+  },
+  "collections": {
+    "pages": {
+      "label": "Pages",
+      "label_singular": "Page",
+      "icon": "file-text",
+      "supports": ["title", "content", "slug", "seo"],
+      "fields": {
+        "title": { "type": "text", "label": "Title" },
+        "content": { "type": "richtext", "label": "Content" }
+      }
+    }
+  },
+  "content": {
+    "pages": [
+      {
+        "title": "Home",
+        "slug": "/",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "heading",
+              "attrs": { "level": 1 },
+              "content": [{ "type": "text", "text": "Selamat Datang di SIKESRA" }]
+            },
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "Sistem Informasi Kesejahteraan Rakyat — platform data terpadu untuk pemantauan dan verifikasi kesejahteraan masyarakat." }]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "Kunjungi " },
+                { "type": "text", "marks": [{ "type": "link", "attrs": { "href": "/sikesra" } }], "text": "Dasbor Publik SIKESRA" },
+                { "type": "text", "text": " untuk melihat data agregat." }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "Panel admin tersedia di " },
+                { "type": "text", "marks": [{ "type": "link", "attrs": { "href": "/_emdash/admin" } }], "text": "/_emdash/admin" },
+                { "type": "text", "text": "." }
+              ]
+            }
+          ]
+        },
+        "seo": {
+          "title": "SIKESRA — Sistem Informasi Kesejahteraan Rakyat",
+          "description": "Platform data terpadu SIKESRA untuk pemantauan kesejahteraan masyarakat"
+        }
+      }
+    ]
+  }
+}
