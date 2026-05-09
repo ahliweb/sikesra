@@ -113,9 +113,37 @@ async function handleSikesra(request, env) {
     }
 
     if (path === "/_emdash/api/plugins/sikesra/public/summary") {
-      const total = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE status_data = 'active' AND status_verification = 'verified' AND deleted_at IS NULL").first();
+      const total = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first();
+      const verified = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE status_verification = 'verified' AND deleted_at IS NULL").first();
       const villages = await env.SIKESRA_DB.prepare("SELECT COUNT(DISTINCT official_village_code) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first();
-      return ok({ kpis: { totalEntities: total?.cnt ?? 0, verifiedEntities: total?.cnt ?? 0, activeVillages: villages?.cnt ?? 0, latestUpdateAt: new Date().toISOString() }, charts: { byObjectType: [], byRegion: [], byVerificationStatus: [], bySafeAttribute: [] }, suppression: { threshold: 5, suppressedCells: 0 }, caveat: "Data pada halaman ini merupakan rekapitulasi agregat yang telah diverifikasi. Data pribadi tidak ditampilkan." }, reqId);
+      const latest = await env.SIKESRA_DB.prepare("SELECT MAX(updated_at) as t FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first();
+      const byType = await env.SIKESRA_DB.prepare(
+        "SELECT ot.code, ot.name, COUNT(e.id) as total, SUM(CASE WHEN e.status_verification='verified' THEN 1 ELSE 0 END) as verified FROM awcms_sikesra_object_types ot LEFT JOIN awcms_sikesra_entities e ON e.object_type_code=ot.code AND e.deleted_at IS NULL WHERE ot.deleted_at IS NULL AND ot.is_active=1 GROUP BY ot.code, ot.name ORDER BY ot.sort_order"
+      ).all();
+      const byVerifStatus = await env.SIKESRA_DB.prepare(
+        "SELECT status_verification as status, COUNT(*) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL GROUP BY status_verification"
+      ).all();
+      const totalCnt = total?.cnt ?? 0;
+      const verifiedCnt = verified?.cnt ?? 0;
+      const settings = await env.SIKESRA_DB.prepare("SELECT small_cell_threshold FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first();
+      const threshold = settings?.small_cell_threshold ?? 5;
+      const safeByType = byType.results.map(r => ({
+        code: r.code, name: r.name,
+        total: r.total >= threshold ? r.total : 0,
+        verified: r.verified >= threshold ? r.verified : 0,
+        suppressed: r.total < threshold,
+      }));
+      const suppressedCells = safeByType.filter(r => r.suppressed).length;
+      return ok({
+        kpis: { totalEntities: totalCnt, verifiedEntities: verifiedCnt, activeVillages: villages?.cnt ?? 0, latestUpdateAt: latest?.t ?? new Date().toISOString() },
+        charts: {
+          byObjectType: safeByType,
+          byVerificationStatus: byVerifStatus.results,
+          byRegion: [], bySafeAttribute: [],
+        },
+        suppression: { threshold, suppressedCells },
+        caveat: "Data pada halaman ini merupakan rekapitulasi agregat yang telah diverifikasi. Data pribadi tidak ditampilkan.",
+      }, reqId);
     }
 
 

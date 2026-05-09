@@ -152,17 +152,33 @@ export default {
         return ok({ districts: [], villages: [], objectTypes: types.results, years: [], statuses: [{ code: "active", label: "Aktif" }, { code: "verified", label: "Terverifikasi" }] }, reqId);
       }
 
-      // Public summary
       if (path === "/_emdash/api/plugins/sikesra/public/summary") {
-        const total = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE status_data = 'active' AND status_verification = 'verified' AND deleted_at IS NULL").first<{ cnt: number }>();
+        const total = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first<{ cnt: number }>();
+        const verified = await env.SIKESRA_DB.prepare("SELECT COUNT(*) as cnt FROM awcms_sikesra_entities WHERE status_verification = 'verified' AND deleted_at IS NULL").first<{ cnt: number }>();
         const villages = await env.SIKESRA_DB.prepare("SELECT COUNT(DISTINCT official_village_code) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first<{ cnt: number }>();
+        const latest = await env.SIKESRA_DB.prepare("SELECT MAX(updated_at) as t FROM awcms_sikesra_entities WHERE deleted_at IS NULL").first<{ t: string }>();
+        const byType = await env.SIKESRA_DB.prepare(
+          "SELECT ot.code, ot.name, COUNT(e.id) as total, SUM(CASE WHEN e.status_verification='verified' THEN 1 ELSE 0 END) as verified FROM awcms_sikesra_object_types ot LEFT JOIN awcms_sikesra_entities e ON e.object_type_code=ot.code AND e.deleted_at IS NULL WHERE ot.deleted_at IS NULL AND ot.is_active=1 GROUP BY ot.code, ot.name ORDER BY ot.sort_order"
+        ).all<Record<string, unknown>>();
+        const byVerifStatus = await env.SIKESRA_DB.prepare(
+          "SELECT status_verification as status, COUNT(*) as cnt FROM awcms_sikesra_entities WHERE deleted_at IS NULL GROUP BY status_verification"
+        ).all<Record<string, unknown>>();
+        const settings = await env.SIKESRA_DB.prepare("SELECT small_cell_threshold FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<{ small_cell_threshold: number }>();
+        const threshold = settings?.small_cell_threshold ?? 5;
+        const safeByType = byType.results.map(r => ({
+          code: r.code, name: r.name,
+          total: Number(r.total) >= threshold ? r.total : 0,
+          verified: Number(r.verified) >= threshold ? r.verified : 0,
+          suppressed: Number(r.total) < threshold,
+        }));
         return ok({
-          kpis: { totalEntities: total?.cnt ?? 0, verifiedEntities: total?.cnt ?? 0, activeVillages: villages?.cnt ?? 0, latestUpdateAt: new Date().toISOString() },
-          charts: { byObjectType: [], byRegion: [], byVerificationStatus: [], bySafeAttribute: [] },
-          suppression: { threshold: 5, suppressedCells: 0 },
+          kpis: { totalEntities: total?.cnt ?? 0, verifiedEntities: verified?.cnt ?? 0, activeVillages: villages?.cnt ?? 0, latestUpdateAt: latest?.t ?? new Date().toISOString() },
+          charts: { byObjectType: safeByType, byVerificationStatus: byVerifStatus.results, byRegion: [], bySafeAttribute: [] },
+          suppression: { threshold, suppressedCells: safeByType.filter(r => r.suppressed).length },
           caveat: "Data pada halaman ini merupakan rekapitulasi agregat yang telah diverifikasi. Data pribadi tidak ditampilkan.",
         }, reqId);
       }
+
 
       // Note: admin Block Kit endpoint is handled by EmDash plugin system
       // via definePlugin routes — not this worker directly.
