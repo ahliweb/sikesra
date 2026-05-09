@@ -146,6 +146,37 @@ export default {
         return ok(rows.results, reqId);
       }
 
+      // Entity create
+      if (path === "/_emdash/api/plugins/sikesra/v1/entities/create" && request.method === "POST") {
+        const body: Record<string, unknown> = await request.json();
+        const id = `ent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const typeCode = String(body.objectTypeCode ?? "01");
+        const kindMap: Record<string, string> = { "01": "building", "02": "institution", "03": "institution", "04": "institution", "05": "person", "06": "person", "07": "person", "08": "person" };
+        await env.SIKESRA_DB.prepare(
+          "INSERT INTO awcms_sikesra_entities (id, tenant_id, site_id, object_type_code, object_subtype_code, entity_kind, display_name, official_village_code, sensitivity_level, source_input, source_institution, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(id, "default", "default", typeCode, body.objectSubtypeCode ?? "01", kindMap[typeCode] ?? "institution", body.displayName ?? "Untitled", body.officialVillageCode ?? "0000000000", body.sensitivityLevel ?? "internal", body.sourceInput ?? "manual", body.sourceInstitution ?? null, "api-user").run();
+        const row = await env.SIKESRA_DB.prepare("SELECT id, sikesra_id_20, object_type_code, object_subtype_code, entity_kind, display_name, official_village_code, status_data, status_verification, sensitivity_level, completeness_percent, source_input, created_at FROM awcms_sikesra_entities WHERE id = ?").bind(id).first<Record<string, unknown>>();
+        return ok(row, reqId);
+      }
+
+      // Entity detail
+      if (path.startsWith("/_emdash/api/plugins/sikesra/v1/entities/") && !path.includes("/create")) {
+        const entityId = path.split("/").pop()!;
+        const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_entities WHERE id = ? AND deleted_at IS NULL").bind(entityId).first<Record<string, unknown>>();
+        if (!row) return fail(reqId, "NOT_FOUND", "Entity not found", 404);
+        return ok({
+          entity: {
+            id: row.id, sikesraId20: row.sikesra_id_20, objectTypeCode: row.object_type_code, objectTypeName: "", objectSubtypeCode: row.object_subtype_code, objectSubtypeName: "",
+            entityKind: row.entity_kind, displayName: row.display_name, masked: false, officialRegion: {}, localRegion: null,
+            statusData: row.status_data, statusVerification: row.status_verification, verificationLevel: row.verification_level,
+            sensitivityLevel: row.sensitivity_level, completenessPercent: row.completeness_percent, duplicateStatus: row.duplicate_status,
+            sourceInput: row.source_input, createdAt: row.created_at, updatedAt: row.updated_at,
+          },
+          summary: {}, attributes: [], documents: [], verification: [], benefits: [], audit: [],
+          access: { canEdit: true, canSubmit: false, canVerify: false, canGenerateCode: false, canRevealSensitive: false, canDownloadDocuments: false, deniedActions: [] },
+        }, reqId);
+      }
+
       // Settings
       if (path === "/_emdash/api/plugins/sikesra/v1/settings") {
         const row = await env.SIKESRA_DB.prepare("SELECT * FROM awcms_sikesra_settings WHERE deleted_at IS NULL LIMIT 1").first<Record<string, unknown>>();
