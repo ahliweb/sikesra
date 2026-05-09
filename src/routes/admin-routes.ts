@@ -61,14 +61,42 @@ async function overviewBlocks(db: D1Binding, tid: string, sid: string): Promise<
   const pendingVerif = await countWhere(db, "awcms_sikesra_entities", tid, sid,
     "AND status_verification IN ('submitted_village','submitted_subdistrict','submitted_regency')");
 
-  const recentAudit = await db.prepare(
-    `SELECT action, resource_type, actor_id, created_at FROM awcms_sikesra_audit_logs
-     WHERE tenant_id = ? AND site_id = ? ORDER BY created_at DESC LIMIT 5`
+  // Per-type breakdown
+  const byType = await db.prepare(
+    `SELECT ot.name, COUNT(e.id) as cnt
+     FROM awcms_sikesra_object_types ot
+     LEFT JOIN awcms_sikesra_entities e ON e.object_type_code = ot.code AND e.deleted_at IS NULL AND e.tenant_id = ? AND e.site_id = ?
+     WHERE ot.deleted_at IS NULL AND ot.is_active = 1
+     GROUP BY ot.code, ot.name ORDER BY ot.sort_order`
   ).bind(tid, sid).all<Record<string, unknown>>();
 
-  const activityLines = recentAudit.results.map(r =>
-    `${String(r.action)} pada ${String(r.resource_type)} oleh ${String(r.actor_id)} (${String(r.created_at)})`
-  );
+  const typeFields = byType.results.map(r => ({
+    label: String(r.name), value: String(r.cnt),
+  }));
+
+  // Recent audit as table
+  const recentAudit = await db.prepare(
+    `SELECT action, resource_type, resource_id, actor_id, success, created_at FROM awcms_sikesra_audit_logs
+     WHERE tenant_id = ? AND site_id = ? ORDER BY created_at DESC LIMIT 8`
+  ).bind(tid, sid).all<Record<string, unknown>>();
+
+  const auditTable: Block = recentAudit.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "time", label: "Waktu" },
+      { key: "action", label: "Aksi" },
+      { key: "resource", label: "Resource" },
+      { key: "actor", label: "Aktor" },
+      { key: "status", label: "Status" },
+    ],
+    rows: recentAudit.results.map(r => ({
+      time: String(r.created_at).slice(0, 16).replace("T", " "),
+      action: String(r.action),
+      resource: `${String(r.resource_type)}/${String(r.resource_id).slice(0, 12)}`,
+      actor: String(r.actor_id),
+      status: r.success ? "✓" : "✗",
+    })),
+  } : { type: "empty", title: "Belum ada aktivitas", description: "Log audit akan tampil di sini.", size: "sm" };
 
   return [
     { type: "banner", variant: "default", title: "SIKESRA", description: "Sistem Informasi Kesejahteraan Rakyat — Admin Dashboard" },
@@ -84,6 +112,9 @@ async function overviewBlocks(db: D1Binding, tid: string, sid: string): Promise<
       ],
     },
     { type: "divider" },
+    { type: "header", text: "Per Kategori" },
+    ...(typeFields.length > 0 ? [{ type: "fields" as const, fields: typeFields }] : []),
+    { type: "divider" },
     { type: "header", text: "Antrean Kerja" },
     {
       type: "stats", items: [
@@ -92,9 +123,7 @@ async function overviewBlocks(db: D1Binding, tid: string, sid: string): Promise<
     },
     { type: "divider" },
     { type: "header", text: "Aktivitas Terbaru" },
-    ...(activityLines.length > 0
-      ? activityLines.map(line => ({ type: "section", text: line }))
-      : [{ type: "empty", title: "Belum ada aktivitas", description: "Log audit akan tampil di sini.", size: "sm" }]),
+    auditTable,
     { type: "divider" },
     { type: "header", text: "Akses Cepat" },
     {
@@ -114,36 +143,48 @@ async function entitiesBlocks(db: D1Binding, tid: string, sid: string): Promise<
   const total = await countWhere(db, "awcms_sikesra_entities", tid, sid);
 
   const rows = await db.prepare(
-    `SELECT id, sikesra_id_20, display_name, object_type_code, status_data, status_verification, completeness_percent, created_at
-     FROM awcms_sikesra_entities WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
-     ORDER BY updated_at DESC LIMIT 20`
+    `SELECT e.id, e.sikesra_id_20, e.display_name, e.object_type_code, ot.name as type_name,
+            e.status_data, e.status_verification, e.completeness_percent, e.created_at
+     FROM awcms_sikesra_entities e
+     LEFT JOIN awcms_sikesra_object_types ot ON ot.code = e.object_type_code
+     WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
+     ORDER BY e.updated_at DESC LIMIT 20`
   ).bind(tid, sid).all<Record<string, unknown>>();
 
-  const entitySections: Block[] = rows.results.map(r => ({
-    type: "section",
-    text: `**${String(r.display_name)}** — ${String(r.sikesra_id_20 ?? "ID belum digenerate")} | Tipe: ${String(r.object_type_code)} | Status: ${String(r.status_data)}/${String(r.status_verification)} | Kelengkapan: ${r.completeness_percent}%`,
-  }));
+  const typeCounts = await db.prepare(
+    `SELECT ot.name, COUNT(e.id) as cnt
+     FROM awcms_sikesra_object_types ot
+     LEFT JOIN awcms_sikesra_entities e ON e.object_type_code = ot.code AND e.deleted_at IS NULL AND e.tenant_id = ? AND e.site_id = ?
+     WHERE ot.deleted_at IS NULL AND ot.is_active = 1
+     GROUP BY ot.code, ot.name ORDER BY ot.sort_order`
+  ).bind(tid, sid).all<Record<string, unknown>>();
+
+  const entityTable: Block = rows.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "name", label: "Nama" },
+      { key: "type", label: "Tipe" },
+      { key: "data", label: "Data" },
+      { key: "verif", label: "Verifikasi" },
+      { key: "pct", label: "%" },
+    ],
+    rows: rows.results.map(r => ({
+      name: String(r.display_name),
+      type: String(r.type_name ?? r.object_type_code),
+      data: String(r.status_data),
+      verif: String(r.status_verification),
+      pct: `${r.completeness_percent}%`,
+    })),
+  } : { type: "empty", title: "Tidak ada data", description: "Data entitas akan tampil di sini setelah diinput.", size: "sm" };
 
   return [
-    { type: "banner", variant: "default", title: "Data Utama", description: "Registri entitas kesejahteraan rakyat" },
-    { type: "header", text: `Entitas Terdaftar (${total})` },
-    ...(entitySections.length > 0 ? entitySections : [
-      { type: "empty", title: "Tidak ada data", description: "Data entitas akan tampil di sini setelah diinput.", size: "sm" },
-    ]),
+    { type: "banner", variant: "default", title: "Data Utama", description: `${total} entitas terdaftar` },
+    { type: "header", text: "Distribusi per Tipe" },
+    { type: "fields", fields: typeCounts.results.map(r => ({ label: String(r.name), value: String(r.cnt) })) },
     { type: "divider" },
-    { type: "header", text: "Tipe Objek" },
-    {
-      type: "fields", fields: [
-        { label: "01 - Rumah Ibadah", value: "Building" },
-        { label: "02 - Lembaga Keagamaan", value: "Institution" },
-        { label: "03 - Pendidikan Keagamaan", value: "Institution" },
-        { label: "04 - LKS (Panti)", value: "Institution" },
-        { label: "05 - Guru Agama", value: "Person" },
-        { label: "06 - Anak Yatim", value: "Person" },
-        { label: "07 - Disabilitas", value: "Person" },
-        { label: "08 - Lansia Terlantar", value: "Person" },
-      ],
-    },
+    { type: "header", text: "Entitas Terbaru" },
+    entityTable,
+    { type: "divider" },
     {
       type: "actions", elements: [
         { type: "button", label: "Tambah Entitas Baru", style: "primary", action_id: "entity_create" },
@@ -160,6 +201,32 @@ async function verificationBlocks(db: D1Binding, tid: string, sid: string): Prom
     countWhere(db, "awcms_sikesra_entities", tid, sid, "AND status_verification = 'submitted_regency'"),
   ]);
 
+  const queue = await db.prepare(
+    `SELECT e.display_name, ot.name as type_name, e.status_verification, e.completeness_percent, e.updated_at
+     FROM awcms_sikesra_entities e LEFT JOIN awcms_sikesra_object_types ot ON ot.code = e.object_type_code
+     WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
+       AND e.status_verification IN ('submitted_village','submitted_subdistrict','submitted_regency')
+     ORDER BY e.updated_at ASC LIMIT 15`
+  ).bind(tid, sid).all<Record<string, unknown>>();
+
+  const queueTable: Block = queue.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "name", label: "Nama" },
+      { key: "type", label: "Tipe" },
+      { key: "level", label: "Tingkat" },
+      { key: "pct", label: "Kelengkapan" },
+      { key: "date", label: "Submit" },
+    ],
+    rows: queue.results.map(r => ({
+      name: String(r.display_name),
+      type: String(r.type_name),
+      level: String(r.status_verification).replace("submitted_", ""),
+      pct: `${r.completeness_percent}%`,
+      date: String(r.updated_at).slice(0, 10),
+    })),
+  } : { type: "empty", title: "Antrean kosong", description: "Tidak ada data menunggu verifikasi.", size: "sm" };
+
   return [
     { type: "banner", variant: "default", title: "Verifikasi", description: "Antrean dan proses verifikasi berjenjang" },
     { type: "header", text: "Antrean Verifikasi" },
@@ -171,11 +238,8 @@ async function verificationBlocks(db: D1Binding, tid: string, sid: string): Prom
       ],
     },
     { type: "divider" },
-    { type: "header", text: "Alur Verifikasi" },
-    { type: "section", text: "1. Operator desa/kelurahan menginput dan mensubmit data." },
-    { type: "section", text: "2. Verifikator desa meninjau kelengkapan data dan dokumen pendukung." },
-    { type: "section", text: "3. Verifikator kecamatan melakukan pengecekan silang antar desa." },
-    { type: "section", text: "4. Verifikator kabupaten/OPD melakukan verifikasi final." },
+    { type: "header", text: "Data Menunggu Verifikasi" },
+    queueTable,
     { type: "divider" },
     {
       type: "actions", elements: [
@@ -191,7 +255,7 @@ async function verificationBlocks(db: D1Binding, tid: string, sid: string): Prom
   ];
 }
 
-// ─── Placeholder stubs for pages 4-10 (will be filled in next atoms) ───
+// ─── Page 4: Import Excel ───
 async function importsBlocks(db: D1Binding, tid: string, sid: string): Promise<Block[]> {
   const total = await countWhere(db, "awcms_sikesra_import_batches", tid, sid);
   const rows = await db.prepare(
@@ -200,20 +264,35 @@ async function importsBlocks(db: D1Binding, tid: string, sid: string): Promise<B
      ORDER BY created_at DESC LIMIT 10`
   ).bind(tid, sid).all<Record<string, unknown>>();
 
-  const batchSections: Block[] = rows.results.map(r => ({
-    type: "section",
-    text: `**${String(r.original_filename)}** — Status: ${String(r.status)} | Total: ${r.row_count} | Valid: ${r.valid_row_count} | Invalid: ${r.invalid_row_count} | Promoted: ${r.promoted_row_count} | ${String(r.created_at)}`,
-  }));
+  const importTable: Block = rows.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "file", label: "File" },
+      { key: "status", label: "Status" },
+      { key: "total", label: "Total" },
+      { key: "valid", label: "Valid" },
+      { key: "invalid", label: "Invalid" },
+      { key: "promoted", label: "Promoted" },
+      { key: "date", label: "Tanggal" },
+    ],
+    rows: rows.results.map(r => ({
+      file: String(r.original_filename),
+      status: String(r.status),
+      total: String(r.row_count),
+      valid: String(r.valid_row_count),
+      invalid: String(r.invalid_row_count),
+      promoted: String(r.promoted_row_count),
+      date: String(r.created_at).slice(0, 10),
+    })),
+  } : { type: "empty", title: "Belum ada import", description: "Upload workbook Excel untuk memulai.", size: "sm" };
 
   return [
-    { type: "banner", variant: "default", title: "Import Excel", description: "Manajemen import data dari workbook Excel" },
-    { type: "header", text: `Batch Import (${total})` },
-    ...(batchSections.length > 0 ? batchSections : [
-      { type: "empty", title: "Belum ada import", description: "Upload workbook Excel untuk memulai proses import.", size: "sm" },
-    ]),
+    { type: "banner", variant: "default", title: "Import Excel", description: `${total} batch import` },
+    { type: "header", text: "Riwayat Import" },
+    importTable,
     { type: "divider" },
     { type: "header", text: "Alur Import" },
-    { type: "section", text: "1. Upload workbook → 2. Pilih sheet → 3. Mapping kolom → 4. Validasi → 5. Preview staging → 6. Koreksi → 7. Review duplikat → 8. Promote → 9. Laporan import" },
+    { type: "section", text: "Upload → Sheet → Mapping → Validasi → Staging → Koreksi → Duplikat → Promote → Laporan" },
     { type: "divider" },
     { type: "actions", elements: [
       { type: "button", label: "Upload Workbook Baru", style: "primary", action_id: "import_upload" },
@@ -249,7 +328,30 @@ async function documentsBlocks(db: D1Binding, tid: string, sid: string): Promise
 }
 async function reportsBlocks(db: D1Binding, tid: string, sid: string): Promise<Block[]> {
   const totalExports = await countWhere(db, "awcms_sikesra_export_jobs", tid, sid);
-  const pendingExports = await countWhere(db, "awcms_sikesra_export_jobs", tid, sid, "AND status = 'pending'");
+
+  const jobs = await db.prepare(
+    `SELECT id, report_type, format, status, total_rows, created_at
+     FROM awcms_sikesra_export_jobs WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+     ORDER BY created_at DESC LIMIT 10`
+  ).bind(tid, sid).all<Record<string, unknown>>();
+
+  const jobsTable: Block = jobs.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "type", label: "Jenis" },
+      { key: "fmt", label: "Format" },
+      { key: "status", label: "Status" },
+      { key: "rows", label: "Baris" },
+      { key: "date", label: "Tanggal" },
+    ],
+    rows: jobs.results.map(r => ({
+      type: String(r.report_type),
+      fmt: String(r.format).toUpperCase(),
+      status: String(r.status),
+      rows: String(r.total_rows),
+      date: String(r.created_at).slice(0, 10),
+    })),
+  } : { type: "empty", title: "Belum ada ekspor", description: "Buat ekspor pertama.", size: "sm" };
 
   return [
     { type: "banner", variant: "default", title: "Laporan", description: "Laporan dan ekspor data" },
@@ -261,11 +363,8 @@ async function reportsBlocks(db: D1Binding, tid: string, sid: string): Promise<B
       { label: "Bukti Audit", value: "Log audit untuk pemeriksaan — nilai sensitif disamarkan (CSV)" },
     ] },
     { type: "divider" },
-    { type: "header", text: `Ekspor (${totalExports})` },
-    { type: "stats", items: [
-      { label: "Total Job Ekspor", value: String(totalExports) },
-      { label: "Pending", value: String(pendingExports), description: "Sedang diproses" },
-    ] },
+    { type: "header", text: `Job Ekspor (${totalExports})` },
+    jobsTable,
     { type: "divider" },
     { type: "actions", elements: [
       { type: "button", label: "Buat Ekspor Baru", style: "primary", action_id: "export_create" },
@@ -339,22 +438,35 @@ async function auditBlocks(db: D1Binding, tid: string, sid: string): Promise<Blo
   ).bind(tid, sid).first<{ cnt: number }>();
 
   const recentLogs = await db.prepare(
-    `SELECT id, action, resource_type, resource_id, actor_id, success, created_at
+    `SELECT action, resource_type, resource_id, actor_id, actor_role, success, created_at
      FROM awcms_sikesra_audit_logs WHERE tenant_id = ? AND site_id = ?
-     ORDER BY created_at DESC LIMIT 15`
+     ORDER BY created_at DESC LIMIT 20`
   ).bind(tid, sid).all<Record<string, unknown>>();
 
-  const logSections: Block[] = recentLogs.results.map(r => ({
-    type: "section",
-    text: `${r.success ? "✓" : "✗"} **${String(r.action)}** pada ${String(r.resource_type)}/${String(r.resource_id)} oleh ${String(r.actor_id)} — ${String(r.created_at)}`,
-  }));
+  const auditTable: Block = recentLogs.results.length > 0 ? {
+    type: "table",
+    columns: [
+      { key: "time", label: "Waktu" },
+      { key: "action", label: "Aksi" },
+      { key: "resource", label: "Resource" },
+      { key: "actor", label: "Aktor" },
+      { key: "role", label: "Role" },
+      { key: "ok", label: "OK" },
+    ],
+    rows: recentLogs.results.map(r => ({
+      time: String(r.created_at).slice(0, 16).replace("T", " "),
+      action: String(r.action),
+      resource: `${String(r.resource_type)}/${String(r.resource_id).slice(0, 15)}`,
+      actor: String(r.actor_id),
+      role: String(r.actor_role),
+      ok: r.success ? "✓" : "✗",
+    })),
+  } : { type: "empty", title: "Belum ada log", description: "Audit events akan muncul setelah ada aksi kritikal.", size: "sm" };
 
   return [
     { type: "banner", variant: "default", title: "Audit", description: "Log audit aksi kritikal" },
     { type: "header", text: `Log Audit (${totalLogs?.cnt ?? 0} total)` },
-    ...(logSections.length > 0 ? logSections : [
-      { type: "empty", title: "Belum ada log", description: "Audit events akan muncul setelah ada aksi kritikal.", size: "sm" },
-    ]),
+    auditTable,
     { type: "divider" },
     { type: "section", text: "Log audit bersifat immutable. Nilai sensitif di before/after disamarkan sesuai izin viewer." },
   ];
