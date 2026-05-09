@@ -108,3 +108,4 @@ Remaining for MVP:
 4. Plugin descriptor and runtime entry must stay synchronized via `sikesraPlugin()` in `astro.config.mjs` and `createPlugin` export in `src/plugin-entry.ts`.
 5. EmDash plugin admin surfaces require plugin route `admin` (`/_emdash/api/plugins/sikesra/admin`) for Block Kit page/widget interaction; missing this route causes repeated admin `404` retries.
 6. Hybrid wrapper must preserve EmDash CSP hardening while appending `https://static.cloudflareinsights.com` to `script-src` (and `script-src-elem`) for admin responses so Cloudflare Insights does not trigger blocked-script console errors.
+7. Public SIKESRA page clients must call plugin public APIs using same-origin paths (`window.location.origin + /_emdash/api/plugins/sikesra/*` or relative paths), never hardcoded workers.dev hosts, to avoid route drift and CORS failures on custom domains.

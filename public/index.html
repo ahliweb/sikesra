@@ -62,7 +62,7 @@
   <p style="margin-top:.25rem">Didukung oleh AWCMS-Micro &amp; EmDash</p>
 </footer>
 <script>
-const API = "https://awcms-micro.ahliweb.workers.dev/_emdash/api/plugins/sikesra";
+const API = `${window.location.origin}/_emdash/api/plugins/sikesra`;
 
 async function fetchJSON(url) {
   const res = await fetch(url);
