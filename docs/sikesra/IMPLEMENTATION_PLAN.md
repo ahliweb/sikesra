@@ -8,12 +8,14 @@ This plan is derived from the AWCMS-Micro core EmDash compatibility documentatio
 2. Root route ownership fixed: `/` remains EmDash host route boundary; SIKESRA public output is limited to `/sikesra`.
 3. Plugin entry synchronization fixed: `src/plugin-entry.ts` now exports real `createPlugin` from `src/index.ts`.
 4. Build/test reliability fixed: malformed architecture test block corrected and repository `tsconfig.json` restored.
+5. EmDash admin interaction compatibility fixed: `/_emdash/api/plugins/sikesra/admin` now responds with a valid Block Kit payload, preventing admin UI retry loops and repeated `404` errors.
 
 Current validation target for each release cycle:
 
 1. Active plugin -> `/sikesra` returns `200`, public metadata returns `200`.
 2. Inactive plugin -> `/sikesra` and `/_emdash/api/plugins/sikesra/*` return `404`.
 3. `/_emdash/admin` remains EmDash-managed and authenticated.
+4. `/_emdash/api/plugins/sikesra/admin` returns `200` for authenticated admin requests.
 
 ## Implementation Principle
 
