@@ -17,12 +17,54 @@ function fail(requestId, code, message, status = 400) {
   });
 }
 
+let cacheCleared = false;
+let pluginStateCache = { active: true, expiresAt: 0 };
+
+async function isSikesraPluginActive(env) {
+  const now = Date.now();
+  if (pluginStateCache.expiresAt > now) return pluginStateCache.active;
+  try {
+    const row = await env.DB.prepare("SELECT status FROM _plugin_state WHERE plugin_id = ? LIMIT 1").bind("sikesra").first();
+    const active = !row || row.status === "active";
+    pluginStateCache = { active, expiresAt: now + 15000 };
+    return active;
+  } catch {
+    pluginStateCache = { active: true, expiresAt: now + 5000 };
+    return true;
+  }
+}
+
+async function clearRootCache(request) {
+  if (cacheCleared) return;
+  cacheCleared = true;
+  try {
+    const cache = await caches.open("default");
+    const url = new URL(request.url);
+    await cache.delete(url.origin + "/", { ignoreMethod: true });
+  } catch (e) {
+    // ignore
+  }
+}
+
 async function handleSikesra(request, env) {
   const url = new URL(request.url);
   const reqId = crypto.randomUUID();
   const path = url.pathname;
 
   try {
+    if (path === "/sikesra" || path === "/sikesra/" || path.startsWith("/_emdash/api/plugins/sikesra/")) {
+      const active = await isSikesraPluginActive(env);
+      if (!active) {
+        return new Response("Not Found", {
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "CDN-Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          },
+        });
+      }
+    }
+
     if (path === "/health") {
       const dbCheck = await env.SIKESRA_DB.prepare("SELECT 1 as ok").first();
       return ok({ service: "SIKESRA", status: "operational", database: dbCheck ? "connected" : "error", timestamp: new Date().toISOString() }, reqId);
@@ -146,6 +188,9 @@ async function handleSikesra(request, env) {
 
 export default {
   async fetch(request, env, ctx) {
+    // Clear any stale cache for root path on first request
+    ctx.waitUntil(clearRootCache(request));
+
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -153,9 +198,11 @@ export default {
     if (!isSIKESRA && (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/")) {
       try {
         const resp = await emdashWorker.fetch(request, env, ctx);
-        resp.headers.set("X-Route", "emdash");
-        resp.headers.set("CDN-Cache-Control", "no-cache");
-        resp.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+        resp.headers.set("X-Route", path === "/" ? "emdash-root" : "emdash");
+        resp.headers.set("CDN-Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        resp.headers.set("Pragma", "no-cache");
+        resp.headers.set("Expires", "0");
         return resp;
       } catch (e) {
         return new Response("EmDash error: " + (e && e.message || "unknown"), { status: 500 });
