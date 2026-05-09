@@ -1,6 +1,6 @@
 # SIKESRA Phase 0 Discovery Report
 
-Status: partial completion in this repository (documentation workspace), with host-repository follow-up required.
+Status: completed for Phase 0 path/convention discovery after host-repository scaffold was added.
 
 Date: 2026-05-09
 
@@ -96,7 +96,36 @@ Impact:
 
 `SIKESRA-001A` cannot resolve host-repo-specific path/helper items because the host runtime scaffold is not present in `ahliweb/awcms-micro` yet.
 
-Unblock options:
+## Host Repository Re-Audit Result (Post-Scaffold)
 
-1. Scaffold `ahliweb/awcms-micro` as an actual EmDash runtime host, then rerun discovery.
-2. Explicitly approve a temporary host runtime reference (for example `awcms-micro-sman2pangkalanbun`) only for path/helper extraction, then reconcile with `ahliweb/awcms-micro` once scaffolded.
+Repository audited: `ahliweb/awcms-micro` after scaffold update (commit `4237045` on `main`).
+
+Confirmed files now present:
+
+1. `astro.config.mjs`
+2. `package.json`
+3. `src/live.config.ts`
+4. `wrangler.jsonc`
+5. `docs/CONVENTIONS.md`
+6. `packages/plugins/` and `packages/awcms/`
+7. `migrations/` and `seeds/`
+
+Resolved from host repo:
+
+1. Plugin path convention: `packages/plugins/<plugin-id>/`.
+2. Host integration point for plugin registration: `astro.config.mjs` via EmDash `plugins: []`.
+3. Migration path convention: `migrations/`.
+4. Seed path convention: `seeds/`.
+5. Baseline test/build/typecheck command names in host `package.json`.
+
+Remaining non-blocking gaps:
+
+1. Concrete permission registry helper file is not implemented yet (path family exists under `packages/awcms/`).
+2. Shared ABAC/audit adapter implementation is not present yet; module-local fallback remains approved.
+
+Final acceptance update for `SIKESRA-001`:
+
+1. Exact target paths/helpers documented: **Complete for path-level discovery**.
+2. Missing extension points listed: **Complete**.
+3. No business implementation added: **Complete**.
+4. No EmDash core change made: **Complete**.
