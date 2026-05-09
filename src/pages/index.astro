@@ -1,4 +1,37 @@
 ---
+import { env } from "cloudflare:workers";
+
+let pages: Array<{
+  id: string;
+  slug: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+}> = [];
+let hasContent = false;
+
+try {
+  const db = env.DB as D1Database;
+  const result = await db.prepare(`
+    SELECT id, slug, status, created_at, updated_at, published_at
+    FROM ec_pages
+    WHERE status = 'published' AND deleted_at IS NULL
+    ORDER BY published_at DESC
+    LIMIT 10
+  `).all<{
+    id: string;
+    slug: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    published_at: string | null;
+  }>();
+  pages = result.results || [];
+  hasContent = pages.length > 0;
+} catch {
+  // Table may not exist yet — render fallback
+}
 ---
 
 <!doctype html>
@@ -6,7 +39,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EmDash Public Web</title>
+    <title>SIKESRA Public</title>
     <style>
       :root {
         --bg: #f8fafc;
@@ -33,12 +66,22 @@
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 24px;
+        margin-bottom: 16px;
       }
       h1 {
-        margin: 0 0 12px;
+        margin: 0 0 8px;
         font-size: 1.6rem;
       }
-      p { margin: 0 0 12px; color: var(--muted); line-height: 1.55; }
+      h2 {
+        margin: 0 0 8px;
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+      p { margin: 0 0 8px; color: var(--muted); line-height: 1.55; }
+      .meta {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
       .actions {
         margin-top: 16px;
         display: flex;
@@ -58,19 +101,42 @@
         border-color: var(--brand);
         color: #fff;
       }
+      .empty {
+        text-align: center;
+        padding: 32px 0;
+      }
     </style>
   </head>
   <body>
     <main class="wrap">
-      <section class="card">
-        <h1>EmDash Public Web</h1>
-        <p>This is the default public homepage served by the EmDash host runtime.</p>
-        <p>Use admin for management and use SIKESRA for the aggregate public module page.</p>
-        <div class="actions">
-          <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
-          <a href="/sikesra">Open SIKESRA Public Page</a>
-        </div>
-      </section>
+      {hasContent ? (
+        <>
+          {pages.map((page) => (
+            <section class="card">
+              <h2>{page.slug}</h2>
+              <p class="meta">
+                Published {page.published_at ? new Date(page.published_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : page.updated_at}
+              </p>
+            </section>
+          ))}
+          <div class="actions">
+            <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
+            <a href="/sikesra">SIKESRA Public Page</a>
+          </div>
+        </>
+      ) : (
+        <section class="card">
+          <h1>SIKESRA Public</h1>
+          <div class="empty">
+            <p>No published content yet.</p>
+            <p>Create content in the admin panel to populate this page.</p>
+          </div>
+          <div class="actions">
+            <a class="primary" href="/_emdash/admin">Open EmDash Admin</a>
+            <a href="/sikesra">SIKESRA Public Page</a>
+          </div>
+        </section>
+      )}
     </main>
   </body>
 </html>
