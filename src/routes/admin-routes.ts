@@ -8,6 +8,9 @@ import type { D1Binding } from "../repositories/db";
 interface PluginAdminInteraction {
   type?: string;
   page?: string;
+  action_id?: string;
+  value?: unknown;
+  values?: Record<string, unknown>;
 }
 
 type Block = Record<string, unknown>;
@@ -22,12 +25,88 @@ async function countWhere(db: D1Binding, table: string, tenantId: string, siteId
 // Main handler — POST /_emdash/api/plugins/sikesra/admin
 export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdminInteraction>) {
   const input = routeCtx?.input ?? {};
-  const page = (input.page || "").replace(/^\//, "") || "overview";
   const db = routeCtx.env?.SIKESRA_DB;
   const tenantId = routeCtx.site?.tenantId ?? "default";
   const siteId = routeCtx.site?.id ?? "default";
 
+  // Handle button interactions
+  if (input.type === "block_actions" && input.action_id) {
+    return handleInteraction(input.action_id, input, db, tenantId, siteId);
+  }
+
+  // Page render
+  const page = (input.page || "").replace(/^\//, "") || "overview";
   return { blocks: await getBlocksForPage(page, db, tenantId, siteId) };
+}
+
+// Interaction handler for button clicks
+async function handleInteraction(
+  actionId: string, input: PluginAdminInteraction,
+  db: D1Binding | undefined, tid: string, sid: string
+): Promise<{ blocks: Block[] }> {
+  // Navigation actions → re-render target page
+  if (actionId.startsWith("nav_")) {
+    const page = actionId.replace("nav_", "");
+    return { blocks: await getBlocksForPage(page, db, tid, sid) };
+  }
+
+  // Action-specific responses
+  switch (actionId) {
+    case "entity_create":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Tambah Entitas", description: "Gunakan API endpoint atau form input untuk menambah entitas baru." },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/entities/create" },
+        { type: "fields", fields: [
+          { label: "objectTypeCode", value: "01–08 (kode jenis entitas)" },
+          { label: "displayName", value: "Nama tampilan entitas" },
+          { label: "officialVillageCode", value: "Kode desa/kelurahan (10 digit)" },
+        ] },
+      ] };
+
+    case "verify_approve":
+    case "verify_revise":
+    case "verify_reject":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Verifikasi", description: "Pilih entitas dari tabel antrean dan gunakan API endpoint verifikasi." },
+        { type: "section", text: `Aksi: ${actionId.replace("verify_", "")}` },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/entities/{id}/verify" },
+      ] };
+
+    case "import_upload":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Upload Workbook", description: "Unggah file Excel melalui form upload." },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/imports/create" },
+        { type: "section", text: "Format: .xlsx, maksimum 10 MB. File akan diproses melalui tahap staging sebelum promosi." },
+      ] };
+
+    case "doc_upload":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Unggah Dokumen", description: "Dokumen pendukung entitas." },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/documents/upload-url" },
+        { type: "section", text: "Format: PDF, JPG, PNG (maks. 10 MB)" },
+      ] };
+
+    case "export_create":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Buat Ekspor", description: "Buat job ekspor data baru." },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/exports/create" },
+        { type: "fields", fields: [
+          { label: "reportType", value: "entity_summary | verification_status" },
+          { label: "format", value: "csv | xlsx" },
+        ] },
+      ] };
+
+    case "region_create":
+      return { blocks: [
+        { type: "banner", variant: "info", title: "Tambah Wilayah Lokal", description: "Tambahkan dusun, RT, RW, atau unit lokal." },
+        { type: "section", text: "POST /_emdash/api/plugins/sikesra/v1/regions/local/create" },
+      ] };
+
+    default:
+      return { blocks: [
+        { type: "banner", variant: "warning", title: "Aksi Tidak Dikenal", description: `action_id: ${actionId}` },
+      ] };
+  }
 }
 
 async function getBlocksForPage(page: string, db: D1Binding | undefined, tid: string, sid: string): Promise<Block[]> {
