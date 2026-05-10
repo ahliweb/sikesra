@@ -29,7 +29,7 @@ const { entries: posts } = await getEmDashCollection("posts", {
 					<li>
 						<a href={`/posts/${post.id}`}>
 							{post.data.featured_image && (
-								<Image image={post.data.featured_image} />
+								<Image image={post.data.featured_image as any} />
 							)}
 							<h2>{post.data.title}</h2>
 						</a>

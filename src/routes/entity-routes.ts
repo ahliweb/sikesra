@@ -24,12 +24,8 @@ export const entityCreateHandler = async (routeCtx: EmDashRouteContext<EntityCre
 export const entityDetailHandler = async (routeCtx: EmDashRouteContext) => {
   const url = new URL(routeCtx.request.url);
   const entityId = url.pathname.split("/").pop()!;
-  return handleAdminRequest(routeCtx, { resourceType: "entity", entityId }, "read", async () => {
-    return getEntityDetail(routeCtx.env?.SIKESRA_DB!, entityId, {
-      requestId: "", tenantId: "default", siteId: "default",
-      userId: "stub", roles: ["admin"], permissions: [],
-      subjectAttributes: {}, regionScope: {}, nowIso: new Date().toISOString(),
-    });
+  return handleAdminRequest(routeCtx, { resourceType: "entity", entityId }, "read", async (input, db, ctx) => {
+    return getEntityDetail(db, entityId, ctx);
   });
 };
 

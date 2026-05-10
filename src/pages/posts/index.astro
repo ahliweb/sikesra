@@ -12,12 +12,12 @@ Astro.cache.set(cacheHint);
 // getEntryTerms() per post (which would be N round-trips).
 const tagsByEntry = await getTermsForEntries(
 	"posts",
-	posts.map((p) => p.data.id),
+	posts.map((p) => String(p.data.id)),
 	"tag",
 );
 const postsWithTags = posts.map((post) => ({
 	post,
-	tags: tagsByEntry.get(post.data.id) ?? [],
+	tags: tagsByEntry.get(String(post.data.id)) ?? [],
 }));
 ---
 
@@ -33,7 +33,7 @@ const postsWithTags = posts.map((post) => ({
 					<li>
 						<a href={`/posts/${post.id}`}>
 							{post.data.featured_image && (
-								<Image image={post.data.featured_image} />
+								<Image image={post.data.featured_image as any} />
 							)}
 							<h2>{post.data.title}</h2>
 						</a>

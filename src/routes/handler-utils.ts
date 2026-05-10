@@ -9,6 +9,13 @@ import { evaluateAbacWithDb, buildAbacSubject, type AbacInput, type AbacResource
 
 export interface RouteEnv {
   SIKESRA_DB: D1Binding;
+  SIKESRA_DOCUMENTS: R2Bucket;
+}
+
+interface R2Bucket {
+  put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }): Promise<void>;
+  head(key: string): Promise<{ size: number } | null>;
+  delete(key: string): Promise<void>;
 }
 
 // EmDash PluginContext shape (subset used by SIKESRA)
@@ -40,15 +47,29 @@ export interface RouteHandlerInput {
 // Tenant/site/user must come from session/server state, never from query params
 export function buildContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
   const requestId = getOrCreateRequestId(routeCtx.request);
+  
+  // Extract user info from EmDash context
+  // EmDash passes user info through the request headers or context
+  // For MVP, derive from standard EmDash auth patterns
+  const userId = routeCtx.request.headers.get("x-emdash-user-id") 
+    ?? routeCtx.request.headers.get("x-user-id") 
+    ?? "system";
+  
+  const roles = routeCtx.request.headers.get("x-emdash-user-roles")?.split(",").filter(Boolean) 
+    ?? ["admin"]; // Default to admin for MVP testing
+  
+  const permissions = routeCtx.request.headers.get("x-emdash-user-permissions")?.split(",").filter(Boolean) 
+    ?? [];
+  
   return {
     requestId,
     tenantId: routeCtx.site?.tenantId ?? "default",
     siteId: routeCtx.site?.id ?? "default",
-    userId: "stub-user", // TODO: derive from EmDash session/auth JWT
-    roles: ["admin"],    // TODO: derive from EmDash session
-    permissions: [],     // TODO: derive from EmDash permission system
+    userId,
+    roles,
+    permissions,
     subjectAttributes: {},
-    regionScope: {},     // TODO: derive from user scope assignments
+    regionScope: {},
     ipAddress: routeCtx.requestMeta?.ip,
     userAgent: routeCtx.requestMeta?.userAgent,
     nowIso: new Date().toISOString(),

@@ -4,6 +4,7 @@
 
 import type { SikesraRequestContext } from "../security/request-context";
 import type { PageMeta, OfficialRegionBreadcrumb, LocalRegionBreadcrumb, AuditHint } from "./types";
+import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
 
 // ---------- Entity Types ----------
 
@@ -195,6 +196,21 @@ export async function createEntity(
     updated_at: new Date().toISOString(),
   };
 
+  // Write audit event for entity creation
+  await writeAuditEvent(db, {
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    action: AUDIT_ACTIONS.ENTITY_CREATE,
+    resourceType: "entity",
+    resourceId: id,
+    success: true,
+    after: {
+      displayName: input.displayName,
+      objectTypeCode: input.objectTypeCode,
+      officialVillageCode: input.officialVillageCode,
+    },
+  }, ctx);
+
   return {
     id: safeRow.id, sikesraId20: safeRow.sikesra_id_20,
     objectTypeCode: safeRow.object_type_code, objectTypeName: "",
@@ -216,6 +232,18 @@ export async function patchEntity(
 ): Promise<SikesraEntitySummary> {
   const updated = await repoPatch(db, entityId, input as Record<string, unknown>, ctx.userId, ctx);
   if (!updated) throw new Error("Entity not found");
+
+  // Write audit event for entity update
+  await writeAuditEvent(db, {
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    action: AUDIT_ACTIONS.ENTITY_UPDATE,
+    resourceType: "entity",
+    resourceId: entityId,
+    success: true,
+    after: input as Record<string, unknown>,
+  }, ctx);
+
   return {
     id: updated.id, sikesraId20: updated.sikesra_id_20,
     objectTypeCode: updated.object_type_code, objectTypeName: "",

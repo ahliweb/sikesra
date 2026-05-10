@@ -156,7 +156,7 @@ function showNextSteps() {
   console.log("");
 }
 
-function main() {
+async function main() {
   console.log("⚙️  D1 FTS Table Rebuild Script");
   console.log("=" .repeat(50));
   console.log(`Database: ${DATABASE_NAME} (${DATABASE_ID})`);

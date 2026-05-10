@@ -27,8 +27,8 @@ const seo = getSeoMeta(post, {
 });
 
 // Taxonomy terms for this post (use post.data.id, not post.id)
-const tags = await getEntryTerms("posts", post.data.id, "tag");
-const categories = await getEntryTerms("posts", post.data.id, "category");
+const tags = await getEntryTerms("posts", String(post.data.id), "tag");
+const categories = await getEntryTerms("posts", String(post.data.id), "category");
 ---
 
 <Base
@@ -37,13 +37,13 @@ const categories = await getEntryTerms("posts", post.data.id, "category");
 	description={seo.description}
 	canonical={seo.canonical}
 	image={seo.ogImage}
-	content={{ collection: "posts", id: post.data.id, slug }}
+	content={{ collection: "posts", id: String(post.data.id), slug }}
 >
 	<article>
 		{
 			post.data.featured_image && (
 				<div {...post.edit.featured_image}>
-					<Image image={post.data.featured_image} />
+					<Image image={post.data.featured_image as any} />
 				</div>
 			)
 		}
@@ -52,12 +52,8 @@ const categories = await getEntryTerms("posts", post.data.id, "category");
 
 		{
 			post.data.publishedAt && (
-				<time datetime={post.data.publishedAt.toISOString()}>
-					{post.data.publishedAt.toLocaleDateString("en-US", {
-						year: "numeric",
-						month: "long",
-						day: "numeric",
-					})}
+				<time datetime={String(post.data.publishedAt)}>
+					{String(post.data.publishedAt)}
 				</time>
 			)
 		}

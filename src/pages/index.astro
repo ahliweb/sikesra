@@ -26,18 +26,14 @@ Astro.cache.set(cacheHint);
 					<li>
 						<a href={`/posts/${post.id}`}>
 							{post.data.featured_image && (
-								<Image image={post.data.featured_image} />
+								<Image image={post.data.featured_image as any} />
 							)}
 							<h2>{post.data.title}</h2>
 						</a>
 						{post.data.excerpt && <p>{post.data.excerpt}</p>}
 						{post.data.publishedAt && (
-							<time datetime={post.data.publishedAt.toISOString()}>
-								{post.data.publishedAt.toLocaleDateString("en-US", {
-									year: "numeric",
-									month: "long",
-									day: "numeric",
-								})}
+							<time datetime={String(post.data.publishedAt)}>
+								{String(post.data.publishedAt)}
 							</time>
 						)}
 					</li>

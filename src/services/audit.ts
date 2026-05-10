@@ -94,18 +94,55 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
 export type AuditWriteResult = { ok: true; auditEventId: string } | { ok: false; message: string };
 
+import type { D1Binding } from "../repositories/db";
+import type { SikesraRequestContext } from "../security/request-context";
+
 // Stub: actual D1 persistence to be wired in Phase 2 repository implementation
-export async function writeAuditEvent(input: AuditEventInput): Promise<AuditWriteResult> {
+export async function writeAuditEvent(
+  db: D1Binding,
+  input: AuditEventInput,
+  ctx: SikesraRequestContext,
+): Promise<AuditWriteResult> {
   const event: AuditEvent = {
     ...input,
     id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     success: input.success ?? true,
-    createdAt: input.before?.["nowIso"] as string ?? new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    actorId: input.actorId ?? ctx.userId,
+    actorRole: input.actorRole ?? ctx.roles[0] ?? "unknown",
+    requestId: input.requestId ?? ctx.requestId,
+    ipAddress: input.ipAddress ?? ctx.ipAddress,
+    userAgent: input.userAgent ?? ctx.userAgent,
   };
 
-  // TODO: persist to awcms_sikesra_audit_logs table
-  // db.insert("awcms_sikesra_audit_logs", event);
-  return { ok: true, auditEventId: event.id };
+  try {
+    await db.prepare(
+      `INSERT INTO awcms_sikesra_audit_logs 
+       (id, tenant_id, site_id, actor_id, actor_role, action, resource_type, resource_id, request_id, success, reason, before_json, after_json, ip_address, user_agent, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      event.id,
+      event.tenantId,
+      event.siteId,
+      event.actorId,
+      event.actorRole,
+      event.action,
+      event.resourceType ?? null,
+      event.resourceId ?? null,
+      event.requestId ?? null,
+      event.success ? 1 : 0,
+      event.reason ?? null,
+      event.before ? JSON.stringify(event.before) : null,
+      event.after ? JSON.stringify(event.after) : null,
+      event.ipAddress ?? null,
+      event.userAgent ?? null,
+      event.createdAt
+    ).run();
+    return { ok: true, auditEventId: event.id };
+  } catch (err) {
+    console.error("Audit write failed:", err);
+    return { ok: false, message: err instanceof Error ? err.message : "Unknown error" };
+  }
 }
 
 // High-risk actions requiring audit (future enforcement hook)
