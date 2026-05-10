@@ -5,67 +5,44 @@ import Base from "../layouts/Base.astro";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
-  orderBy: { published_at: "desc" },
+	orderBy: { published_at: "desc" },
 });
 const { siteTitle, siteTagline } = resolveStarterSiteIdentity(await getSiteSettings());
-Astro.cache?.set(cacheHint);
-
-const recentPosts = posts.map((post) => {
-  const data = post.data as {
-    title?: string;
-    excerpt?: string;
-    featured_image?: unknown;
-    publishedAt?: Date | string | null;
-  };
-  const href = `/posts/${post.id}`;
-  const publishedAt = data.publishedAt
-    ? data.publishedAt instanceof Date
-      ? data.publishedAt
-      : new Date(data.publishedAt)
-    : null;
-
-  return {
-    id: post.id,
-    href,
-    title: data.title ?? post.id,
-    excerpt: data.excerpt ?? null,
-    featuredImage: data.featured_image,
-    publishedAt,
-  };
-});
+Astro.cache.set(cacheHint);
 ---
 
 <Base title={siteTitle} description={siteTagline}>
-  <h1>Recent Posts</h1>
+	<h1>Recent Posts</h1>
 
-  {
-    recentPosts.length === 0 ? (
-      <p>
-        No posts yet. <a href="/_emdash/admin/content/posts/new">Create one</a>.
-      </p>
-    ) : (
-      <ul>
-        {recentPosts.map((post) => (
-          <li>
-            <a href={post.href}>
-              {post.featuredImage && (
-                <Image image={post.featuredImage as never} />
-              )}
-              <h2>{post.title}</h2>
-            </a>
-            {post.excerpt && <p>{post.excerpt}</p>}
-            {post.publishedAt && (
-              <time datetime={post.publishedAt.toISOString()}>
-                {post.publishedAt.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
-            )}
-          </li>
-        ))}
-      </ul>
-    )
-  }
+	{
+		posts.length === 0 ? (
+			<p>
+				No posts yet.{" "}
+				<a href="/_emdash/admin/content/posts/new">Create one</a>.
+			</p>
+		) : (
+			<ul>
+				{posts.map((post) => (
+					<li>
+						<a href={`/posts/${post.id}`}>
+							{post.data.featured_image && (
+								<Image image={post.data.featured_image} />
+							)}
+							<h2>{post.data.title}</h2>
+						</a>
+						{post.data.excerpt && <p>{post.data.excerpt}</p>}
+						{post.data.publishedAt && (
+							<time datetime={post.data.publishedAt.toISOString()}>
+								{post.data.publishedAt.toLocaleDateString("en-US", {
+									year: "numeric",
+									month: "long",
+									day: "numeric",
+								})}
+							</time>
+						)}
+					</li>
+				))}
+			</ul>
+		)
+	}
 </Base>

@@ -1,50 +1,53 @@
 ---
-import { env } from "cloudflare:workers";
+import { getEmDashCollection, getTermsForEntries } from "emdash";
+import { Image } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
 
-const posts = await env.DB.prepare("SELECT id, title, slug, excerpt, status, published_at FROM ec_posts WHERE deleted_at IS NULL ORDER BY published_at DESC").all();
-const publishedPosts = posts.results.filter(p => p.status === "published");
+const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+	orderBy: { published_at: "desc" },
+});
+Astro.cache.set(cacheHint);
+
+// Single batched query for tags across every post, instead of calling
+// getEntryTerms() per post (which would be N round-trips).
+const tagsByEntry = await getTermsForEntries(
+	"posts",
+	posts.map((p) => p.data.id),
+	"tag",
+);
+const postsWithTags = posts.map((post) => ({
+	post,
+	tags: tagsByEntry.get(post.data.id) ?? [],
+}));
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>All Posts - SIKESRA KOBAR</title>
-    <meta name="description" content="All posts from SIKESRA KOBAR" />
-  </head>
-  <body>
-    <header>
-      <nav>
-        <a href="/">SIKESRA KOBAR</a>
-      </nav>
-    </header>
-    <main>
-      <h1>All Posts</h1>
-      {publishedPosts.length === 0 ? (
-        <p>No posts available.</p>
-      ) : (
-        <ul>
-          {publishedPosts.map((post) => (
-            <li>
-              <a href={`/posts/${post.slug}`}>
-                <h2>{post.title}</h2>
-              </a>
-              {post.published_at && (
-                <time datetime={post.published_at}>
-                  {new Date(post.published_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </time>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
-    <footer>
-      <p>&copy; {new Date().getFullYear()} SIKESRA KOBAR</p>
-    </footer>
-  </body>
-</html>
+<Base title="All Posts">
+	<h1>Posts</h1>
+
+	{
+		postsWithTags.length === 0 ? (
+			<p>No posts yet.</p>
+		) : (
+			<ul>
+				{postsWithTags.map(({ post, tags }) => (
+					<li>
+						<a href={`/posts/${post.id}`}>
+							{post.data.featured_image && (
+								<Image image={post.data.featured_image} />
+							)}
+							<h2>{post.data.title}</h2>
+						</a>
+						{post.data.excerpt && <p>{post.data.excerpt}</p>}
+						{tags.length > 0 && (
+							<div>
+								{tags.map((t) => (
+									<a href={`/tag/${t.slug}`}>{t.label}</a>
+								))}
+							</div>
+						)}
+					</li>
+				))}
+			</ul>
+		)
+	}
+</Base>
