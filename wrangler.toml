@@ -12,7 +12,6 @@ binding = "SIKESRA_DB"
 database_name = "sikesra"
 database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
 
-
 [[r2_buckets]]
 binding = "SIKESRA_DOCUMENTS"
 bucket_name = "sikesra"
