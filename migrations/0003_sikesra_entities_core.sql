@@ -91,6 +91,12 @@ CREATE INDEX idx_entities_verification ON awcms_sikesra_entities(tenant_id, site
 CREATE INDEX idx_entities_search ON awcms_sikesra_entities(tenant_id, site_id, display_name, sikesra_id_20);
 CREATE INDEX idx_entities_attributes ON awcms_sikesra_entities(tenant_id, site_id, religion_attribute, neglected_attribute, desil_attribute, sensitivity_level, deleted_at);
 
+-- Index for sikesra_id_20 lookups (e.g., ID verification)
+CREATE INDEX idx_entities_sikesra_id ON awcms_sikesra_entities(tenant_id, site_id, sikesra_id_20, deleted_at);
+
+-- Index for sensitivity/status filtering on public dashboard
+CREATE INDEX idx_entities_sensitivity_status ON awcms_sikesra_entities(tenant_id, site_id, sensitivity_level, status_data, deleted_at);
+
 -- Person profile table
 -- nik_kia_hash is service-only and must never be returned to normal frontend/API responses
 CREATE TABLE awcms_sikesra_person_profiles (
@@ -121,3 +127,6 @@ CREATE TABLE awcms_sikesra_person_profiles (
 
 CREATE INDEX idx_person_profiles_name ON awcms_sikesra_person_profiles(tenant_id, site_id, full_name, deleted_at);
 CREATE INDEX idx_person_profiles_village ON awcms_sikesra_person_profiles(tenant_id, site_id, primary_official_village_code, deleted_at);
+
+-- Index for sensitivity-based filtering in masking logic
+CREATE INDEX idx_person_profiles_sensitivity ON awcms_sikesra_person_profiles(tenant_id, site_id, sensitivity_level, deleted_at);

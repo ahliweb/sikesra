@@ -23,3 +23,6 @@ CREATE TABLE awcms_sikesra_verification_events (
 CREATE INDEX idx_verification_entity ON awcms_sikesra_verification_events(tenant_id, site_id, entity_id);
 CREATE INDEX idx_verification_queue ON awcms_sikesra_verification_events(tenant_id, site_id, verification_level, action);
 CREATE INDEX idx_verification_actor ON awcms_sikesra_verification_events(tenant_id, site_id, actor_id);
+
+-- Index for time-based queries and audit trail
+CREATE INDEX idx_verification_time ON awcms_sikesra_verification_events(tenant_id, site_id, created_at);

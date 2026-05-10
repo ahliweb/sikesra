@@ -28,6 +28,9 @@ CREATE TABLE awcms_sikesra_file_objects (
 
 CREATE INDEX idx_file_objects_key ON awcms_sikesra_file_objects(tenant_id, site_id, r2_key, deleted_at);
 
+-- Index for classification-based filtering (for access control)
+CREATE INDEX idx_file_objects_classification ON awcms_sikesra_file_objects(tenant_id, site_id, classification, deleted_at);
+
 -- Supporting documents: links file objects to entities
 CREATE TABLE awcms_sikesra_supporting_documents (
   id TEXT PRIMARY KEY,

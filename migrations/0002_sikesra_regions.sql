@@ -45,10 +45,16 @@ CREATE TABLE awcms_sikesra_local_regions (
   created_by TEXT,
   updated_by TEXT,
   FOREIGN KEY (tenant_id, site_id, official_village_code)
-    REFERENCES awcms_sikesra_official_regions(tenant_id, site_id, code),
-  FOREIGN KEY (parent_id) REFERENCES awcms_sikesra_local_regions(id)
+    REFERENCES awcms_sikesra_official_regions(tenant_id, site_id, code)
 );
+
+-- Note: Self-referential FK on parent_id is omitted because D1/SQLite
+-- does not support composite self-referential foreign keys reliably.
+-- Application logic must enforce parent-child region relationship.
 
 CREATE INDEX idx_local_regions_village ON awcms_sikesra_local_regions(tenant_id, site_id, official_village_code);
 CREATE INDEX idx_local_regions_parent ON awcms_sikesra_local_regions(parent_id);
 CREATE INDEX idx_local_regions_level ON awcms_sikesra_local_regions(tenant_id, site_id, level);
+
+-- Note: parent_id lookup index (replaces self-referential FK functionality)
+CREATE INDEX idx_local_regions_parent_lookup ON awcms_sikesra_local_regions(tenant_id, site_id, parent_id, deleted_at);

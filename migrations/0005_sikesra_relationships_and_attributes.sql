@@ -70,6 +70,9 @@ CREATE TABLE awcms_sikesra_entity_attributes (
 CREATE INDEX idx_entity_attrs_entity ON awcms_sikesra_entity_attributes(tenant_id, site_id, entity_id, deleted_at);
 CREATE INDEX idx_entity_attrs_def ON awcms_sikesra_entity_attributes(tenant_id, site_id, attribute_definition_id, deleted_at);
 
+-- Index for value-based filtering
+CREATE INDEX idx_entity_attrs_value ON awcms_sikesra_entity_attributes(tenant_id, site_id, entity_id, attribute_definition_id, deleted_at);
+
 -- User attribute scopes: per-user region/module/sensitivity scope assignments
 CREATE TABLE awcms_sikesra_user_attribute_scopes (
   id TEXT PRIMARY KEY,

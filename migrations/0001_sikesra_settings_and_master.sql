@@ -25,6 +25,8 @@ CREATE TABLE awcms_sikesra_settings (
   UNIQUE(tenant_id, site_id)
 );
 
+CREATE INDEX idx_settings_tenant_site ON awcms_sikesra_settings(tenant_id, site_id, deleted_at);
+
 -- Object types table (e.g., Rumah Ibadah, Lembaga Keagamaan, etc.)
 CREATE TABLE awcms_sikesra_object_types (
   code TEXT NOT NULL,
@@ -42,6 +44,8 @@ CREATE TABLE awcms_sikesra_object_types (
   updated_by TEXT,
   PRIMARY KEY (tenant_id, site_id, code)
 );
+
+CREATE INDEX idx_object_types_kind ON awcms_sikesra_object_types(tenant_id, site_id, entity_kind, deleted_at);
 
 -- Object subtypes table (e.g., Masjid, Musholla, etc. under Rumah Ibadah)
 CREATE TABLE awcms_sikesra_object_subtypes (

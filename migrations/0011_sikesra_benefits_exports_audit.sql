@@ -48,6 +48,9 @@ CREATE TABLE awcms_sikesra_export_jobs (
 
 CREATE INDEX idx_export_jobs_status ON awcms_sikesra_export_jobs(tenant_id, site_id, status, deleted_at);
 
+-- Index for time-based queries on export history
+CREATE INDEX idx_export_jobs_time ON awcms_sikesra_export_jobs(tenant_id, site_id, created_at, deleted_at);
+
 -- Audit logs: immutable critical action events
 CREATE TABLE awcms_sikesra_audit_logs (
   id TEXT PRIMARY KEY,
@@ -72,3 +75,6 @@ CREATE INDEX idx_audit_logs_action ON awcms_sikesra_audit_logs(tenant_id, site_i
 CREATE INDEX idx_audit_logs_resource ON awcms_sikesra_audit_logs(tenant_id, site_id, resource_type, resource_id);
 CREATE INDEX idx_audit_logs_actor ON awcms_sikesra_audit_logs(tenant_id, site_id, actor_id);
 CREATE INDEX idx_audit_logs_time ON awcms_sikesra_audit_logs(tenant_id, site_id, created_at);
+
+-- Additional index for time-range queries on audit logs
+CREATE INDEX idx_audit_logs_time_range ON awcms_sikesra_audit_logs(tenant_id, site_id, created_at, action);
