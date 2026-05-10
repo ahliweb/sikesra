@@ -278,11 +278,102 @@ async function handleSikesra(request, env) {
       return ok(row, reqId);
     }
 
+    if (path === "/posts" || path === "/posts/") {
+      const posts = await env.DB.prepare("SELECT id, title, slug, excerpt, status, published_at FROM ec_posts WHERE deleted_at IS NULL ORDER BY published_at DESC").all();
+      const publishedPosts = posts.results.filter(p => p.status === "published");
+      const html = renderPostsIndex(publishedPosts);
+      return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    if (path === "/pages" || path === "/pages/") {
+      const pages = await env.DB.prepare("SELECT id, title, slug, status, published_at FROM ec_pages WHERE deleted_at IS NULL ORDER BY published_at DESC").all();
+      const publishedPages = pages.results.filter(p => p.status === "published");
+      const html = renderPagesIndex(publishedPages);
+      return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    if (path.startsWith("/posts/")) {
+      const slug = path.slice(7);
+      if (slug) {
+        const post = await env.DB.prepare("SELECT id, title, slug, content, status, published_at FROM ec_posts WHERE slug = ? AND deleted_at IS NULL LIMIT 1").bind(slug).first();
+        if (post && post.status === "published") {
+          return new Response(renderPostPage(post), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+        }
+      }
+      return new Response(render404(), { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    if (path.startsWith("/pages/")) {
+      const slug = path.slice(7);
+      if (slug) {
+        const page = await env.DB.prepare("SELECT id, title, slug, content, status, published_at FROM ec_pages WHERE slug = ? AND deleted_at IS NULL LIMIT 1").bind(slug).first();
+        if (page && page.status === "published") {
+          return new Response(renderPage(page), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+        }
+      }
+      return new Response(render404(), { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     return fail(reqId, "NOT_FOUND", "Route not found", 404);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return fail(reqId, "INTERNAL_ERROR", message, 500);
   }
+}
+
+function render404() {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>404 Not Found</title></head><body><h1>404 - Page Not Found</h1><p><a href="/">Go Home</a></p></body></html>`;
+}
+
+function renderPostsIndex(posts) {
+  const items = posts.map(p => `<li><a href="/posts/${p.slug}"><h2>${escapeHtml(p.title)}</h2></a>${p.published_at ? `<time>${new Date(p.published_at).toDateString()}</time>` : ""}</li>`).join("");
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>All Posts - SIKESRA KOBAR</title></head><body><header><nav><a href="/">SIKESRA KOBAR</a></nav></header><main><h1>All Posts</h1>${posts.length ? `<ul>${items}</ul>` : "<p>No posts available.</p>"}</main><footer><p>© ${new Date().getFullYear()} SIKESRA KOBAR</p></footer></body></html>`;
+}
+
+function renderPagesIndex(pages) {
+  const items = pages.map(p => `<li><a href="/pages/${p.slug}"><h2>${escapeHtml(p.title)}</h2></a>${p.published_at ? `<time>${new Date(p.published_at).toDateString()}</time>` : ""}</li>`).join("");
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>All Pages - SIKESRA KOBAR</title></head><body><header><nav><a href="/">SIKESRA KOBAR</a></nav></header><main><h1>All Pages</h1>${pages.length ? `<ul>${items}</ul>` : "<p>No pages available.</p>"}</main><footer><p>© ${new Date().getFullYear()} SIKESRA KOBAR</p></footer></body></html>`;
+}
+
+function renderPostPage(post) {
+  const content = post.content ? renderContent(post.content) : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${escapeHtml(post.title)}</title></head><body><header><nav><a href="/">SIKESRA KOBAR</a></nav></header><main><article><h1>${escapeHtml(post.title)}</h1>${post.published_at ? `<time>${new Date(post.published_at).toDateString()}</time>` : ""}<div>${content}</div></article></main><footer><p>© ${new Date().getFullYear()} SIKESRA KOBAR</p></footer></body></html>`;
+}
+
+function renderPage(page) {
+  const content = page.content ? renderContent(page.content) : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${escapeHtml(page.title)}</title></head><body><header><nav><a href="/">SIKESRA KOBAR</a></nav></header><main><article><h1>${escapeHtml(page.title)}</h1>${page.published_at ? `<time>${new Date(page.published_at).toDateString()}</time>` : ""}<div>${content}</div></article></main><footer><p>© ${new Date().getFullYear()} SIKESRA KOBAR</p></footer></body></html>`;
+}
+
+function renderContent(contentJson) {
+  try {
+    const content = typeof contentJson === "string" ? JSON.parse(contentJson) : contentJson;
+    if (content && Array.isArray(content.children)) {
+      return content.children.map(node => renderContentNode(node)).join("");
+    }
+    return "";
+  } catch {
+    return String(contentJson || "");
+  }
+}
+
+function renderContentNode(node) {
+  if (!node || typeof node !== "object") return "";
+  if (node.type === "text") return escapeHtml(node.text || "");
+  if (node.type === "paragraph") return `<p>${(node.children || []).map(renderContentNode).join("")}</p>`;
+  if (node.type === "heading") return `<h${node.level || 2}>${(node.children || []).map(renderContentNode).join("")}</h${node.level || 2}>`;
+  if (node.type === "list") return `<ul>${(node.children || []).map(renderContentNode).join("")}</ul>`;
+  if (node.type === "list-item") return `<li>${(node.children || []).map(renderContentNode).join("")}</li>`;
+  if (node.type === "link") return `<a href="${escapeHtml(node.url || "")}">${(node.children || []).map(renderContentNode).join("")}</a>`;
+  if (node.type === "image") return `<img src="${escapeHtml(node.url || "")}" alt="${escapeHtml(node.alt || "")}">`;
+  if (node.type === "blockquote") return `<blockquote>${(node.children || []).map(renderContentNode).join("")}</blockquote>`;
+  if (node.type === "code") return `<pre><code>${escapeHtml(node.code || "")}</code></pre>`;
+  return (node.children || []).map(renderContentNode).join("");
+}
+
+function escapeHtml(text) {
+  if (!text) return "";
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 async function countWhere(db, table, extra = "") {
@@ -729,10 +820,12 @@ export default {
       }
     }
 
-    // Send to EmDash: everything except SIKESRA-specific paths
-    // SIKESRA handles: /health, /sikesra, /_emdash/api/plugins/sikesra/*
+    // Send to EmDash: everything except SIKESRA-specific paths and content pages
+    // SIKESRA handles: /health, /sikesra, /_emdash/api/plugins/sikesra/*, /posts/*, /pages/*
     const isSikesraPath = path.startsWith("/_emdash/api/plugins/sikesra/") ||
-       path === "/sikesra" || path === "/sikesra/" || path === "/health";
+       path === "/sikesra" || path === "/sikesra/" || path === "/health" ||
+       path === "/posts" || path === "/posts/" || path.startsWith("/posts/") ||
+       path === "/pages" || path === "/pages/" || path.startsWith("/pages/");
     const goToEmDash = !isSikesraPath;
 
     if (goToEmDash) {

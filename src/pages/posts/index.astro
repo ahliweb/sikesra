@@ -1,0 +1,50 @@
+---
+import { env } from "cloudflare:workers";
+
+const posts = await env.DB.prepare("SELECT id, title, slug, excerpt, status, published_at FROM ec_posts WHERE deleted_at IS NULL ORDER BY published_at DESC").all();
+const publishedPosts = posts.results.filter(p => p.status === "published");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All Posts - SIKESRA KOBAR</title>
+    <meta name="description" content="All posts from SIKESRA KOBAR" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">SIKESRA KOBAR</a>
+      </nav>
+    </header>
+    <main>
+      <h1>All Posts</h1>
+      {publishedPosts.length === 0 ? (
+        <p>No posts available.</p>
+      ) : (
+        <ul>
+          {publishedPosts.map((post) => (
+            <li>
+              <a href={`/posts/${post.slug}`}>
+                <h2>{post.title}</h2>
+              </a>
+              {post.published_at && (
+                <time datetime={post.published_at}>
+                  {new Date(post.published_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+    <footer>
+      <p>&copy; {new Date().getFullYear()} SIKESRA KOBAR</p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+---
+import { env } from "cloudflare:workers";
+
+const { slug } = Astro.params;
+if (!slug) {
+  return Astro.redirect("/404");
+}
+
+const post = await env.DB.prepare("SELECT id, title, slug, body, excerpt, status, published_at, created_at, updated_at, author_id FROM ec_posts WHERE slug = ? AND deleted_at IS NULL LIMIT 1").bind(slug).first();
+
+if (!post || post.status !== "published") {
+  return Astro.redirect("/404");
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{post.title}</title>
+    <meta name="description" content={post.excerpt || post.title} />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">SIKESRA KOBAR</a>
+      </nav>
+    </header>
+    <main>
+      <article>
+        <h1>{post.title}</h1>
+        {post.published_at && (
+          <time datetime={post.published_at}>
+            {new Date(post.published_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </time>
+        )}
+        <div set:html={post.body || ""} />
+      </article>
+    </main>
+    <footer>
+      <p>&copy; {new Date().getFullYear()} SIKESRA KOBAR</p>
+    </footer>
+  </body>
+</html>
