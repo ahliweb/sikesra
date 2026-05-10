@@ -3,13 +3,10 @@ import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
-import { sikesraPlugin } from "./src/index.ts";
 
 export default defineConfig({
 	output: "server",
-	adapter: cloudflare({
-		imagesBindingName: false,
-	}),
+	adapter: cloudflare(),
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
@@ -19,7 +16,6 @@ export default defineConfig({
 		emdash({
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
-			plugins: [sikesraPlugin()],
 		}),
 	],
 	fonts: [
