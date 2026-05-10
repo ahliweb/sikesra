@@ -25,10 +25,12 @@ function escapeTemplateLiteral(value) {
     .replace(/\$\{/g, "\\${");
 }
 
-// 1. Patch generated wrangler.json to use our wrapper as main entry.
+// 1. Patch generated wrangler.json to use our wrapper as main entry + strip Images binding.
 const wranglerPath = resolve(DIST_SERVER_DIR, "wrangler.json");
 const cfg = JSON.parse(readRequired(wranglerPath, "generated wrangler config"));
 cfg.main = "worker-wrapper.mjs";
+delete cfg.images;
+if (cfg.previews) delete cfg.previews.images;
 writeFileSync(wranglerPath, JSON.stringify(cfg));
 
 // 2. Keep generated entry as-is.

@@ -7,7 +7,9 @@ import { sikesraPlugin } from "./src/index.ts";
 
 export default defineConfig({
 	output: "server",
-	adapter: cloudflare(),
+	adapter: cloudflare({
+		imagesBindingName: false,
+	}),
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
