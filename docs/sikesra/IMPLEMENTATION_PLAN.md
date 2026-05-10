@@ -1,404 +1,223 @@
-# SIKESRA Implementation Plan
+# SIKESRA From-Scratch Implementation Plan
 
-This plan is derived from the AWCMS-Micro core EmDash compatibility documentation in `docs/core/` and the SIKESRA module documentation in `docs/sikesra/`.
+Status: Active reset plan.
 
-## Execution Retry Notes (2026-05-09)
+This plan intentionally does not rely on previous implementation commits. It keeps the repository as a self-contained EmDash host plus future SIKESRA native plugin, but treats all SIKESRA business behavior as needing rebuild and revalidation.
 
-1. Plugin activation synchronization fixed: deactivating `sikesra` now disables `/sikesra` and `/_emdash/api/plugins/sikesra/*` at runtime.
-2. Root route ownership fixed: `/` remains EmDash host route boundary; SIKESRA public output is limited to `/sikesra`.
-3. Plugin entry synchronization fixed: `src/plugin-entry.ts` now exports real `createPlugin` from `src/index.ts`.
-4. Build/test reliability fixed: malformed architecture test block corrected and repository `tsconfig.json` restored.
-5. EmDash admin interaction compatibility fixed: `/_emdash/api/plugins/sikesra/admin` now responds with a valid Block Kit payload, preventing admin UI retry loops and repeated `404` errors.
-6. CSP synchronization fixed at hybrid wrapper: EmDash admin responses now keep existing CSP directives while adding Cloudflare Insights script source to avoid blocked beacon script logs.
-7. Public API origin synchronization fixed: static public page now resolves SIKESRA API base from the active domain origin, preventing `workers.dev` cross-origin calls from custom domains.
-8. Admin CSP compatibility fixed: `script-src-elem` now preserves required inline script execution for EmDash admin while still allowing Cloudflare Insights source.
-9. Root route ownership re-synchronized: removed SIKESRA static root asset so `/` resolves through EmDash host runtime instead of SIKESRA static page.
-10. EmDash public homepage established at root: added host-owned `src/pages/index.astro` so `/` serves public web content instead of a 404.
-11. Root homepage visual sync updated to match EmDash admin look-and-feel (dark chrome, brand accents, and host-first navigation cues).
-12. SIKESRA admin Block Kit rendering is wrapper-owned for `/_emdash/api/plugins/sikesra/admin` after EmDash route/auth delegation, so live admin pages can read `env.SIKESRA_DB` and return the `data.blocks` envelope expected by the admin client.
-13. Generated EmDash admin sidebar output is postbuild-patched so the SIKESRA pages appear in a top `SIKESRA` sidebar group instead of a generic bottom `Plugins` group.
-14. SIKESRA admin page actions now render deterministic workflow panels for create, verify, import, document upload, export, region, and settings actions instead of generic acknowledgements.
+## Current Baseline
 
-Current validation target for each release cycle:
+Repository role: `ahliweb/sikesra`, the deployment target for the SIKESRA + EmDash host.
 
-1. Active plugin -> `/sikesra` returns `200`, public metadata returns `200`.
-2. Inactive plugin -> `/sikesra` and `/_emdash/api/plugins/sikesra/*` return `404`.
-3. `/_emdash/admin` remains EmDash-managed and authenticated.
-4. `/_emdash/api/plugins/sikesra/admin` returns `200` for authenticated admin requests and includes `data.blocks` for the requested SIKESRA admin page.
+Runtime baseline:
 
-## Implementation Principle
+1. Root `/` is EmDash-owned and must render only the original EmDash/Astro host template.
+2. Public SIKESRA route is `/sikesra` only.
+3. EmDash admin and normal EmDash APIs remain EmDash-owned.
+4. SIKESRA admin/API routes under `/_emdash/api/plugins/sikesra/*` are temporarily disabled with `503` until rebuilt through this plan.
+5. `scripts/postbuild.mjs` is only a deployment adapter: set wrapper as worker entry, strip `cloudflare:workers` import, and generate `worker-wrapper.mjs`.
+6. No script may patch EmDash source, `node_modules`, or generated EmDash admin chunks unless a future approved adapter ticket documents the divergence, tests, and rollback.
 
-SIKESRA must be implemented as an isolated EmDash/AWCMS-Micro plugin or module named `sikesra`. EmDash remains the architectural authority; SIKESRA business logic, data tables, APIs, UI, permissions, audit, storage, and workflows must live in module/plugin boundaries unless a missing extension point is documented and approved.
+## Configuration Contract
 
-Do not start by building screens or migrations blindly. The first deliverable is repository discovery and an implementation decision log with real paths, helpers, conventions, and missing extension points.
+Required files and roles:
 
-## Non-Negotiable Rules
+| File | Role |
+|---|---|
+| `astro.config.mjs` | Astro + Cloudflare + EmDash integration, D1/R2 bindings, SIKESRA native plugin descriptor registration. |
+| `wrangler.toml` | Local/source binding declaration for Worker, D1, R2, KV, Worker Loader, observability. |
+| `package.json` | `npm` scripts only: `dev`, `typecheck`, `test`, `build`, `preview`, `deploy`. |
+| `.github/workflows/deploy.yml` | `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, then Wrangler deploy on `main`. |
+| `scripts/postbuild.mjs` | Minimal generated-output adapter. |
+| `scripts/worker-wrapper-template.mjs` | Thin route boundary wrapper. |
+| `scripts/sikesra-public-html.txt` | Temporary public-safe static `/sikesra` placeholder. Replace with service-backed public rendering in Phase 4. |
 
-1. Admin UI route: `/_emdash/admin/plugins/sikesra/*`.
-2. Admin API route: `/_emdash/api/plugins/sikesra/v1/*`.
-3. Public route: `/sikesra`.
-4. Permission namespace: `awcms:sikesra:<resource>:<action>`.
-5. Custom tables use the `awcms_sikesra_` prefix.
-6. Business tables include `tenant_id`, `site_id`, timestamps, soft delete, `created_by`, and `updated_by` unless documented.
-7. Normal repository queries enforce tenant, site, `deleted_at IS NULL`, and backend-computed region scope.
-8. Admin API handlers enforce authentication, RBAC, ABAC, masking, request ID, and audit where required.
-9. Public output is aggregate-only and uses small-cell suppression.
-10. Raw NIK/KIA hash, raw R2 key, private document URL, and highly restricted values must not leave backend serializers through normal responses.
-11. Excel import must use upload, mapping, staging, validation, duplicate review, and explicit promotion.
-12. High-risk actions require reason where configured and must write audit events.
-13. Do not modify EmDash core unless discovery proves no safe extension path exists, the adapter is documented, compatibility tests are added, and rollback is documented.
+Disallowed scripts/configuration:
 
-## Phase 0: Repository Discovery and Decision Log
+1. Scripts that patch EmDash source, `node_modules`, or compiled EmDash internals.
+2. Scripts with hardcoded Cloudflare tokens or personal credentials.
+3. Duplicate database repair scripts that mutate production D1 outside an approved operations runbook.
+4. Package scripts that reference missing files.
+5. CI jobs that are skipped because they look for another package manager's lockfile.
 
-Goal: replace speculative documentation paths with real repository conventions before feature work.
+## Phase 0: Discovery Reset
 
-Deliverables:
+Goal: confirm extension points before writing business code.
 
-1. `docs/sikesra/IMPLEMENTATION_DECISIONS.md`.
-2. Confirmed module/plugin target folder.
-3. Confirmed plugin registration convention.
-4. Confirmed manifest convention.
-5. Confirmed admin page contribution convention.
-6. Confirmed API route convention.
-7. Confirmed public route convention.
-8. Confirmed D1 migration and seed convention.
-9. Confirmed test command and test file convention.
-10. Confirmed auth/session, permission, audit, ABAC, R2/media helpers or documented local fallbacks.
-11. List of missing extension points and smallest adapter proposal.
+Tasks:
 
-Acceptance gate:
+1. Re-read official EmDash plugin docs for native plugin registration, API routes, admin pages, Block Kit, Cloudflare deployment, D1, R2, and auth.
+2. Reconfirm actual local paths: `src/index.ts`, `src/plugin-entry.ts`, `src/routes/registry.ts`, `migrations/`, `seeds/`, `scripts/`.
+3. Update `docs/sikesra/IMPLEMENTATION_DECISIONS.md` with current from-scratch decisions.
+4. Document any missing EmDash extension points before creating adapters.
 
-1. No business features are implemented yet.
-2. Later tickets can name exact files instead of placeholders.
-3. Any proposed core change is isolated as a separate adapter decision.
+Acceptance checks:
 
-## Phase 1: Module Foundation
+1. Decision log names exact files and commands.
+2. No SIKESRA business behavior is added in this phase.
+3. No EmDash source or compiled internals are patched.
 
-Goal: create the smallest compile-safe SIKESRA module shell.
+## Phase 1: Native Plugin Shell
 
-Deliverables:
+Goal: compile-safe plugin shell with no sensitive behavior.
 
-1. Module/runtime source using this repository's discovered convention: local `src/`.
-2. Plugin entrypoint using this repository's discovered files: `src/plugin-entry.ts` re-exporting `createPlugin` from `src/index.ts`.
-3. `module.manifest.json` declaring module ID `sikesra`, version, lifecycle metadata, admin routes, public route, API namespace, permissions, migrations, seeds, storage scopes, dependencies, and rollback behavior.
-4. Common API response envelope helpers with `requestId`.
-5. Trusted request context builder deriving tenant, site, user, roles, permissions, ABAC subject attributes, region scope, IP, user agent, and current timestamp from backend/session state.
-6. Typed API/client contract scaffolding where the repository convention supports it.
+Tasks:
 
-Acceptance gate:
+1. Keep `sikesraPlugin()` descriptor registered in `astro.config.mjs`.
+2. Rebuild `createPlugin()` with a minimal dashboard/admin placeholder route using EmDash plugin conventions.
+3. Define the route registry shape but keep handlers non-mutating until security is ready.
+4. Keep `/` delegated to EmDash through the worker wrapper.
 
-1. Module can be loaded or registered without exposing data.
-2. API envelope tests or manual checks verify success/failure shape.
-3. Frontend-supplied tenant, site, role, permission, and region scope are ignored for trusted context.
+Acceptance checks:
+
+1. `npm run build` succeeds.
+2. Root `/` returns EmDash host output after deploy.
+3. `/_emdash/*` remains EmDash-owned.
+4. `/sikesra` returns public-safe placeholder output.
 
 ## Phase 2: Database and Seeds
 
-Goal: establish D1-compatible, PostgreSQL-friendly persistence before workflows.
+Goal: rebuild persistence from documentation rather than previous behavior.
 
-Migration order:
+Tasks:
 
-1. `0001_sikesra_settings_and_master.sql`: settings, object types, object subtypes.
-2. `0002_sikesra_regions.sql`: official regions and local regions.
-3. `0003_sikesra_entities_core.sql`: code sequences, code history, entities, person profiles.
-4. `0004_sikesra_detail_modules.sql`: MVP detail tables for the eight data modules.
-5. `0005_sikesra_relationships_and_attributes.sql`: entity people, attribute definitions, entity attributes, user scopes.
-6. `0006_sikesra_abac.sql`: ABAC policies and conditions.
-7. `0007_sikesra_verification.sql`: verification events.
-8. `0008_sikesra_documents.sql`: file objects and supporting documents unless shared media is used.
-9. `0009_sikesra_imports.sql`: import batches, staging rows, mapping templates.
-10. `0010_sikesra_deduplication.sql`: duplicate candidates and decisions.
-11. `0011_sikesra_benefits_exports_audit.sql`: benefit history, export jobs, audit logs unless shared audit is used.
-12. `0012_sikesra_public_summary.sql`: optional public-safe summary views or summary tables.
+1. Audit each migration against `docs/sikesra/03_data_model.md` and D1 limitations.
+2. Add or revise one migration at a time.
+3. Add repeatable seed files only after the referenced tables exist.
+4. Separate production-safe baseline seeds from demo/dummy seeds.
+5. Add a documented seed command sequence.
 
-Seed order:
+Acceptance checks:
 
-1. Settings defaults, including public disabled by default, small-cell threshold, upload limits, export limits, and feature flags.
-2. MVP object types and subtypes from `01_product_requirements.md`.
-3. Core attribute definitions: religion, neglected status, desil, SPM, PKH, BPNT, BPJS/PBI, extreme poverty, sensitivity, official/local scope, source input, verification level.
-4. Baseline ABAC policies and conditions.
-5. Baseline permissions or role-policy mappings where the platform convention requires seed data.
-
-Acceptance gate:
-
-1. Migrations run locally.
+1. Migrations apply on local D1.
 2. Seeds are repeatable.
-3. Indexes support list, dashboard, verification, import, document, export, and audit paths.
-4. `sikesra_id_20` uniqueness and length constraints exist.
-5. Sequence table is unique per tenant/site/village/type/subtype.
+3. Business tables include tenant/site/timestamps/soft delete/actor columns unless documented.
+4. Normal query paths can use tenant/site/deleted indexes.
 
 ## Phase 3: Security Foundation
 
-Goal: build security before sensitive workflows.
+Goal: build trusted context, permissions, ABAC, masking, and audit before workflows.
 
-Deliverables:
+Tasks:
 
-1. Permission catalog registration for dashboard, entity, code, verification, document, import, export, region, attribute, policy, audit, settings, and sensitive access.
-2. Route guard for all admin APIs.
-3. ABAC evaluator with deny precedence, region scope checks, module checks, sensitivity checks, verification-level checks, and archived-record restrictions.
-4. Server-side masking utility for NIK/KIA, protected names, contacts, exact addresses, guardian details, disability details, individual poverty/desil values, document metadata, audit before/after, and hashes.
-5. Audit service baseline writing tenant, site, actor, action, resource, request ID, success/failure, reason, IP/user agent, and redacted before/after where applicable.
-6. Negative tests for cross-region access, sensitive response leakage, raw R2 key leakage, and NIK/KIA hash leakage.
+1. Build trusted request context from EmDash/session/backend state only.
+2. Define `awcms:sikesra:*` permission catalog.
+3. Implement route guard: authentication, RBAC, ABAC, region scope, sensitivity, status, and action.
+4. Implement masking serializers for all sensitive fields.
+5. Implement local audit fallback unless a shared EmDash/AWCMS adapter is available.
 
-Acceptance gate:
+Acceptance checks:
 
-1. Unauthenticated admin APIs return unauthorized.
-2. Unauthorized admin APIs return forbidden or safe 404 where appropriate.
-3. Object operations evaluate ABAC.
-4. Sensitive serializers prevent leakage by default.
-5. High-risk actions write audit events.
+1. Public users cannot access admin APIs.
+2. Frontend-supplied tenant/site/role/permission/scope is ignored.
+3. NIK/KIA hashes, raw R2 keys, private URLs, and highly restricted values never leave normal APIs.
+4. High-risk actions require reason and write audit events.
 
-## Phase 4: Public and Admin Dashboards
+## Phase 4: Public Aggregate Surface
 
-Goal: establish safe visibility surfaces early.
+Goal: safely replace `/sikesra` placeholder.
 
-Deliverables:
+Tasks:
 
-1. Public metadata API or Astro loader.
-2. Public filters API or loader using only safe aggregate filter values.
-3. Public summary service using active, verified, non-deleted records and small-cell suppression.
-4. Public `/sikesra` page with hero, safety notice, KPI cards, safe filters, charts, caveat, update timestamp, official contact, and mobile/desktop usability.
-5. Admin dashboard API with scoped KPIs, work queues, regional summary, attribute summary, and audit activity.
-6. Admin dashboard page under `/_emdash/admin/plugins/sikesra` using EmDash/Kumo design conventions.
+1. Implement public metadata service.
+2. Implement public filters using only safe aggregate filter values.
+3. Implement public summary with active/verified/non-deleted data and small-cell suppression.
+4. Render `/sikesra` without importing or calling admin API clients.
 
-Acceptance gate:
+Acceptance checks:
 
-1. `/sikesra` loads without login and never calls admin APIs.
-2. Public output contains no names, identifiers, individual addresses, documents, individual desil, disability details, protected coordinates, or small-cell aggregates.
-3. Admin dashboard requires login and `awcms:sikesra:dashboard:read`.
-4. Dashboard queries are region-scoped.
+1. `/sikesra` loads without login.
+2. Output is aggregate-only.
+3. Small-cell suppression is applied.
+4. No individual names, exact addresses, protected coordinates, documents, hashes, or private values are visible.
 
-## Phase 5: Regions and Registry
+## Phase 5: Admin API Rebuild
 
-Goal: implement the operational data backbone.
+Goal: rebuild versioned APIs by resource group.
 
-Deliverables:
+Implementation order:
 
-1. Official region lookup service.
-2. Local region CRUD service, visually and technically distinct from official regions.
-3. Region management UI.
-4. Entity list API with filters, pagination, tenant/site/deleted/region guards, and masked summaries.
-5. Entity detail API with tabs, access flags, object ABAC, masking, documents, verification, benefits, and audit where authorized.
-6. Registry list UI.
-7. Entity detail UI.
+1. Settings read/update.
+2. Dashboard scoped KPIs.
+3. Official/local regions.
+4. Entity list/detail/create/patch.
+5. ID generation/correction.
+6. Verification queue/decision.
+7. Documents upload/complete/download proxy.
+8. Import staging/promotion.
+9. Duplicate review.
+10. Exports/reports.
+11. Audit browsing.
 
-Acceptance gate:
+Acceptance checks for every endpoint group:
 
-1. Cross-region list/detail access is denied or excluded.
-2. Local region changes cannot mutate `sikesra_id_20`.
-3. UI action availability comes from backend access flags, not only hidden controls.
+1. Request ID envelope.
+2. Trusted context.
+3. Validation.
+4. Auth/RBAC/ABAC.
+5. Tenant/site/deleted/region filters.
+6. Masked serializer.
+7. Audit event where required.
+8. Focused tests or documented manual checks.
 
-## Phase 6: Progressive Input and ID Generation
+## Phase 6: Admin UI Rebuild
 
-Goal: support manual data entry from draft through submit readiness.
+Goal: build EmDash-compatible admin screens after APIs exist.
 
-Deliverables:
+Tasks:
 
-1. Create draft API.
-2. Autosave/section patch API.
-3. Section-aware validation and completeness service.
-4. Progressive wizard UI with object type, official region, local region, identity, attributes, module detail, related people, documents, validation/duplicate preview, ID generation, review, and submit steps.
-5. 20-digit SIKESRA ID generation service using `[kode_desa_kel_10][jenis_2][subjenis_2][sequence_6]`.
-6. Generate-code endpoint.
-7. Controlled ID correction flow with permission, reason, confirmation, code history, and audit.
+1. Start with EmDash Block Kit placeholders only where sufficient.
+2. Add React/Kumo screens only after API contracts stabilize.
+3. Drive action availability from backend access flags.
+4. Do not make hidden controls the only security mechanism.
 
-Acceptance gate:
+Acceptance checks:
 
-1. Required fields block ID generation and submit readiness.
-2. Generated ID is exactly 20 digits and stable after RT/RW/local-region changes.
-3. Normal users cannot edit generated IDs.
-4. ID generation and correction are audited.
+1. Admin UI requires login.
+2. Permission failures are safe.
+3. Screens are usable on desktop/tablet and responsive-basic on mobile.
 
-## Phase 7: Verification Workflow
+## Phase 7: Import, Documents, Export, and Operations
 
-Goal: implement multi-level verification with notes, scope, and audit.
+Goal: add high-risk workflows only after security and audit are proven.
 
-Deliverables:
+Tasks:
 
-1. Submit endpoint from validated draft into configured verification level.
-2. Verification queue API filtered by verifier level, module, region, risk, completeness, and duplicate state.
-3. Verification decision API for verify, need revision, reject, and final active/verified state.
-4. Verification queue and review UI with summary, checklist, field notes, document checklist, duplicate compare, decision panel, and confirmation dialogs.
+1. Excel import with staging before promotion.
+2. R2 document handling with backend proxy/signed access and no raw key exposure.
+3. Restricted export job creation, masking, reason capture, and audit.
+4. Backup/restore and D1/R2 linkage validation.
 
-Acceptance gate:
+Acceptance checks:
 
-1. Verifiers act only in allowed region/module/level scope.
-2. Need-revision and reject decisions require notes.
-3. Verification event and audit records include actor, level, action, previous status, next status, note, and request metadata.
-4. Final verification sets record active and verified.
+1. Import cannot bypass validation or duplicate review.
+2. Document downloads enforce permission, ABAC, reason where needed, and audit.
+3. Export never leaks restricted fields without explicit permission and audit.
 
-## Phase 8: Documents and R2
+## Validation Commands
 
-Goal: implement secure file handling with metadata discipline.
+Run before every completion report:
 
-Deliverables:
-
-1. R2 storage adapter or integration with discovered shared media helper.
-2. Upload-url/start-upload endpoint.
-3. Complete-upload endpoint storing D1 metadata, checksum, classification, size, MIME, verification state, and entity link.
-4. Private preview/download endpoint using signed or proxy access.
-5. Document verification and replacement endpoints.
-6. Document upload/list UI.
-
-Acceptance gate:
-
-1. MIME, extension, size, checksum, and classification are validated.
-2. Dangerous file types are blocked.
-3. Raw R2 keys are never returned.
-4. Highly restricted download requires reason where configured.
-5. Preview/download and replacement are audited.
-
-## Phase 9: Excel Import and Deduplication
-
-Goal: support controlled bulk ingestion without bypassing validation.
-
-Deliverables:
-
-1. Import batch creation.
-2. Workbook upload and sheet detection.
-3. Column mapping and mapping template persistence.
-4. Staging row parser and validator storing raw and mapped data securely.
-5. Staging rows list/correction API.
-6. Import center UI.
-7. Deduplication service for people, institutions, documents, and benefits.
-8. Duplicate candidate and decision persistence.
-9. Import promotion service creating entity/detail/person/attribute/document records where applicable and integrating ID generation.
-
-Acceptance gate:
-
-1. Excel rows never bypass staging.
-2. Invalid rows cannot be promoted.
-3. High-risk duplicate decisions require reason.
-4. Promoted rows are not automatically verified.
-5. Import create/map/validate/promote/skip/override/failure actions are audited.
-
-## Phase 10: Reports, Exports, Audit, and Settings
-
-Goal: complete operational governance surfaces.
-
-Deliverables:
-
-1. Report metadata API with field sensitivity information.
-2. Export job creation API enforcing permission, field sensitivity, reason, ABAC, audit, and private download.
-3. Reports/export UI.
-4. Audit list/detail API with filters and redaction.
-5. Audit UI.
-6. Settings API for public visibility, suppression threshold, upload limits, export limits, reason requirements, and feature flags.
-7. Settings UI.
-
-Acceptance gate:
-
-1. Restricted exports require restricted permission and reason.
-2. Highly restricted individual data is excluded by default.
-3. Export jobs record filters, fields, format, reason, row count, actor, file metadata, and audit events.
-4. Audit before/after values are redacted according to viewer permissions.
-5. Settings changes require permission, reason, and audit.
-
-## Phase 11: Hardening and Operations
-
-Goal: prove security, privacy, backup, restore, performance, and operational readiness.
-
-Deliverables:
-
-1. RBAC, ABAC, masking, and region tests.
-2. Import, duplicate, and promotion tests.
-3. Document and export security tests.
-4. Public dashboard privacy tests.
-5. Performance and index review for dashboard, entity, import, audit, and public summary queries.
-6. D1 backup/export procedure.
-7. R2 lifecycle, backup, retention, and inventory procedure.
-8. Restore dry run validating D1 metadata and R2 object linkage.
-9. Incident response contacts and escalation notes.
-10. Rate limits or guardrails for import, export, download, and sensitive reveal where supported.
-
-Acceptance gate:
-
-1. P0 security, public privacy, cross-region, masking, import, document, verification, export, audit, and backup/restore checks pass.
-2. Public summary meets the documented performance target for normal MVP data.
-3. Admin dashboard meets the documented performance target for normal MVP data.
-4. Critical/high risks are fixed or formally accepted by the owner.
-
-## Phase 12: Release Candidate
-
-Goal: make implementation reality match documentation and decide MVP go/no-go.
-
-Deliverables:
-
-1. Updated implementation documentation.
-2. Operator training notes.
-3. UAT scenarios covering manual input, verification, documents, import, public dashboard, export, audit, settings, and backup/restore.
-4. MVP go/no-go report.
-5. Rollback and disable behavior documentation.
-
-Acceptance gate:
-
-1. All P0 issues are closed or accepted with documented workaround.
-2. UAT passes.
-3. Documentation matches shipped behavior.
-4. No untreated critical/high risk remains.
-
-## 12-Week Execution Map
-
-| Week | Focus | Required Outcome |
-|---:|---|---|
-| 1 | Discovery and foundation | Decision log, module folder, plugin skeleton, manifest draft. |
-| 2 | Database and seeds | Migrations and repeatable seeds run locally. |
-| 3 | Security foundation | Permissions, route guard, ABAC, masking, audit baseline. |
-| 4 | Public/admin dashboards | `/sikesra` safe public page and scoped admin dashboard. |
-| 5 | Regions and registry | Region services, list/detail APIs, registry/detail UI. |
-| 6 | Progressive input | Draft, autosave, validation, completeness, wizard UI. |
-| 7 | ID and verification | 20-digit ID, submit, queue, decision flow. |
-| 8 | Documents and R2 | Upload, metadata, private download, document UI. |
-| 9 | Excel import | Workbook upload, mapping, staging, validation, correction UI. |
-| 10 | Dedup/promotion/reports | Duplicate decisions, promotion, basic export/settings. |
-| 11 | Audit/hardening | Audit UI, security tests, backup/restore, performance review. |
-| 12 | Release candidate | UAT, docs finalization, go/no-go report. |
-
-## Critical Path
-
-```txt
-Discovery -> plugin foundation -> database -> security -> public/admin dashboards -> regions/registry -> wizard -> ID -> verification -> documents -> import/dedup/promotion -> reports/audit/settings -> hardening -> release candidate
+```bash
+node --check scripts/postbuild.mjs
+node --check scripts/worker-wrapper-template.mjs
+npm run typecheck
+npm test
+npm run build
 ```
 
-Do not parallelize feature work ahead of the security foundation for workflows that expose entity detail, documents, import rows, exports, or audit data.
+After deployment, manually verify:
 
-## Initial Work Items
+```txt
+/                                      -> EmDash host output, x-route: emdash-root
+/sikesra                               -> public-safe SIKESRA placeholder or aggregate page
+/_emdash/admin                         -> EmDash admin/auth shell
+/_emdash/api/plugins/sikesra/*         -> disabled until rebuilt, then auth/ABAC enforced
+```
 
-Start with these before opening feature implementation tickets:
+## Documentation Rules
 
-1. `SIKESRA-001`: audit repository structure and extension points.
-2. `SIKESRA-002`: create `docs/sikesra/IMPLEMENTATION_DECISIONS.md`.
-3. `SIKESRA-003`: scaffold plugin skeleton using discovered convention.
-4. `SIKESRA-004`: add `module.manifest.json`.
-5. `SIKESRA-005`: implement response envelope and request ID utility.
-6. `SIKESRA-006`: implement trusted request context builder.
+Update these files whenever integration behavior changes:
 
-After those are done, split later work into atomic tickets using `docs/sikesra/11_ai_implementation_handoff.md` instead of giving implementers the whole documentation set.
-
-## Primary Risks
-
-| Risk | Control |
-|---|---|
-| Accidental EmDash fork | Decision log, adapter-first policy, compatibility tests. |
-| Sensitive data leakage | Central masking, negative tests, serializer discipline. |
-| Cross-region access | Repository guards, ABAC tests, backend-computed scope. |
-| Public re-identification | Aggregate-only service, small-cell suppression, conservative filters. |
-| Raw R2 key exposure | Signed/proxy download, DTO tests, no raw storage keys in API output. |
-| Import corruption | Staging, validation, duplicate review, explicit promotion. |
-| Export misuse | Field sensitivity resolver, reason requirement, restricted permission, audit. |
-| Audit leakage | Redacted audit serializers and permission-aware audit detail. |
-| Scope creep | MVP excludes integrations, offline app, full ERP, public detail pages, and advanced GIS. |
-
-## Definition of MVP Done
-
-1. SIKESRA runs as an EmDash/AWCMS-Micro plugin/module.
-2. Route namespaces match the documented public, admin, and API boundaries.
-3. Migrations and seeds run cleanly.
-4. RBAC, ABAC, region scope, masking, and audit are enforced server-side.
-5. Public `/sikesra` is aggregate-safe and suppression-aware.
-6. Registry, detail, wizard, ID generation, submit, and verification work.
-7. Document upload/download uses D1 metadata, R2 storage, signed/proxy access, and audit.
-8. Import uses mapping, staging, validation, duplicate review, and promotion.
-9. Exports respect sensitivity, permission, reason, and audit rules.
-10. Audit list/detail redacts sensitive values.
-11. Backup/restore linkage between D1 metadata and R2 objects is tested.
-12. P0 validation checks pass and documentation matches implementation reality.
+1. `docs/core/SIKESRA_INTEGRATION_OVERLAY.md` for route/binding/build/deploy changes.
+2. `docs/sikesra/IMPLEMENTATION_DECISIONS.md` for confirmed extension points.
+3. Relevant SIKESRA domain doc for API, data, security, UI, or operations changes.

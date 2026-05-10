@@ -3,6 +3,13 @@ import { getEmDashCollection, getSiteSettings } from "emdash";
 
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
+type RssPostData = {
+	id?: string;
+	title?: string;
+	excerpt?: string;
+	publishedAt?: Date | string | null;
+};
+
 export const GET: APIRoute = async ({ site, url }) => {
 	const siteUrl = site?.toString() || url.origin;
 	const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings());
@@ -14,12 +21,14 @@ export const GET: APIRoute = async ({ site, url }) => {
 
 	const items = posts
 		.map((post) => {
-			if (!post.data.publishedAt) return null;
-			const pubDate = post.data.publishedAt.toUTCString();
+			const data = post.data as RssPostData;
+			if (!data.publishedAt) return null;
+			const publishedAt = data.publishedAt instanceof Date ? data.publishedAt : new Date(data.publishedAt);
+			const pubDate = publishedAt.toUTCString();
 
 			const postUrl = `${siteUrl}/posts/${post.id}`;
-			const title = escapeXml(post.data.title || "Untitled");
-			const description = escapeXml(post.data.excerpt || "");
+			const title = escapeXml(data.title || "Untitled");
+			const description = escapeXml(data.excerpt || "");
 
 			return `    <item>
       <title>${title}</title>

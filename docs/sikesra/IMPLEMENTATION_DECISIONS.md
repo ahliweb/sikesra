@@ -74,44 +74,37 @@ Phase 0 is fully complete only when:
 3. Missing extension points are either resolved or tracked with approved adapter plans.
 4. No SIKESRA business feature is implemented in EmDash core.
 
-## Implementation Scaffold Status (2026-05-09)
+## Scratch Redevelopment Status (2026-05-11)
 
 Runtime repository: `ahliweb/sikesra`.
 
-Completed layers:
+Active baseline:
 
-1. 11 D1 migration files in `migrations/sikesra/` covering all table groups.
-2. 3 seed files in `seeds/sikesra/` (types/subtypes, attributes, ABAC policies).
-3. 8 repository modules with real D1 SQL and tenant/site/scope enforcement.
-4. 13 service modules with full API contract types (entity/region/settings/documents wired to repos).
-5. 4 security modules (ABAC evaluator, masking, permissions, request context).
-6. 2 API utility modules (response envelope, request ID).
-7. 17 registered API route handlers auto-mounted to EmDash plugin via SIKESRA_ROUTES registry.
-8. Architecture validation test file in `src/__tests__/architecture.test.ts`.
-9. Plugin is registered as a native EmDash plugin in host `astro.config.mjs`.
+1. Root `/` and normal content routes are EmDash/Astro host-owned.
+2. SIKESRA public placeholder is limited to `/sikesra`.
+3. `/_emdash/api/plugins/sikesra/*` returns `503` until rebuilt through `docs/sikesra/IMPLEMENTATION_PLAN.md`.
+4. `scripts/postbuild.mjs` is a minimal generated-output adapter only.
+5. `scripts/worker-wrapper-template.mjs` is a thin route boundary wrapper only.
+6. `astro.config.mjs` registers the SIKESRA plugin descriptor, but business APIs/admin workflows must be rebuilt and revalidated.
 
-Remaining for MVP:
+Do not treat previous implementation layers as complete. Rebuild them in this order:
 
-1. Complete auth/session context derivation from EmDash session for all non-public APIs.
-2. Complete R2 document upload/download integration through backend proxy/signed routes.
-3. Expand integration/e2e tests around D1, auth, activation, admin Block Kit, and public suppression.
-4. Build full React/Kumo admin pages if/when Block Kit is insufficient.
-5. Validate backup/restore procedures with live D1/R2 references.
-6. Add repository-level integration tests.
-7. Validate backup/restore procedures.
+1. Phase 0 decision log refresh.
+2. Plugin shell and route registry.
+3. Migrations and repeatable seeds.
+4. Trusted context, RBAC, ABAC, masking, audit.
+5. Public aggregate services.
+6. Admin APIs by endpoint group.
+7. Admin UI after API contracts are stable.
+8. Import, documents, exports, backup/restore.
 
 ## Synchronization Rules (Runtime)
 
-1. Plugin activation state in `_plugin_state` controls `/sikesra` and `/_emdash/api/plugins/sikesra/*` availability.
-2. When plugin status is `inactive`, public/API SIKESRA routes must return `404`.
-3. Root `/` is always EmDash host-owned; SIKESRA must never inject root HTML.
-4. Plugin descriptor and runtime entry must stay synchronized via `sikesraPlugin()` in `astro.config.mjs` and `createPlugin` export in `src/plugin-entry.ts`.
-5. EmDash plugin admin surfaces require plugin route `admin` (`/_emdash/api/plugins/sikesra/admin`) for Block Kit page/widget interaction; missing this route causes repeated admin `404` retries.
-6. Hybrid wrapper must preserve EmDash CSP hardening while appending `https://static.cloudflareinsights.com` to `script-src` and a compatible `script-src-elem` policy (including inline script compatibility required by EmDash admin shell) for admin responses.
-7. Public SIKESRA page clients must call plugin public APIs using same-origin paths (`window.location.origin + /_emdash/api/plugins/sikesra/*` or relative paths), never hardcoded workers.dev hosts, to avoid route drift and CORS failures on custom domains.
-8. Root homepage (`/`) is EmDash host-owned and must not be shadowed by static `public/index.html` assets from SIKESRA; SIKESRA public surface remains `/sikesra`.
-9. Runtime SIKESRA admin Block Kit rendering for `/_emdash/api/plugins/sikesra/admin` is handled in `scripts/worker-wrapper-template.mjs` after delegating to EmDash for route/auth checks, because native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`.
-10. SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload, because the admin client reads `(await response.json()).data.blocks`.
-11. `scripts/postbuild.mjs` patches the generated EmDash admin bundle so SIKESRA plugin pages render as a top `SIKESRA` sidebar group while leaving EmDash source packages unchanged.
-12. The same postbuild patch also applies compact SIKESRA sidebar spacing and cache-busts the patched admin bundle filename so browsers load the updated sidebar group label/layout after deploy.
-13. Until full React/admin route pages exist, SIKESRA Block Kit buttons should return workflow panels or navigate between pages; backend APIs remain authoritative for mutations and high-risk actions.
+1. Plugin activation state in `_plugin_state` controls `/sikesra` availability.
+2. During scratch rebuild, `/_emdash/api/plugins/sikesra/*` intentionally returns `503` until security and handlers are rebuilt.
+3. When plugin status is `inactive`, `/sikesra` must return `404`.
+4. Root `/` is always EmDash host-owned; SIKESRA must never inject root HTML.
+5. Plugin descriptor and runtime entry must stay synchronized via `sikesraPlugin()` in `astro.config.mjs` and `createPlugin` export in `src/plugin-entry.ts`.
+6. Hybrid wrapper must preserve EmDash CSP hardening while appending `https://static.cloudflareinsights.com` to `script-src` where needed.
+7. No script may patch EmDash source, `node_modules`, or generated EmDash admin chunks without a separately approved adapter decision.
+8. Future SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload.

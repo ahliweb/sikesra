@@ -34,10 +34,10 @@ Use this order when generic core guidance and the implemented runtime differ:
 | Root public site `/` | EmDash/Astro host | `src/pages/index.astro`, served through EmDash route path with `x-route: emdash-root`. |
 | SIKESRA public page `/sikesra` | SIKESRA wrapper | `scripts/worker-wrapper-template.mjs` returns aggregate-safe public HTML. |
 | EmDash admin `/_emdash/*` | EmDash | Routed to the generated EmDash Worker. |
-| SIKESRA admin UI `/_emdash/admin/plugins/sikesra/*` | EmDash admin shell + SIKESRA Block Kit data | Admin shell is EmDash; plugin page data comes from `/_emdash/api/plugins/sikesra/admin`. |
-| SIKESRA admin Block Kit API | Hybrid wrapper after EmDash auth delegation | Wrapper delegates to EmDash route/auth first, then renders `data.blocks` using `env.SIKESRA_DB`. |
-| SIKESRA versioned APIs | SIKESRA wrapper/API handlers | `/_emdash/api/plugins/sikesra/v1/*`. |
-| SIKESRA public APIs | SIKESRA wrapper | `/_emdash/api/plugins/sikesra/public/*`, activation-gated and aggregate-safe. |
+| SIKESRA admin UI `/_emdash/admin/plugins/sikesra/*` | EmDash admin shell | Admin plugin pages must be rebuilt after API/security foundation is restored. |
+| SIKESRA admin/API routes | Disabled during scratch rebuild | `/_emdash/api/plugins/sikesra/*` returns `503` until rebuilt through `docs/sikesra/IMPLEMENTATION_PLAN.md`. |
+| Future SIKESRA versioned APIs | SIKESRA plugin/module handlers | Target namespace remains `/_emdash/api/plugins/sikesra/v1/*`. |
+| Future SIKESRA public APIs | SIKESRA plugin/module handlers | Target namespace remains `/_emdash/api/plugins/sikesra/public/*`, activation-gated and aggregate-safe. |
 
 ## Binding and Storage Map
 
@@ -67,12 +67,12 @@ set -a && source .env && set +a && npx wrangler deploy
 astro build && node scripts/postbuild.mjs
 ```
 
-The postbuild script is part of this repository's integration contract:
+The postbuild script is part of this repository's integration contract and must remain minimal:
 
 1. Sets `dist/server/wrangler.json` `main` to `worker-wrapper.mjs`.
-2. Injects the SIKESRA public HTML into the worker wrapper template.
-3. Patches the generated EmDash admin bundle to show SIKESRA as the top plugin group with compact sidebar spacing.
-4. Cache-busts the patched admin bundle and updates generated asset references.
+2. Strips `import "cloudflare:workers"` from `dist/server/entry.mjs` for hybrid wrapper compatibility.
+3. Injects the SIKESRA public HTML into the worker wrapper template.
+4. Does not patch EmDash source, `node_modules`, or generated EmDash admin chunks.
 
 ## Part-by-Part Application Matrix
 
@@ -81,10 +81,10 @@ The postbuild script is part of this repository's integration contract:
 | Part 1 Architecture & Governance | EmDash remains upstream authority; custom behavior stays isolated. | SIKESRA-specific runtime behavior belongs in `src/`, `scripts/worker-wrapper-template.mjs`, migrations/seeds/docs, not EmDash source packages. |
 | Part 2 Repo & Operations | Generic monorepo paths are conceptual. | Use this repo's actual local paths and `npm` scripts; do not create `packages/plugins/sikesra` unless a later refactor explicitly approves it. |
 | Part 3 DB & Storage | Tenant/site/soft-delete/storage rules are mandatory. | All SIKESRA physical tables keep `awcms_sikesra_` prefix and normal queries filter tenant/site/deleted state. |
-| Part 4 Plugin System | SIKESRA is a native EmDash plugin plus governed module. | `src/plugin-entry.ts`, `src/index.ts`, and `src/routes/registry.ts` keep EmDash registration; wrapper rendering handles env-bound admin data. |
+| Part 4 Plugin System | SIKESRA is a native EmDash plugin plus governed module. | `src/plugin-entry.ts`, `src/index.ts`, and `src/routes/registry.ts` keep EmDash registration; admin/API behavior is disabled until rebuilt. |
 | Part 5 ABAC & Permission Matrix | ABAC is local fallback until shared AWCMS service exists. | Enforce permissions server-side using `awcms:sikesra:*`; do not rely on hidden UI controls. |
-| Part 6 Frontend & Admin | Preserve EmDash admin shell and Kumo/semantic design language. | Admin navigation is EmDash-owned; generated sidebar patch is a documented deployment adapter, not an EmDash source modification. |
-| Part 7 Security & Testing | Deny by default, audit high-risk actions, test critical boundaries. | Admin Block Kit endpoint delegates to EmDash auth/permissions before returning SIKESRA `data.blocks`. |
+| Part 6 Frontend & Admin | Preserve EmDash admin shell and Kumo/semantic design language. | Admin navigation is EmDash-owned; do not patch generated EmDash admin chunks during the scratch rebuild. |
+| Part 7 Security & Testing | Deny by default, audit high-risk actions, test critical boundaries. | SIKESRA admin/API routes remain unavailable until trusted context, permission, ABAC, masking, and audit are rebuilt. |
 | Part 8 Cloudflare Runbook | Cloudflare-first deployment applies directly. | Use this repo's hybrid Worker, D1/R2/KV bindings, and `.env`-loaded Wrangler deployment. |
 | Part 9 MVP Sprint Plan | Backlog is generic. | Treat generic issues as source material; SIKESRA tickets must stay small and route/data-boundary aware. |
 | Part 10 Website Template | Public website patterns apply to root and normal content. | Root `/` is EmDash host/public website; SIKESRA aggregate public output is only `/sikesra`. |
@@ -96,7 +96,7 @@ The postbuild script is part of this repository's integration contract:
 
 ## Admin Integration Contract
 
-The EmDash admin client reads plugin Block Kit responses as:
+Target contract for the future rebuilt SIKESRA admin API: the EmDash admin client reads plugin Block Kit responses as:
 
 ```txt
 (await response.json()).data.blocks
@@ -114,7 +114,9 @@ Therefore `/_emdash/api/plugins/sikesra/admin` must return:
 
 Returning a raw `{ "blocks": [] }` payload breaks the admin page with `Cannot read properties of undefined (reading 'blocks')`.
 
-The native EmDash plugin route context currently does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`. The deployed workaround is:
+During the scratch rebuild, `/_emdash/api/plugins/sikesra/*` is intentionally disabled with `503`. If future implementation requires wrapper-owned admin rendering because the native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`, create a separate adapter decision before implementing it.
+
+The previously used workaround pattern must not be restored without that decision:
 
 1. Wrapper receives `/_emdash/api/plugins/sikesra/admin`.
 2. Wrapper calls EmDash first with `request.clone()`.
@@ -124,12 +126,12 @@ The native EmDash plugin route context currently does not expose raw Cloudflare 
 
 ## Activation Contract
 
-Plugin activation in `_plugin_state` controls SIKESRA public and API availability:
+Plugin activation in `_plugin_state` currently controls only the SIKESRA public placeholder while admin/API behavior is disabled for rebuild:
 
-| Plugin State | `/sikesra` | `/_emdash/api/plugins/sikesra/public/*` | `/_emdash/api/plugins/sikesra/admin` |
-|---|---|---|---|
-| active or missing state | Enabled | Enabled | Auth-gated and enabled |
-| inactive | `404` | `404` | `404` after EmDash auth route allows evaluation |
+| Plugin State | `/sikesra` | `/_emdash/api/plugins/sikesra/*` |
+|---|---|---|
+| active or missing state | Enabled | `503` rebuild placeholder |
+| inactive | `404` | `503` rebuild placeholder |
 
 ## Validation Checklist
 
@@ -149,8 +151,7 @@ After deploy, validate:
 /                                      -> 200, x-route: emdash-root
 /sikesra                               -> 200, x-route: sikesra
 /_emdash/admin                         -> EmDash auth/admin shell
-/_emdash/api/plugins/sikesra/public/metadata -> 200 when active
-/_emdash/api/plugins/sikesra/admin     -> 401 unauthenticated, data.blocks authenticated
+/_emdash/api/plugins/sikesra/*         -> 503 until rebuilt
 ```
 
 ## Known Integration Gaps
@@ -160,5 +161,4 @@ These are not contradictions in the core docs; they are local implementation gap
 1. Shared AWCMS permission registry helper is not yet available; SIKESRA uses a local permission catalog.
 2. Shared ABAC/audit adapters are not yet available; SIKESRA uses local D1-backed fallbacks.
 3. Full React admin pages are not implemented yet; current admin pages use EmDash Block Kit payloads.
-4. Sidebar ordering/label is handled by postbuild patch until EmDash exposes a first-class plugin group ordering extension point.
-5. Authenticated admin Block Kit content must be verified with a real admin session; unauthenticated CLI checks should return `401`.
+4. Admin Block Kit integration must be rebuilt and verified with a real admin session after API security is implemented.

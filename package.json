@@ -14,7 +14,6 @@
     "test": "vitest run",
     "typecheck": "astro check && tsc --noEmit",
     "dev": "astro dev",
-    "sync:emdash": "node scripts/sync-emdash-upstream.mjs",
     "build": "astro build",
     "postbuild": "node scripts/postbuild.mjs",
     "preview": "astro preview",
@@ -35,14 +34,6 @@
     "typescript": "^5.8.3",
     "vitest": "^3.1.1",
     "wrangler": "^4.90.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "workerd",
-      "better-sqlite3"
-    ]
   },
   "keywords": [
     "sikesra",
