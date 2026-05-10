@@ -729,10 +729,11 @@ export default {
       }
     }
 
-    // Send to EmDash: EmDash routes, Astro assets, root
-    // Keep v1 API, public API, health, /sikesra in the wrapper
-    const goToEmDash = !path.startsWith("/_emdash/api/plugins/sikesra/") &&
-       (path.startsWith("/_emdash") || path.startsWith("/_astro") || path === "/");
+    // Send to EmDash: everything except SIKESRA-specific paths
+    // SIKESRA handles: /health, /sikesra, /_emdash/api/plugins/sikesra/*
+    const isSikesraPath = path.startsWith("/_emdash/api/plugins/sikesra/") ||
+       path === "/sikesra" || path === "/sikesra/" || path === "/health";
+    const goToEmDash = !isSikesraPath;
 
     if (goToEmDash) {
       try {
