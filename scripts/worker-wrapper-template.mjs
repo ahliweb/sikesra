@@ -314,6 +314,11 @@ async function handleSikesra(request, env) {
       return new Response(render404(), { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
+    // Pass through to EmDash for non-SIKESRA routes (including /404 and public blog pages)
+    if (!path.startsWith("/sikesra") && !path.startsWith("/_emdash")) {
+      return emdashWorker.default(request, env, ctx);
+    }
+
     return fail(reqId, "NOT_FOUND", "Route not found", 404);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
