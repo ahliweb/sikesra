@@ -33,4 +33,4 @@ credentials.json
 service-account.json
 
 # misc
-temp
+temp/
