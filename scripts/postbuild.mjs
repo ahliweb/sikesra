@@ -33,9 +33,16 @@ delete cfg.images;
 if (cfg.previews) delete cfg.previews.images;
 writeFileSync(wranglerPath, JSON.stringify(cfg));
 
-// 2. Keep generated entry as-is.
-// EmDash Cloudflare adapters rely on cloudflare:workers runtime bindings,
-// so we do not strip that import.
+// 2. Strip cloudflare:workers import from entry.mjs (required for hybrid worker compatibility)
+const entryPath = resolve(DIST_SERVER_DIR, "entry.mjs");
+if (existsSync(entryPath)) {
+  let entrySource = readFileSync(entryPath, "utf8");
+  if (entrySource.includes('import "cloudflare:workers"')) {
+    entrySource = entrySource.replace(/import "cloudflare:workers";\n?/g, "");
+    writeFileSync(entryPath, entrySource);
+    console.log("[postbuild] stripped cloudflare:workers import from entry.mjs");
+  }
+}
 
 // 3. Load the SIKESRA public HTML from the template file
 let publicHtml = "";
