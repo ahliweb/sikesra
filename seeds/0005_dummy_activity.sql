@@ -141,7 +141,7 @@ SET
   public_title = 'SIKESRA Kotawaringin Barat',
   public_description = 'Data Sistem Informasi Kesejahteraan Rakyat Kabupaten Kotawaringin Barat, Kalimantan Tengah. Data disajikan secara agregat dan telah melalui proses verifikasi berjenjang.',
   data_scope_note = 'Data mencakup wilayah Kabupaten Kotawaringin Barat, Provinsi Kalimantan Tengah.',
-  official_contact = 'Kemenag Kotawaringin Barat — Tel. (0532) 21234',
+  official_contact = 'Kantor Sekretariat Daerah Kabupaten Kotawaringin Barat',
   small_cell_threshold = 5,
   max_upload_bytes = 10485760,
   export_max_sync_rows = 5000,
