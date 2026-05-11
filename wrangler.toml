@@ -5,12 +5,12 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "sikesra"
-database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
+database_id = "e2902bf9-1648-4a46-8971-e4acadfa09ec"
 
 [[d1_databases]]
 binding = "SIKESRA_DB"
 database_name = "sikesra"
-database_id = "78f08b97-305a-431b-9f7c-9f1c3bbb4551"
+database_id = "e2902bf9-1648-4a46-8971-e4acadfa09ec"
 
 [[r2_buckets]]
 binding = "SIKESRA_DOCUMENTS"
