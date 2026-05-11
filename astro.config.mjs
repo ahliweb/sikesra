@@ -8,6 +8,22 @@ import { sikesraPlugin } from "./src/plugin-entry";
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare(),
+	vite: {
+		optimizeDeps: {
+			exclude: [
+				"emdash",
+				"emdash/media/local-runtime",
+				"emdash/middleware",
+				"emdash/middleware/auth",
+				"emdash/middleware/redirect",
+				"emdash/middleware/request-context",
+				"emdash/middleware/setup",
+				"@emdash-cms/cloudflare",
+				"@emdash-cms/cloudflare/db/d1",
+				"@emdash-cms/cloudflare/storage/r2",
+			],
+		},
+	},
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
