@@ -86,6 +86,7 @@ export function createPlugin(_options: SikesraPluginOptions = {}) {
       pages: [
         { path: "/", label: "Ikhtisar / Dashboard" },
         { path: "/entities", label: "Operasional / Data Utama" },
+        { path: "/entities/new", label: "Operasional / Buat Draft Baru" },
         { path: "/verification", label: "Operasional / Verifikasi" },
         { path: "/imports", label: "Operasional / Import Excel" },
         { path: "/documents", label: "Operasional / Dokumen" },

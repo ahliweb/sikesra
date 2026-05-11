@@ -3,6 +3,8 @@ import { listEntities, type EntityListFilters } from "../services/entity";
 import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
+import { getRouteDb } from "./route-db";
+import { createEntity, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -68,6 +70,65 @@ const DUPLICATE_STATUS_LABELS: Record<string, string> = {
 	resolved: "Selesai",
 };
 
+const WIZARD_STEPS = [
+	{ key: "jenis_data", label: "Jenis Data" },
+	{ key: "wilayah_resmi", label: "Wilayah Resmi" },
+	{ key: "wilayah_rinci_lokal", label: "Wilayah Rinci Lokal" },
+	{ key: "identitas_utama", label: "Identitas Utama" },
+	{ key: "atribut_inti", label: "Atribut Inti" },
+	{ key: "detail_modul", label: "Detail Modul" },
+	{ key: "relasi_orang", label: "Pengurus/Wali/Pengasuh" },
+	{ key: "dokumen_pendukung", label: "Dokumen Pendukung" },
+	{ key: "validasi_duplikasi", label: "Validasi dan Duplikasi" },
+	{ key: "generate_id", label: "Generate ID" },
+	{ key: "review_submit", label: "Review dan Submit" },
+] as const;
+
+type WizardStepKey = typeof WIZARD_STEPS[number]["key"];
+
+interface WizardFormState {
+	entityId?: string;
+	objectTypeCode: string;
+	objectSubtypeCode: string;
+	districtCode: string;
+	officialVillageCode: string;
+	localRegionId: string;
+	displayName: string;
+	addressText: string;
+	sensitivityLevel: string;
+	sourceInput: string;
+	sourceInstitution: string;
+	latitude: string;
+	longitude: string;
+}
+
+interface WizardValidationState {
+	globalErrors: string[];
+	sectionErrors: Partial<Record<WizardStepKey, string[]>>;
+}
+
+function defaultWizardState(): WizardFormState {
+	return {
+		objectTypeCode: "",
+		objectSubtypeCode: "",
+		districtCode: "",
+		officialVillageCode: "",
+		localRegionId: "",
+		displayName: "",
+		addressText: "",
+		sensitivityLevel: "internal",
+		sourceInput: "manual",
+		sourceInstitution: "",
+		latitude: "",
+		longitude: "",
+	};
+}
+
+function pageLabel(page: string): string {
+	if (page === "entities/new") return "Buat Draft Baru";
+	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
+}
+
 function navButtons(currentPage: string) {
 	return Object.entries(PAGE_LABELS).map(([page, label]) => ({
 		type: "button",
@@ -93,7 +154,7 @@ function apiFields() {
 }
 
 function pageIntro(page: string) {
-	const label = PAGE_LABELS[page] ?? PAGE_LABELS.overview;
+	const label = pageLabel(page);
 	return [
 		{
 			type: "banner",
@@ -112,19 +173,8 @@ function pageIntro(page: string) {
 
 async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
-	const db = routeCtx.env?.SIKESRA_DB;
+	const db = await getRouteDb(routeCtx.request);
 
-	if (!db) {
-		return [
-			...pageIntro("overview"),
-			{
-				type: "banner",
-				variant: "alert",
-				title: "Binding dashboard tidak tersedia",
-				description: "Halaman Dashboard membutuhkan akses ke env.SIKESRA_DB agar dapat memuat KPI dan antrian kerja.",
-			},
-		];
-	}
 
 	const dashboard = await getAdminDashboard(ctx, db);
 	const blocks: Block[] = [
@@ -260,6 +310,14 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return input.action_id.slice(4) || "overview";
 	}
 
+	if ((input.page || "").replace(/^\//, "") === "entities/new") {
+		return "entities/new";
+	}
+
+	if (input.action_id?.startsWith("wizard_") || input.block_id?.startsWith("wizard_")) {
+		return "entities/new";
+	}
+
 	if (input.block_id?.startsWith("entities_") || input.action_id?.startsWith("entities_")) {
 		return "entities";
 	}
@@ -271,10 +329,293 @@ function option(label: string, value: string) {
 	return { label, value };
 }
 
+function stringState(value: unknown, fallback = ""): string {
+	if (typeof value === "string") return value;
+	if (typeof value === "number") return String(value);
+	return fallback;
+}
+
 function stringValue(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
 	return trimmed === "" ? undefined : trimmed;
+}
+
+function parseWizardState(input: PluginAdminInteraction): WizardFormState {
+	const base = defaultWizardState();
+	if (input.type !== "form_submit") return base;
+	const values = input.values ?? {};
+	return {
+		entityId: stringValue(values.entityId),
+		objectTypeCode: stringState(values.objectTypeCode),
+		objectSubtypeCode: stringState(values.objectSubtypeCode),
+		districtCode: stringState(values.districtCode),
+		officialVillageCode: stringState(values.officialVillageCode),
+		localRegionId: stringState(values.localRegionId),
+		displayName: stringState(values.displayName),
+		addressText: stringState(values.addressText),
+		sensitivityLevel: stringState(values.sensitivityLevel, "internal"),
+		sourceInput: stringState(values.sourceInput, "manual"),
+		sourceInstitution: stringState(values.sourceInstitution),
+		latitude: stringState(values.latitude),
+		longitude: stringState(values.longitude),
+	};
+}
+
+function validateWizardState(state: WizardFormState): WizardValidationState {
+	const sectionErrors: Partial<Record<WizardStepKey, string[]>> = {};
+	const push = (key: WizardStepKey, message: string) => {
+		sectionErrors[key] ??= [];
+		sectionErrors[key]!.push(message);
+	};
+
+	if (!state.objectTypeCode) push("jenis_data", "Jenis data wajib dipilih.");
+	if (!state.objectSubtypeCode) push("jenis_data", "Subjenis data wajib dipilih.");
+	if (!state.officialVillageCode) push("wilayah_resmi", "Desa/kelurahan resmi wajib dipilih.");
+	if (!state.displayName.trim()) push("identitas_utama", "Nama tampil atau identitas utama wajib diisi.");
+	if (!state.sensitivityLevel) push("atribut_inti", "Sensitivitas wajib dipilih.");
+	if (!state.sourceInput) push("atribut_inti", "Sumber input wajib dipilih.");
+
+	return {
+		globalErrors: Object.values(sectionErrors).flat(),
+		sectionErrors,
+	};
+}
+
+function wizardStepStatus(key: WizardStepKey, state: WizardFormState): { percent: number; status: string } {
+	switch (key) {
+		case "jenis_data":
+			return { percent: state.objectTypeCode && state.objectSubtypeCode ? 100 : state.objectTypeCode || state.objectSubtypeCode ? 50 : 0, status: state.objectTypeCode && state.objectSubtypeCode ? "Lengkap" : "Perlu dilengkapi" };
+		case "wilayah_resmi":
+			return { percent: state.officialVillageCode ? 100 : state.districtCode ? 50 : 0, status: state.officialVillageCode ? "Lengkap" : "Perlu dilengkapi" };
+		case "wilayah_rinci_lokal":
+			return { percent: state.localRegionId ? 100 : 0, status: state.localRegionId ? "Terisi" : "Opsional" };
+		case "identitas_utama":
+			return { percent: state.displayName ? (state.addressText ? 100 : 60) : 0, status: state.displayName ? "Lengkap minimum" : "Perlu dilengkapi" };
+		case "atribut_inti":
+			return { percent: state.sensitivityLevel && state.sourceInput ? 100 : 0, status: state.sensitivityLevel && state.sourceInput ? "Lengkap" : "Perlu dilengkapi" };
+		default:
+			return { percent: state.entityId ? 20 : 0, status: state.entityId ? "Tahap berikutnya tersedia setelah draft tersimpan" : "Simpan draft untuk melanjutkan" };
+	}
+}
+
+function overallCompleteness(state: WizardFormState): number {
+	const totals = WIZARD_STEPS.map((step) => wizardStepStatus(step.key, state).percent);
+	return Math.round(totals.reduce((sum, value) => sum + value, 0) / totals.length);
+}
+
+function parseEntityIdFromAction(actionId?: string): string | undefined {
+	if (!actionId) return undefined;
+	const match = /^wizard_save_(.+)$/.exec(actionId);
+	if (!match) return undefined;
+	return match[1] === "new" ? undefined : match[1];
+}
+
+async function loadWizardOptions(db: D1Binding, tenantId: string, siteId: string, state: WizardFormState) {
+	const objectTypes = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 ORDER BY sort_order, name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+
+	let objectSubtypes: Array<{ code: string; name: string }> = [];
+	if (state.objectTypeCode) {
+		const subtypes = await db.prepare(
+			"SELECT code, name FROM awcms_sikesra_object_subtypes WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND type_code = ? ORDER BY sort_order, name",
+		).bind(tenantId, siteId, state.objectTypeCode).all<{ code: string; name: string }>();
+		objectSubtypes = subtypes.results;
+	}
+
+	const districts = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'district' ORDER BY name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+
+	const villageParams: unknown[] = [tenantId, siteId];
+	let villageSql = "SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'village'";
+	if (state.districtCode) {
+		villageSql += " AND code LIKE ?";
+		villageParams.push(`${state.districtCode}%`);
+	}
+	villageSql += " ORDER BY name LIMIT 300";
+	const villages = await db.prepare(villageSql).bind(...villageParams).all<{ code: string; name: string }>();
+
+	let localRegions: Array<{ id: string; level: string; code_local?: string | null; name: string }> = [];
+	if (state.officialVillageCode) {
+		const localResult = await db.prepare(
+			"SELECT id, level, code_local, name FROM awcms_sikesra_local_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND official_village_code = ? ORDER BY name LIMIT 300",
+		).bind(tenantId, siteId, state.officialVillageCode).all<{ id: string; level: string; code_local?: string | null; name: string }>();
+		localRegions = localResult.results;
+	}
+
+	return {
+		objectTypes: objectTypes.results,
+		objectSubtypes,
+		districts: districts.results,
+		villages: villages.results,
+		localRegions,
+	};
+}
+
+function buildIdPreview(state: WizardFormState): string {
+	if (!state.officialVillageCode || !state.objectTypeCode || !state.objectSubtypeCode) {
+		return "[kode_desa_kel_10][jenis_2][subjenis_2][sequence_6]";
+	}
+	const subtypeCode = state.objectSubtypeCode.slice(-2).padStart(2, "0");
+	return `${state.officialVillageCode}${state.objectTypeCode}${subtypeCode}000001`;
+}
+
+function wizardPanels(state: WizardFormState, validation: WizardValidationState): Block[] {
+	return [{
+		type: "tab",
+		default_tab: 0,
+		panels: WIZARD_STEPS.map((step) => {
+			const status = wizardStepStatus(step.key, state);
+			const errors = validation.sectionErrors[step.key] ?? [];
+			return {
+				label: `${step.label}`,
+				blocks: [
+					{ type: "header", text: step.label },
+					{ type: "fields", fields: [
+						{ label: "Status", value: status.status },
+						{ label: "Kelengkapan", value: `${status.percent}%` },
+					] },
+					...(errors.length ? [{ type: "banner", variant: "alert", title: "Perlu perhatian", description: errors.join(" ") }] : []),
+					{ type: "context", text:
+						step.key === "detail_modul" ? "Detail modul per jenis data akan diaktifkan setelah fondasi wizard inti stabil." :
+						step.key === "relasi_orang" ? "Data pengurus, wali, atau pengasuh akan menggunakan relasi orang terstruktur." :
+						step.key === "dokumen_pendukung" ? "Dokumen pendukung akan memerlukan klasifikasi, checksum, dan audit akses." :
+						step.key === "validasi_duplikasi" ? "Validasi dan preview duplikasi akan ditampilkan setelah backend validator section-ready tersedia." :
+						step.key === "generate_id" ? "ID SIKESRA hanya dapat dihasilkan setelah validasi minimum backend terpenuhi. RT/RW tidak memengaruhi format ID." :
+						step.key === "review_submit" ? "Tahap review akhir akan mengunci draft sebelum submit ke workflow verifikasi." :
+						"Lengkapi bagian ini melalui form draft di bawah lalu simpan secara berkala." },
+				],
+			};
+		}),
+	}];
+}
+
+async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	let state = parseWizardState(input);
+	let successMessage = "";
+	let validation = validateWizardState(state);
+
+	if (input.type === "form_submit" && input.action_id?.startsWith("wizard_save_")) {
+		const entityId = parseEntityIdFromAction(input.action_id) ?? state.entityId;
+		if (validation.globalErrors.length === 0) {
+			if (!entityId) {
+				const created = await createEntity(db, {
+					objectTypeCode: state.objectTypeCode,
+					objectSubtypeCode: state.objectSubtypeCode,
+					displayName: state.displayName,
+					officialVillageCode: state.officialVillageCode,
+					localRegionId: state.localRegionId || undefined,
+					sensitivityLevel: state.sensitivityLevel as EntityCreateInput["sensitivityLevel"],
+					sourceInput: state.sourceInput as EntityCreateInput["sourceInput"],
+					sourceInstitution: state.sourceInstitution || undefined,
+				}, ctx);
+				state = { ...state, entityId: created.id };
+				successMessage = `Draft berhasil dibuat dengan ID internal ${created.id}. Lanjutkan pengisian per langkah.`;
+			} else {
+				await patchEntity(db, entityId, {
+					displayName: state.displayName,
+					localRegionId: state.localRegionId || undefined,
+					addressText: state.addressText || undefined,
+					sensitivityLevel: state.sensitivityLevel as EntityPatchInput["sensitivityLevel"],
+					sourceInput: state.sourceInput || undefined,
+					sourceInstitution: state.sourceInstitution || undefined,
+					latitude: numberValue(state.latitude),
+					longitude: numberValue(state.longitude),
+				}, ctx);
+				state = { ...state, entityId };
+				successMessage = `Draft ${entityId} berhasil diperbarui.`;
+			}
+		}
+	}
+
+	validation = validateWizardState(state);
+	const options = await loadWizardOptions(db, ctx.tenantId, ctx.siteId, state);
+	const overall = overallCompleteness(state);
+
+	return [
+		...pageIntro("entities/new"),
+		{
+			type: "banner",
+			variant: "default",
+			title: "Create Wizard SIKESRA",
+			description: "Wizard ini memandu pembuatan draft melalui 11 langkah. Simpan draft secara berkala untuk mempertahankan progres kerja operator.",
+		},
+		...(successMessage ? [{ type: "banner", variant: "success", title: "Draft tersimpan", description: successMessage }] : []),
+		...(validation.globalErrors.length ? [{ type: "banner", variant: "alert", title: "Lengkapi field wajib", description: validation.globalErrors.join(" ") }] : []),
+		{ type: "fields", fields: [
+			{ label: "Draft ID", value: state.entityId ?? "Belum dibuat" },
+			{ label: "Kelengkapan Overall", value: `${overall}%` },
+			{ label: "Autosave", value: state.entityId ? "Perubahan tersimpan saat Simpan Draft ditekan" : "Draft dibuat saat field minimum terpenuhi dan disimpan" },
+			{ label: "Catatan Verifikator", value: "Belum ada catatan verifikator untuk draft ini" },
+		] },
+		...wizardPanels(state, validation),
+		{ type: "header", text: "Progress Langkah" },
+		{
+			type: "table",
+			columns: [
+				{ key: "step", label: "Langkah" },
+				{ key: "status", label: "Status" },
+				{ key: "percent", label: "Kelengkapan" },
+			],
+			rows: WIZARD_STEPS.map((step, index) => {
+				const info = wizardStepStatus(step.key, state);
+				return { step: `${index + 1}. ${step.label}`, status: info.status, percent: `${info.percent}%` };
+			}),
+		},
+		{ type: "header", text: "Form Draft Inti" },
+		{ type: "context", text: "Field bertanda wajib harus diisi sebelum draft dapat dibuat. Field lain dapat dilengkapi bertahap. Sensitivitas menampilkan dampak masking pada layar operator dan publik." },
+		{
+			type: "form",
+			block_id: "wizard_entity_form",
+			fields: [
+				{ type: "text_input", action_id: "entityId", label: "Entity ID (sistem)", initial_value: state.entityId ?? "", placeholder: "Akan terisi setelah draft dibuat" },
+				{ type: "select", action_id: "objectTypeCode", label: "Langkah 1. Jenis Data (wajib)", initial_value: state.objectTypeCode, options: [option("Pilih jenis data", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
+				{ type: "select", action_id: "objectSubtypeCode", label: "Langkah 1. Subjenis Data (wajib)", initial_value: state.objectSubtypeCode, options: [option(state.objectTypeCode ? "Pilih subjenis data" : "Pilih jenis data terlebih dahulu", ""), ...options.objectSubtypes.map((row) => option(row.name, row.code))] },
+				{ type: "select", action_id: "districtCode", label: "Langkah 2. Kecamatan (recommended)", initial_value: state.districtCode, options: [option("Pilih kecamatan", ""), ...options.districts.map((row) => option(row.name, row.code))] },
+				{ type: "select", action_id: "officialVillageCode", label: "Langkah 2. Desa/Kelurahan Resmi (wajib)", initial_value: state.officialVillageCode, options: [option(state.districtCode ? "Pilih desa/kelurahan" : "Pilih kecamatan terlebih dahulu atau tampilkan semua", ""), ...options.villages.map((row) => option(row.name, row.code))] },
+				{ type: "select", action_id: "localRegionId", label: "Langkah 3. Wilayah Lokal (opsional)", initial_value: state.localRegionId, options: [option(state.officialVillageCode ? "Pilih wilayah lokal" : "Pilih desa/kelurahan terlebih dahulu", ""), ...options.localRegions.map((row) => option(`${row.level.toUpperCase()}${row.code_local ? ` ${row.code_local}` : ""} / ${row.name}`, row.id))] },
+				{ type: "text_input", action_id: "displayName", label: "Langkah 4. Identitas Utama / Nama Tampil (wajib)", initial_value: state.displayName, placeholder: "Contoh: Masjid Al-Ikhlas Sidorejo" },
+				{ type: "text_input", action_id: "addressText", label: "Langkah 4. Alamat Ringkas (recommended)", initial_value: state.addressText, placeholder: "Alamat ringkas sesuai kewenangan operator" },
+				{ type: "select", action_id: "sensitivityLevel", label: "Langkah 5. Sensitivitas (wajib)", initial_value: state.sensitivityLevel, options: [
+					option("Publik Aman", "public_safe"),
+					option("Internal", "internal"),
+					option("Terbatas", "restricted"),
+					option("Sangat Terbatas", "highly_restricted"),
+				] },
+				{ type: "select", action_id: "sourceInput", label: "Langkah 5. Sumber Input (wajib)", initial_value: state.sourceInput, options: [
+					option("Manual", "manual"),
+					option("Import", "import"),
+					option("Integrasi", "integration"),
+				] },
+				{ type: "text_input", action_id: "sourceInstitution", label: "Langkah 5. Sumber Institusi (opsional)", initial_value: state.sourceInstitution, placeholder: "Contoh: Sekretariat Daerah / Operator Kecamatan" },
+				{ type: "number_input", action_id: "latitude", label: "Langkah 6. Latitude (opsional)" , initial_value: numberValue(state.latitude) },
+				{ type: "number_input", action_id: "longitude", label: "Langkah 6. Longitude (opsional)", initial_value: numberValue(state.longitude) },
+			],
+			submit: { label: state.entityId ? "Simpan Draft" : "Buat dan Simpan Draft", action_id: `wizard_save_${state.entityId ?? "new"}` },
+		},
+		{ type: "fields", fields: [
+			{ label: "Preview ID SIKESRA", value: buildIdPreview(state) },
+			{ label: "Aturan ID", value: "RT/RW/wilayah lokal tidak memengaruhi format ID SIKESRA" },
+			{ label: "Duplicate Warning", value: state.displayName && state.officialVillageCode ? "Preview duplikasi akan diaktifkan setelah validator backend siap" : "Lengkapi identitas dan wilayah untuk evaluasi duplikasi" },
+			{ label: "Masking Preview", value: state.sensitivityLevel === "highly_restricted" ? "Nama dan field sensitif akan dimasking ketat" : state.sensitivityLevel === "restricted" ? "Nama sensitif akan dimasking bila permission tidak cukup" : "Field inti dapat tampil sesuai kebijakan" },
+		] },
+		{ type: "header", text: "Tahap Lanjutan" },
+		{ type: "table", columns: [
+			{ key: "step", label: "Tahap" },
+			{ key: "status", label: "Status" },
+			{ key: "note", label: "Catatan" },
+		], rows: [
+			{ step: "Detail Modul", status: state.entityId ? "Siap berikutnya" : "Menunggu draft", note: "Form detail per jenis data diaktifkan setelah draft inti tersimpan" },
+			{ step: "Pengurus / Wali / Pengasuh", status: state.entityId ? "Siap berikutnya" : "Menunggu draft", note: "Relasi orang akan mengikuti tabel entity_people dan person_profiles" },
+			{ step: "Dokumen Pendukung", status: state.entityId ? "Siap berikutnya" : "Menunggu draft", note: "Upload dan klasifikasi dokumen memerlukan flow R2 + metadata D1" },
+			{ step: "Validasi / Duplikasi", status: state.entityId ? "Siap berikutnya" : "Menunggu draft", note: "Validasi section-key dan preview kandidat duplikasi akan memakai endpoint khusus" },
+			{ step: "Generate ID / Review Submit", status: state.entityId ? "Menunggu validasi" : "Menunggu draft", note: "ID final hanya dibuat setelah validasi minimum backend terpenuhi" },
+		] },
+	];
 }
 
 function numberValue(value: unknown): number | undefined {
@@ -412,20 +753,8 @@ function contextualActions(
 
 async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
-	const db = routeCtx.env?.SIKESRA_DB;
+	const db = await getRouteDb(routeCtx.request);
 	const filters = parseRegistryFilters(input);
-
-	if (!db) {
-		return [
-			...pageIntro("entities"),
-			{
-				type: "banner",
-				variant: "alert",
-				title: "Binding database tidak tersedia",
-				description: "Halaman Registry membutuhkan akses ke env.SIKESRA_DB agar dapat memuat daftar entitas.",
-			},
-		];
-	}
 
 	const [result, options] = await Promise.all([
 		listEntities(db, { filters, page: 1, perPage: 20 }, ctx),
@@ -529,6 +858,10 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page === "entities/new") {
+		throw new Error("entities/new page must be resolved via wizardBlocks");
+	}
+
 	if (page === "entities") {
 		throw new Error("entities page must be resolved via registryBlocks");
 	}
@@ -551,6 +884,12 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdminInteraction>) {
 	const input = routeCtx.input ?? {};
 	const page = resolvePage(input);
+
+	if (page === "entities/new") {
+		return {
+			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
 
 	if (page === "entities") {
 		return {
