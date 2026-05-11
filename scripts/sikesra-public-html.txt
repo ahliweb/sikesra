@@ -75,7 +75,7 @@ var A="/_emdash/api/plugins/sikesra";
 function ge(id){return document.getElementById(id)}
 function fmt(v){return v!=null?v.toLocaleString("id-ID"):"—"}
 function ago(t){if(!t)return"—";var d=Math.floor((Date.now()-new Date(t).getTime())/864e5);return d===0?"Hari ini":d===1?"Kemarin":d+" hari lalu"}
-async function load(u){var r=await fetch(u);var j=await r.json();if(!j.ok)throw new Error(j.error?.message||"Gagal");return j.data}
+async function load(u){var r=await fetch(u);var j=await r.json();if(!r.ok)throw new Error(j&&j.error&&j.error.message||"Gagal");if(j&&typeof j==="object"){if("ok" in j){if(!j.ok)throw new Error(j.error&&j.error.message||"Gagal");return "data" in j?j.data:null}if("data" in j)return j.data;return j}throw new Error("Gagal")}
 (async function(){
 try{
 var m=await load(A+"/public/metadata");
