@@ -5,6 +5,7 @@ import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
 import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
+import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -13,6 +14,13 @@ interface PluginAdminInteraction {
 	block_id?: string;
 	value?: unknown;
 	values?: Record<string, unknown>;
+}
+
+interface VerificationDecisionFormState {
+	verificationLevel: VerificationLevel;
+	action: "verify" | "need_revision" | "reject";
+	note: string;
+	confirmAudit: boolean;
 }
 
 type Block = Record<string, unknown>;
@@ -127,6 +135,7 @@ function defaultWizardState(): WizardFormState {
 function pageLabel(page: string): string {
 	if (page === "entities/new") return "Buat Draft Baru";
 	if (page.startsWith("entities/")) return "Detail Entitas";
+	if (page.startsWith("verification/")) return "Review Verifikasi";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -312,6 +321,9 @@ function resolvePage(input: PluginAdminInteraction): string {
 	}
 
 	const normalizedPage = (input.page || "").replace(/^\//, "");
+	if (normalizedPage.startsWith("verification/")) {
+		return normalizedPage;
+	}
 	if (normalizedPage.startsWith("entities/") && normalizedPage !== "entities/new") {
 		return normalizedPage;
 	}
@@ -324,11 +336,21 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return "entities/new";
 	}
 
+	if (input.action_id?.startsWith("verification_open_") || input.action_id?.startsWith("verification_decide_") || input.action_id === "verification_back_to_queue") {
+		const id = /^verification_(?:open|decide)_(.+)$/.exec(input.action_id)?.[1];
+		return id ? `verification/${id}` : "verification";
+	}
+
 	if (input.block_id?.startsWith("entities_") || input.action_id?.startsWith("entities_")) {
 		return "entities";
 	}
 
 	return normalizedPage || "overview";
+}
+
+function parseVerificationEntityId(page: string): string | undefined {
+	if (!page.startsWith("verification/")) return undefined;
+	return page.slice("verification/".length) || undefined;
 }
 
 function parseDetailEntityId(page: string): string | undefined {
@@ -344,6 +366,29 @@ function stringState(value: unknown, fallback = ""): string {
 	if (typeof value === "string") return value;
 	if (typeof value === "number") return String(value);
 	return fallback;
+}
+
+function parseVerificationFilters(input: PluginAdminInteraction): VerificationQueueFilters {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		level: stringValue(values.level) as VerificationQueueFilters["level"],
+		moduleCode: stringValue(values.moduleCode),
+		regionCode: stringValue(values.regionCode),
+		submissionAge: stringValue(values.submissionAge) as VerificationQueueFilters["submissionAge"],
+		risk: stringValue(values.risk) as VerificationQueueFilters["risk"],
+		completeness: stringValue(values.completeness) as VerificationQueueFilters["completeness"],
+		duplicateStatus: stringValue(values.duplicateStatus),
+	};
+}
+
+function parseVerificationDecisionForm(input: PluginAdminInteraction, fallbackLevel: VerificationLevel): VerificationDecisionFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		verificationLevel: (stringValue(values.verificationLevel) as VerificationLevel) ?? fallbackLevel,
+		action: (stringValue(values.action) as VerificationDecisionFormState["action"]) ?? "verify",
+		note: stringState(values.note),
+		confirmAudit: values.confirmAudit === true || values.confirmAudit === "true" || values.confirmAudit === "on",
+	};
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -704,6 +749,19 @@ async function loadSelectOptions(db: D1Binding, tenantId: string, siteId: string
 	};
 }
 
+async function loadVerificationOptions(db: D1Binding, tenantId: string, siteId: string) {
+	const objectTypes = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 ORDER BY sort_order, name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+	const districts = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'district' ORDER BY name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+	return {
+		objectTypes: objectTypes.results,
+		districts: districts.results,
+	};
+}
+
 function activeFilterCount(filters: EntityListFilters): number {
 	return Object.values(filters).filter((value) => value !== undefined && value !== null && value !== "").length;
 }
@@ -760,6 +818,149 @@ function contextualActions(
 		actions.push("Tinjau duplikasi");
 	}
 	return actions.join(" | ");
+}
+
+function formatVerificationRisk(risk: string): string {
+	if (risk === "high") return "Risiko Tinggi";
+	if (risk === "medium") return "Risiko Sedang";
+	return "Risiko Rendah";
+}
+
+function determineDefaultLevel(status: string): VerificationLevel {
+	if (status === "submitted_subdistrict") return "kecamatan";
+	if (status === "submitted_regency") return "kabupaten";
+	return "desa";
+}
+
+async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const filters = parseVerificationFilters(input);
+	const [queue, options] = await Promise.all([
+		getVerificationQueue(db, filters, ctx),
+		loadVerificationOptions(db, ctx.tenantId, ctx.siteId),
+	]);
+
+	return [
+		...pageIntro("verification"),
+		{ type: "banner", variant: "default", title: "Queue Verifikasi", description: "Antrian ini difilter oleh permission, status, dan region scope backend. Gunakan tombol review untuk membuka layar pemeriksaan entitas." },
+		{ type: "stats", items: [
+			{ label: "Total antrian", value: String(queue.length), description: "Queue setelah filter" },
+			{ label: "Risiko tinggi", value: String(queue.filter((item) => item.riskLevel === "high").length), description: "Perlu prioritas review" },
+			{ label: "Butuh revisi", value: String(queue.filter((item) => item.currentStatus === "need_revision").length), description: "Draft revisi menunggu tindak lanjut" },
+		] },
+		{ type: "form", block_id: "verification_filters", fields: [
+			{ type: "select", action_id: "level", label: "Level", initial_value: filters.level ?? "", options: [option("Semua level", ""), option("Desa", "desa"), option("Kecamatan", "kecamatan"), option("Kabupaten", "kabupaten"), option("OPD", "opd")] },
+			{ type: "select", action_id: "moduleCode", label: "Module", initial_value: filters.moduleCode ?? "", options: [option("Semua module", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
+			{ type: "select", action_id: "regionCode", label: "Region", initial_value: filters.regionCode ?? "", options: [option("Semua region", ""), ...options.districts.map((row) => option(row.name, row.code))] },
+			{ type: "select", action_id: "submissionAge", label: "Submission age", initial_value: filters.submissionAge ?? "", options: [option("Semua umur submit", ""), option("Hari ini", "today"), option("<= 3 hari", "3d"), option("<= 7 hari", "7d"), option("<= 30 hari", "30d")] },
+			{ type: "select", action_id: "risk", label: "Risk", initial_value: filters.risk ?? "", options: [option("Semua risk", ""), option("Rendah", "low"), option("Sedang", "medium"), option("Tinggi", "high")] },
+			{ type: "select", action_id: "completeness", label: "Completeness", initial_value: filters.completeness ?? "", options: [option("Semua kelengkapan", ""), option("< 50%", "lt50"), option("50% - 79%", "50to79"), option(">= 80%", "80plus")] },
+			{ type: "select", action_id: "duplicateStatus", label: "Duplicate status", initial_value: filters.duplicateStatus ?? "", options: [option("Semua status duplikasi", ""), ...Object.entries(DUPLICATE_STATUS_LABELS).map(([value, label]) => option(label, value))] },
+		], submit: { label: "Terapkan filter", action_id: "verification_apply_filters" } },
+		{ type: "header", text: "Daftar Review" },
+		...(queue.length ? queue.flatMap((item) => ([
+			{ type: "section", text: `${item.displayName} | ${item.objectTypeCode}/${item.objectSubtypeCode} | ${item.currentStatus} | ${item.completenessPercent}% | ${formatVerificationRisk(item.riskLevel)}`, accessory: { type: "button", label: "Review", action_id: `verification_open_${item.entityId}`, style: "primary" } },
+			{ type: "context", text: `Wilayah ${item.officialVillageCode} · Submit ${item.submittedAt} · Duplicate ${DUPLICATE_STATUS_LABELS[item.duplicateStatus] ?? item.duplicateStatus}` },
+		])) : [{ type: "empty", title: "Antrian kosong", description: "Tidak ada item verifikasi yang cocok dengan filter dan scope backend saat ini." }]),
+	];
+}
+
+async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const entityId = parseVerificationEntityId(page);
+	if (!entityId) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Review verifikasi tidak valid", description: `page: ${page}` }];
+	}
+
+	const detail = await getEntityDetail(db, entityId, ctx);
+	if (!detail) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Entitas verifikasi tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
+	}
+
+	const defaultLevel = determineDefaultLevel(detail.entity.statusVerification);
+	let decisionFeedback = "";
+	let decisionErrors: string[] = [];
+
+	if (input.type === "form_submit" && input.action_id === `verification_decide_${entityId}`) {
+		const decisionState = parseVerificationDecisionForm(input, defaultLevel);
+		if (!decisionState.confirmAudit) {
+			decisionErrors.push("Konfirmasi audit wajib dicentang sebelum keputusan dikirim.");
+		}
+		if ((decisionState.action === "need_revision" || decisionState.action === "reject") && !decisionState.note.trim()) {
+			decisionErrors.push("Alasan wajib diisi untuk keputusan revisi atau penolakan.");
+		}
+		if (decisionErrors.length === 0) {
+			const result = await verifyEntity(db, entityId, {
+				action: decisionState.action,
+				note: decisionState.note,
+				verificationLevel: decisionState.verificationLevel,
+			}, ctx);
+			decisionFeedback = `Keputusan verifikasi tersimpan. Status baru: ${result.newStatus}.`;
+		}
+	}
+
+	const refreshedDetail = decisionFeedback ? await getEntityDetail(db, entityId, ctx) : detail;
+	const timeline = await getVerificationTimeline(db, entityId, ctx);
+	const activeDetail = refreshedDetail ?? detail;
+	const checklistRows = [
+		{ item: "Official region valid", status: activeDetail.entity.officialRegion.village ? "Ya" : "Periksa" },
+		{ item: "Local region reasonable", status: activeDetail.entity.localRegion?.items?.length ? "Ya" : "Opsional / belum ada" },
+		{ item: "Identity complete", status: activeDetail.entity.displayName ? "Ya" : "Periksa" },
+		{ item: "Required attributes complete", status: activeDetail.entity.completenessPercent >= 80 ? "Cukup" : "Perlu perhatian" },
+		{ item: "Required documents present", status: Array.isArray(activeDetail.documents) && activeDetail.documents.length ? "Ada" : "Belum ada" },
+		{ item: "Duplicate warnings reviewed", status: DUPLICATE_STATUS_LABELS[activeDetail.entity.duplicateStatus ?? "unknown"] ?? "unknown" },
+		{ item: "Sensitive classification correct", status: SENSITIVITY_LABELS[activeDetail.entity.sensitivityLevel] ?? activeDetail.entity.sensitivityLevel },
+	];
+
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: `Review Verifikasi: ${activeDetail.entity.displayName}`, description: "Gunakan layar ini untuk meninjau ringkasan, checklist, dokumen, duplikasi, dan mengirim keputusan verifikasi yang akan diaudit." },
+		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Queue", action_id: "verification_back_to_queue", style: "secondary" }] },
+		...(decisionFeedback ? [{ type: "banner", variant: "success", title: "Keputusan tersimpan", description: decisionFeedback }] : []),
+		...(decisionErrors.length ? [{ type: "banner", variant: "alert", title: "Keputusan belum dikirim", description: decisionErrors.join(" ") }] : []),
+		{ type: "fields", fields: [
+			{ label: "ID SIKESRA", value: activeDetail.entity.sikesraId20 ?? "Belum dibuat" },
+			{ label: "Status Verifikasi", value: formatVerificationStatus(activeDetail.entity.statusVerification) },
+			{ label: "Level Saat Ini", value: activeDetail.entity.verificationLevel ?? defaultLevel },
+			{ label: "Kelengkapan", value: `${activeDetail.entity.completenessPercent}%` },
+		] },
+		{ type: "tab", default_tab: 0, panels: [
+			{ label: "Summary", blocks: [
+				{ type: "fields", fields: [
+					{ label: "Jenis / Subjenis", value: `${activeDetail.entity.objectTypeName} / ${activeDetail.entity.objectSubtypeName}` },
+					{ label: "Wilayah Resmi", value: activeDetail.entity.officialRegion.village?.name ?? activeDetail.entity.officialRegion.district?.name ?? "-" },
+					{ label: "Wilayah Lokal", value: activeDetail.entity.localRegion?.items?.[0]?.name ?? "-" },
+					{ label: "Next Action", value: String(activeDetail.verification?.["nextAction"] ?? "Belum tersedia") },
+				] },
+			] },
+			{ label: "Checklist", blocks: [
+				{ type: "table", columns: [{ key: "item", label: "Checklist" }, { key: "status", label: "Status" }], rows: checklistRows },
+			] },
+			{ label: "Dokumen", blocks: [
+				{ type: "table", columns: [{ key: "label", label: "Dokumen" }, { key: "value", label: "Nilai" }, { key: "access", label: "Akses" }], rows: (activeDetail.documents ?? []).map((row) => ({ label: String(row["label"] ?? "Dokumen"), value: String(row["value"] ?? "-"), access: String(row["access"] ?? "-") })), empty_text: "Belum ada dokumen pendukung yang terhubung." },
+			] },
+			{ label: "Duplikasi", blocks: [
+				{ type: "fields", fields: [
+					{ label: "Duplicate Status", value: DUPLICATE_STATUS_LABELS[activeDetail.entity.duplicateStatus ?? "unknown"] ?? (activeDetail.entity.duplicateStatus ?? "unknown") },
+					{ label: "Risk", value: activeDetail.entity.duplicateStatus === "candidate" ? "Tinggi" : activeDetail.entity.completenessPercent < 50 ? "Tinggi" : activeDetail.entity.completenessPercent < 80 ? "Sedang" : "Rendah" },
+					{ label: "Summary", value: activeDetail.entity.duplicateStatus === "candidate" ? "Perlu review kandidat duplikasi sebelum finalisasi." : "Tidak ada sinyal duplikasi kritis pada ringkasan saat ini." },
+				] },
+			] },
+			{ label: "Timeline", blocks: [
+				{ type: "table", columns: [{ key: "createdAt", label: "Waktu" }, { key: "level", label: "Level" }, { key: "action", label: "Keputusan" }, { key: "note", label: "Catatan" }], rows: timeline.map((item) => ({ createdAt: item.createdAt, level: item.verificationLevel, action: item.action, note: item.note ?? "-" })), empty_text: "Belum ada event verifikasi." },
+			] },
+		] },
+		{ type: "header", text: "Decision Panel" },
+		{ type: "context", text: "Revisi dan penolakan wajib menyertakan alasan. Mengirim keputusan berarti Anda mengonfirmasi bahwa tindakan ini akan dicatat ke audit trail SIKESRA." },
+		{ type: "form", block_id: "verification_decision_form", fields: [
+			{ type: "select", action_id: "verificationLevel", label: "Level Verifikasi", initial_value: defaultLevel, options: [option("Desa", "desa"), option("Kecamatan", "kecamatan"), option("Kabupaten", "kabupaten"), option("OPD", "opd")] },
+			{ type: "select", action_id: "action", label: "Keputusan", initial_value: "verify", options: [option("Verify", "verify"), option("Need revision", "need_revision"), option("Reject", "reject")] },
+			{ type: "text_input", action_id: "note", label: "Alasan / Catatan", multiline: true, initial_value: "", placeholder: "Wajib diisi untuk need revision atau reject" },
+			{ type: "checkbox", action_id: "confirmAudit", label: "Saya memahami keputusan ini akan diaudit" },
+		], submit: { label: "Kirim Keputusan", action_id: `verification_decide_${entityId}` } },
+	];
 }
 
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
@@ -992,6 +1193,16 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page === "verification") {
+		if (!routeCtx) throw new Error("verification page requires route context");
+		return verificationQueueBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
+	if (page.startsWith("verification/")) {
+		if (!routeCtx) throw new Error("verification review page requires route context");
+		return verificationReviewBlocks(routeCtx, page, routeCtx.input ?? {});
+	}
+
 	if (page.startsWith("entities/") && page !== "entities/new") {
 		if (!routeCtx) throw new Error("entity detail page requires route context");
 		return entityDetailBlocks(routeCtx, page);
@@ -1027,6 +1238,18 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "entities/new") {
 		return {
 			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "verification") {
+		return {
+			blocks: await verificationQueueBlocks(routeCtx, input),
+		};
+	}
+
+	if (page.startsWith("verification/")) {
+		return {
+			blocks: await verificationReviewBlocks(routeCtx, page, input),
 		};
 	}
 
