@@ -7,6 +7,7 @@ import { getRouteDb } from "./route-db";
 import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
+import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -28,6 +29,16 @@ interface ImportCreateFormState {
 	filename: string;
 	objectTypeCode: string;
 	sheetName: string;
+}
+
+interface DocumentUploadFormState {
+	entityId: string;
+	fileName: string;
+	mimeType: string;
+	sizeBytes: string;
+	documentType: string;
+	classification: string;
+	checksumSha256: string;
 }
 
 type Block = Record<string, unknown>;
@@ -144,6 +155,7 @@ function pageLabel(page: string): string {
 	if (page.startsWith("entities/")) return "Detail Entitas";
 	if (page.startsWith("verification/")) return "Review Verifikasi";
 	if (page.startsWith("imports/")) return "Review Batch Import";
+	if (page.startsWith("documents/")) return "Dokumen Entitas";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -329,6 +341,9 @@ function resolvePage(input: PluginAdminInteraction): string {
 	}
 
 	const normalizedPage = (input.page || "").replace(/^\//, "");
+	if (normalizedPage.startsWith("documents/")) {
+		return normalizedPage;
+	}
 	if (normalizedPage.startsWith("imports/")) {
 		return normalizedPage;
 	}
@@ -357,6 +372,11 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return id ? `imports/${id}` : "imports";
 	}
 
+	if (input.action_id?.startsWith("documents_open_") || input.action_id === "documents_back_to_list" || input.action_id?.startsWith("documents_create_") || input.action_id?.startsWith("documents_complete_") || input.action_id?.startsWith("documents_refresh_") ) {
+		const id = /^documents_(?:open|create|complete|refresh)_(.+)$/.exec(input.action_id)?.[1];
+		return id ? `documents/${id}` : "documents";
+	}
+
 	if (input.block_id?.startsWith("entities_") || input.action_id?.startsWith("entities_")) {
 		return "entities";
 	}
@@ -367,6 +387,11 @@ function resolvePage(input: PluginAdminInteraction): string {
 function parseImportBatchId(page: string): string | undefined {
 	if (!page.startsWith("imports/")) return undefined;
 	return page.slice("imports/".length) || undefined;
+}
+
+function parseDocumentEntityId(page: string): string | undefined {
+	if (!page.startsWith("documents/")) return undefined;
+	return page.slice("documents/".length) || undefined;
 }
 
 function parseVerificationEntityId(page: string): string | undefined {
@@ -418,6 +443,19 @@ function parseImportCreateForm(input: PluginAdminInteraction): ImportCreateFormS
 		filename: stringState(values.filename),
 		objectTypeCode: stringState(values.objectTypeCode),
 		sheetName: stringState(values.sheetName),
+	};
+}
+
+function parseDocumentUploadForm(input: PluginAdminInteraction): DocumentUploadFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		entityId: stringState(values.entityId),
+		fileName: stringState(values.fileName),
+		mimeType: stringState(values.mimeType),
+		sizeBytes: stringState(values.sizeBytes),
+		documentType: stringState(values.documentType),
+		classification: stringState(values.classification, "internal"),
+		checksumSha256: stringState(values.checksumSha256),
 	};
 }
 
@@ -545,6 +583,15 @@ async function loadImportOptions(db: D1Binding, tenantId: string, siteId: string
 		"SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 ORDER BY sort_order, name",
 	).bind(tenantId, siteId).all<{ code: string; name: string }>();
 	return { objectTypes: objectTypes.results };
+}
+
+async function loadDocumentEntityOptions(db: D1Binding, tenantId: string, siteId: string) {
+	const rows = await db.prepare(
+		`SELECT id, display_name FROM awcms_sikesra_entities
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+		 ORDER BY updated_at DESC LIMIT 100`,
+	).bind(tenantId, siteId).all<{ id: string; display_name: string }>();
+	return rows.results;
 }
 
 function buildIdPreview(state: WizardFormState): string {
@@ -885,6 +932,14 @@ function rowStatusLabel(status: string): string {
 	} as Record<string, string>)[status] ?? status;
 }
 
+function documentClassificationLabel(value: string): string {
+	return ({
+		internal: "Internal",
+		restricted: "Restricted",
+		highly_restricted: "Highly Restricted",
+	} as Record<string, string>)[value] ?? value;
+}
+
 function determineDefaultLevel(status: string): VerificationLevel {
 	if (status === "submitted_subdistrict") return "kecamatan";
 	if (status === "submitted_regency") return "kabupaten";
@@ -1174,6 +1229,121 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	];
 }
 
+async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const entities = await loadDocumentEntityOptions(db, ctx.tenantId, ctx.siteId);
+	const entityPreview = entities.slice(0, 12);
+
+	return [
+		...pageIntro("documents"),
+		{ type: "banner", variant: "default", title: "Document Center", description: "Pusat dokumen menampilkan upload guidance, klasifikasi, checksum, status verifikasi, dan akses yang aman. Raw R2 key tidak pernah ditampilkan ke operator." },
+		{ type: "stats", items: [
+			{ label: "Entitas siap dokumen", value: String(entities.length), description: "100 entitas terbaru pada scope" },
+			{ label: "Accepted type", value: "PDF / JPG / PNG", description: "Disesuaikan dari policy upload" },
+			{ label: "Maks ukuran", value: "10 MB", description: "Mengikuti batas upload modul" },
+		] },
+		{ type: "fields", fields: [
+			{ label: "Klasifikasi wajib", value: "Internal / Restricted / Highly Restricted" },
+			{ label: "Akses download", value: "Harus melalui backend response URL/proxy" },
+			{ label: "Checksum", value: "Ditampilkan setelah konfirmasi upload" },
+			{ label: "Quarantine / failed", value: "Ditandai sebagai status khusus saat tersedia" },
+		] },
+		{ type: "header", text: "Entitas Untuk Review Dokumen" },
+		...(entityPreview.length ? entityPreview.flatMap((row) => ([
+			{ type: "section", text: `${row.display_name}`, accessory: { type: "button", label: "Kelola Dokumen", action_id: `documents_open_${row.id}`, style: "primary" } },
+			{ type: "context", text: `Entity ID: ${row.id}` },
+		])) : [{ type: "empty", title: "Belum ada entitas", description: "Tidak ada entitas pada scope backend untuk dikelola dokumennya." }]),
+	];
+}
+
+async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const entityId = parseDocumentEntityId(page);
+	if (!entityId) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Target dokumen tidak valid", description: `page: ${page}` }];
+	}
+
+	const entity = await getEntityDetail(db, entityId, ctx);
+	if (!entity) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Entitas dokumen tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
+	}
+
+	let notice = "";
+	const form = parseDocumentUploadForm(input);
+
+	if (input.type === "form_submit" && input.action_id === `documents_create_${entityId}`) {
+		if (form.fileName.trim() && form.mimeType.trim() && form.documentType.trim() && numberValue(form.sizeBytes)) {
+			const upload = await generateUploadUrl({
+				fileName: form.fileName.trim(),
+				mimeType: form.mimeType.trim(),
+				sizeBytes: numberValue(form.sizeBytes) ?? 0,
+				classification: form.classification as any,
+			}, ctx, undefined, db);
+			await completeUpload({
+				fileObjectId: upload.fileObjectId,
+				entityId,
+				documentType: form.documentType.trim(),
+				classification: form.classification as any,
+				checksumSha256: form.checksumSha256 || undefined,
+			}, ctx, db);
+			notice = `Dokumen ${form.fileName.trim()} dicatat untuk entitas ${entityId}. Upload URL backend: ${upload.uploadUrl}`;
+		}
+	}
+
+	const documents = await getEntityDocuments(db, entityId, ctx);
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: `Dokumen Entitas: ${entity.entity.displayName}`, description: "Upload, metadata, status verifikasi, dan akses dokumen harus tetap aman. R2 key mentah tidak ditampilkan." },
+		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Document Center", action_id: "documents_back_to_list", style: "secondary" }] },
+		...(notice ? [{ type: "banner", variant: "success", title: "Dokumen dicatat", description: notice }] : []),
+		{ type: "fields", fields: [
+			{ label: "Entitas", value: entity.entity.displayName },
+			{ label: "ID SIKESRA", value: entity.entity.sikesraId20 ?? "Belum dibuat" },
+			{ label: "Akses download", value: entity.access.canDownloadDocuments ? "Diizinkan" : "Terbatas" },
+			{ label: "Sensitivitas entitas", value: SENSITIVITY_LABELS[entity.entity.sensitivityLevel] ?? entity.entity.sensitivityLevel },
+		] },
+		{ type: "form", block_id: "documents_upload_form", fields: [
+			{ type: "text_input", action_id: "entityId", label: "Entity ID", initial_value: entityId },
+			{ type: "text_input", action_id: "fileName", label: "Nama file upload", initial_value: form.fileName, placeholder: "contoh: sk-pendirian.pdf" },
+			{ type: "text_input", action_id: "mimeType", label: "MIME type", initial_value: form.mimeType, placeholder: "application/pdf" },
+			{ type: "number_input", action_id: "sizeBytes", label: "Ukuran file (bytes)", initial_value: numberValue(form.sizeBytes) },
+			{ type: "text_input", action_id: "documentType", label: "Document type", initial_value: form.documentType, placeholder: "akta_pendirian / foto_lokasi / surat_keterangan" },
+			{ type: "select", action_id: "classification", label: "Classification", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Restricted", "restricted"), option("Highly Restricted", "highly_restricted")] },
+			{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA-256 (opsional)", initial_value: form.checksumSha256, placeholder: "Masukkan checksum setelah konfirmasi upload" },
+		], submit: { label: "Catat Dokumen", action_id: `documents_create_${entityId}` } },
+		{ type: "context", text: "Accepted type dan max size harus ditampilkan jelas pada operasional. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
+		{ type: "table", columns: [
+			{ key: "documentType", label: "Document Type" },
+			{ key: "classification", label: "Classification" },
+			{ key: "verification", label: "Verification Status" },
+			{ key: "mimeType", label: "MIME" },
+			{ key: "sizeBytes", label: "Size" },
+			{ key: "checksum", label: "Checksum" },
+			{ key: "actions", label: "Allowed Actions" },
+		], rows: documents.map((doc) => ({
+			documentType: doc.documentType,
+			classification: documentClassificationLabel(doc.classification),
+			verification: doc.isVerified ? "Verified" : "Pending",
+			mimeType: doc.mimeType ?? "-",
+			sizeBytes: doc.sizeBytes != null ? `${doc.sizeBytes} bytes` : "-",
+			checksum: form.fileName === doc.documentType ? (form.checksumSha256 || "Menunggu checksum") : "Tersimpan via metadata backend",
+			actions: entity.access.canDownloadDocuments ? "Preview / Download via backend" : "Lihat metadata saja",
+		})), empty_text: "Belum ada dokumen yang ditautkan ke entitas ini." },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Aturan UI Dokumen" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Accepted types dan max size tampil", status: "Aktif pada form" },
+			{ rule: "Document type wajib", status: "Wajib diisi" },
+			{ rule: "Classification wajib", status: "Wajib diisi" },
+			{ rule: "Checksum dan upload status", status: "Ditampilkan setelah pencatatan" },
+			{ rule: "Quarantine / failed", status: "Disiapkan sebagai state operasional lanjutan" },
+		] },
+	];
+}
+
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -1404,6 +1574,16 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page === "documents") {
+		if (!routeCtx) throw new Error("documents page requires route context");
+		return documentsBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
+	if (page.startsWith("documents/")) {
+		if (!routeCtx) throw new Error("document entity page requires route context");
+		return documentDetailBlocks(routeCtx, page, routeCtx.input ?? {});
+	}
+
 	if (page === "imports") {
 		if (!routeCtx) throw new Error("imports page requires route context");
 		return importsBlocks(routeCtx, routeCtx.input ?? {});
@@ -1459,6 +1639,18 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "entities/new") {
 		return {
 			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "documents") {
+		return {
+			blocks: await documentsBlocks(routeCtx, input),
+		};
+	}
+
+	if (page.startsWith("documents/")) {
+		return {
+			blocks: await documentDetailBlocks(routeCtx, page, input),
 		};
 	}
 
