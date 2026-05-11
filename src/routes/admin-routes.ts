@@ -2,6 +2,7 @@ import type { D1Binding } from "../repositories/db";
 import { listEntities, type EntityListFilters } from "../services/entity";
 import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
+import { getAdminDashboard } from "../services/dashboard";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -76,6 +77,12 @@ function navButtons(currentPage: string) {
 	}));
 }
 
+function scoreLabel(completionPercent: number, verificationPercent: number): string {
+	if (completionPercent >= 85 && verificationPercent >= 85) return "Baik";
+	if (completionPercent >= 65 && verificationPercent >= 65) return "Sedang";
+	return "Perlu Perhatian";
+}
+
 function apiFields() {
 	return [
 		{ label: "Admin Block Kit", value: "/_emdash/api/plugins/sikesra/admin" },
@@ -103,20 +110,131 @@ function pageIntro(page: string) {
 	];
 }
 
-function overviewBlocks(): Block[] {
-	const blocks: Block[] = [...pageIntro("overview")];
+async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = routeCtx.env?.SIKESRA_DB;
 
-	blocks.push(
-		{ type: "fields", fields: [
-			{ label: "Status", value: "Placeholder aktif" },
-			{ label: "Mode", value: "Admin Block Kit" },
-			{ label: "Keamanan", value: "Tetap lewat auth EmDash" },
-			{ label: "Tahap", value: "Rebuild bertahap" },
-		] },
+	if (!db) {
+		return [
+			...pageIntro("overview"),
+			{
+				type: "banner",
+				variant: "alert",
+				title: "Binding dashboard tidak tersedia",
+				description: "Halaman Dashboard membutuhkan akses ke env.SIKESRA_DB agar dapat memuat KPI dan antrian kerja.",
+			},
+		];
+	}
+
+	const dashboard = await getAdminDashboard(ctx, db);
+	const blocks: Block[] = [
+		...pageIntro("overview"),
+		{
+			type: "banner",
+			variant: "default",
+			title: "Dashboard Operasional SIKESRA",
+			description: "Ringkasan ini mengikuti tenant, site, permission, dan region scope backend. Gunakan dashboard untuk memprioritaskan verifikasi, import, dokumen, dan pengawasan aktivitas.",
+		},
+		{
+			type: "fields",
+			fields: [
+				{ label: "Tenant / Site", value: `${dashboard.scope.tenantId} / ${dashboard.scope.siteId}` },
+				{ label: "Region Scope", value: dashboard.scope.regionScopeLabel || "all" },
+				{ label: "Environment", value: routeCtx.request.url.includes("localhost") ? "Local" : "Cloudflare" },
+				{ label: "Auth", value: "Terproteksi via EmDash" },
+			],
+		},
+		{
+			type: "stats",
+			items: [
+				{ label: "Total", value: String(dashboard.kpis.total), description: "Semua entitas aktif dalam scope" },
+				{ label: "Draft", value: String(dashboard.kpis.draft), description: "Perlu dilengkapi operator" },
+				{ label: "Diajukan", value: String(dashboard.kpis.submitted), description: "Sudah masuk workflow" },
+				{ label: "Terverifikasi", value: String(dashboard.kpis.verified), description: "Siap dipakai laporan" },
+				{ label: "Perlu Revisi", value: String(dashboard.kpis.needRevision), description: "Perlu tindakan operator / verifikator" },
+				{ label: "Ditolak", value: String(dashboard.kpis.rejected), description: "Butuh tindak lanjut dan audit" },
+			],
+		},
+		{ type: "header", text: "Antrian Kerja" },
+		{
+			type: "table",
+			columns: [
+				{ key: "label", label: "Antrian" },
+				{ key: "total", label: "Jumlah", format: "badge" },
+				{ key: "permission", label: "Permission" },
+				{ key: "href", label: "Rute" },
+			],
+			rows: dashboard.workQueues
+				.filter((queue) => ctx.permissions.includes(queue.permission))
+				.map((queue) => ({
+					label: queue.label,
+					total: queue.total,
+					permission: queue.permission,
+					href: queue.href,
+				})),
+			empty_text: "Tidak ada antrian kerja yang tersedia untuk permission saat ini.",
+		},
+		{ type: "header", text: "Ringkasan Wilayah" },
+		{
+			type: "table",
+			columns: [
+				{ key: "regionName", label: "Wilayah" },
+				{ key: "total", label: "Total", format: "badge" },
+				{ key: "completionPercent", label: "Kelengkapan" },
+				{ key: "verificationPercent", label: "Verifikasi" },
+				{ key: "scoreLabel", label: "Skor" },
+			],
+			rows: dashboard.regionalSummary.map((row) => ({
+				regionName: row.regionName,
+				total: row.total,
+				completionPercent: `${row.completionPercent}%`,
+				verificationPercent: `${row.verificationPercent}%`,
+				scoreLabel: row.scoreLabel ?? scoreLabel(row.completionPercent, row.verificationPercent),
+			})),
+			empty_text: "Belum ada data regional untuk scope saat ini.",
+		},
+		{ type: "header", text: "Ringkasan Atribut" },
+		{
+			type: "table",
+			columns: [
+				{ key: "label", label: "Atribut" },
+				{ key: "total", label: "Jumlah", format: "badge" },
+			],
+			rows: dashboard.attributeSummary.map((item) => ({
+				label: item.label,
+				total: item.total,
+			})),
+			empty_text: "Atribut aman atau yang diizinkan policy belum tersedia pada scope ini.",
+		},
+		{ type: "header", text: "Aktivitas Terbaru" },
+		{
+			type: "table",
+			columns: [
+				{ key: "createdAt", label: "Waktu" },
+				{ key: "actorId", label: "Aktor" },
+				{ key: "summary", label: "Aktivitas" },
+			],
+			rows: dashboard.activity.map((item) => ({
+				createdAt: item.createdAt,
+				actorId: item.actorId,
+				summary: item.summary,
+			})),
+			empty_text: "Belum ada aktivitas audit terbaru.",
+		},
+		{ type: "header", text: "Aksi Cepat" },
+		{
+			type: "actions",
+			elements: [
+				...(ctx.permissions.includes(SIKESRA_PERMISSIONS.ENTITY_READ) ? [{ type: "button", label: "Buka Registry", action_id: "nav_entities", style: "primary" }] : []),
+				...(ctx.permissions.includes(SIKESRA_PERMISSIONS.VERIFICATION_VERIFY) ? [{ type: "button", label: "Antrian Verifikasi", action_id: "nav_verification", style: "secondary" }] : []),
+				...(ctx.permissions.includes(SIKESRA_PERMISSIONS.IMPORT_READ) ? [{ type: "button", label: "Review Import", action_id: "nav_imports", style: "secondary" }] : []),
+				...(ctx.permissions.includes(SIKESRA_PERMISSIONS.AUDIT_READ) ? [{ type: "button", label: "Lihat Audit", action_id: "nav_audit", style: "secondary" }] : []),
+			],
+		},
 		{ type: "divider" },
 		{ type: "header", text: "Rute Penting" },
 		{ type: "fields", fields: apiFields() },
-	);
+	];
 
 	return blocks;
 }
@@ -405,9 +523,10 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	return blocks;
 }
 
-function getBlocksForPage(page: string) {
+function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdminInteraction>) {
 	if (page === "overview") {
-		return Promise.resolve(overviewBlocks());
+		if (!routeCtx) throw new Error("overview page requires route context");
+		return overviewBlocks(routeCtx);
 	}
 
 	if (page === "entities") {
@@ -440,6 +559,6 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	}
 
 	return {
-		blocks: await getBlocksForPage(page),
+		blocks: await getBlocksForPage(page, routeCtx),
 	};
 }

@@ -37,6 +37,7 @@ export interface DashboardRegionalSummary {
   total: number;
   completionPercent: number;
   verificationPercent: number;
+  scoreLabel?: string;
 }
 
 export interface AuditActivityItem {
@@ -103,6 +104,82 @@ export async function getAdminDashboard(ctx: SikesraRequestContext, db?: D1Bindi
      WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND status IN ('uploaded','mapped','validated')`
   ).bind(tid, sid).first<{ cnt: number }>();
 
+  const failedExports = await db.prepare(
+    `SELECT COUNT(*) as cnt FROM awcms_sikesra_export_jobs
+     WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND status = 'failed'`
+  ).bind(tid, sid).first<{ cnt: number }>();
+
+  const incompleteDocuments = await db.prepare(
+    `SELECT COUNT(*) as cnt
+     FROM awcms_sikesra_entities e
+     LEFT JOIN awcms_sikesra_supporting_documents d
+       ON d.tenant_id = e.tenant_id AND d.site_id = e.site_id AND d.entity_id = e.id AND d.deleted_at IS NULL
+     WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
+     GROUP BY e.id
+     HAVING COUNT(d.id) = 0`
+  ).bind(tid, sid).all<{ cnt: number }>();
+
+  const securityAttention = await db.prepare(
+    `SELECT COUNT(*) as cnt FROM awcms_sikesra_audit_logs
+     WHERE tenant_id = ? AND site_id = ? AND success = 0`
+  ).bind(tid, sid).first<{ cnt: number }>();
+
+  const regionRows = await db.prepare(
+    `SELECT
+       substr(e.official_village_code, 1, 6) AS region_code,
+       COALESCE(r.name, substr(e.official_village_code, 1, 6)) AS region_name,
+       COUNT(*) AS total,
+       ROUND(AVG(COALESCE(e.completeness_percent, 0)), 0) AS completion_percent,
+       ROUND((SUM(CASE WHEN e.status_verification = 'verified' THEN 1 ELSE 0 END) * 100.0) / COUNT(*), 0) AS verification_percent
+     FROM awcms_sikesra_entities e
+     LEFT JOIN awcms_sikesra_official_regions r
+       ON r.tenant_id = e.tenant_id
+      AND r.site_id = e.site_id
+      AND r.code = substr(e.official_village_code, 1, 6)
+      AND r.level = 'district'
+     WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
+     GROUP BY substr(e.official_village_code, 1, 6), r.name
+     ORDER BY total DESC, region_name ASC
+     LIMIT 8`
+  ).bind(tid, sid).all<Record<string, unknown>>();
+
+  const attributeQueries = [
+    db.prepare(
+      `SELECT religion_attribute AS key, 'Agama: ' || religion_attribute AS label, COUNT(*) AS total
+       FROM awcms_sikesra_entities
+       WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND religion_attribute IS NOT NULL AND religion_attribute != ''
+       GROUP BY religion_attribute
+       ORDER BY total DESC
+       LIMIT 6`
+    ).bind(tid, sid).all<AggregatePoint>(),
+  ];
+
+  const canRevealSensitive = ctx.permissions.includes("awcms:sikesra:sensitive:reveal")
+    || ctx.permissions.includes("awcms:sikesra:sensitive:highly_restricted_read");
+
+  if (canRevealSensitive) {
+    attributeQueries.push(
+      db.prepare(
+        `SELECT neglected_attribute AS key, 'Keterlantaran: ' || neglected_attribute AS label, COUNT(*) AS total
+         FROM awcms_sikesra_entities
+         WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND neglected_attribute IS NOT NULL AND neglected_attribute != ''
+         GROUP BY neglected_attribute
+         ORDER BY total DESC
+         LIMIT 4`
+      ).bind(tid, sid).all<AggregatePoint>(),
+      db.prepare(
+        `SELECT desil_attribute AS key, 'Desil: ' || desil_attribute AS label, COUNT(*) AS total
+         FROM awcms_sikesra_entities
+         WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND desil_attribute IS NOT NULL AND desil_attribute != ''
+         GROUP BY desil_attribute
+         ORDER BY total DESC
+         LIMIT 4`
+      ).bind(tid, sid).all<AggregatePoint>(),
+    );
+  }
+
+  const attributeResults = await Promise.all(attributeQueries);
+
   // Recent audit activity
   const recentAudit = await db.prepare(
     `SELECT id, action, resource_type, resource_id, actor_id, created_at
@@ -146,9 +223,42 @@ export async function getAdminDashboard(ctx: SikesraRequestContext, db?: D1Bindi
         href: "/_emdash/admin/plugins/sikesra/imports",
         permission: "awcms:sikesra:import:read",
       },
+      {
+        key: "incomplete_documents", label: "Dokumen Belum Lengkap",
+        total: incompleteDocuments.results.length,
+        href: "/_emdash/admin/plugins/sikesra/documents",
+        permission: "awcms:sikesra:document:upload",
+      },
+      {
+        key: "failed_exports", label: "Export Gagal",
+        total: failedExports?.cnt ?? 0,
+        href: "/_emdash/admin/plugins/sikesra/reports",
+        permission: "awcms:sikesra:export:create",
+      },
+      {
+        key: "security_attention", label: "Perhatian Keamanan",
+        total: securityAttention?.cnt ?? 0,
+        href: "/_emdash/admin/plugins/sikesra/audit",
+        permission: "awcms:sikesra:audit:read",
+      },
     ],
-    regionalSummary: [],
-    attributeSummary: [],
+    regionalSummary: regionRows.results.map((row) => {
+      const completionPercent = Number(row.completion_percent ?? 0);
+      const verificationPercent = Number(row.verification_percent ?? 0);
+      let scoreLabel = "Perlu Perhatian";
+      if (completionPercent >= 85 && verificationPercent >= 85) scoreLabel = "Baik";
+      else if (completionPercent >= 65 && verificationPercent >= 65) scoreLabel = "Sedang";
+
+      return {
+        regionCode: String(row.region_code ?? ""),
+        regionName: String(row.region_name ?? row.region_code ?? ""),
+        total: Number(row.total ?? 0),
+        completionPercent,
+        verificationPercent,
+        scoreLabel,
+      };
+    }),
+    attributeSummary: attributeResults.flatMap((result) => result.results),
     activity,
   };
 }
@@ -168,4 +278,3 @@ function defaultDashboard(ctx: SikesraRequestContext): DashboardResponse {
     activity: [],
   };
 }
-

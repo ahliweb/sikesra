@@ -91,7 +91,7 @@ async function getCloudflareDbFromRequest(request: Request): Promise<D1Binding> 
 
 // GET /dashboard
 export const dashboardHandler = withHandlerSequence(async (_: RouteHandlerInput, db: D1Binding, ctx: SikesraRequestContext) => {
-  return getAdminDashboard(ctx);
+  return getAdminDashboard(ctx, db);
 });
 
 // Public routes (no auth required)
