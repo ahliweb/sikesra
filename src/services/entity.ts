@@ -5,6 +5,7 @@
 import type { SikesraRequestContext } from "../security/request-context";
 import type { PageMeta, OfficialRegionBreadcrumb, LocalRegionBreadcrumb, AuditHint } from "./types";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
+import { SIKESRA_PERMISSIONS } from "../security/permissions";
 
 // ---------- Entity Types ----------
 
@@ -111,7 +112,7 @@ export interface EntityPatchInput {
 // ---------- Entity Service (Repository-aware) ----------
 
 import type { D1Binding } from "../repositories/db";
-import { listEntities as repoList, getEntityById, createEntity as repoCreate, patchEntity as repoPatch } from "../repositories/entity-repository";
+import { listEntities as repoList, getEntityById, createEntity as repoCreate, patchEntity as repoPatch, hydrateEntitySummary } from "../repositories/entity-repository";
 
 const REPO_ENTITY_KIND_MAP: Record<string, EntityKind> = {
   "01": "building", "02": "institution", "03": "institution", "04": "institution",
@@ -141,24 +142,93 @@ export async function getEntityDetail(
 ): Promise<EntityDetailResponse | null> {
   const entity = await getEntityById(db, entityId, ctx);
   if (!entity) return null;
+
+  const summaryEntity = await hydrateEntitySummary(db, entity, ctx);
+  const canEdit = ctx.permissions.includes(SIKESRA_PERMISSIONS.ENTITY_UPDATE) && entity.status_data === "draft";
+  const canSubmit = ctx.permissions.includes(SIKESRA_PERMISSIONS.VERIFICATION_SUBMIT)
+    && (entity.status_data === "draft" || entity.status_verification === "need_revision");
+  const canVerify = ctx.permissions.includes(SIKESRA_PERMISSIONS.VERIFICATION_VERIFY)
+    && String(entity.status_verification).startsWith("submitted");
+  const canGenerateCode = ctx.permissions.includes(SIKESRA_PERMISSIONS.CODE_GENERATE)
+    && !entity.sikesra_id_20
+    && entity.status_data !== "archived";
+  const canRevealSensitive = ctx.permissions.includes(SIKESRA_PERMISSIONS.SENSITIVE_REVEAL)
+    || ctx.permissions.includes(SIKESRA_PERMISSIONS.SENSITIVE_HIGHLY_RESTRICTED_READ);
+  const canDownloadDocuments = ctx.permissions.includes(SIKESRA_PERMISSIONS.DOCUMENT_PRIVATE_DOWNLOAD);
+
+  const deniedActions = [
+    !canEdit ? { action: "edit", reasonCode: entity.status_data !== "draft" ? "status_locked" : "missing_permission" } : null,
+    !canSubmit ? { action: "submit", reasonCode: entity.status_data === "archived" ? "archived" : "missing_permission_or_status" } : null,
+    !canVerify ? { action: "verify", reasonCode: "missing_permission_or_not_submitted" } : null,
+    !canGenerateCode ? { action: "generate_code", reasonCode: entity.sikesra_id_20 ? "already_generated" : "missing_permission_or_validation" } : null,
+    !canDownloadDocuments ? { action: "download_documents", reasonCode: "missing_permission" } : null,
+  ].filter(Boolean) as Array<{ action: string; reasonCode: string }>;
+
+  const [documentCount, benefitCount, recentAudit] = await Promise.all([
+    db.prepare(
+      `SELECT COUNT(*) as cnt FROM awcms_sikesra_supporting_documents WHERE tenant_id = ? AND site_id = ? AND entity_id = ? AND deleted_at IS NULL`,
+    ).bind(ctx.tenantId, ctx.siteId, entityId).first<{ cnt: number }>(),
+    db.prepare(
+      `SELECT COUNT(*) as cnt FROM awcms_sikesra_benefit_service_history WHERE tenant_id = ? AND site_id = ? AND entity_id = ? AND deleted_at IS NULL`,
+    ).bind(ctx.tenantId, ctx.siteId, entityId).first<{ cnt: number }>(),
+    db.prepare(
+      `SELECT id, action, actor_id, created_at, reason FROM awcms_sikesra_audit_logs WHERE tenant_id = ? AND site_id = ? AND resource_type = 'entity' AND resource_id = ? ORDER BY created_at DESC LIMIT 5`,
+    ).bind(ctx.tenantId, ctx.siteId, entityId).all<Record<string, unknown>>(),
+  ]);
+
   return {
-    entity: {
-      id: entity.id, sikesraId20: entity.sikesra_id_20,
-      objectTypeCode: entity.object_type_code, objectTypeName: "",
-      objectSubtypeCode: entity.object_subtype_code, objectSubtypeName: "",
-      entityKind: entity.entity_kind,
-      displayName: entity.display_name, masked: false,
-      officialRegion: {}, statusData: entity.status_data,
-      statusVerification: entity.status_verification, verificationLevel: entity.verification_level,
-      sensitivityLevel: entity.sensitivity_level, completenessPercent: entity.completeness_percent,
-      duplicateStatus: entity.duplicate_status, sourceInput: entity.source_input,
-      createdAt: entity.created_at, updatedAt: entity.updated_at,
+    entity: summaryEntity,
+    summary: {
+      typeLabel: `${summaryEntity.objectTypeName} / ${summaryEntity.objectSubtypeName}`,
+      officialRegion: summaryEntity.officialRegion,
+      localRegion: summaryEntity.localRegion,
+      sourceInput: summaryEntity.sourceInput,
+      sourceInstitution: entity.source_institution ?? null,
+      createdAt: summaryEntity.createdAt,
+      updatedAt: summaryEntity.updatedAt,
+      verifiedAt: entity.verified_at ?? null,
+      verifiedBy: entity.verified_by ?? null,
+      addressText: entity.address_text ?? null,
+      coordinates: entity.latitude != null && entity.longitude != null ? `${entity.latitude}, ${entity.longitude}` : null,
     },
-    summary: {},
+    details: {
+      moduleStatus: "Detail modul bertahap sesuai jenis data",
+      entityKind: summaryEntity.entityKind,
+      addressText: entity.address_text ?? null,
+      coordinateAccuracyMeters: entity.coordinate_accuracy_meters ?? null,
+      coordinateSource: entity.coordinate_source ?? null,
+    },
+    attributes: [
+      { key: "religion_attribute", label: "Agama", value: entity.religion_attribute ?? "-" },
+      { key: "neglected_attribute", label: "Status Keterlantaran", value: entity.neglected_attribute ?? "-" },
+      { key: "desil_attribute", label: "Desil", value: canRevealSensitive ? (entity.desil_attribute ?? "-") : "Terlindungi" },
+    ],
+    documents: [
+      { label: "Dokumen terkait", value: documentCount?.cnt ?? 0, access: canDownloadDocuments ? "download diizinkan" : "download terbatas" },
+    ],
+    verification: {
+      statusVerification: summaryEntity.statusVerification,
+      verificationLevel: summaryEntity.verificationLevel ?? "none",
+      nextAction: canVerify ? "Tinjau dan verifikasi" : canSubmit ? "Siapkan submit" : "Menunggu permission / status",
+    },
+    benefits: [
+      { label: "Riwayat bantuan / layanan", value: benefitCount?.cnt ?? 0 },
+    ],
+    audit: recentAudit.results.map((row) => ({
+      id: row.id,
+      action: row.action,
+      actorId: row.actor_id,
+      createdAt: row.created_at,
+      reason: row.reason,
+    })),
     access: {
-      canEdit: true, canSubmit: false, canVerify: false,
-      canGenerateCode: false, canRevealSensitive: false, canDownloadDocuments: false,
-      deniedActions: [],
+      canEdit,
+      canSubmit,
+      canVerify,
+      canGenerateCode,
+      canRevealSensitive,
+      canDownloadDocuments,
+      deniedActions,
     },
   };
 }

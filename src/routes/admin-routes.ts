@@ -4,7 +4,7 @@ import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
-import { createEntity, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
+import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -126,6 +126,7 @@ function defaultWizardState(): WizardFormState {
 
 function pageLabel(page: string): string {
 	if (page === "entities/new") return "Buat Draft Baru";
+	if (page.startsWith("entities/")) return "Detail Entitas";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -310,6 +311,11 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return input.action_id.slice(4) || "overview";
 	}
 
+	const normalizedPage = (input.page || "").replace(/^\//, "");
+	if (normalizedPage.startsWith("entities/") && normalizedPage !== "entities/new") {
+		return normalizedPage;
+	}
+
 	if ((input.page || "").replace(/^\//, "") === "entities/new") {
 		return "entities/new";
 	}
@@ -322,7 +328,12 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return "entities";
 	}
 
-	return (input.page || "").replace(/^\//, "") || "overview";
+	return normalizedPage || "overview";
+}
+
+function parseDetailEntityId(page: string): string | undefined {
+	if (!page.startsWith("entities/") || page === "entities/new") return undefined;
+	return page.slice("entities/".length) || undefined;
 }
 
 function option(label: string, value: string) {
@@ -751,6 +762,129 @@ function contextualActions(
 	return actions.join(" | ");
 }
 
+async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const entityId = parseDetailEntityId(page);
+
+	if (!entityId) {
+		return [
+			...pageIntro(page),
+			{ type: "banner", variant: "alert", title: "Detail entitas tidak valid", description: `page: ${page}` },
+		];
+	}
+
+	const detail = await getEntityDetail(db, entityId, ctx);
+	if (!detail) {
+		return [
+			...pageIntro(page),
+			{ type: "banner", variant: "alert", title: "Entitas tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` },
+		];
+	}
+
+	const primaryActions = [
+		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
+		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
+		...(detail.access.canVerify ? [{ type: "button", label: "Verifikasi", action_id: "nav_verification", style: "secondary" }] : []),
+		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
+	];
+
+	const latestAudit = Array.isArray(detail.audit) && detail.audit.length > 0 ? detail.audit[0] as Record<string, unknown> : null;
+
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: detail.entity.displayName, description: "Detail entitas ini mengikuti masking, permission, dan ABAC backend. Aksi utama dikendalikan oleh access flags dari backend." },
+		{ type: "fields", fields: [
+			{ label: "ID SIKESRA", value: detail.entity.sikesraId20 ?? "Belum dibuat" },
+			{ label: "Status Data", value: formatDataStatus(detail.entity.statusData) },
+			{ label: "Status Verifikasi", value: formatVerificationStatus(detail.entity.statusVerification) },
+			{ label: "Sensitivitas", value: SENSITIVITY_LABELS[detail.entity.sensitivityLevel] ?? detail.entity.sensitivityLevel },
+		] },
+		...(primaryActions.length ? [{ type: "actions", elements: primaryActions }] : []),
+		{ type: "columns", columns: [[
+			{ type: "header", text: "Ringkasan Entitas" },
+			{ type: "fields", fields: [
+				{ label: "Jenis / Subjenis", value: String(detail.summary["typeLabel"] ?? "-") },
+				{ label: "Wilayah Resmi", value: formatOfficialRegion(detail.entity) },
+				{ label: "Wilayah Lokal", value: formatLocalRegion(detail.entity) },
+				{ label: "Sumber Input", value: String(detail.summary["sourceInput"] ?? detail.entity.sourceInput ?? "-") },
+				{ label: "Dibuat", value: String(detail.summary["createdAt"] ?? detail.entity.createdAt) },
+				{ label: "Diperbarui", value: String(detail.summary["updatedAt"] ?? detail.entity.updatedAt) },
+			] },
+			{ type: "tab", default_tab: 0, panels: [
+				{ label: "Ringkasan", blocks: [
+					{ type: "fields", fields: [
+						{ label: "Nama Tampil", value: detail.entity.displayName },
+						{ label: "Alamat", value: String(detail.summary["addressText"] ?? "-") },
+						{ label: "Koordinat", value: String(detail.summary["coordinates"] ?? "-") },
+						{ label: "Verified By", value: String(detail.summary["verifiedBy"] ?? "-") },
+					] },
+				] },
+				{ label: "Detail Modul", blocks: [
+					{ type: "fields", fields: [
+						{ label: "Status", value: String(detail.details?.["moduleStatus"] ?? "Belum tersedia") },
+						{ label: "Entity Kind", value: String(detail.details?.["entityKind"] ?? detail.entity.entityKind) },
+					] },
+					{ type: "context", text: "Detail modul spesifik per jenis data akan diperkaya seiring rebuild service/detail table berikutnya." },
+				] },
+				{ label: "Atribut", blocks: [
+					{ type: "table", columns: [
+						{ key: "label", label: "Atribut" },
+						{ key: "value", label: "Nilai" },
+					], rows: (detail.attributes ?? []).map((row) => ({ label: String(row["label"] ?? row["key"] ?? "Atribut"), value: String(row["value"] ?? "-") })), empty_text: "Belum ada atribut yang ditampilkan." },
+				] },
+				{ label: "Dokumen", blocks: [
+					{ type: "table", columns: [
+						{ key: "label", label: "Item" },
+						{ key: "value", label: "Nilai" },
+						{ key: "access", label: "Akses" },
+					], rows: (detail.documents ?? []).map((row) => ({ label: String(row["label"] ?? "Dokumen"), value: String(row["value"] ?? "-") , access: String(row["access"] ?? "-") })), empty_text: "Belum ada dokumen yang ditautkan." },
+				] },
+				{ label: "Verifikasi", blocks: [
+					{ type: "fields", fields: [
+						{ label: "Status", value: String(detail.verification?.["statusVerification"] ?? detail.entity.statusVerification) },
+						{ label: "Level", value: String(detail.verification?.["verificationLevel"] ?? detail.entity.verificationLevel ?? "none") },
+						{ label: "Aksi Berikutnya", value: String(detail.verification?.["nextAction"] ?? "Belum tersedia") },
+					] },
+				] },
+				{ label: "Riwayat Bantuan/Layanan", blocks: [
+					{ type: "table", columns: [
+						{ key: "label", label: "Ringkasan" },
+						{ key: "value", label: "Nilai" },
+					], rows: (detail.benefits ?? []).map((row) => ({ label: String(row["label"] ?? "Riwayat"), value: String(row["value"] ?? "-") })), empty_text: "Belum ada riwayat bantuan/layanan." },
+				] },
+				{ label: "Audit", blocks: [
+					{ type: "table", columns: [
+						{ key: "createdAt", label: "Waktu" },
+						{ key: "action", label: "Aksi" },
+						{ key: "actorId", label: "Aktor" },
+					], rows: (detail.audit ?? []).map((row) => ({ createdAt: String(row["createdAt"] ?? "-"), action: String(row["action"] ?? "-"), actorId: String(row["actorId"] ?? "-") })), empty_text: "Belum ada aktivitas audit terkait entitas ini." },
+				] },
+			] },
+		], [
+			{ type: "header", text: "Panel Tindak Lanjut" },
+			{ type: "fields", fields: [
+				{ label: "Kelengkapan", value: `${detail.entity.completenessPercent}%` },
+				{ label: "Duplicate Status", value: DUPLICATE_STATUS_LABELS[detail.entity.duplicateStatus ?? "unknown"] ?? (detail.entity.duplicateStatus ?? "unknown") },
+				{ label: "Next Verification", value: String(detail.verification?.["nextAction"] ?? "Belum tersedia") },
+				{ label: "Recent Note", value: latestAudit ? String(latestAudit["reason"] ?? latestAudit["action"] ?? "-") : "Belum ada catatan terbaru" },
+			] },
+			{ type: "header", text: "Access Flags" },
+			{ type: "fields", fields: [
+				{ label: "canEdit", value: detail.access.canEdit ? "Ya" : "Tidak" },
+				{ label: "canSubmit", value: detail.access.canSubmit ? "Ya" : "Tidak" },
+				{ label: "canVerify", value: detail.access.canVerify ? "Ya" : "Tidak" },
+				{ label: "canGenerateCode", value: detail.access.canGenerateCode ? "Ya" : "Tidak" },
+				{ label: "canDownloadDocuments", value: detail.access.canDownloadDocuments ? "Ya" : "Tidak" },
+			] },
+			{ type: "table", columns: [
+				{ key: "action", label: "Aksi Ditolak" },
+				{ key: "reasonCode", label: "Alasan" },
+			], rows: detail.access.deniedActions.map((item) => ({ action: item.action, reasonCode: item.reasonCode })), empty_text: "Tidak ada aksi yang sedang ditolak oleh access flags." },
+		]] },
+	];
+}
+
 async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -858,6 +992,11 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page.startsWith("entities/") && page !== "entities/new") {
+		if (!routeCtx) throw new Error("entity detail page requires route context");
+		return entityDetailBlocks(routeCtx, page);
+	}
+
 	if (page === "entities/new") {
 		throw new Error("entities/new page must be resolved via wizardBlocks");
 	}
@@ -888,6 +1027,12 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "entities/new") {
 		return {
 			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
+
+	if (page.startsWith("entities/") && page !== "entities/new") {
+		return {
+			blocks: await entityDetailBlocks(routeCtx, page),
 		};
 	}
 

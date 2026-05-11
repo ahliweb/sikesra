@@ -107,6 +107,16 @@ interface EntityRow {
   display_name: string;
   official_village_code: string;
   local_region_id?: string | null;
+  address_text?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  coordinate_accuracy_meters?: number | null;
+  coordinate_source?: string | null;
+  coordinate_recorded_at?: string | null;
+  coordinate_recorded_by?: string | null;
+  religion_attribute?: string | null;
+  neglected_attribute?: string | null;
+  desil_attribute?: string | null;
   status_data: DataStatus;
   status_verification: string;
   verification_level?: string;
@@ -114,6 +124,9 @@ interface EntityRow {
   completeness_percent: number;
   duplicate_status?: DuplicateStatus;
   source_input: SourceInput;
+  source_institution?: string | null;
+  verified_by?: string | null;
+  verified_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -263,6 +276,15 @@ function toSummary(row: EntityRow, maps: HydrationMaps, ctx: SikesraRequestConte
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+export async function hydrateEntitySummary(
+  db: D1Binding,
+  row: EntityRow,
+  ctx: SikesraRequestContext,
+): Promise<SikesraEntitySummary> {
+  const maps = await loadHydrationMaps(db, [row], ctx);
+  return toSummary(row, maps, ctx);
 }
 
 export async function listEntities(
