@@ -8,6 +8,7 @@ import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, typ
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
+import { REPORT_CATALOG } from "./report-routes";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -39,6 +40,14 @@ interface DocumentUploadFormState {
 	documentType: string;
 	classification: string;
 	checksumSha256: string;
+}
+
+interface ReportCreateFormState {
+	reportKey: string;
+	format: string;
+	reason: string;
+	filterRegion: string;
+	filterModule: string;
 }
 
 type Block = Record<string, unknown>;
@@ -156,6 +165,7 @@ function pageLabel(page: string): string {
 	if (page.startsWith("verification/")) return "Review Verifikasi";
 	if (page.startsWith("imports/")) return "Review Batch Import";
 	if (page.startsWith("documents/")) return "Dokumen Entitas";
+	if (page.startsWith("reports/")) return "Detail Export Job";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -341,6 +351,9 @@ function resolvePage(input: PluginAdminInteraction): string {
 	}
 
 	const normalizedPage = (input.page || "").replace(/^\//, "");
+	if (normalizedPage.startsWith("reports/")) {
+		return normalizedPage;
+	}
 	if (normalizedPage.startsWith("documents/")) {
 		return normalizedPage;
 	}
@@ -377,6 +390,11 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return id ? `documents/${id}` : "documents";
 	}
 
+	if (input.action_id?.startsWith("reports_open_") || input.action_id === "reports_back_to_list") {
+		const id = /^reports_open_(.+)$/.exec(input.action_id)?.[1];
+		return id ? `reports/${id}` : "reports";
+	}
+
 	if (input.block_id?.startsWith("entities_") || input.action_id?.startsWith("entities_")) {
 		return "entities";
 	}
@@ -392,6 +410,11 @@ function parseImportBatchId(page: string): string | undefined {
 function parseDocumentEntityId(page: string): string | undefined {
 	if (!page.startsWith("documents/")) return undefined;
 	return page.slice("documents/".length) || undefined;
+}
+
+function parseReportJobId(page: string): string | undefined {
+	if (!page.startsWith("reports/")) return undefined;
+	return page.slice("reports/".length) || undefined;
 }
 
 function parseVerificationEntityId(page: string): string | undefined {
@@ -456,6 +479,17 @@ function parseDocumentUploadForm(input: PluginAdminInteraction): DocumentUploadF
 		documentType: stringState(values.documentType),
 		classification: stringState(values.classification, "internal"),
 		checksumSha256: stringState(values.checksumSha256),
+	};
+}
+
+function parseReportCreateForm(input: PluginAdminInteraction): ReportCreateFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		reportKey: stringState(values.reportKey),
+		format: stringState(values.format, "csv"),
+		reason: stringState(values.reason),
+		filterRegion: stringState(values.filterRegion),
+		filterModule: stringState(values.filterModule),
 	};
 }
 
@@ -592,6 +626,16 @@ async function loadDocumentEntityOptions(db: D1Binding, tenantId: string, siteId
 		 ORDER BY updated_at DESC LIMIT 100`,
 	).bind(tenantId, siteId).all<{ id: string; display_name: string }>();
 	return rows.results;
+}
+
+async function loadReportOptions(db: D1Binding, tenantId: string, siteId: string) {
+	const objectTypes = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 ORDER BY sort_order, name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+	const districts = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'district' ORDER BY name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+	return { objectTypes: objectTypes.results, districts: districts.results };
 }
 
 function buildIdPreview(state: WizardFormState): string {
@@ -1344,6 +1388,122 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 	];
 }
 
+async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const form = parseReportCreateForm(input);
+	const options = await loadReportOptions(db, ctx.tenantId, ctx.siteId);
+	let notice = "";
+	let error = "";
+
+	if (input.type === "form_submit" && input.action_id === "reports_create_export") {
+		const selected = REPORT_CATALOG.find((item) => item.key === form.reportKey);
+		if (!selected) {
+			error = "Pilih jenis laporan yang valid sebelum membuat export job.";
+		} else if ((selected.requiredPermission === "awcms:sikesra:export:restricted" || selected.requiredPermission === "awcms:sikesra:export:audit") && !form.reason.trim()) {
+			error = "Alasan wajib diisi untuk export restricted atau audit evidence.";
+		} else {
+			const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+			await db.prepare(
+				`INSERT INTO awcms_sikesra_export_jobs
+				 (id, tenant_id, site_id, report_type, filters_json, fields_json, field_sensitivity_json, format, reason, status, created_by, updated_by)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+			).bind(
+				id,
+				ctx.tenantId,
+				ctx.siteId,
+				selected.key,
+				JSON.stringify({ region: form.filterRegion || null, module: form.filterModule || null }),
+				null,
+				JSON.stringify({ classification: selected.fieldSensitivity }),
+				form.format || "csv",
+				form.reason || null,
+				ctx.userId,
+				ctx.userId,
+			).run();
+			notice = `Export job ${id} untuk ${selected.label} berhasil dibuat dengan status pending.`;
+		}
+	}
+
+	const jobRows = await db.prepare(
+		`SELECT id, report_type, status, total_rows, format, reason, created_at, updated_at
+		 FROM awcms_sikesra_export_jobs
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+		 ORDER BY created_at DESC LIMIT 20`,
+	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
+
+	return [
+		...pageIntro("reports"),
+		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan menata metadata laporan, sensitivitas field, alasan export restricted, dan histori export job. Semua export harus mengikuti permission dan audit trail backend." },
+		...(notice ? [{ type: "banner", variant: "success", title: "Export job dibuat", description: notice }] : []),
+		...(error ? [{ type: "banner", variant: "alert", title: "Export belum dibuat", description: error }] : []),
+		{ type: "stats", items: [
+			{ label: "Jenis laporan", value: String(REPORT_CATALOG.length), description: "Katalog metadata laporan" },
+			{ label: "Pending jobs", value: String(jobRows.results.filter((row) => String(row.status) === "pending").length), description: "Menunggu proses export" },
+			{ label: "Ready jobs", value: String(jobRows.results.filter((row) => String(row.status) === "ready").length), description: "Siap diunduh via backend" },
+			{ label: "Failed jobs", value: String(jobRows.results.filter((row) => String(row.status) === "failed").length), description: "Perlu investigasi operator" },
+		] },
+		{ type: "header", text: "Katalog Laporan" },
+		{ type: "table", columns: [
+			{ key: "label", label: "Laporan" },
+			{ key: "description", label: "Deskripsi" },
+			{ key: "permission", label: "Permission" },
+			{ key: "sensitivity", label: "Sensitivity" },
+			{ key: "formats", label: "Format" },
+		], rows: REPORT_CATALOG.map((item) => ({ label: item.label, description: item.description, permission: item.requiredPermission, sensitivity: item.fieldSensitivity, formats: item.formats.join(", ") })) },
+		{ type: "header", text: "Buat Export Job" },
+		{ type: "context", text: "Restricted fields memerlukan alasan. Export tetap harus diproses melalui backend dan tidak boleh mengekspos raw R2 key pada hasil download." },
+		{ type: "form", block_id: "reports_export_form", fields: [
+			{ type: "select", action_id: "reportKey", label: "Jenis laporan", initial_value: form.reportKey, options: [option("Pilih laporan", ""), ...REPORT_CATALOG.map((item) => option(item.label, item.key))] },
+			{ type: "select", action_id: "format", label: "Format export", initial_value: form.format || "csv", options: [option("CSV", "csv"), option("XLSX", "xlsx")] },
+			{ type: "select", action_id: "filterRegion", label: "Filter region (opsional)", initial_value: form.filterRegion, options: [option("Semua region", ""), ...options.districts.map((row) => option(row.name, row.code))] },
+			{ type: "select", action_id: "filterModule", label: "Filter module (opsional)", initial_value: form.filterModule, options: [option("Semua module", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
+			{ type: "text_input", action_id: "reason", label: "Alasan export (wajib untuk restricted/audit)", multiline: true, initial_value: form.reason, placeholder: "Jelaskan tujuan export dan dasar kewenangannya" },
+		], submit: { label: "Buat Export Job", action_id: "reports_create_export" } },
+		{ type: "header", text: "Histori Export Job" },
+		...(jobRows.results.length ? jobRows.results.flatMap((row) => {
+			const reportType = String(row.report_type ?? "");
+			const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
+			return [
+				{ type: "section", text: `${reportMeta?.label ?? reportType} | ${String(row.format ?? "csv").toUpperCase()} | ${String(row.status ?? "pending")}`, accessory: { type: "button", label: "Lihat Job", action_id: `reports_open_${String(row.id)}`, style: "secondary" } },
+				{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · reason ${String(row.reason ?? "-")}` },
+			];
+		}) : [{ type: "empty", title: "Belum ada export job", description: "Buat export job pertama untuk mulai menghasilkan laporan CSV/XLSX." }]),
+	];
+}
+
+async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const jobId = parseReportJobId(page);
+	if (!jobId) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Export job tidak valid", description: `page: ${page}` }];
+	}
+	const row = await db.prepare(
+		`SELECT * FROM awcms_sikesra_export_jobs WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+	).bind(jobId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+	if (!row) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Export job tidak ditemukan", description: `ID ${jobId} tidak tersedia pada scope backend saat ini.` }];
+	}
+	const reportType = String(row.report_type ?? "");
+	const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: `Export Job ${jobId}`, description: "Status job, alasan export, sensitivitas, dan download readiness ditampilkan dari metadata backend tanpa mengekspos raw R2 key." },
+		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Report Center", action_id: "reports_back_to_list", style: "secondary" }] },
+		{ type: "fields", fields: [
+			{ label: "Laporan", value: reportMeta?.label ?? reportType },
+			{ label: "Status", value: String(row.status ?? "pending") },
+			{ label: "Format", value: String(row.format ?? "csv").toUpperCase() },
+			{ label: "Rows", value: String(row.total_rows ?? 0) },
+			{ label: "Reason", value: String(row.reason ?? "-") },
+			{ label: "Field Sensitivity", value: String(row.field_sensitivity_json ?? "-") },
+			{ label: "Filters", value: String(row.filters_json ?? "-") },
+			{ label: "Download", value: row.status === "ready" ? "Siap via backend proxy/signed route" : "Belum siap diunduh" },
+		] },
+	];
+}
+
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -1574,6 +1734,16 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page === "reports") {
+		if (!routeCtx) throw new Error("reports page requires route context");
+		return reportsBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
+	if (page.startsWith("reports/")) {
+		if (!routeCtx) throw new Error("report job detail page requires route context");
+		return reportJobDetailBlocks(routeCtx, page);
+	}
+
 	if (page === "documents") {
 		if (!routeCtx) throw new Error("documents page requires route context");
 		return documentsBlocks(routeCtx, routeCtx.input ?? {});
@@ -1639,6 +1809,18 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "entities/new") {
 		return {
 			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "reports") {
+		return {
+			blocks: await reportsBlocks(routeCtx, input),
+		};
+	}
+
+	if (page.startsWith("reports/")) {
+		return {
+			blocks: await reportJobDetailBlocks(routeCtx, page),
 		};
 	}
 

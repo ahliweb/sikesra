@@ -33,7 +33,7 @@ export interface ExportCreateInput {
 }
 
 // Static report catalog — field sensitivity drives permission requirements
-const REPORT_CATALOG: ReportMeta[] = [
+export const REPORT_CATALOG: ReportMeta[] = [
   {
     key: "entity_summary",
     label: "Ringkasan Entitas",
@@ -80,7 +80,7 @@ export const exportListHandler = withHandlerSequence(
   async (_input: unknown, db: D1Binding, ctx: SikesraRequestContext) => {
     const rows = await db
       .prepare(
-        `SELECT id, report_key, status, row_count, format, created_at, updated_at
+        `SELECT id, report_type, status, total_rows, format, created_at, updated_at
          FROM awcms_sikesra_export_jobs
          WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
          ORDER BY created_at DESC LIMIT 20`
@@ -90,9 +90,9 @@ export const exportListHandler = withHandlerSequence(
 
     const items: ExportJobSummary[] = rows.results.map((r) => ({
       id: String(r.id),
-      reportKey: String(r.report_key ?? ""),
+      reportKey: String(r.report_type ?? ""),
       status: String(r.status ?? "pending"),
-      rowCount: Number(r.row_count ?? 0),
+      rowCount: Number(r.total_rows ?? 0),
       format: String(r.format ?? "csv"),
       createdAt: String(r.created_at ?? ""),
       updatedAt: String(r.updated_at ?? ""),
@@ -117,11 +117,21 @@ export const exportCreateHandler = async (routeCtx: EmDashRouteContext<ExportCre
 
   await db
     .prepare(
-      `INSERT INTO awcms_sikesra_export_jobs
-       (id, tenant_id, site_id, report_key, format, status, reason, created_by)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`
+       `INSERT INTO awcms_sikesra_export_jobs
+        (id, tenant_id, site_id, report_type, format, status, reason, filters_json, created_by, updated_by)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`
+     )
+    .bind(
+      id,
+      tenantId,
+      siteId,
+      input.reportKey,
+      input.format ?? "csv",
+      input.reason ?? null,
+      input.filters ? JSON.stringify(input.filters) : null,
+      "api-user",
+      "api-user",
     )
-    .bind(id, tenantId, siteId, input.reportKey, input.format ?? "csv", input.reason ?? null, "api-user")
     .run();
 
   return { id, reportKey: input.reportKey, status: "pending", format: input.format ?? "csv" };
