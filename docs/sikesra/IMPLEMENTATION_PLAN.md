@@ -14,9 +14,10 @@ Runtime baseline:
 2. Public SIKESRA route is `/sikesra` only.
 3. EmDash admin and normal EmDash APIs remain EmDash-owned.
 4. The admin Block Kit route `/_emdash/api/plugins/sikesra/admin` remains enabled so the EmDash plugin shell can render.
-5. Unfinished SIKESRA APIs under `/_emdash/api/plugins/sikesra/v1/*` are temporarily disabled with `503` until rebuilt through this plan.
-6. `scripts/postbuild.mjs` is only a deployment adapter: set wrapper as worker entry, strip `cloudflare:workers` import, and generate `worker-wrapper.mjs`.
-7. No script may patch EmDash source, `node_modules`, or generated EmDash admin chunks unless a future approved adapter ticket documents the divergence, tests, and rollback.
+5. The public-safe route group `/_emdash/api/plugins/sikesra/public/*` remains enabled so `/sikesra` can load aggregate data.
+6. Unfinished SIKESRA APIs under `/_emdash/api/plugins/sikesra/v1/*` are temporarily disabled with `503` until rebuilt through this plan.
+7. `scripts/postbuild.mjs` is only a deployment adapter: set wrapper as worker entry, strip `cloudflare:workers` import, and generate `worker-wrapper.mjs`.
+8. No script may patch EmDash source, `node_modules`, or generated EmDash admin chunks unless a future approved adapter ticket documents the divergence, tests, and rollback.
 
 ## Configuration Contract
 
@@ -213,6 +214,7 @@ After deployment, manually verify:
 /sikesra                               -> public-safe SIKESRA placeholder or aggregate page
 /_emdash/admin                         -> EmDash admin/auth shell
 /_emdash/api/plugins/sikesra/admin     -> EmDash plugin Block Kit route
+/_emdash/api/plugins/sikesra/public/*  -> public-safe aggregate routes
 /_emdash/api/plugins/sikesra/v1/*      -> disabled until rebuilt, then auth/ABAC enforced
 ```
 

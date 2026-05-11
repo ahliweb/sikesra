@@ -122,6 +122,9 @@ export default {
     if (pathname === "/_emdash/api/plugins/sikesra/admin" || pathname === "/_emdash/api/plugins/sikesra/admin/") {
       return handleEmDash(request, env, ctx, "sikesra-admin");
     }
+    if (pathname.startsWith("/_emdash/api/plugins/sikesra/public/")) {
+      return handleEmDash(request, env, ctx, "sikesra-public-api");
+    }
     if (pathname.startsWith("/_emdash/api/plugins/sikesra/")) return handleSikesraApi();
 
     try {
