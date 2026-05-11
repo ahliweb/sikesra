@@ -1,3 +1,4 @@
+import { getRequestContext } from "emdash";
 import type { EmDashRouteContext } from "./handler-utils";
 import type { D1Binding } from "../repositories/db";
 
@@ -9,6 +10,17 @@ interface PluginAdminInteraction {
 }
 
 type Block = Record<string, unknown>;
+type QueryDb = {
+	selectFrom: (table: string) => {
+		select: (cb: (eb: { fn: { countAll: () => { as: (name: string) => unknown } } }) => unknown) => {
+			where: (column: string, op: string, value: unknown) => {
+				where: (column: string, op: string, value: unknown) => {
+					executeTakeFirst: () => Promise<{ cnt?: number | string | bigint } | undefined>;
+				};
+			};
+		};
+	};
+};
 
 const PAGE_LABELS: Record<string, string> = {
 	overview: "Dashboard",
@@ -23,10 +35,26 @@ const PAGE_LABELS: Record<string, string> = {
 	settings: "Pengaturan",
 };
 
-async function countWhere(db: D1Binding, table: string, tenantId: string, siteId: string, extra = "") {
+async function countWhere(db: D1Binding | QueryDb, table: string, tenantId: string, siteId: string, extra = "") {
+	if ("selectFrom" in db) {
+		if (extra.trim()) return 0;
+		const row = await db
+			.selectFrom(table)
+			.select((eb) => eb.fn.countAll().as("cnt"))
+			.where("tenant_id", "=", tenantId)
+			.where("site_id", "=", siteId)
+			.executeTakeFirst();
+		return Number(row?.cnt ?? 0);
+	}
+
 	const sql = `SELECT COUNT(*) as cnt FROM ${table} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL ${extra}`;
 	const row = await db.prepare(sql).bind(tenantId, siteId).first<{ cnt: number }>();
 	return row?.cnt ?? 0;
+}
+
+function resolveDb(routeCtx: EmDashRouteContext<PluginAdminInteraction>): D1Binding | QueryDb | undefined {
+	const requestDb = getRequestContext()?.db as QueryDb | undefined;
+	return routeCtx.env?.SIKESRA_DB ?? requestDb;
 }
 
 function navButtons(currentPage: string) {
@@ -65,7 +93,7 @@ function pageIntro(page: string) {
 	];
 }
 
-async function overviewBlocks(db: D1Binding | undefined, tenantId: string, siteId: string): Promise<Block[]> {
+async function overviewBlocks(db: D1Binding | QueryDb | undefined, tenantId: string, siteId: string): Promise<Block[]> {
 	const blocks: Block[] = [...pageIntro("overview")];
 
 	if (!db) {
@@ -73,7 +101,7 @@ async function overviewBlocks(db: D1Binding | undefined, tenantId: string, siteI
 			type: "banner",
 			variant: "alert",
 			title: "Database tidak tersedia",
-			description: "Binding SIKESRA_DB belum tersedia di route context ini.",
+			description: "Database runtime SIKESRA belum tersedia di request context ini.",
 		});
 		return blocks;
 	}
@@ -116,7 +144,7 @@ function simplePageBlocks(page: string): Block[] {
 	];
 }
 
-async function getBlocksForPage(page: string, db: D1Binding | undefined, tenantId: string, siteId: string) {
+async function getBlocksForPage(page: string, db: D1Binding | QueryDb | undefined, tenantId: string, siteId: string) {
 	if (page === "overview") {
 		return overviewBlocks(db, tenantId, siteId);
 	}
@@ -138,7 +166,7 @@ async function getBlocksForPage(page: string, db: D1Binding | undefined, tenantI
 
 export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdminInteraction>) {
 	const input = routeCtx.input ?? {};
-	const db = routeCtx.env?.SIKESRA_DB;
+	const db = resolveDb(routeCtx);
 	const tenantId = routeCtx.site?.tenantId ?? "default";
 	const siteId = routeCtx.site?.id ?? "default";
 
