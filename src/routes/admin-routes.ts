@@ -1,6 +1,4 @@
-import { getRequestContext } from "emdash";
 import type { EmDashRouteContext } from "./handler-utils";
-import type { D1Binding } from "../repositories/db";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -10,17 +8,6 @@ interface PluginAdminInteraction {
 }
 
 type Block = Record<string, unknown>;
-type QueryDb = {
-	selectFrom: (table: string) => {
-		select: (cb: (eb: { fn: { countAll: () => { as: (name: string) => unknown } } }) => unknown) => {
-			where: (column: string, op: string, value: unknown) => {
-				where: (column: string, op: string, value: unknown) => {
-					executeTakeFirst: () => Promise<{ cnt?: number | string | bigint } | undefined>;
-				};
-			};
-		};
-	};
-};
 
 const PAGE_LABELS: Record<string, string> = {
 	overview: "Dashboard",
@@ -34,28 +21,6 @@ const PAGE_LABELS: Record<string, string> = {
 	audit: "Audit",
 	settings: "Pengaturan",
 };
-
-async function countWhere(db: D1Binding | QueryDb, table: string, tenantId: string, siteId: string, extra = "") {
-	if ("selectFrom" in db) {
-		if (extra.trim()) return 0;
-		const row = await db
-			.selectFrom(table)
-			.select((eb) => eb.fn.countAll().as("cnt"))
-			.where("tenant_id", "=", tenantId)
-			.where("site_id", "=", siteId)
-			.executeTakeFirst();
-		return Number(row?.cnt ?? 0);
-	}
-
-	const sql = `SELECT COUNT(*) as cnt FROM ${table} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL ${extra}`;
-	const row = await db.prepare(sql).bind(tenantId, siteId).first<{ cnt: number }>();
-	return row?.cnt ?? 0;
-}
-
-function resolveDb(routeCtx: EmDashRouteContext<PluginAdminInteraction>): D1Binding | QueryDb | undefined {
-	const requestDb = getRequestContext()?.db as QueryDb | undefined;
-	return routeCtx.env?.SIKESRA_DB ?? requestDb;
-}
 
 function navButtons(currentPage: string) {
 	return Object.entries(PAGE_LABELS).map(([page, label]) => ({
@@ -93,32 +58,15 @@ function pageIntro(page: string) {
 	];
 }
 
-async function overviewBlocks(db: D1Binding | QueryDb | undefined, tenantId: string, siteId: string): Promise<Block[]> {
+function overviewBlocks(): Block[] {
 	const blocks: Block[] = [...pageIntro("overview")];
-
-	if (!db) {
-		blocks.push({
-			type: "banner",
-			variant: "alert",
-			title: "Database tidak tersedia",
-			description: "Database runtime SIKESRA belum tersedia di request context ini.",
-		});
-		return blocks;
-	}
-
-	const [entityCount, importCount, exportCount, policyCount] = await Promise.all([
-		countWhere(db, "awcms_sikesra_entities", tenantId, siteId),
-		countWhere(db, "awcms_sikesra_import_batches", tenantId, siteId),
-		countWhere(db, "awcms_sikesra_export_jobs", tenantId, siteId),
-		countWhere(db, "awcms_sikesra_abac_policies", tenantId, siteId),
-	]);
 
 	blocks.push(
 		{ type: "fields", fields: [
-			{ label: "Total Entitas", value: String(entityCount) },
-			{ label: "Batch Import", value: String(importCount) },
-			{ label: "Job Ekspor", value: String(exportCount) },
-			{ label: "Kebijakan ABAC", value: String(policyCount) },
+			{ label: "Status", value: "Placeholder aktif" },
+			{ label: "Mode", value: "Admin Block Kit" },
+			{ label: "Keamanan", value: "Tetap lewat auth EmDash" },
+			{ label: "Tahap", value: "Rebuild bertahap" },
 		] },
 		{ type: "divider" },
 		{ type: "header", text: "Rute Penting" },
@@ -144,9 +92,9 @@ function simplePageBlocks(page: string): Block[] {
 	];
 }
 
-async function getBlocksForPage(page: string, db: D1Binding | QueryDb | undefined, tenantId: string, siteId: string) {
+function getBlocksForPage(page: string) {
 	if (page === "overview") {
-		return overviewBlocks(db, tenantId, siteId);
+		return overviewBlocks();
 	}
 
 	if (page in PAGE_LABELS) {
@@ -166,9 +114,6 @@ async function getBlocksForPage(page: string, db: D1Binding | QueryDb | undefine
 
 export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdminInteraction>) {
 	const input = routeCtx.input ?? {};
-	const db = resolveDb(routeCtx);
-	const tenantId = routeCtx.site?.tenantId ?? "default";
-	const siteId = routeCtx.site?.id ?? "default";
 
 	let page = (input.page || "").replace(/^\//, "") || "overview";
 	if (input.type === "block_action" && input.action_id?.startsWith("nav_")) {
@@ -176,6 +121,6 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	}
 
 	return {
-		blocks: await getBlocksForPage(page, db, tenantId, siteId),
+		blocks: getBlocksForPage(page),
 	};
 }
