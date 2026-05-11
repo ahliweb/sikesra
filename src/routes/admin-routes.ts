@@ -6,6 +6,7 @@ import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
 import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
+import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -21,6 +22,12 @@ interface VerificationDecisionFormState {
 	action: "verify" | "need_revision" | "reject";
 	note: string;
 	confirmAudit: boolean;
+}
+
+interface ImportCreateFormState {
+	filename: string;
+	objectTypeCode: string;
+	sheetName: string;
 }
 
 type Block = Record<string, unknown>;
@@ -136,6 +143,7 @@ function pageLabel(page: string): string {
 	if (page === "entities/new") return "Buat Draft Baru";
 	if (page.startsWith("entities/")) return "Detail Entitas";
 	if (page.startsWith("verification/")) return "Review Verifikasi";
+	if (page.startsWith("imports/")) return "Review Batch Import";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -321,6 +329,9 @@ function resolvePage(input: PluginAdminInteraction): string {
 	}
 
 	const normalizedPage = (input.page || "").replace(/^\//, "");
+	if (normalizedPage.startsWith("imports/")) {
+		return normalizedPage;
+	}
 	if (normalizedPage.startsWith("verification/")) {
 		return normalizedPage;
 	}
@@ -341,11 +352,21 @@ function resolvePage(input: PluginAdminInteraction): string {
 		return id ? `verification/${id}` : "verification";
 	}
 
+	if (input.action_id?.startsWith("imports_open_") || input.action_id === "imports_back_to_list" || input.action_id?.startsWith("imports_save_row_")) {
+		const id = /^imports_(?:open|save_row)_(.+)$/.exec(input.action_id)?.[1];
+		return id ? `imports/${id}` : "imports";
+	}
+
 	if (input.block_id?.startsWith("entities_") || input.action_id?.startsWith("entities_")) {
 		return "entities";
 	}
 
 	return normalizedPage || "overview";
+}
+
+function parseImportBatchId(page: string): string | undefined {
+	if (!page.startsWith("imports/")) return undefined;
+	return page.slice("imports/".length) || undefined;
 }
 
 function parseVerificationEntityId(page: string): string | undefined {
@@ -388,6 +409,15 @@ function parseVerificationDecisionForm(input: PluginAdminInteraction, fallbackLe
 		action: (stringValue(values.action) as VerificationDecisionFormState["action"]) ?? "verify",
 		note: stringState(values.note),
 		confirmAudit: values.confirmAudit === true || values.confirmAudit === "true" || values.confirmAudit === "on",
+	};
+}
+
+function parseImportCreateForm(input: PluginAdminInteraction): ImportCreateFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		filename: stringState(values.filename),
+		objectTypeCode: stringState(values.objectTypeCode),
+		sheetName: stringState(values.sheetName),
 	};
 }
 
@@ -508,6 +538,13 @@ async function loadWizardOptions(db: D1Binding, tenantId: string, siteId: string
 		villages: villages.results,
 		localRegions,
 	};
+}
+
+async function loadImportOptions(db: D1Binding, tenantId: string, siteId: string) {
+	const objectTypes = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 ORDER BY sort_order, name",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+	return { objectTypes: objectTypes.results };
 }
 
 function buildIdPreview(state: WizardFormState): string {
@@ -826,6 +863,28 @@ function formatVerificationRisk(risk: string): string {
 	return "Risiko Rendah";
 }
 
+function importStageStatus(status: string): string {
+	if (status === "promoted") return "Selesai";
+	if (status === "validated") return "Siap Promosi";
+	if (status === "mapped") return "Perlu Validasi";
+	if (status === "uploaded") return "Perlu Mapping";
+	if (status === "failed") return "Gagal";
+	return status || "Draft";
+}
+
+function rowStatusLabel(status: string): string {
+	return ({
+		pending: "Pending",
+		valid: "Valid",
+		invalid: "Invalid",
+		corrected: "Corrected",
+		duplicate_review: "Duplicate Review",
+		promoted: "Promoted",
+		skipped: "Skipped",
+		failed: "Failed",
+	} as Record<string, string>)[status] ?? status;
+}
+
 function determineDefaultLevel(status: string): VerificationLevel {
 	if (status === "submitted_subdistrict") return "kecamatan";
 	if (status === "submitted_regency") return "kabupaten";
@@ -960,6 +1019,158 @@ async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdmin
 			{ type: "text_input", action_id: "note", label: "Alasan / Catatan", multiline: true, initial_value: "", placeholder: "Wajib diisi untuk need revision atau reject" },
 			{ type: "checkbox", action_id: "confirmAudit", label: "Saya memahami keputusan ini akan diaudit" },
 		], submit: { label: "Kirim Keputusan", action_id: `verification_decide_${entityId}` } },
+	];
+}
+
+async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const options = await loadImportOptions(db, ctx.tenantId, ctx.siteId);
+	let notice = "";
+	const form = parseImportCreateForm(input);
+
+	if (input.type === "form_submit" && input.action_id === "imports_create_batch") {
+		if (form.filename.trim()) {
+			const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+			const now = new Date();
+			const yyyy = String(now.getUTCFullYear());
+			const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+			const safeName = form.filename.trim().replace(/[^a-zA-Z0-9._-]+/g, "-");
+			await db.prepare(
+				`INSERT INTO awcms_sikesra_import_batches
+				 (id, tenant_id, site_id, r2_key, original_filename, sheet_name, status, object_type_code, created_by, updated_by)
+				 VALUES (?, ?, ?, ?, ?, ?, 'uploaded', ?, ?, ?)`,
+			).bind(
+				id,
+				ctx.tenantId,
+				ctx.siteId,
+				`tenants/${ctx.tenantId}/sites/${ctx.siteId}/modules/sikesra/imports/${yyyy}/${mm}/${safeName}`,
+				form.filename.trim(),
+				form.sheetName || null,
+				form.objectTypeCode || null,
+				ctx.userId,
+				ctx.userId,
+			).run();
+			notice = `Batch import ${id} berhasil dibuat. Lanjutkan ke tahap mapping dan validasi.`;
+		}
+	}
+
+	const rows = await db.prepare(
+		`SELECT id, original_filename, sheet_name, status, object_type_code, row_count, valid_row_count, invalid_row_count, promoted_row_count, created_at, updated_at
+		 FROM awcms_sikesra_import_batches
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+		 ORDER BY created_at DESC LIMIT 20`,
+	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
+
+	return [
+		...pageIntro("imports"),
+		{ type: "banner", variant: "default", title: "Import Center SIKESRA", description: "Pusat import menata alur upload workbook, pemetaan kolom, staging row, validasi, duplicate review, promosi, dan laporan hasil secara bertahap." },
+		...(notice ? [{ type: "banner", variant: "success", title: "Batch dibuat", description: notice }] : []),
+		{ type: "stats", items: [
+			{ label: "Batch aktif", value: String(rows.results.length), description: "20 batch terbaru" },
+			{ label: "Perlu mapping", value: String(rows.results.filter((row) => String(row.status) === "uploaded").length), description: "Upload baru menunggu mapping" },
+			{ label: "Siap promosi", value: String(rows.results.filter((row) => String(row.status) === "validated").length), description: "Sudah tervalidasi" },
+			{ label: "Gagal", value: String(rows.results.filter((row) => String(row.status) === "failed").length), description: "Perlu investigasi" },
+		] },
+		{ type: "form", block_id: "imports_create_form", fields: [
+			{ type: "text_input", action_id: "filename", label: "Upload workbook (nama file)", initial_value: form.filename, placeholder: "contoh: data-rumah-ibadah-2026.xlsx" },
+			{ type: "text_input", action_id: "sheetName", label: "Select sheet (opsional untuk draft shell)", initial_value: form.sheetName, placeholder: "contoh: Sheet1 / Data Yatim" },
+			{ type: "select", action_id: "objectTypeCode", label: "Jenis data target", initial_value: form.objectTypeCode, options: [option("Pilih jenis data", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
+		], submit: { label: "Buat Batch Import", action_id: "imports_create_batch" } },
+		{ type: "header", text: "Daftar Batch" },
+		...(rows.results.length ? rows.results.flatMap((row) => ([
+			{ type: "section", text: `${String(row.original_filename ?? "upload.xlsx")} | ${importStageStatus(String(row.status ?? "uploaded"))} | ${String(row.row_count ?? 0)} row`, accessory: { type: "button", label: "Buka Batch", action_id: `imports_open_${String(row.id)}`, style: "primary" } },
+			{ type: "context", text: `Sheet ${String(row.sheet_name ?? "belum dipilih")} · valid ${String(row.valid_row_count ?? 0)} · invalid ${String(row.invalid_row_count ?? 0)} · promoted ${String(row.promoted_row_count ?? 0)}` },
+		])) : [{ type: "empty", title: "Belum ada batch import", description: "Buat batch pertama untuk memulai alur upload workbook dan staging row." }]),
+	];
+}
+
+async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const batchId = parseImportBatchId(page);
+	if (!batchId) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Batch import tidak valid", description: `page: ${page}` }];
+	}
+
+	if (input.type === "form_submit" && input.action_id === `imports_save_row_${batchId}`) {
+		const values = input.values ?? {};
+		const rowId = stringValue(values.rowId);
+		if (rowId) {
+			await updateStagingRow(db, rowId, {
+				mappedData: { correctedPreview: stringState(values.correctedPreview) },
+				validationErrors: stringState(values.validationNote) ? { note: [stringState(values.validationNote)] } : undefined,
+				rowStatus: (stringValue(values.rowStatus) as any) ?? undefined,
+			}, ctx);
+		}
+	}
+
+	const batch = await getImportBatch(db, batchId, ctx);
+	if (!batch) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Batch import tidak ditemukan", description: `ID ${batchId} tidak tersedia pada scope backend saat ini.` }];
+	}
+
+	const stagingRows = await getStagingRows(db, batchId, ctx);
+	const selectedRow = stagingRows.find((row) => row.rowStatus === "invalid" || row.rowStatus === "duplicate_review") ?? stagingRows[0];
+	const duplicateRows = stagingRows.filter((row) => row.rowStatus === "duplicate_review");
+	const invalidRows = stagingRows.filter((row) => row.rowStatus === "invalid");
+
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
+		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
+		{ type: "fields", fields: [
+			{ label: "Workbook", value: batch.originalFilename },
+			{ label: "Sheet", value: batch.sheetName ?? "Belum dipilih" },
+			{ label: "Status", value: importStageStatus(batch.status) },
+			{ label: "Row count", value: String(batch.rowCount) },
+			{ label: "Valid row", value: String(batch.validRowCount) },
+			{ label: "Invalid row", value: String(batch.invalidRowCount) },
+			{ label: "Promoted row", value: String(batch.promotedRowCount) },
+			{ label: "Dibuat", value: batch.createdAt },
+		] },
+		{ type: "table", columns: [{ key: "step", label: "Tahap" }, { key: "status", label: "Status" }, { key: "note", label: "Catatan" }], rows: [
+			{ step: "1. Upload workbook", status: "Selesai", note: `File ${batch.originalFilename} tercatat di batch shell.` },
+			{ step: "2. Select sheet", status: batch.sheetName ? "Selesai" : "Perlu dipilih", note: batch.sheetName ?? "Pilih sheet target sebelum parsing row." },
+			{ step: "3. Map columns", status: batch.status === "uploaded" ? "Menunggu" : "Berjalan / selesai", note: "Pemetaan kolom akan menargetkan field SIKESRA sesuai jenis data." },
+			{ step: "4. Validate mapping", status: batch.status === "validated" || batch.status === "promoted" ? "Selesai" : batch.status === "mapped" ? "Siap divalidasi" : "Menunggu", note: "Validasi wajib memeriksa tipe data, region, dan required field." },
+			{ step: "5. Preview staging rows", status: stagingRows.length ? "Tersedia" : "Belum tersedia", note: `${stagingRows.length} row staging pada batch ini.` },
+			{ step: "6. Correct invalid rows", status: invalidRows.length ? "Perlu tindakan" : "Tidak ada invalid row", note: `${invalidRows.length} row invalid memerlukan koreksi.` },
+			{ step: "7. Review duplicate candidates", status: duplicateRows.length ? "Perlu review" : "Tidak ada kandidat", note: `${duplicateRows.length} row berstatus duplicate review.` },
+			{ step: "8. Promote selected valid rows", status: batch.status === "promoted" ? "Selesai" : batch.status === "validated" ? "Siap promosi" : "Menunggu", note: "Promosi tidak sama dengan verifikasi akhir." },
+			{ step: "9. Display import report", status: batch.status === "promoted" ? "Siap ditampilkan" : "Akan lengkap setelah promosi", note: "Laporan merangkum valid, invalid, duplicate, promoted, skipped, dan failed." },
+		] },
+		{ type: "tab", default_tab: 0, panels: [
+			{ label: "Staging Preview", blocks: [
+				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "rowStatus", label: "Status" }, { key: "duplicateRisk", label: "Risk" }, { key: "rawPreview", label: "Preview" }], rows: stagingRows.map((row) => ({ rowNumber: row.rowNumber, rowStatus: rowStatusLabel(row.rowStatus), duplicateRisk: row.duplicateRisk ?? "-", rawPreview: JSON.stringify(row.rawData).slice(0, 80) })), empty_text: "Belum ada staging row untuk batch ini." },
+			] },
+			{ label: "Correct Invalid Rows", blocks: [
+				...(selectedRow ? [
+					{ type: "fields", fields: [
+						{ label: "Row terpilih", value: String(selectedRow.rowNumber) },
+						{ label: "Status", value: rowStatusLabel(selectedRow.rowStatus) },
+						{ label: "Validation errors", value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "-" },
+					] },
+					{ type: "form", block_id: "imports_correct_row", fields: [
+						{ type: "text_input", action_id: "rowId", label: "Row ID", initial_value: selectedRow.id },
+						{ type: "text_input", action_id: "correctedPreview", label: "Corrected preview", multiline: true, initial_value: JSON.stringify(selectedRow.mappedData ?? selectedRow.rawData, null, 2) },
+						{ type: "text_input", action_id: "validationNote", label: "Catatan validasi", multiline: true, initial_value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "" },
+						{ type: "select", action_id: "rowStatus", label: "Status row", initial_value: selectedRow.rowStatus, options: [option("Valid", "valid"), option("Invalid", "invalid"), option("Corrected", "corrected"), option("Duplicate Review", "duplicate_review"), option("Skipped", "skipped"), option("Failed", "failed")] },
+					], submit: { label: "Simpan Koreksi", action_id: `imports_save_row_${batchId}` } },
+				] : [{ type: "empty", title: "Tidak ada row yang perlu dikoreksi", description: "Invalid row atau duplicate review belum tersedia pada batch ini." }]),
+			] },
+			{ label: "Duplicate Review", blocks: [
+				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "risk", label: "Risk" }, { key: "decision", label: "Aksi Operator" }], rows: duplicateRows.map((row) => ({ rowNumber: row.rowNumber, risk: row.duplicateRisk ?? "-", decision: row.duplicateRisk === "blocking" ? "Butuh keputusan dan alasan" : "Review sebelum promosi" })), empty_text: "Belum ada kandidat duplikasi untuk direview." },
+			] },
+			{ label: "Promote & Report", blocks: [
+				{ type: "fields", fields: [
+					{ label: "Promote readiness", value: batch.status === "validated" ? "Siap promosi" : batch.status === "promoted" ? "Sudah dipromosikan" : "Belum siap" },
+					{ label: "Promoted rows", value: String(batch.promotedRowCount) },
+					{ label: "Import report", value: batch.status === "promoted" ? "Laporan siap ditinjau" : "Laporan akan lengkap setelah promosi" },
+				] },
+				{ type: "context", text: "Promosi valid row dan duplicate override tetap memerlukan backend workflow lengkap sebelum tombol eksekusi diaktifkan." },
+			] },
+		] },
 	];
 }
 
@@ -1193,6 +1404,16 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return overviewBlocks(routeCtx);
 	}
 
+	if (page === "imports") {
+		if (!routeCtx) throw new Error("imports page requires route context");
+		return importsBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
+	if (page.startsWith("imports/")) {
+		if (!routeCtx) throw new Error("import batch detail page requires route context");
+		return importBatchDetailBlocks(routeCtx, page, routeCtx.input ?? {});
+	}
+
 	if (page === "verification") {
 		if (!routeCtx) throw new Error("verification page requires route context");
 		return verificationQueueBlocks(routeCtx, routeCtx.input ?? {});
@@ -1238,6 +1459,18 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "entities/new") {
 		return {
 			blocks: await wizardBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "imports") {
+		return {
+			blocks: await importsBlocks(routeCtx, input),
+		};
+		}
+
+	if (page.startsWith("imports/")) {
+		return {
+			blocks: await importBatchDetailBlocks(routeCtx, page, input),
 		};
 	}
 
