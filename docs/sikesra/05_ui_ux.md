@@ -35,17 +35,19 @@ Menu contribution:
 
 ```txt
 SIKESRA
-Dashboard
-Data Utama
-Verifikasi
-Import Excel
-Dokumen
-Laporan
-Wilayah
-Atribut & Akses
-Audit
-Pengaturan
+Ikhtisar / Dashboard
+Operasional / Data Utama
+Operasional / Verifikasi
+Operasional / Import Excel
+Operasional / Dokumen
+Analitik / Laporan
+Referensi / Wilayah
+Governance / Atribut & Akses
+Governance / Audit
+Governance / Pengaturan
 ```
+
+Current runtime note: EmDash plugin `admin.pages` are flat entries with `path`, `label`, and optional `icon`. Until upstream exposes native sidebar section/group metadata, SIKESRA uses grouped label prefixes and ordered entries as the compatible fallback.
 
 Each entry must be permission-aware. Direct route/API access must still be protected by the backend.
 
