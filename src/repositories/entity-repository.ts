@@ -4,6 +4,8 @@
 
 import type { D1Binding, D1Result } from "./db";
 import type { SikesraRequestContext } from "../security/request-context";
+import { maskProtectedName } from "../security/masking";
+import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import type {
   SikesraEntitySummary,
   EntityListFilters,
@@ -14,6 +16,7 @@ import type {
   DuplicateStatus,
   SourceInput,
 } from "../services/entity";
+import type { LocalRegionBreadcrumb } from "../services/types";
 
 const TABLE = "awcms_sikesra_entities";
 
@@ -22,10 +25,9 @@ function baseWhere(ctx: SikesraRequestContext): { sql: string; params: unknown[]
   const conditions = ["tenant_id = ?", "site_id = ?", "deleted_at IS NULL"];
   const params: unknown[] = [ctx.tenantId, ctx.siteId];
 
-  // Region scope enforcement (backend-computed)
   if (ctx.regionScope.villageCodes?.length) {
-    const placeholders = ctx.regionScope.villageCodes.map(() => "?").join(",");
-    conditions.push(`official_village_code IN (${placeholders})`);
+    const scopedPlaceholders = ctx.regionScope.villageCodes.map(() => "?").join(",");
+    conditions.push(`official_village_code IN (${scopedPlaceholders})`);
     params.push(...ctx.regionScope.villageCodes);
   }
 
@@ -52,9 +54,17 @@ function applyFilters(
     conditions.push("object_subtype_code = ?");
     params.push(filters.objectSubtypeCode);
   }
+  if (filters?.districtCode) {
+    conditions.push("official_village_code LIKE ?");
+    params.push(`${filters.districtCode}%`);
+  }
   if (filters?.villageCode) {
     conditions.push("official_village_code = ?");
     params.push(filters.villageCode);
+  }
+  if (filters?.localRegionId) {
+    conditions.push("local_region_id = ?");
+    params.push(filters.localRegionId);
   }
   if (filters?.statusData) {
     conditions.push("status_data = ?");
@@ -76,11 +86,18 @@ function applyFilters(
     conditions.push("duplicate_status = ?");
     params.push(filters.duplicateStatus);
   }
+  if (typeof filters?.completenessMin === "number") {
+    conditions.push("completeness_percent >= ?");
+    params.push(filters.completenessMin);
+  }
+  if (typeof filters?.completenessMax === "number") {
+    conditions.push("completeness_percent <= ?");
+    params.push(filters.completenessMax);
+  }
 
   return { sql: conditions.join(" AND "), params };
 }
 
-// Raw entity row from D1
 interface EntityRow {
   id: string;
   sikesra_id_20?: string;
@@ -89,6 +106,7 @@ interface EntityRow {
   entity_kind: EntityKind;
   display_name: string;
   official_village_code: string;
+  local_region_id?: string | null;
   status_data: DataStatus;
   status_verification: string;
   verification_level?: string;
@@ -100,18 +118,141 @@ interface EntityRow {
   updated_at: string;
 }
 
-function toSummary(row: EntityRow): SikesraEntitySummary {
+interface LocalRegionRow {
+  id: string;
+  parent_id?: string | null;
+  level: string;
+  code_local?: string | null;
+  name: string;
+}
+
+interface HydrationMaps {
+  objectTypes: Map<string, string>;
+  objectSubtypes: Map<string, string>;
+  officialRegions: Map<string, string>;
+  localRegions: Map<string, LocalRegionRow>;
+}
+
+function unique(values: Array<string | null | undefined>): string[] {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
+function buildPlaceholders(count: number): string {
+  return Array.from({ length: count }, () => "?").join(",");
+}
+
+function canRevealSensitive(ctx: SikesraRequestContext): boolean {
+  return ctx.permissions.includes(SIKESRA_PERMISSIONS.SENSITIVE_REVEAL)
+    || ctx.permissions.includes(SIKESRA_PERMISSIONS.SENSITIVE_HIGHLY_RESTRICTED_READ)
+    || ctx.roles.includes("owner")
+    || ctx.roles.includes("super_admin");
+}
+
+async function loadHydrationMaps(
+  db: D1Binding,
+  rows: EntityRow[],
+  ctx: SikesraRequestContext,
+): Promise<HydrationMaps> {
+  const objectTypeCodes = unique(rows.map((row) => row.object_type_code));
+  const subtypeTypeCodes = unique(rows.map((row) => row.object_type_code));
+  const villageCodes = unique(rows.map((row) => row.official_village_code));
+  const districtCodes = unique(villageCodes.map((code) => code.length >= 6 ? code.slice(0, 6) : null));
+  const regencyCodes = unique(villageCodes.map((code) => code.length >= 4 ? code.slice(0, 4) : null));
+  const provinceCodes = unique(villageCodes.map((code) => code.length >= 2 ? code.slice(0, 2) : null));
+  const regionCodes = unique([...villageCodes, ...districtCodes, ...regencyCodes, ...provinceCodes]);
+  const localRegionIds = unique(rows.map((row) => row.local_region_id ?? null));
+
+  const objectTypes = new Map<string, string>();
+  const objectSubtypes = new Map<string, string>();
+  const officialRegions = new Map<string, string>();
+  const localRegions = new Map<string, LocalRegionRow>();
+
+  if (objectTypeCodes.length > 0) {
+    const result = await db.prepare(
+      `SELECT code, name FROM awcms_sikesra_object_types WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND code IN (${buildPlaceholders(objectTypeCodes.length)})`,
+    ).bind(ctx.tenantId, ctx.siteId, ...objectTypeCodes).all<{ code: string; name: string }>();
+
+    for (const row of result.results) {
+      objectTypes.set(row.code, row.name);
+    }
+  }
+
+  if (subtypeTypeCodes.length > 0) {
+    const result = await db.prepare(
+      `SELECT type_code, code, name FROM awcms_sikesra_object_subtypes WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND type_code IN (${buildPlaceholders(subtypeTypeCodes.length)})`,
+    ).bind(ctx.tenantId, ctx.siteId, ...subtypeTypeCodes).all<{ type_code: string; code: string; name: string }>();
+
+    for (const row of result.results) {
+      objectSubtypes.set(`${row.type_code}:${row.code}`, row.name);
+    }
+  }
+
+  if (regionCodes.length > 0) {
+    const result = await db.prepare(
+      `SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND code IN (${buildPlaceholders(regionCodes.length)})`,
+    ).bind(ctx.tenantId, ctx.siteId, ...regionCodes).all<{ code: string; name: string }>();
+
+    for (const row of result.results) {
+      officialRegions.set(row.code, row.name);
+    }
+  }
+
+  if (localRegionIds.length > 0) {
+    const result = await db.prepare(
+      `SELECT id, parent_id, level, code_local, name FROM awcms_sikesra_local_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND id IN (${buildPlaceholders(localRegionIds.length)})`,
+    ).bind(ctx.tenantId, ctx.siteId, ...localRegionIds).all<LocalRegionRow>();
+
+    for (const row of result.results) {
+      localRegions.set(row.id, row);
+    }
+  }
+
+  return { objectTypes, objectSubtypes, officialRegions, localRegions };
+}
+
+function toLocalRegionBreadcrumb(localRegion?: LocalRegionRow): LocalRegionBreadcrumb | undefined {
+  if (!localRegion) return undefined;
+  return {
+    items: [{
+      id: localRegion.id,
+      level: localRegion.level as LocalRegionBreadcrumb["items"][number]["level"],
+      codeLocal: localRegion.code_local ?? undefined,
+      name: localRegion.name,
+    }],
+  };
+}
+
+function toSummary(row: EntityRow, maps: HydrationMaps, ctx: SikesraRequestContext): SikesraEntitySummary {
+  const revealSensitive = canRevealSensitive(ctx);
+  const villageCode = row.official_village_code;
+  const districtCode = villageCode?.length >= 6 ? villageCode.slice(0, 6) : undefined;
+  const regencyCode = villageCode?.length >= 4 ? villageCode.slice(0, 4) : undefined;
+  const provinceCode = villageCode?.length >= 2 ? villageCode.slice(0, 2) : undefined;
+  const localRegion = row.local_region_id ? maps.localRegions.get(row.local_region_id) : undefined;
+  const displayName = row.sensitivity_level === "public_safe" || row.sensitivity_level === "internal"
+    ? row.display_name
+    : (maskProtectedName(row.display_name, {
+      canRevealSensitive: revealSensitive,
+      canRevealHighlyRestricted: revealSensitive,
+    }) ?? row.display_name);
+
   return {
     id: row.id,
     sikesraId20: row.sikesra_id_20,
     objectTypeCode: row.object_type_code,
-    objectTypeName: "", // TODO: join with object_types
+    objectTypeName: maps.objectTypes.get(row.object_type_code) ?? row.object_type_code,
     objectSubtypeCode: row.object_subtype_code,
-    objectSubtypeName: "", // TODO: join with object_subtypes
+    objectSubtypeName: maps.objectSubtypes.get(`${row.object_type_code}:${row.object_subtype_code}`) ?? row.object_subtype_code,
     entityKind: row.entity_kind,
-    displayName: row.display_name,
-    masked: false, // TODO: evaluate based on user permissions
-    officialRegion: {}, // TODO: join with official_regions
+    displayName,
+    masked: displayName !== row.display_name,
+    officialRegion: {
+      province: provinceCode && maps.officialRegions.has(provinceCode) ? { code: provinceCode, name: maps.officialRegions.get(provinceCode)! } : undefined,
+      regency: regencyCode && maps.officialRegions.has(regencyCode) ? { code: regencyCode, name: maps.officialRegions.get(regencyCode)! } : undefined,
+      district: districtCode && maps.officialRegions.has(districtCode) ? { code: districtCode, name: maps.officialRegions.get(districtCode)! } : undefined,
+      village: villageCode && maps.officialRegions.has(villageCode) ? { code: villageCode, name: maps.officialRegions.get(villageCode)! } : undefined,
+    },
+    localRegion: toLocalRegionBreadcrumb(localRegion),
     statusData: row.status_data,
     statusVerification: row.status_verification,
     verificationLevel: row.verification_level,
@@ -123,8 +264,6 @@ function toSummary(row: EntityRow): SikesraEntitySummary {
     updatedAt: row.updated_at,
   };
 }
-
-// ---------- Repository Methods ----------
 
 export async function listEntities(
   db: D1Binding,
@@ -144,9 +283,10 @@ export async function listEntities(
   const sql = `SELECT * FROM ${TABLE} WHERE ${filtered.sql} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
   const allParams = [...filtered.params, limit, offset];
   const result = await db.prepare(sql).bind(...allParams).all<EntityRow>();
+  const maps = await loadHydrationMaps(db, result.results, ctx);
 
   return {
-    items: result.results.map(toSummary),
+    items: result.results.map((row) => toSummary(row, maps, ctx)),
     total,
   };
 }
@@ -217,7 +357,6 @@ export async function patchEntity(
 
   for (const [key, value] of Object.entries(updates)) {
     if (value === undefined) continue;
-    // Map camelCase to snake_case
     const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
     setClauses.push(`${snakeKey} = ?`);
     params.push(value);
