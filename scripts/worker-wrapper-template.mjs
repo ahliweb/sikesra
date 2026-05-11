@@ -119,6 +119,9 @@ export default {
 
     if (pathname === "/health") return handleHealth(env);
     if (pathname === "/sikesra" || pathname === "/sikesra/") return handleSikesraPublic(env);
+    if (pathname === "/_emdash/api/plugins/sikesra/admin" || pathname === "/_emdash/api/plugins/sikesra/admin/") {
+      return handleEmDash(request, env, ctx, "sikesra-admin");
+    }
     if (pathname.startsWith("/_emdash/api/plugins/sikesra/")) return handleSikesraApi();
 
     try {

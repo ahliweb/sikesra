@@ -34,8 +34,8 @@ Use this order when generic core guidance and the implemented runtime differ:
 | Root public site `/` | EmDash/Astro host | `src/pages/index.astro`, served through EmDash route path with `x-route: emdash-root`. |
 | SIKESRA public page `/sikesra` | SIKESRA wrapper | `scripts/worker-wrapper-template.mjs` returns aggregate-safe public HTML. |
 | EmDash admin `/_emdash/*` | EmDash | Routed to the generated EmDash Worker. |
-| SIKESRA admin UI `/_emdash/admin/plugins/sikesra/*` | EmDash admin shell | Admin plugin pages must be rebuilt after API/security foundation is restored. |
-| SIKESRA admin/API routes | Disabled during scratch rebuild | `/_emdash/api/plugins/sikesra/*` returns `503` until rebuilt through `docs/sikesra/IMPLEMENTATION_PLAN.md`. |
+| SIKESRA admin UI `/_emdash/admin/plugins/sikesra/*` | EmDash admin shell | Admin plugin pages render through the EmDash plugin shell and Block Kit route. |
+| SIKESRA admin/API routes | Mixed | `/_emdash/api/plugins/sikesra/admin` is enabled for admin Block Kit rendering; unfinished `/_emdash/api/plugins/sikesra/v1/*` routes remain rebuild-gated until validated. |
 | Future SIKESRA versioned APIs | SIKESRA plugin/module handlers | Target namespace remains `/_emdash/api/plugins/sikesra/v1/*`. |
 | Future SIKESRA public APIs | SIKESRA plugin/module handlers | Target namespace remains `/_emdash/api/plugins/sikesra/public/*`, activation-gated and aggregate-safe. |
 
@@ -114,7 +114,7 @@ Therefore `/_emdash/api/plugins/sikesra/admin` must return:
 
 Returning a raw `{ "blocks": [] }` payload breaks the admin page with `Cannot read properties of undefined (reading 'blocks')`.
 
-During the scratch rebuild, `/_emdash/api/plugins/sikesra/*` is intentionally disabled with `503`. If future implementation requires wrapper-owned admin rendering because the native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`, create a separate adapter decision before implementing it.
+During the scratch rebuild, unfinished SIKESRA APIs remain disabled with `503`, but the admin Block Kit route `/_emdash/api/plugins/sikesra/admin` is allowed through to EmDash so the plugin shell can render. If future implementation requires wrapper-owned admin rendering because the native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`, create a separate adapter decision before implementing it.
 
 The previously used workaround pattern must not be restored without that decision:
 
@@ -130,8 +130,8 @@ Plugin activation in `_plugin_state` currently controls only the SIKESRA public 
 
 | Plugin State | `/sikesra` | `/_emdash/api/plugins/sikesra/*` |
 |---|---|---|
-| active or missing state | Enabled | `503` rebuild placeholder |
-| inactive | `404` | `503` rebuild placeholder |
+| active or missing state | Enabled | `admin` enabled; unfinished routes return `503` rebuild placeholder |
+| inactive | `404` | `admin` enabled; unfinished routes return `503` rebuild placeholder |
 
 ## Validation Checklist
 
@@ -151,7 +151,8 @@ After deploy, validate:
 /                                      -> 200, x-route: emdash-root
 /sikesra                               -> 200, x-route: sikesra
 /_emdash/admin                         -> EmDash auth/admin shell
-/_emdash/api/plugins/sikesra/*         -> 503 until rebuilt
+/_emdash/api/plugins/sikesra/admin     -> authenticated EmDash Block Kit response
+/_emdash/api/plugins/sikesra/v1/*      -> 503 until rebuilt
 ```
 
 ## Known Integration Gaps
