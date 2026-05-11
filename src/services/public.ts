@@ -2,6 +2,9 @@
 // Aggregate-safe public dashboard data (no admin API client usage)
 // Source: docs/sikesra/04_api_contracts.md, docs/sikesra/06_security_rbac_abac.md
 
+import type { D1Binding } from "../repositories/db";
+import type { SikesraRequestContext } from "../security/request-context";
+
 // ---------- Public Metadata ----------
 
 export interface PublicMetadataResponse {
@@ -13,13 +16,148 @@ export interface PublicMetadataResponse {
   officialContact?: string;
 }
 
-export async function getPublicMetadata(): Promise<PublicMetadataResponse> {
-  // TODO: read from awcms_sikesra_settings where public_enabled = 1
+export interface PublicSummaryFilters {
+  districtCode?: string;
+  villageCode?: string;
+  objectTypeCode?: string;
+  year?: number;
+  status?: string;
+}
+
+interface PublicSettingsRow {
+  public_enabled: number;
+  public_title?: string | null;
+  public_description?: string | null;
+  data_scope_note?: string | null;
+  official_contact?: string | null;
+  small_cell_threshold?: number | null;
+}
+
+async function resolvePublicScope(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+): Promise<SikesraRequestContext> {
+  const currentSettings = await db.prepare(
+    `SELECT COUNT(*) AS cnt FROM awcms_sikesra_settings WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+  ).bind(ctx.tenantId, ctx.siteId).first<{ cnt: number }>();
+
+  if ((currentSettings?.cnt ?? 0) > 0) {
+    return ctx;
+  }
+
+  const defaultSettings = await db.prepare(
+    `SELECT COUNT(*) AS cnt FROM awcms_sikesra_settings WHERE tenant_id = 'default' AND site_id = 'default' AND deleted_at IS NULL`,
+  ).first<{ cnt: number }>();
+
+  if ((defaultSettings?.cnt ?? 0) > 0) {
+    return {
+      ...ctx,
+      tenantId: "default",
+      siteId: "default",
+    };
+  }
+
+  return ctx;
+}
+
+function basePublicWhere(ctx: SikesraRequestContext): { clauses: string[]; params: unknown[] } {
   return {
-    enabled: false,
-    title: "SIKESRA",
-    description: "Data agregat kesejahteraan rakyat",
-    dataScopeNote: "Data ditampilkan dalam bentuk agregat yang telah diverifikasi.",
+    clauses: [
+      "tenant_id = ?",
+      "site_id = ?",
+      "deleted_at IS NULL",
+      "status_data = 'active'",
+      "status_verification = 'verified'",
+      "sensitivity_level IN ('public_safe', 'internal')",
+    ],
+    params: [ctx.tenantId, ctx.siteId],
+  };
+}
+
+function withPublicFilters(
+  ctx: SikesraRequestContext,
+  filters?: PublicSummaryFilters,
+): { whereSql: string; params: unknown[] } {
+  const { clauses, params } = basePublicWhere(ctx);
+
+  if (filters?.districtCode) {
+    clauses.push("official_village_code LIKE ?");
+    params.push(`${filters.districtCode}%`);
+  }
+  if (filters?.villageCode) {
+    clauses.push("official_village_code = ?");
+    params.push(filters.villageCode);
+  }
+  if (filters?.objectTypeCode) {
+    clauses.push("object_type_code = ?");
+    params.push(filters.objectTypeCode);
+  }
+  if (typeof filters?.year === "number" && Number.isFinite(filters.year)) {
+    clauses.push("substr(COALESCE(verified_at, updated_at, created_at), 1, 4) = ?");
+    params.push(String(filters.year));
+  }
+  if (filters?.status === "active") {
+    clauses.push("status_data = 'active'");
+  }
+  if (filters?.status === "verified") {
+    clauses.push("status_verification = 'verified'");
+  }
+
+  return { whereSql: clauses.join(" AND "), params };
+}
+
+async function getPublicSettings(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+): Promise<PublicSettingsRow | null> {
+  return db.prepare(
+    `SELECT public_enabled, public_title, public_description, data_scope_note, official_contact, small_cell_threshold
+     FROM awcms_sikesra_settings
+     WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+     LIMIT 1`,
+  ).bind(ctx.tenantId, ctx.siteId).first<PublicSettingsRow>();
+}
+
+async function getLatestPublicUpdate(db: D1Binding, ctx: SikesraRequestContext): Promise<string | undefined> {
+  const { whereSql, params } = withPublicFilters(ctx);
+  const row = await db.prepare(
+    `SELECT MAX(COALESCE(verified_at, updated_at, created_at)) AS latest_update_at
+     FROM awcms_sikesra_entities
+     WHERE ${whereSql}`,
+  ).bind(...params).first<{ latest_update_at?: string | null }>();
+
+  return row?.latest_update_at ?? undefined;
+}
+
+async function getScopedPublicEntityCount(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+  filters?: PublicSummaryFilters,
+): Promise<number> {
+  const { whereSql, params } = withPublicFilters(ctx, filters);
+  const row = await db.prepare(
+    `SELECT COUNT(*) AS cnt FROM awcms_sikesra_entities WHERE ${whereSql}`,
+  ).bind(...params).first<{ cnt: number }>();
+  return row?.cnt ?? 0;
+}
+
+export async function getPublicMetadata(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+): Promise<PublicMetadataResponse> {
+  const scope = await resolvePublicScope(db, ctx);
+  const [settings, latestUpdateAt] = await Promise.all([
+    getPublicSettings(db, scope),
+    getLatestPublicUpdate(db, scope),
+  ]);
+
+  return {
+    enabled: (settings?.public_enabled ?? 0) === 1,
+    title: settings?.public_title ?? "SIKESRA",
+    description: settings?.public_description ?? "Data agregat kesejahteraan rakyat yang telah diverifikasi.",
+    latestUpdateAt,
+    dataScopeNote: settings?.data_scope_note ?? "Data ditampilkan dalam bentuk agregat yang telah diverifikasi.",
+    officialContact: settings?.official_contact ?? undefined,
   };
 }
 
@@ -37,17 +175,89 @@ export interface PublicFiltersResponse {
   statuses: PublicStatusFilter[];
 }
 
-export async function getPublicFilters(): Promise<PublicFiltersResponse> {
-  // TODO: query active verified records for distinct filter values
-  // Only return aggregate-safe filter options that cannot isolate individuals
+async function getThreshold(db: D1Binding, ctx: SikesraRequestContext): Promise<number> {
+  const settings = await getPublicSettings(db, ctx);
+  return settings?.small_cell_threshold ?? DEFAULT_SMALL_CELL_THRESHOLD;
+}
+
+export async function getPublicFilters(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+): Promise<PublicFiltersResponse> {
+  const scope = await resolvePublicScope(db, ctx);
+  const totalEntities = await getScopedPublicEntityCount(db, scope);
+  if (totalEntities === 0) {
+    return {
+      districts: [],
+      villages: [],
+      objectTypes: [],
+      years: [],
+      statuses: [
+        { code: "verified", label: "Terverifikasi" },
+        { code: "active", label: "Aktif" },
+      ],
+    };
+  }
+  const threshold = await getThreshold(db, scope);
+  const { whereSql, params } = withPublicFilters(scope);
+
+  const [districts, villages, objectTypes, years] = await Promise.all([
+    db.prepare(
+      `SELECT r.code, r.name, COUNT(*) AS total
+       FROM awcms_sikesra_entities e
+       JOIN awcms_sikesra_official_regions r
+         ON r.tenant_id = e.tenant_id
+        AND r.site_id = e.site_id
+        AND r.code = substr(e.official_village_code, 1, 6)
+        AND r.level = 'district'
+       WHERE ${whereSql}
+       GROUP BY r.code, r.name
+       HAVING COUNT(*) >= ?
+       ORDER BY r.name`,
+    ).bind(...params, threshold).all<{ code: string; name: string }>(),
+    db.prepare(
+      `SELECT r.code, r.name, substr(r.code, 1, 6) AS districtCode, COUNT(*) AS total
+       FROM awcms_sikesra_entities e
+       JOIN awcms_sikesra_official_regions r
+         ON r.tenant_id = e.tenant_id
+        AND r.site_id = e.site_id
+        AND r.code = e.official_village_code
+        AND r.level = 'village'
+       WHERE ${whereSql}
+       GROUP BY r.code, r.name
+       HAVING COUNT(*) >= ?
+       ORDER BY r.name`,
+    ).bind(...params, threshold).all<{ code: string; name: string; districtCode: string }>(),
+    db.prepare(
+      `SELECT t.code, t.name, COUNT(*) AS total
+       FROM awcms_sikesra_entities e
+       JOIN awcms_sikesra_object_types t
+         ON t.tenant_id = e.tenant_id
+        AND t.site_id = e.site_id
+        AND t.code = e.object_type_code
+       WHERE ${whereSql}
+       GROUP BY t.code, t.name
+       HAVING COUNT(*) >= ?
+       ORDER BY t.sort_order, t.name`,
+    ).bind(...params, threshold).all<{ code: string; name: string }>(),
+    db.prepare(
+      `SELECT substr(COALESCE(verified_at, updated_at, created_at), 1, 4) AS year, COUNT(*) AS total
+       FROM awcms_sikesra_entities
+       WHERE ${whereSql}
+       GROUP BY substr(COALESCE(verified_at, updated_at, created_at), 1, 4)
+       HAVING COUNT(*) >= ?
+       ORDER BY year DESC`,
+    ).bind(...params, threshold).all<{ year: string }>(),
+  ]);
+
   return {
-    districts: [],
-    villages: [],
-    objectTypes: [],
-    years: [],
+    districts: districts.results,
+    villages: villages.results,
+    objectTypes: objectTypes.results,
+    years: years.results.map((row) => Number(row.year)).filter((value) => Number.isFinite(value)),
     statuses: [
-      { code: "active", label: "Aktif" },
       { code: "verified", label: "Terverifikasi" },
+      { code: "active", label: "Aktif" },
     ],
   };
 }
@@ -58,6 +268,7 @@ export interface AggregatePoint {
   key: string;
   label: string;
   total: number;
+  suppressed?: boolean;
   metadata?: Record<string, string | number>;
 }
 
@@ -89,57 +300,167 @@ const SUPPRESSED_CELL_MESSAGE =
 
 const DEFAULT_SMALL_CELL_THRESHOLD = 5;
 
-// Public data rules:
-// - status_data = 'active'
-// - status_verification = 'verified'
-// - deleted_at IS NULL
-// - sensitivity_level IN ('public_safe', 'internal')
-// - aggregate cell count >= configured small_cell_threshold
-// - No NIK/KIA/hashes, protected names, exact addresses, individual desil, disability details, documents, coordinates
-
 export function applySmallCellSuppression<T extends { total: number }>(
   points: T[],
   threshold: number = DEFAULT_SMALL_CELL_THRESHOLD,
-): { suppressed: T[]; suppressionCount: number } {
+): { suppressed: Array<T & { suppressed?: boolean }>; suppressionCount: number } {
   let suppressionCount = 0;
   const suppressed = points.map((p) => {
     if (p.total > 0 && p.total < threshold) {
       suppressionCount++;
-      return { ...p, total: 0 };
+      return { ...p, total: 0, suppressed: true };
     }
-    return p;
+    return { ...p };
   });
   return { suppressed, suppressionCount };
 }
 
-export async function getPublicSummary(
-  threshold: number = DEFAULT_SMALL_CELL_THRESHOLD,
-): Promise<PublicSummaryResponse> {
-  // TODO: query D1 for aggregate counts
-  // Apply small-cell suppression before returning
-  const byObjectType: AggregatePoint[] = [];
-  const byRegion: AggregatePoint[] = [];
-  const byVerificationStatus: AggregatePoint[] = [];
-  const bySafeAttribute: AggregatePoint[] = [];
+function distinctSuppressionCount(groups: Array<{ suppressionCount: number }>): number {
+  return groups.reduce((sum, group) => sum + group.suppressionCount, 0);
+}
 
-  const { suppressed: safeByType, suppressionCount } = applySmallCellSuppression(byObjectType, threshold);
+export async function getPublicSummary(
+  db: D1Binding,
+  ctx: SikesraRequestContext,
+  filters?: PublicSummaryFilters,
+): Promise<PublicSummaryResponse> {
+  const scope = await resolvePublicScope(db, ctx);
+  const totalEntities = await getScopedPublicEntityCount(db, scope, filters);
+  if (totalEntities === 0) {
+    const threshold = await getThreshold(db, scope);
+    return {
+      kpis: {
+        totalEntities: 0,
+        verifiedEntities: 0,
+        activeVillages: 0,
+      },
+      charts: {
+        byObjectType: [],
+        byRegion: [],
+        byVerificationStatus: [],
+        bySafeAttribute: [],
+      },
+      suppression: {
+        threshold,
+        suppressedCells: 0,
+      },
+      caveat: PUBLIC_CAVEAT,
+    };
+  }
+  const threshold = await getThreshold(db, scope);
+  const { whereSql, params } = withPublicFilters(scope, filters);
+
+  const [kpis, byObjectTypeRows, byRegionRows, byVerificationRows, bySafeAttributeRows] = await Promise.all([
+    db.prepare(
+      `SELECT
+         COUNT(*) AS total_entities,
+         COUNT(*) AS verified_entities,
+         COUNT(DISTINCT official_village_code) AS active_villages,
+         MAX(COALESCE(verified_at, updated_at, created_at)) AS latest_update_at
+       FROM awcms_sikesra_entities
+       WHERE ${whereSql}`,
+    ).bind(...params).first<{
+      total_entities: number;
+      verified_entities: number;
+      active_villages: number;
+      latest_update_at?: string | null;
+    }>(),
+    db.prepare(
+      `SELECT
+         e.object_type_code AS key,
+         COALESCE(t.name, e.object_type_code) || ' / ' || COALESCE(s.name, e.object_subtype_code) AS label,
+         COUNT(*) AS total
+       FROM awcms_sikesra_entities e
+       LEFT JOIN awcms_sikesra_object_types t
+         ON t.tenant_id = e.tenant_id
+        AND t.site_id = e.site_id
+        AND t.code = e.object_type_code
+       LEFT JOIN awcms_sikesra_object_subtypes s
+         ON s.tenant_id = e.tenant_id
+        AND s.site_id = e.site_id
+        AND s.type_code = e.object_type_code
+        AND (s.code = e.object_subtype_code OR s.id = e.object_subtype_code)
+       WHERE ${whereSql}
+       GROUP BY e.object_type_code, e.object_subtype_code, t.name, s.name
+       ORDER BY total DESC, label ASC`,
+    ).bind(...params).all<AggregatePoint>(),
+    db.prepare(
+      `SELECT
+         CASE WHEN ? IS NOT NULL THEN village.code ELSE district.code END AS key,
+         CASE WHEN ? IS NOT NULL THEN village.name ELSE district.name END AS label,
+         COUNT(*) AS total
+       FROM awcms_sikesra_entities e
+       LEFT JOIN awcms_sikesra_official_regions district
+         ON district.tenant_id = e.tenant_id
+        AND district.site_id = e.site_id
+        AND district.code = substr(e.official_village_code, 1, 6)
+        AND district.level = 'district'
+       LEFT JOIN awcms_sikesra_official_regions village
+         ON village.tenant_id = e.tenant_id
+        AND village.site_id = e.site_id
+        AND village.code = e.official_village_code
+        AND village.level = 'village'
+       WHERE ${whereSql}
+       GROUP BY CASE WHEN ? IS NOT NULL THEN village.code ELSE district.code END,
+                CASE WHEN ? IS NOT NULL THEN village.name ELSE district.name END
+       ORDER BY total DESC, label ASC`,
+    ).bind(filters?.districtCode ?? null, filters?.districtCode ?? null, ...params, filters?.districtCode ?? null, filters?.districtCode ?? null).all<AggregatePoint>(),
+    db.prepare(
+      `SELECT status_verification AS key, 'Terverifikasi' AS label, COUNT(*) AS total
+       FROM awcms_sikesra_entities
+       WHERE ${whereSql}
+       GROUP BY status_verification
+       ORDER BY total DESC`,
+    ).bind(...params).all<AggregatePoint>(),
+    db.prepare(
+      `SELECT key, label, total FROM (
+         SELECT 'religion:' || religion_attribute AS key, 'Agama: ' || religion_attribute AS label, COUNT(*) AS total
+         FROM awcms_sikesra_entities
+         WHERE ${whereSql} AND religion_attribute IS NOT NULL AND religion_attribute != ''
+         GROUP BY religion_attribute
+         UNION ALL
+         SELECT 'neglected:' || neglected_attribute AS key, 'Status Keterlantaran: ' || neglected_attribute AS label, COUNT(*) AS total
+         FROM awcms_sikesra_entities
+         WHERE ${whereSql} AND neglected_attribute IS NOT NULL AND neglected_attribute != ''
+         GROUP BY neglected_attribute
+         UNION ALL
+         SELECT 'desil:' || desil_attribute AS key, 'Desil: ' || desil_attribute AS label, COUNT(*) AS total
+         FROM awcms_sikesra_entities
+         WHERE ${whereSql} AND desil_attribute IS NOT NULL AND desil_attribute != ''
+         GROUP BY desil_attribute
+       )
+       ORDER BY total DESC, label ASC`,
+    ).bind(...params, ...params, ...params).all<AggregatePoint>(),
+  ]);
+
+  const suppressedTypes = applySmallCellSuppression(byObjectTypeRows.results, threshold);
+  const suppressedRegions = applySmallCellSuppression(byRegionRows.results, threshold);
+  const suppressedVerification = applySmallCellSuppression(byVerificationRows.results, threshold);
+  const suppressedSafeAttributes = applySmallCellSuppression(bySafeAttributeRows.results, threshold);
+  const suppressionCount = distinctSuppressionCount([
+    suppressedTypes,
+    suppressedRegions,
+    suppressedVerification,
+    suppressedSafeAttributes,
+  ]);
 
   return {
     kpis: {
-      totalEntities: 0,
-      verifiedEntities: 0,
-      activeVillages: 0,
+      totalEntities: kpis?.total_entities ?? 0,
+      verifiedEntities: kpis?.verified_entities ?? 0,
+      activeVillages: kpis?.active_villages ?? 0,
+      latestUpdateAt: kpis?.latest_update_at ?? undefined,
     },
     charts: {
-      byObjectType: safeByType,
-      byRegion: applySmallCellSuppression(byRegion, threshold).suppressed,
-      byVerificationStatus: applySmallCellSuppression(byVerificationStatus, threshold).suppressed,
-      bySafeAttribute: applySmallCellSuppression(bySafeAttribute, threshold).suppressed,
+      byObjectType: suppressedTypes.suppressed,
+      byRegion: suppressedRegions.suppressed,
+      byVerificationStatus: suppressedVerification.suppressed,
+      bySafeAttribute: suppressedSafeAttributes.suppressed,
     },
     suppression: {
       threshold,
       suppressedCells: suppressionCount,
     },
-    caveat: PUBLIC_CAVEAT,
+    caveat: suppressionCount > 0 ? `${PUBLIC_CAVEAT} ${SUPPRESSED_CELL_MESSAGE}` : PUBLIC_CAVEAT,
   };
 }
