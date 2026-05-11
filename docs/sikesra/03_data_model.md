@@ -30,6 +30,8 @@ updated_by TEXT
 
 Exceptions must be documented in the migration and implementation decision log.
 
+Append-only or event-oriented tables may be aligned additively in later migrations instead of being destructively rebuilt, as long as tenant/site ownership and auditability remain preserved.
+
 ## Normal Query Guard
 
 Every normal repository query must include:
@@ -77,6 +79,7 @@ For scoped users, intersect requested filters with backend-computed allowed vill
 | 0010 | `0010_sikesra_deduplication.sql` | Duplicate candidates and decisions. |
 | 0011 | `0011_sikesra_benefits_exports_audit.sql` | Benefits, export jobs, audit logs. |
 | 0012 | `0012_sikesra_public_summary.sql` | Optional views or summary tables. |
+| 0013 | `0013_sikesra_schema_alignment.sql` | Additive alignment for append-only/event tables and follow-up indexes. |
 
 ## Essential Table Definitions
 
