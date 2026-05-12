@@ -360,12 +360,41 @@ function pageLabel(page: string): string {
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
-function navButtons(currentPage: string) {
-	return Object.entries(PAGE_LABELS).map(([page, label]) => ({
+function topLevelPage(page: string): string {
+	if (page === "entities/new" || page.startsWith("entities/")) return "entities";
+	if (page.startsWith("verification/")) return "verification";
+	if (page.startsWith("imports/")) return "imports";
+	if (page.startsWith("documents/")) return "documents";
+	if (page.startsWith("reports/")) return "reports";
+	if (page.startsWith("audit/")) return "audit";
+	return page;
+}
+
+function navPageVisible(page: string, permissions: string[]): boolean {
+	const required: Record<string, string[]> = {
+		overview: [SIKESRA_PERMISSIONS.DASHBOARD_READ],
+		entities: [SIKESRA_PERMISSIONS.ENTITY_READ, SIKESRA_PERMISSIONS.ENTITY_CREATE],
+		verification: [SIKESRA_PERMISSIONS.VERIFICATION_VERIFY],
+		imports: [SIKESRA_PERMISSIONS.IMPORT_READ, SIKESRA_PERMISSIONS.IMPORT_CREATE],
+		documents: [SIKESRA_PERMISSIONS.DOCUMENT_UPLOAD, SIKESRA_PERMISSIONS.DOCUMENT_PRIVATE_DOWNLOAD, SIKESRA_PERMISSIONS.ENTITY_READ],
+		reports: [SIKESRA_PERMISSIONS.EXPORT_CREATE, SIKESRA_PERMISSIONS.EXPORT_RESTRICTED, SIKESRA_PERMISSIONS.EXPORT_AUDIT],
+		regions: [SIKESRA_PERMISSIONS.REGION_READ, SIKESRA_PERMISSIONS.REGION_MANAGE],
+		access: [SIKESRA_PERMISSIONS.ATTRIBUTE_READ, SIKESRA_PERMISSIONS.POLICY_READ, SIKESRA_PERMISSIONS.POLICY_PREVIEW, SIKESRA_PERMISSIONS.POLICY_WRITE],
+		audit: [SIKESRA_PERMISSIONS.AUDIT_READ],
+		settings: [SIKESRA_PERMISSIONS.SETTINGS_READ, SIKESRA_PERMISSIONS.SETTINGS_UPDATE],
+	};
+	return (required[page] ?? []).some((permission) => permissions.includes(permission));
+}
+
+function navButtons(currentPage: string, permissions: string[]) {
+	const activePage = topLevelPage(currentPage);
+	return Object.entries(PAGE_LABELS)
+		.filter(([page]) => page === activePage || navPageVisible(page, permissions))
+		.map(([page, label]) => ({
 		type: "button",
 		label,
 		action_id: `nav_${page}`,
-		style: page === currentPage ? "primary" : "secondary",
+		style: page === activePage ? "primary" : "secondary",
 	}));
 }
 
@@ -384,8 +413,9 @@ function apiFields() {
 	];
 }
 
-function pageIntro(page: string) {
+function pageIntro(page: string, permissions: string[]) {
 	const label = pageLabel(page);
+	const hiddenCount = Object.keys(PAGE_LABELS).filter((item) => !navPageVisible(item, permissions)).length;
 	return [
 		{
 			type: "banner",
@@ -398,7 +428,8 @@ function pageIntro(page: string) {
 			type: "section",
 			text: "Gunakan halaman ini sebagai surface admin SIKESRA yang stabil selama rebuild bertahap berlangsung. Akses detail tetap harus mengikuti auth, permission, dan ABAC di backend.",
 		},
-		{ type: "actions", elements: navButtons(page) },
+		{ type: "actions", elements: navButtons(page, permissions) },
+		{ type: "context", text: hiddenCount > 0 ? `Navigasi menampilkan hanya surface yang relevan dengan permission saat ini. ${hiddenCount} entry lain disembunyikan.` : "Semua entry navigasi yang relevan untuk permission saat ini ditampilkan." },
 	];
 }
 
@@ -409,7 +440,7 @@ async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 
 	const dashboard = await getAdminDashboard(ctx, db);
 	const blocks: Block[] = [
-		...pageIntro("overview"),
+		...pageIntro("overview", ctx.permissions),
 		{
 			type: "banner",
 			variant: "default",
@@ -523,7 +554,7 @@ async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 function simplePageBlocks(page: string): Block[] {
 	const label = PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 	return [
-		...pageIntro(page),
+		...pageIntro(page, []),
 		{ type: "fields", fields: [
 			{ label: "Status", value: "Placeholder aktif" },
 			{ label: "Halaman", value: label },
@@ -637,6 +668,10 @@ function stringState(value: unknown, fallback = ""): string {
 }
 
 function parseVerificationFilters(input: PluginAdminInteraction): VerificationQueueFilters {
+	if (input.type === "block_action" && input.action_id === "verification_reset") {
+		return {};
+	}
+
 	const values = input.type === "form_submit" ? input.values ?? {} : {};
 	return {
 		level: stringValue(values.level) as VerificationQueueFilters["level"],
@@ -725,6 +760,20 @@ function parseAccessPreviewForm(input: PluginAdminInteraction): AccessPreviewFor
 }
 
 function parseAuditFilterForm(input: PluginAdminInteraction): AuditFilterFormState {
+	if (input.type === "block_action" && input.action_id === "audit_reset") {
+		return {
+			actor: "",
+			action: "",
+			resourceType: "",
+			resourceId: "",
+			requestId: "",
+			fromDate: "",
+			toDate: "",
+			success: "",
+			risk: "",
+		};
+	}
+
 	const values = input.type === "form_submit" ? input.values ?? {} : {};
 	return {
 		actor: stringState(values.actor),
@@ -1250,7 +1299,7 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	const overall = overallCompleteness(state);
 
 	return [
-		...pageIntro("entities/new"),
+			...pageIntro("entities/new", ctx.permissions),
 		{
 			type: "banner",
 			variant: "default",
@@ -1423,6 +1472,14 @@ function activeFilterCount(filters: EntityListFilters): number {
 	return Object.values(filters).filter((value) => value !== undefined && value !== null && value !== "").length;
 }
 
+function activeVerificationFilterCount(filters: VerificationQueueFilters): number {
+	return Object.values(filters).filter((value) => value !== undefined && value !== null && value !== "").length;
+}
+
+function activeAuditFilterCount(filters: AuditFilterFormState): number {
+	return Object.values(filters).filter((value) => value !== undefined && value !== null && value !== "").length;
+}
+
 function formatOfficialRegion(summary: {
 	officialRegion: {
 		district?: { name: string };
@@ -1529,12 +1586,18 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	]);
 
 	return [
-		...pageIntro("verification"),
+		...pageIntro("verification", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Queue Verifikasi", description: "Antrian ini difilter oleh permission, status, dan region scope backend. Gunakan tombol review untuk membuka layar pemeriksaan entitas." },
 		{ type: "stats", items: [
 			{ label: "Total antrian", value: String(queue.length), description: "Queue setelah filter" },
 			{ label: "Risiko tinggi", value: String(queue.filter((item) => item.riskLevel === "high").length), description: "Perlu prioritas review" },
 			{ label: "Butuh revisi", value: String(queue.filter((item) => item.currentStatus === "need_revision").length), description: "Draft revisi menunggu tindak lanjut" },
+		] },
+		{ type: "fields", fields: [
+			{ label: "Filter aktif", value: String(activeVerificationFilterCount(filters)) },
+			{ label: "Scope region", value: describeRegionScopeLabel(ctx) },
+			{ label: "Permission verify", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.VERIFICATION_VERIFY) ? "Aktif" : "Tidak aktif" },
+			{ label: "Mode", value: "Desktop-first, responsive-basic" },
 		] },
 		{ type: "form", block_id: "verification_filters", fields: [
 			{ type: "select", action_id: "level", label: "Level", initial_value: filters.level ?? "", options: [option("Semua level", ""), option("Desa", "desa"), option("Kecamatan", "kecamatan"), option("Kabupaten", "kabupaten"), option("OPD", "opd")] },
@@ -1545,6 +1608,9 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			{ type: "select", action_id: "completeness", label: "Completeness", initial_value: filters.completeness ?? "", options: [option("Semua kelengkapan", ""), option("< 50%", "lt50"), option("50% - 79%", "50to79"), option(">= 80%", "80plus")] },
 			{ type: "select", action_id: "duplicateStatus", label: "Duplicate status", initial_value: filters.duplicateStatus ?? "", options: [option("Semua status duplikasi", ""), ...Object.entries(DUPLICATE_STATUS_LABELS).map(([value, label]) => option(label, value))] },
 		], submit: { label: "Terapkan filter", action_id: "verification_apply_filters" } },
+		{ type: "actions", elements: [
+			{ type: "button", label: "Reset filter", action_id: "verification_reset", style: "secondary" },
+		] },
 		{ type: "header", text: "Daftar Review" },
 		...(queue.length ? queue.flatMap((item) => ([
 			{ type: "section", text: `${item.displayName} | ${item.objectTypeCode}/${item.objectSubtypeCode} | ${item.currentStatus} | ${item.completenessPercent}% | ${formatVerificationRisk(item.riskLevel)}`, accessory: { type: "button", label: "Review", action_id: `verification_open_${item.entityId}`, style: "primary" } },
@@ -1558,12 +1624,12 @@ async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdmin
 	const db = await getRouteDb(routeCtx.request);
 	const entityId = parseVerificationEntityId(page);
 	if (!entityId) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Review verifikasi tidak valid", description: `page: ${page}` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Review verifikasi tidak valid", description: `page: ${page}` }];
 	}
 
 	const detail = await getEntityDetail(db, entityId, ctx);
 	if (!detail) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Entitas verifikasi tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Entitas verifikasi tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
 	}
 
 	const defaultLevel = determineDefaultLevel(detail.entity.statusVerification);
@@ -1602,7 +1668,7 @@ async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdmin
 	];
 
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Review Verifikasi: ${activeDetail.entity.displayName}`, description: "Gunakan layar ini untuk meninjau ringkasan, checklist, dokumen, duplikasi, dan mengirim keputusan verifikasi yang akan diaudit." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Queue", action_id: "verification_back_to_queue", style: "secondary" }] },
 		...(decisionFeedback ? [{ type: "banner", variant: "success", title: "Keputusan tersimpan", description: decisionFeedback }] : []),
@@ -1691,7 +1757,7 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 
 	return [
-		...pageIntro("imports"),
+		...pageIntro("imports", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Import Center SIKESRA", description: "Pusat import menata alur upload workbook, pemetaan kolom, staging row, validasi, duplicate review, promosi, dan laporan hasil secara bertahap." },
 		...(notice ? [{ type: "banner", variant: "success", title: "Batch dibuat", description: notice }] : []),
 		{ type: "stats", items: [
@@ -1718,7 +1784,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	const db = await getRouteDb(routeCtx.request);
 	const batchId = parseImportBatchId(page);
 	if (!batchId) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Batch import tidak valid", description: `page: ${page}` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Batch import tidak valid", description: `page: ${page}` }];
 	}
 
 	if (input.type === "form_submit" && input.action_id === `imports_save_row_${batchId}`) {
@@ -1735,7 +1801,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 
 	const batch = await getImportBatch(db, batchId, ctx);
 	if (!batch) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Batch import tidak ditemukan", description: `ID ${batchId} tidak tersedia pada scope backend saat ini.` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Batch import tidak ditemukan", description: `ID ${batchId} tidak tersedia pada scope backend saat ini.` }];
 	}
 
 	const stagingRows = await getStagingRows(db, batchId, ctx);
@@ -1744,7 +1810,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	const invalidRows = stagingRows.filter((row) => row.rowStatus === "invalid");
 
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
 		{ type: "fields", fields: [
@@ -1806,15 +1872,16 @@ async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteracti
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const entities = await loadDocumentEntityOptions(db, ctx.tenantId, ctx.siteId);
+	const settings = await getSettings(db, ctx);
 	const entityPreview = entities.slice(0, 12);
 
 	return [
-		...pageIntro("documents"),
+		...pageIntro("documents", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Document Center", description: "Pusat dokumen menampilkan upload guidance, klasifikasi, checksum, status verifikasi, dan akses yang aman. Raw R2 key tidak pernah ditampilkan ke operator." },
 		{ type: "stats", items: [
 			{ label: "Entitas siap dokumen", value: String(entities.length), description: "100 entitas terbaru pada scope" },
-			{ label: "Accepted type", value: "PDF / JPG / PNG", description: "Disesuaikan dari policy upload" },
-			{ label: "Maks ukuran", value: "10 MB", description: "Mengikuti batas upload modul" },
+			{ label: "Accepted type", value: (settings.allowedMimeTypes ?? []).join(" / ") || "Belum diatur", description: "Mengikuti settings modul" },
+			{ label: "Maks ukuran", value: formatBytes(settings.maxUploadBytes), description: "Mengikuti batas upload modul" },
 		] },
 		{ type: "fields", fields: [
 			{ label: "Klasifikasi wajib", value: "Internal / Restricted / Highly Restricted" },
@@ -1835,12 +1902,12 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 	const db = await getRouteDb(routeCtx.request);
 	const entityId = parseDocumentEntityId(page);
 	if (!entityId) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Target dokumen tidak valid", description: `page: ${page}` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Target dokumen tidak valid", description: `page: ${page}` }];
 	}
 
 	const entity = await getEntityDetail(db, entityId, ctx);
 	if (!entity) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Entitas dokumen tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Entitas dokumen tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
 	}
 
 	let notice = "";
@@ -1867,7 +1934,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 
 	const documents = await getEntityDocuments(db, entityId, ctx);
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Dokumen Entitas: ${entity.entity.displayName}`, description: "Upload, metadata, status verifikasi, dan akses dokumen harus tetap aman. R2 key mentah tidak ditampilkan." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Document Center", action_id: "documents_back_to_list", style: "secondary" }] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Dokumen dicatat", description: notice }] : []),
@@ -1889,19 +1956,23 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 		{ type: "context", text: "Accepted type dan max size harus ditampilkan jelas pada operasional. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
 		{ type: "table", columns: [
 			{ key: "documentType", label: "Document Type" },
+			{ key: "originalFilename", label: "Original Filename" },
 			{ key: "classification", label: "Classification" },
 			{ key: "verification", label: "Verification Status" },
+			{ key: "uploadedBy", label: "Uploader" },
 			{ key: "mimeType", label: "MIME" },
 			{ key: "sizeBytes", label: "Size" },
 			{ key: "checksum", label: "Checksum" },
 			{ key: "actions", label: "Allowed Actions" },
 		], rows: documents.map((doc) => ({
 			documentType: doc.documentType,
+			originalFilename: doc.originalFilename ?? "Tersedia via metadata backend",
 			classification: documentClassificationLabel(doc.classification),
 			verification: doc.isVerified ? "Verified" : "Pending",
+			uploadedBy: doc.uploadedBy ?? "-",
 			mimeType: doc.mimeType ?? "-",
 			sizeBytes: doc.sizeBytes != null ? `${doc.sizeBytes} bytes` : "-",
-			checksum: form.fileName === doc.documentType ? (form.checksumSha256 || "Menunggu checksum") : "Tersimpan via metadata backend",
+			checksum: doc.checksumSha256 ?? "Tersimpan via metadata backend",
 			actions: entity.access.canDownloadDocuments ? "Preview / Download via backend" : "Lihat metadata saja",
 		})), empty_text: "Belum ada dokumen yang ditautkan ke entitas ini." },
 		{ type: "table", columns: [
@@ -1981,7 +2052,7 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	const restrictedCatalogCount = REPORT_CATALOG.filter((row) => requiresReasonForReport(row)).length;
 
 	return [
-		...pageIntro("reports"),
+		...pageIntro("reports", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan untuk pimpinan, admin, dan auditor. Screen ini menekankan scope backend, sensitivitas field, alasan export restricted, dan histori job tanpa membocorkan raw R2 key atau nilai sangat sensitif." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2080,13 +2151,13 @@ async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInt
 	const db = await getRouteDb(routeCtx.request);
 	const jobId = parseReportJobId(page);
 	if (!jobId) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Export job tidak valid", description: `page: ${page}` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Export job tidak valid", description: `page: ${page}` }];
 	}
 	const row = await db.prepare(
 		`SELECT * FROM awcms_sikesra_export_jobs WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
 	).bind(jobId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 	if (!row) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Export job tidak ditemukan", description: `ID ${jobId} tidak tersedia pada scope backend saat ini.` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Export job tidak ditemukan", description: `ID ${jobId} tidak tersedia pada scope backend saat ini.` }];
 	}
 	const reportType = String(row.report_type ?? "");
 	const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
@@ -2094,7 +2165,7 @@ async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInt
 	const fieldSensitivity = parseJsonRecord(row.field_sensitivity_json);
 	const fields = parseJsonArray(row.fields_json);
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Export Job ${jobId}`, description: "Status job, alasan export, sensitivitas, filter, dan download readiness ditampilkan dari metadata backend tanpa mengekspos raw R2 key." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Report Center", action_id: "reports_back_to_list", style: "secondary" }] },
 		{ type: "fields", fields: [
@@ -2178,7 +2249,7 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	const villageOptionLabel = options.villages.find((row) => row.code === form.officialVillageCode)?.name ?? (form.officialVillageCode || "Belum dipilih");
 
 	return [
-		...pageIntro("regions"),
+		...pageIntro("regions", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Referensi Wilayah", description: "Halaman ini memisahkan wilayah resmi Kemendagri dan wilayah rinci lokal. Wilayah resmi dipakai untuk scope administratif dan pembentukan ID, sedangkan wilayah lokal mendukung operasi lapangan tanpa mengubah ID SIKESRA." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2337,7 +2408,7 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	const previewResult = evaluateAbac(previewInput, policies, ctx);
 
 	return [
-		...pageIntro("access"),
+		...pageIntro("access", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Governance / Atribut & Akses", description: "Halaman ini memetakan permission catalog, atribut, scope pengguna, dan kebijakan ABAC. UI hanya membantu observasi dan preview; backend tetap menjadi sumber kebenaran untuk RBAC, ABAC, masking, dan audit." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2474,7 +2545,7 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 	const distinctResourceTypes = Array.from(new Set(auditResult.items.map((row) => String(row.resource_type ?? "")).filter(Boolean))).sort();
 
 	return [
-		...pageIntro("audit"),
+		...pageIntro("audit", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Audit Trail", description: "Halaman audit dipakai auditor dan super admin untuk menelusuri actor, action, resource, request ID, sukses/gagal, dan konsekuensi keamanan. Nilai before/after sensitif tetap harus teredaksi sesuai izin viewer." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2488,6 +2559,12 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ label: "Gagal", value: String(auditRows.filter((row) => Number(row.success ?? 0) !== 1).length), description: "Operasi yang tidak berhasil" },
 			{ label: "Request ID unik", value: String(new Set(auditRows.map((row) => String(row.request_id ?? "")).filter(Boolean)).size), description: "Korelasi lintas aksi" },
 		] },
+		{ type: "fields", fields: [
+			{ label: "Filter aktif", value: String(activeAuditFilterCount(filters)) },
+			{ label: "Scope region", value: describeRegionScopeLabel(ctx) },
+			{ label: "Mode redaksi", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL) ? "Payload penuh bila tersedia" : "Ringkasan teredaksi" },
+			{ label: "Export audit", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.AUDIT_EXPORT) ? "Izin terdeteksi" : "Belum tersedia di UI ini" },
+		] },
 		{ type: "form", block_id: "audit_filters", fields: [
 			{ type: "select", action_id: "actor", label: "Aktor", initial_value: filters.actor, options: [option("Semua aktor", ""), ...distinctActors.map((item) => option(item, item))] },
 			{ type: "select", action_id: "action", label: "Aksi", initial_value: filters.action, options: [option("Semua aksi", ""), ...distinctActions.map((item) => option(item, item))] },
@@ -2499,6 +2576,9 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ type: "select", action_id: "success", label: "Status hasil", initial_value: filters.success, options: [option("Semua", ""), option("Sukses", "success"), option("Gagal", "failed")] },
 			{ type: "select", action_id: "risk", label: "Risk", initial_value: filters.risk, options: [option("Semua risk", ""), option("High risk", "high"), option("Standar", "standard")] },
 		], submit: { label: "Terapkan Filter", action_id: "audit_apply_filters" } },
+		{ type: "actions", elements: [
+			{ type: "button", label: "Reset filter", action_id: "audit_reset", style: "secondary" },
+		] },
 		{ type: "header", text: "Daftar Audit" },
 		...(auditRows.length ? auditRows.flatMap((row) => ([
 			{ type: "section", text: `${String(row.action ?? "-")} | ${auditSuccessLabel(row.success)} | ${auditRiskLabel(String(row.action ?? ""))}`, accessory: { type: "button", label: "Lihat Detail", action_id: `audit_open_${String(row.id)}`, style: "secondary" } },
@@ -2525,13 +2605,13 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 		`SELECT * FROM awcms_sikesra_audit_logs WHERE id = ? AND tenant_id = ? AND site_id = ?`,
 	).bind(auditId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 	if (!row) {
-		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Audit tidak ditemukan", description: `ID ${auditId} tidak tersedia pada scope backend saat ini.` }];
+		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Audit tidak ditemukan", description: `ID ${auditId} tidak tersedia pada scope backend saat ini.` }];
 	}
 	const canReveal = hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL);
 	const beforeValue = parseAuditRecordJson(row.before_json);
 	const afterValue = parseAuditRecordJson(row.after_json);
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Audit ${auditId}`, description: "Detail audit menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer. Raw secret dan nilai sangat sensitif tidak boleh bocor lewat layar ini." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Audit Trail", action_id: "audit_back_to_list", style: "secondary" }] },
 		{ type: "fields", fields: [
@@ -2665,7 +2745,7 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	};
 
 	return [
-		...pageIntro("settings"),
+		...pageIntro("settings", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Governance / Pengaturan", description: "Pengaturan SIKESRA mengendalikan visibilitas publik, threshold suppression, batas upload, batas export sinkron, dan feature flag. Setiap perubahan harus melalui permission backend, alasan, dan audit." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2741,7 +2821,7 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 
 	if (!entityId) {
 		return [
-			...pageIntro(page),
+			...pageIntro(page, ctx.permissions),
 			{ type: "banner", variant: "alert", title: "Detail entitas tidak valid", description: `page: ${page}` },
 		];
 	}
@@ -2749,7 +2829,7 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	const detail = await getEntityDetail(db, entityId, ctx);
 	if (!detail) {
 		return [
-			...pageIntro(page),
+			...pageIntro(page, ctx.permissions),
 			{ type: "banner", variant: "alert", title: "Entitas tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` },
 		];
 	}
@@ -2764,7 +2844,7 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	const latestAudit = Array.isArray(detail.audit) && detail.audit.length > 0 ? detail.audit[0] as Record<string, unknown> : null;
 
 	return [
-		...pageIntro(page),
+		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: detail.entity.displayName, description: "Detail entitas ini mengikuti masking, permission, dan ABAC backend. Aksi utama dikendalikan oleh access flags dari backend." },
 		{ type: "fields", fields: [
 			{ label: "ID SIKESRA", value: detail.entity.sikesraId20 ?? "Belum dibuat" },
@@ -2872,7 +2952,7 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	const followUpCount = result.items.filter((item) => item.statusVerification.startsWith("submitted") || item.statusVerification === "need_revision").length;
 
 	const blocks: Block[] = [
-		...pageIntro("entities"),
+		...pageIntro("entities", ctx.permissions),
 		{
 			type: "banner",
 			variant: "default",
@@ -3053,7 +3133,7 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 			title: "Halaman tidak dikenal",
 			description: `page: ${page}`,
 		},
-		{ type: "actions", elements: navButtons("overview") },
+		{ type: "actions", elements: navButtons("overview", []) },
 	]);
 }
 

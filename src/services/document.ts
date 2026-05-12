@@ -13,8 +13,11 @@ export interface DocumentSummary {
   id: string;
   documentType: string;
   classification: DocumentClassification;
+  originalFilename?: string;
   mimeType?: string;
   sizeBytes?: number;
+  checksumSha256?: string;
+  uploadedBy?: string;
   isVerified: boolean;
   uploadedAt: string;
 }

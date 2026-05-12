@@ -61,7 +61,7 @@ export async function getEntityDocumentsRepo(
   entityId: string,
   ctx: SikesraRequestContext,
 ): Promise<DocumentSummary[]> {
-  const sql = `SELECT d.id, d.document_type, d.classification, f.mime_type, f.size_bytes, d.is_verified, d.created_at
+  const sql = `SELECT d.id, d.document_type, d.classification, d.created_by, f.original_filename, f.mime_type, f.size_bytes, f.checksum_sha256, d.is_verified, d.created_at
     FROM ${DOCS_TABLE} d
     LEFT JOIN ${FILES_TABLE} f ON d.file_object_id = f.id AND f.deleted_at IS NULL
     WHERE d.entity_id = ? AND d.tenant_id = ? AND d.site_id = ? AND d.deleted_at IS NULL
@@ -72,8 +72,11 @@ export async function getEntityDocumentsRepo(
     id: r.id as string,
     documentType: r.document_type as string,
     classification: r.classification as DocumentClassification,
+    originalFilename: r.original_filename as string | undefined,
     mimeType: r.mime_type as string | undefined,
     sizeBytes: r.size_bytes as number | undefined,
+    checksumSha256: r.checksum_sha256 as string | undefined,
+    uploadedBy: r.created_by as string | undefined,
     isVerified: !!(r.is_verified),
     uploadedAt: r.created_at as string,
   }));
