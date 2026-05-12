@@ -26,6 +26,7 @@ import {
   entityDocumentsHandler,
   uploadUrlHandler,
   documentDownloadHandler,
+  documentProxyHandler,
   documentVerifyHandler,
   documentReplaceHandler,
 } from "./document-routes";
@@ -111,6 +112,7 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/entities/documents": { handler: entityDocumentsHandler },
   "v1/documents/upload-url": { handler: uploadUrlHandler },
   "v1/documents/download": { handler: documentDownloadHandler },
+  "v1/documents/proxy": { handler: documentProxyHandler },
   "v1/documents/verify": { handler: documentVerifyHandler },
   "v1/documents/replace": { handler: documentReplaceHandler },
 

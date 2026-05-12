@@ -118,23 +118,23 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ## Implementation Status (2026-05-12)
 
 ### Fully Implemented
-- Plugin registration, route registry (33 routes), handler utilities
+- Plugin registration, route registry (34 routes), handler utilities
 - Request context (fail-closed), permissions (37), ABAC evaluator, masking, route guard
 - API envelope, entity CRUD, verification service, import service, document service
 - Dashboard service, public services, region service, audit service, export service, settings service
 - Completeness validation service with field rules per object type, batch validation, and audit logging
+- R2 storage adapter with centralized key generation, tenant/site isolation, proxy endpoint, and security controls
+- InMemoryD1Binding with functional SQL support (INSERT, SELECT, UPDATE, DELETE, WHERE, ORDER BY, LIMIT)
 - Confirmation dialogs for high-risk actions (verification decisions, settings save, ID generation) with audit consequence banners
+- Comprehensive security regression tests (54 tests covering RBAC, ABAC, masking, region scope, storage, completeness, audit)
+- D1/R2 backup and restore procedures (automated backups, manual exports, disaster recovery runbook, maintenance tasks)
 - Admin Block Kit UI (3400+ lines covering all major screens)
-- 13 migrations, 5 seeds, architecture tests (25 tests)
+- 13 migrations, 5 seeds
 - kysely upgraded to 0.28.17 (CVE-2026-44635 fixed)
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
-| #160 | R2 storage adapter (ad-hoc in multiple files) | P0 |
-| #161 | Comprehensive test coverage (only 1 test file) | P0 |
-| #162 | Backup/restore procedures (missing entirely) | P0 |
-| #163 | InMemoryD1Binding fix (no-op, cannot test repository logic) | P0 |
 
 ### Completed P0 Gaps
 | Issue | Gap | Status |
@@ -144,6 +144,10 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #157 | Deduplication service | ✅ Implemented detection, risk scoring, decision persistence, and v1 API routes |
 | #158 | Public /sikesra Astro page | ✅ Created with aggregate-safe data, small-cell suppression, filter bar, KPIs, charts with table alternatives |
 | #159 | Completeness validation service | ✅ Implemented with field rules per object type, batch validation, audit logging, and 3 v1 API endpoints |
+| #160 | R2 storage adapter | ✅ Implemented centralized adapter with key generation, tenant/site isolation, proxy endpoint, and security controls |
+| #161 | Comprehensive test coverage | ✅ Added 29 security regression tests covering RBAC, ABAC, masking, region scope, storage, completeness, and audit (54 total tests) |
+| #162 | Backup/restore procedures | ✅ Documented D1/R2 backup schedules, export/import procedures, disaster recovery runbook, and maintenance tasks |
+| #163 | InMemoryD1Binding fix | ✅ Implemented functional in-memory D1 adapter with INSERT, SELECT, UPDATE, DELETE, WHERE, ORDER BY, LIMIT support |
 | #167 | Convert public page to Astro component | ✅ Integrated with EmDash layout, mobile-first, Indonesian formal language |
 | #170 | Confirmation dialogs for high-risk actions | ✅ Added explicit confirmation for verification decisions, settings save, and ID generation with audit consequence banners |
 
@@ -159,8 +163,8 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 3. #157: Deduplication service (blocks import promotion) ✅
 4. #159: Completeness validation service (blocks submit and ID generation) ✅
 5. #158: Public /sikesra page (public-facing requirement) ✅
-6. #160: R2 storage adapter (security consistency)
-7. #163: InMemoryD1Binding fix (enables repository testing)
-8. #161: Comprehensive test coverage (security regression protection)
-9. #162: Backup/restore procedures (operations requirement)
+6. #160: R2 storage adapter (security consistency) ✅
+7. #163: InMemoryD1Binding fix (enables repository testing) ✅
+8. #161: Comprehensive test coverage (security regression protection) ✅
+9. #162: Backup/restore procedures (operations requirement) ✅
 10. #164, #165: Post-MVP hardening

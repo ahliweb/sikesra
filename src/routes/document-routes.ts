@@ -13,16 +13,11 @@ import {
   type DocumentVerificationInput,
   type DocumentReplacementInput,
 } from "../services/document";
+import { createStorageAdapter, type R2Bucket } from "../services/storage";
+import { writeAuditEvent, AUDIT_ACTIONS } from "../services/audit";
 import { withHandlerSequence, buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import { getRouteDb } from "./route-db";
-
-interface R2Bucket {
-  put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }): Promise<void>;
-  head(key: string): Promise<{ size: number } | null>;
-  delete(key: string): Promise<void>;
-  get(key: string): Promise<{ body: ReadableStream | ArrayBuffer } | null>;
-}
 
 // GET /entities/:id/documents
 export const entityDocumentsHandler = withHandlerSequence(async (input: { request: Request }, db: D1Binding, ctx: SikesraRequestContext) => {
@@ -41,7 +36,9 @@ export const uploadUrlHandler = async (routeCtx: EmDashRouteContext<GenerateUplo
   if (!db) throw new Error("Database not available");
   
   const input = routeCtx.input as GenerateUploadUrlInput;
-  return generateUploadUrl(input, ctx, r2, db);
+  const storage = r2 ? createStorageAdapter(r2) : undefined;
+  
+  return generateUploadUrl(input, ctx, r2, db, undefined, storage);
 };
 
 // POST /documents/:id/complete
@@ -86,6 +83,61 @@ export const documentDownloadHandler = async (routeCtx: EmDashRouteContext) => {
       "Content-Type": result.mimeType,
       "Content-Disposition": `attachment; filename="${encodeURIComponent(result.filename)}"`,
       "Content-Length": String(result.sizeBytes),
+    },
+  });
+};
+
+// GET /documents/proxy/:encodedKey
+// Proxy endpoint for secure document access with permission validation
+export const documentProxyHandler = async (routeCtx: EmDashRouteContext) => {
+  const ctx = buildContextFromEmDash(routeCtx);
+  const db = await getRouteDb(routeCtx.request);
+  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+  
+  if (!db) throw new Error("Database not available");
+  if (!r2) throw new Error("R2 storage not available");
+
+  const url = new URL(routeCtx.request.url);
+  const parts = url.pathname.split("/");
+  const encodedKeyIndex = parts.indexOf("proxy") + 1;
+  const encodedKey = parts[encodedKeyIndex];
+  
+  if (!encodedKey) throw new Error("Storage key is required");
+  
+  const key = decodeURIComponent(encodedKey);
+  const storage = createStorageAdapter(r2);
+  
+  // Validate key ownership
+  if (!storage.validateKeyOwnership(key, ctx)) {
+    throw new Error("Access denied: storage key does not belong to current tenant/site");
+  }
+  
+  // Get the object
+  const r2Object = await storage.get(key);
+  if (!r2Object) {
+    throw new Error("Document file not found in storage");
+  }
+  
+  // Write audit event
+  await writeAuditEvent(db, {
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    actorId: ctx.userId,
+    actorRole: ctx.roles[0],
+    action: AUDIT_ACTIONS.DOCUMENT_DOWNLOAD,
+    resourceType: "file_object",
+    resourceId: key,
+    requestId: ctx.requestId,
+    success: true,
+    reason: "proxy download",
+    ipAddress: ctx.ipAddress,
+    userAgent: ctx.userAgent,
+  }, ctx);
+  
+  return new Response(r2Object.body, {
+    headers: {
+      "Content-Type": r2Object.httpMetadata?.contentType || "application/octet-stream",
+      "Content-Disposition": `inline; filename="${encodeURIComponent(r2Object.key.split("/").pop() || "document")}"`,
     },
   });
 };

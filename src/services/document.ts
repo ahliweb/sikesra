@@ -15,6 +15,7 @@ import {
   getDocumentByFileObjectId,
 } from "../repositories/document-repository";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
+import type { R2Bucket, SikesraStorageAdapter } from "./storage";
 
 export type DocumentClassification = "internal" | "restricted" | "highly_restricted";
 
@@ -50,13 +51,6 @@ export interface GenerateUploadUrlInput {
   mimeType: string;
   sizeBytes: number;
   classification: DocumentClassification;
-}
-
-export interface R2Bucket {
-  put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }): Promise<void>;
-  head(key: string): Promise<{ size: number } | null>;
-  delete(key: string): Promise<void>;
-  get(key: string): Promise<{ body: ReadableStream | ArrayBuffer } | null>;
 }
 
 const ALLOWED_MIME_TYPES = [
@@ -103,6 +97,7 @@ export async function generateUploadUrl(
   r2?: R2Bucket,
   db?: D1Binding,
   settings?: { maxUploadBytes?: number; allowedMimeTypes?: string[] },
+  storage?: SikesraStorageAdapter,
 ): Promise<UploadUrlResponse> {
   const validationErrors = validateUploadInput(input, settings);
   if (validationErrors.length > 0) {
@@ -110,11 +105,23 @@ export async function generateUploadUrl(
   }
 
   const fileObjectId = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const now = new Date();
-  const yyyy = String(now.getUTCFullYear());
-  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const safeName = input.fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "document";
-  const key = `tenants/${ctx.tenantId}/sites/${ctx.siteId}/documents/${yyyy}/${mm}/${fileObjectId}/${safeName}`;
+  
+  // Use storage adapter for key generation if available
+  let key: string;
+  if (storage) {
+    key = storage.generateKey(ctx, {
+      filename: input.fileName.trim(),
+      category: "documents",
+      uniqueId: fileObjectId,
+    });
+  } else {
+    // Fallback to inline key generation
+    const now = new Date();
+    const yyyy = String(now.getUTCFullYear());
+    const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const safeName = input.fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "document";
+    key = `tenants/${ctx.tenantId}/sites/${ctx.siteId}/documents/${yyyy}/${mm}/${fileObjectId}/${safeName}`;
+  }
 
   if (db) {
     await createFileObject(
