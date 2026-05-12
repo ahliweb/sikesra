@@ -8,6 +8,7 @@ import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, typ
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
+import { createLocalRegion, type LocalRegionCreateInput } from "../services/region";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 
 interface PluginAdminInteraction {
@@ -51,6 +52,17 @@ interface ReportCreateFormState {
 	filterModule: string;
 	filterYear: string;
 	filterVerificationStatus: string;
+}
+
+interface LocalRegionAdminFormState {
+	officialVillageCode: string;
+	parentId: string;
+	level: string;
+	codeLocal: string;
+	name: string;
+	description: string;
+	latitude: string;
+	longitude: string;
 }
 
 interface ReportFieldPreview {
@@ -120,6 +132,23 @@ const DUPLICATE_STATUS_LABELS: Record<string, string> = {
 	candidate: "Kandidat",
 	confirmed: "Terkonfirmasi",
 	resolved: "Selesai",
+};
+
+const OFFICIAL_REGION_LEVEL_LABELS: Record<string, string> = {
+	province: "Provinsi",
+	regency: "Kabupaten/Kota",
+	district: "Kecamatan",
+	village: "Desa/Kelurahan",
+};
+
+const LOCAL_REGION_LEVEL_LABELS: Record<string, string> = {
+	dusun: "Dusun",
+	lingkungan: "Lingkungan",
+	rw: "RW",
+	rt: "RT",
+	blok: "Blok",
+	zona: "Zona",
+	area_petugas: "Area Petugas",
 };
 
 const REPORT_VERIFICATION_FILTERS = [
@@ -591,6 +620,20 @@ function parseReportCreateForm(input: PluginAdminInteraction): ReportCreateFormS
 	};
 }
 
+function parseLocalRegionAdminForm(input: PluginAdminInteraction): LocalRegionAdminFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		officialVillageCode: stringState(values.officialVillageCode),
+		parentId: stringState(values.parentId),
+		level: stringState(values.level),
+		codeLocal: stringState(values.codeLocal),
+		name: stringState(values.name),
+		description: stringState(values.description),
+		latitude: stringState(values.latitude),
+		longitude: stringState(values.longitude),
+	};
+}
+
 function getReportFieldPresets(reportKey: string): ReportFieldPreset[] {
 	return REPORT_FIELD_PRESETS[reportKey] ?? [];
 }
@@ -618,13 +661,21 @@ function summarizeExportRights(permissions: string[]): string {
 	return granted.length ? granted.join(", ") : "Belum ada izin export aktif";
 }
 
-function describeRegionScopeForReports(ctx: ReturnType<typeof buildContextFromEmDash>): string {
+function describeRegionScopeLabel(ctx: ReturnType<typeof buildContextFromEmDash>): string {
 	if (ctx.regionScope.localRegionIds?.length) return `${ctx.regionScope.localRegionIds.length} wilayah lokal`; 
 	if (ctx.regionScope.villageCodes?.length) return `${ctx.regionScope.villageCodes.length} desa/kelurahan`;
 	if (ctx.regionScope.districtCodes?.length) return `${ctx.regionScope.districtCodes.length} kecamatan`;
 	if (ctx.regionScope.regencyCode) return `Kabupaten ${ctx.regionScope.regencyCode}`;
 	if (ctx.regionScope.provinceCode) return `Provinsi ${ctx.regionScope.provinceCode}`;
 	return "Semua scope backend";
+}
+
+function formatOfficialRegionLevel(level: string): string {
+	return OFFICIAL_REGION_LEVEL_LABELS[level] ?? level;
+}
+
+function formatLocalRegionLevel(level: string): string {
+	return LOCAL_REGION_LEVEL_LABELS[level] ?? level;
 }
 
 function reportFilterSummary(form: ReportCreateFormState): string {
@@ -812,6 +863,80 @@ async function loadReportOptions(db: D1Binding, tenantId: string, siteId: string
 		objectTypes: objectTypes.results,
 		districts: districts.results,
 		years: years.results.map((row) => row.year).filter(Boolean),
+	};
+}
+
+async function loadRegionAdminOptions(
+	db: D1Binding,
+	tenantId: string,
+	siteId: string,
+	state: LocalRegionAdminFormState,
+) {
+	const officialCounts = await db.prepare(
+		`SELECT level, COUNT(*) as total
+		 FROM awcms_sikesra_official_regions
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1
+		 GROUP BY level`,
+	).bind(tenantId, siteId).all<{ level: string; total: number }>();
+
+	const localCounts = await db.prepare(
+		`SELECT level, COUNT(*) as total
+		 FROM awcms_sikesra_local_regions
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1
+		 GROUP BY level`,
+	).bind(tenantId, siteId).all<{ level: string; total: number }>();
+
+	const districts = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'district' ORDER BY name LIMIT 200",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+
+	const villages = await db.prepare(
+		"SELECT code, name, parent_code FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'village' ORDER BY name LIMIT 300",
+	).bind(tenantId, siteId).all<{ code: string; name: string; parent_code?: string | null }>();
+
+	const officialPreview = await db.prepare(
+		`SELECT code, name, level, parent_code, kemendagri_version
+		 FROM awcms_sikesra_official_regions
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1
+		 ORDER BY CASE level
+			WHEN 'province' THEN 1
+			WHEN 'regency' THEN 2
+			WHEN 'district' THEN 3
+			WHEN 'village' THEN 4
+			ELSE 5 END, name
+		 LIMIT 24`,
+	).bind(tenantId, siteId).all<Record<string, unknown>>();
+
+	const localPreview = await db.prepare(
+		`SELECT id, official_village_code, parent_id, level, code_local, name, description, updated_at
+		 FROM awcms_sikesra_local_regions
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1
+		 ORDER BY updated_at DESC, name
+		 LIMIT 30`,
+	).bind(tenantId, siteId).all<Record<string, unknown>>();
+
+	let localParents: Array<{ id: string; label: string }> = [];
+	if (state.officialVillageCode) {
+		const parents = await db.prepare(
+			`SELECT id, level, code_local, name
+			 FROM awcms_sikesra_local_regions
+			 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND official_village_code = ?
+			 ORDER BY name LIMIT 200`,
+		).bind(tenantId, siteId, state.officialVillageCode).all<{ id: string; level: string; code_local?: string | null; name: string }>();
+		localParents = parents.results.map((row) => ({
+			id: row.id,
+			label: `${formatLocalRegionLevel(row.level)}${row.code_local ? ` ${row.code_local}` : ""} / ${row.name}`,
+		}));
+	}
+
+	return {
+		officialCounts: officialCounts.results,
+		localCounts: localCounts.results,
+		districts: districts.results,
+		villages: villages.results,
+		officialPreview: officialPreview.results,
+		localPreview: localPreview.results,
+		localParents,
 	};
 }
 
@@ -1633,7 +1758,7 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan untuk pimpinan, admin, dan auditor. Screen ini menekankan scope backend, sensitivitas field, alasan export restricted, dan histori job tanpa membocorkan raw R2 key atau nilai sangat sensitif." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
-			{ label: "Region Scope", value: describeRegionScopeForReports(ctx) },
+			{ label: "Region Scope", value: describeRegionScopeLabel(ctx) },
 			{ label: "Environment", value: routeCtx.request.url.includes("localhost") ? "Local" : "Cloudflare" },
 			{ label: "Hak export aktif", value: summarizeExportRights(ctx.permissions) },
 		] },
@@ -1785,6 +1910,139 @@ async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInt
 			{ rule: "Permission required", status: reportMeta?.requiredPermission ?? "-" },
 			{ rule: "Raw R2 key exposure", status: "Dilarang" },
 			{ rule: "Download flow", status: row.status === "ready" ? "Lewat backend proxy/signed route" : "Menunggu backend menyiapkan file" },
+		] },
+	];
+}
+
+async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const form = parseLocalRegionAdminForm(input);
+	let notice = "";
+	let error = "";
+
+	if (input.type === "form_submit" && input.action_id === "regions_create_local") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			error = "Permission awcms:sikesra:region:manage diperlukan untuk menambah wilayah lokal.";
+		} else if (!form.officialVillageCode || !form.level || !form.name.trim()) {
+			error = "Desa/kelurahan resmi, level wilayah lokal, dan nama wilayah wajib diisi.";
+		} else {
+			const created = await createLocalRegion(
+				db,
+				{
+					officialVillageCode: form.officialVillageCode,
+					parentId: form.parentId || undefined,
+					level: form.level as LocalRegionCreateInput["level"],
+					codeLocal: form.codeLocal || undefined,
+					name: form.name,
+					description: form.description || undefined,
+					latitude: numberValue(form.latitude),
+					longitude: numberValue(form.longitude),
+				},
+				ctx,
+			);
+			notice = `Wilayah lokal ${created.name} berhasil dibuat pada desa ${created.officialVillageCode}. Perubahan ini tidak mengubah format ID SIKESRA yang sudah ada.`;
+		}
+	}
+
+	const options = await loadRegionAdminOptions(db, ctx.tenantId, ctx.siteId, form);
+	const officialCountMap = Object.fromEntries(options.officialCounts.map((row) => [row.level, Number(row.total)]));
+	const localCountMap = Object.fromEntries(options.localCounts.map((row) => [row.level, Number(row.total)]));
+	const villageOptionLabel = options.villages.find((row) => row.code === form.officialVillageCode)?.name ?? (form.officialVillageCode || "Belum dipilih");
+
+	return [
+		...pageIntro("regions"),
+		{ type: "banner", variant: "default", title: "Referensi Wilayah", description: "Halaman ini memisahkan wilayah resmi Kemendagri dan wilayah rinci lokal. Wilayah resmi dipakai untuk scope administratif dan pembentukan ID, sedangkan wilayah lokal mendukung operasi lapangan tanpa mengubah ID SIKESRA." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Region Scope", value: describeRegionScopeLabel(ctx) },
+			{ label: "Permission baca", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_READ) ? "Aktif" : "Belum terdeteksi" },
+			{ label: "Permission kelola lokal", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? "Aktif" : "Readonly" },
+		] },
+		...(notice ? [{ type: "banner", variant: "success", title: "Wilayah lokal tersimpan", description: notice }] : []),
+		...(error ? [{ type: "banner", variant: "alert", title: "Wilayah lokal belum tersimpan", description: error }] : []),
+		{ type: "stats", items: [
+			{ label: "Provinsi", value: String(officialCountMap.province ?? 0), description: "Referensi resmi aktif" },
+			{ label: "Kab/Kota", value: String(officialCountMap.regency ?? 0), description: "Turunan resmi tingkat 2" },
+			{ label: "Kecamatan", value: String(officialCountMap.district ?? 0), description: "Pilihan filter operator" },
+			{ label: "Desa/Kelurahan", value: String(officialCountMap.village ?? 0), description: "Sumber kode 10 digit ID" },
+			{ label: "Wilayah lokal", value: String(Object.values(localCountMap).reduce((sum, value) => sum + value, 0)), description: "Dusun/RW/RT/blok/zona aktif" },
+		] },
+		{ type: "header", text: "Aturan UI dan Data" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Aturan" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Wilayah resmi dan wilayah lokal harus visually distinct", status: "Dipisah dalam section dan tabel berbeda" },
+			{ rule: "Wilayah lokal tidak memengaruhi ID SIKESRA", status: "Ditegaskan dalam banner dan form" },
+			{ rule: "Kelola wilayah lokal butuh permission backend", status: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? "Aktif" : "Dibaca saja" },
+			{ rule: "Route/API tetap dilindungi auth, RBAC, dan scope", status: "Wajib backend" },
+		] },
+		{ type: "columns", columns: [[
+			{ type: "header", text: "Wilayah Resmi" },
+			{ type: "context", text: "Hierarki Kemendagri: provinsi -> kabupaten/kota -> kecamatan -> desa/kelurahan. Dipakai untuk filtering, scope administratif, dan pembentukan kode wilayah resmi." },
+			{ type: "table", columns: [
+				{ key: "level", label: "Level" },
+				{ key: "total", label: "Total", format: "badge" },
+			], rows: [
+				{ level: "Provinsi", total: officialCountMap.province ?? 0 },
+				{ level: "Kabupaten/Kota", total: officialCountMap.regency ?? 0 },
+				{ level: "Kecamatan", total: officialCountMap.district ?? 0 },
+				{ level: "Desa/Kelurahan", total: officialCountMap.village ?? 0 },
+			] },
+			{ type: "header", text: "Preview Wilayah Resmi" },
+			...(options.officialPreview.length ? [{ type: "table", columns: [
+				{ key: "level", label: "Level" },
+				{ key: "code", label: "Kode" },
+				{ key: "name", label: "Nama" },
+				{ key: "parent", label: "Parent" },
+			], rows: options.officialPreview.map((row) => ({
+				level: formatOfficialRegionLevel(String(row.level ?? "")),
+				code: String(row.code ?? "-"),
+				name: String(row.name ?? "-"),
+				parent: String(row.parent_code ?? "-"),
+			})) }] : [{ type: "empty", title: "Belum ada wilayah resmi", description: "Seed atau sinkronisasi wilayah resmi belum tersedia pada tenant/site ini." }]),
+		], [
+			{ type: "header", text: "Wilayah Lokal" },
+			{ type: "context", text: "Wilayah lokal mendukung operasi RT/RW/dusun/zona. Data ini boleh lebih rinci untuk kerja lapangan, tetapi tidak boleh mengubah kode ID SIKESRA yang berasal dari wilayah resmi." },
+			{ type: "table", columns: [
+				{ key: "level", label: "Level" },
+				{ key: "total", label: "Total", format: "badge" },
+			], rows: Object.entries(LOCAL_REGION_LEVEL_LABELS).map(([level, label]) => ({ level: label, total: localCountMap[level] ?? 0 })) },
+			{ type: "header", text: "Preview Wilayah Lokal" },
+			...(options.localPreview.length ? [{ type: "table", columns: [
+				{ key: "level", label: "Level" },
+				{ key: "codeLocal", label: "Kode Lokal" },
+				{ key: "name", label: "Nama" },
+				{ key: "village", label: "Desa Resmi" },
+				{ key: "updatedAt", label: "Update" },
+			], rows: options.localPreview.map((row) => ({
+				level: formatLocalRegionLevel(String(row.level ?? "")),
+				codeLocal: String(row.code_local ?? "-"),
+				name: String(row.name ?? "-"),
+				village: String(row.official_village_code ?? "-"),
+				updatedAt: String(row.updated_at ?? "-"),
+			})) }] : [{ type: "empty", title: "Belum ada wilayah lokal", description: "Tambahkan dusun/RW/RT/zona sesuai kebutuhan operasional setelah wilayah resmi tersedia." }]),
+		]] },
+		{ type: "header", text: "Tambah Wilayah Lokal" },
+		{ type: "context", text: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? "Gunakan form ini untuk menambah wilayah lokal baru. Parent bersifat opsional untuk membentuk hierarki dusun/RW/RT. Koordinat juga opsional." : "Akun ini belum memiliki izin kelola wilayah lokal. Form ditampilkan sebagai referensi kontrak input." },
+		{ type: "form", block_id: "regions_local_form", fields: [
+			{ type: "select", action_id: "officialVillageCode", label: "Desa/Kelurahan Resmi (wajib)", initial_value: form.officialVillageCode, options: [option("Pilih desa/kelurahan resmi", ""), ...options.villages.map((row) => option(row.name, row.code))] },
+			{ type: "select", action_id: "parentId", label: "Parent wilayah lokal (opsional)", initial_value: form.parentId, options: [option(form.officialVillageCode ? "Pilih parent atau biarkan kosong" : "Pilih desa/kelurahan terlebih dahulu", ""), ...options.localParents.map((row) => option(row.label, row.id))] },
+			{ type: "select", action_id: "level", label: "Level wilayah lokal (wajib)", initial_value: form.level, options: [option("Pilih level wilayah lokal", ""), ...Object.entries(LOCAL_REGION_LEVEL_LABELS).map(([value, label]) => option(label, value))] },
+			{ type: "text_input", action_id: "codeLocal", label: "Kode lokal (opsional)", initial_value: form.codeLocal, placeholder: "Contoh: RW 03 / RT 07 / ZN-A" },
+			{ type: "text_input", action_id: "name", label: "Nama wilayah lokal (wajib)", initial_value: form.name, placeholder: "Contoh: RW 03 Sidorejo Barat" },
+			{ type: "text_input", action_id: "description", label: "Deskripsi operasional", multiline: true, initial_value: form.description, placeholder: "Catatan lapangan atau batas operasional bila diperlukan" },
+			{ type: "number_input", action_id: "latitude", label: "Latitude (opsional)", initial_value: numberValue(form.latitude) },
+			{ type: "number_input", action_id: "longitude", label: "Longitude (opsional)", initial_value: numberValue(form.longitude) },
+		], submit: { label: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? "Tambah Wilayah Lokal" : "Butuh Permission Region Manage", action_id: "regions_create_local" } },
+		{ type: "header", text: "Preview Input Saat Ini" },
+		{ type: "fields", fields: [
+			{ label: "Desa resmi", value: villageOptionLabel },
+			{ label: "Parent", value: options.localParents.find((row) => row.id === form.parentId)?.label ?? (form.parentId || "-") },
+			{ label: "Level lokal", value: form.level ? formatLocalRegionLevel(form.level) : "Belum dipilih" },
+			{ label: "Nama", value: form.name || "Belum diisi" },
+			{ label: "Catatan ID", value: "Wilayah lokal tidak mengubah [kode_desa_kel_10][jenis_2][subjenis_2][sequence_6]" },
 		] },
 	];
 }
@@ -2024,6 +2282,11 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return reportsBlocks(routeCtx, routeCtx.input ?? {});
 	}
 
+	if (page === "regions") {
+		if (!routeCtx) throw new Error("regions page requires route context");
+		return regionsBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
 	if (page.startsWith("reports/")) {
 		if (!routeCtx) throw new Error("report job detail page requires route context");
 		return reportJobDetailBlocks(routeCtx, page);
@@ -2100,6 +2363,12 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "reports") {
 		return {
 			blocks: await reportsBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "regions") {
+		return {
+			blocks: await regionsBlocks(routeCtx, input),
 		};
 	}
 
