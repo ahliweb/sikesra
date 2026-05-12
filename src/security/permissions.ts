@@ -37,6 +37,9 @@ export const SIKESRA_PERMISSIONS = {
   DUPLICATE_DECIDE: "awcms:sikesra:duplicate:decide",
   DUPLICATE_OVERRIDE: "awcms:sikesra:duplicate:override",
 
+  // Completeness
+  COMPLETENESS_READ: "awcms:sikesra:completeness:read",
+
   // Export
   EXPORT_CREATE: "awcms:sikesra:export:create",
   EXPORT_RESTRICTED: "awcms:sikesra:export:restricted",

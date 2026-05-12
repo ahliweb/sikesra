@@ -72,6 +72,12 @@ import {
 } from "./deduplication-routes";
 
 import {
+  completenessCheckHandler,
+  completenessBatchCheckHandler,
+  completenessUpdateHandler,
+} from "./completeness-routes";
+
+import {
   pluginAdminHandler,
 } from "./admin-routes";
 
@@ -142,4 +148,9 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/duplicates": { handler: duplicatesListHandler },
   "v1/duplicates/decide": { handler: duplicatesDecideHandler },
   "v1/duplicates/detect": { handler: duplicatesDetectHandler },
+
+  // Completeness
+  "v1/completeness/check": { handler: completenessCheckHandler },
+  "v1/completeness/batch-check": { handler: completenessBatchCheckHandler },
+  "v1/completeness/update": { handler: completenessUpdateHandler },
 };

@@ -64,6 +64,9 @@ export const AUDIT_ACTIONS = {
   // Duplicate
   DUPLICATE_DECISION: "duplicate.decision",
 
+  // Completeness
+  COMPLETENESS_CHECK: "completeness.check",
+
   // Export
   EXPORT_CREATE: "export.create",
   EXPORT_DOWNLOAD: "export.download",

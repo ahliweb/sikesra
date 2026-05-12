@@ -121,6 +121,7 @@ interface SettingsFormState {
 	featureDocuments: string;
 	featureExports: string;
 	reason: string;
+	confirmSettingsSave: boolean;
 }
 
 interface ReportFieldPreview {
@@ -828,6 +829,7 @@ function parseSettingsForm(input: PluginAdminInteraction): SettingsFormState {
 		featureDocuments: stringState(values.featureDocuments, "true"),
 		featureExports: stringState(values.featureExports, "true"),
 		reason: stringState(values.reason),
+		confirmSettingsSave: values.confirmSettingsSave === true || values.confirmSettingsSave === "true" || values.confirmSettingsSave === "on",
 	};
 }
 
@@ -1246,32 +1248,93 @@ function buildIdPreview(state: WizardFormState): string {
 	return `${state.officialVillageCode}${state.objectTypeCode}${subtypeCode}000001`;
 }
 
-function wizardPanels(state: WizardFormState, validation: WizardValidationState): Block[] {
+function wizardPanels(state: WizardFormState, validation: WizardValidationState, detail: Record<string, unknown> | null): Block[] {
 	return [{
 		type: "tab",
 		default_tab: 0,
 		panels: WIZARD_STEPS.map((step) => {
 			const status = wizardStepStatus(step.key, state);
 			const errors = validation.sectionErrors[step.key] ?? [];
-			return {
-				label: `${step.label}`,
-				blocks: [
-					{ type: "header", text: step.label },
-					{ type: "fields", fields: [
-						{ label: "Status", value: status.status },
-						{ label: "Kelengkapan", value: `${status.percent}%` },
-					] },
-					...(errors.length ? [{ type: "banner", variant: "alert", title: "Perlu perhatian", description: errors.join(" ") }] : []),
-					{ type: "context", text:
-						step.key === "detail_modul" ? "Detail modul per jenis data akan diaktifkan setelah fondasi wizard inti stabil." :
-						step.key === "relasi_orang" ? "Data pengurus, wali, atau pengasuh akan menggunakan relasi orang terstruktur." :
-						step.key === "dokumen_pendukung" ? "Dokumen pendukung akan memerlukan klasifikasi, checksum, dan audit akses." :
-						step.key === "validasi_duplikasi" ? "Validasi dan preview duplikasi akan ditampilkan setelah backend validator section-ready tersedia." :
-						step.key === "generate_id" ? "ID SIKESRA hanya dapat dihasilkan setelah validasi minimum backend terpenuhi. RT/RW tidak memengaruhi format ID." :
-						step.key === "review_submit" ? "Tahap review akhir akan mengunci draft sebelum submit ke workflow verifikasi." :
-						"Lengkapi bagian ini melalui form draft di bawah lalu simpan secara berkala." },
-				],
-			};
+			const stepBlocks: Block[] = [
+				{ type: "header", text: step.label },
+				{ type: "fields", fields: [
+					{ label: "Status", value: status.status },
+					{ label: "Kelengkapan", value: `${status.percent}%` },
+				] },
+				...(errors.length ? [{ type: "banner", variant: "alert", title: "Perlu perhatian", description: errors.join(" ") }] : []),
+			];
+
+			if (step.key === "detail_modul") {
+				stepBlocks.push({ type: "context", text: "Detail modul akan menyesuaikan berdasarkan jenis data yang dipilih. Field inti seperti agama, status keterlantaran, dan desil telah tersedia di langkah atribut." });
+				if (state.objectTypeCode) {
+					stepBlocks.push({ type: "fields", fields: [
+						{ label: "Jenis Data", value: state.objectTypeCode },
+						{ label: "Subjenis Data", value: state.objectSubtypeCode || "Belum dipilih" },
+						{ label: "Detail Modul", value: "Form detail akan diaktifkan setelah konfigurasi jenis data selesai" },
+					] });
+				}
+			} else if (step.key === "relasi_orang") {
+				stepBlocks.push({ type: "context", text: "Tambahkan pengurus, wali, atau pengasuh yang terkait dengan entitas ini. Data relasi akan disimpan terpisah dan dapat diedit setelah draft dibuat." });
+				stepBlocks.push({ type: "fields", fields: [
+					{ label: "Jumlah Relasi", value: detail?.personCount ? String(detail.personCount) : "Belum ada relasi" },
+					{ label: "Jenis Relasi", value: "Pengurus, Wali, Pengasuh (akan dikonfigurasi setelah draft)" },
+				] });
+				if (state.entityId) {
+					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Kelola Relasi Orang", action_id: `wizard_manage_people_${state.entityId}`, style: "secondary" }] });
+				}
+			} else if (step.key === "dokumen_pendukung") {
+				stepBlocks.push({ type: "context", text: "Unggah dokumen pendukung seperti SK, foto, atau surat keterangan. Dokumen akan diklasifikasikan dan diaudit aksesnya." });
+				stepBlocks.push({ type: "fields", fields: [
+					{ label: "Jumlah Dokumen", value: detail?.documentCount ? String(detail.documentCount) : "Belum ada dokumen" },
+					{ label: "Status Dokumen", value: detail?.documentCount ? "Dokumen tersedia" : "Belum ada dokumen diunggah" },
+				] });
+				if (state.entityId) {
+					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Kelola Dokumen", action_id: `wizard_manage_documents_${state.entityId}`, style: "secondary" }] });
+				}
+			} else if (step.key === "validasi_duplikasi") {
+				stepBlocks.push({ type: "context", text: "Validasi kelengkapan dan preview duplikasi akan ditampilkan setelah data inti lengkap." });
+				stepBlocks.push({ type: "fields", fields: [
+					{ label: "Kelengkapan Data", value: `${state.entityId ? (detail?.completenessPercent ?? 0) : 0}%` },
+					{ label: "Status Duplikasi", value: detail?.duplicateStatus ? String(detail.duplicateStatus) : "Belum diperiksa" },
+					{ label: "Kandidat Duplikat", value: detail?.duplicateCount ? `${detail.duplicateCount} kandidat ditemukan` : "Tidak ada kandidat duplikat" },
+				] });
+				if (state.entityId) {
+					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Periksa Duplikasi", action_id: `wizard_check_duplicates_${state.entityId}`, style: "secondary" }] });
+				}
+			} else if (step.key === "generate_id") {
+				const canGenerate = state.entityId && state.officialVillageCode && state.objectTypeCode && state.objectSubtypeCode;
+				stepBlocks.push({ type: "context", text: "ID SIKESRA hanya dapat dihasilkan setelah validasi minimum backend terpenuhi. RT/RW tidak memengaruhi format ID." });
+				stepBlocks.push({ type: "fields", fields: [
+					{ label: "Preview ID", value: buildIdPreview(state) },
+					{ label: "Format", value: "[kode_desa_10][jenis_2][subjenis_2][urutan_6]" },
+					{ label: "Status ID", value: detail?.sikesraId20 ? `ID sudah dibuat: ${detail.sikesraId20}` : "Belum dibuat" },
+				] });
+				if (canGenerate && !detail?.sikesraId20) {
+					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Generate ID SIKESRA", action_id: `wizard_generate_id_${state.entityId}`, style: "primary" }] });
+				}
+			} else if (step.key === "review_submit") {
+				stepBlocks.push({ type: "context", text: "Tinjau ringkasan entitas sebelum submit ke workflow verifikasi. Pastikan semua data telah lengkap dan benar." });
+				if (state.entityId) {
+					stepBlocks.push({ type: "fields", fields: [
+						{ label: "Draft ID", value: state.entityId },
+						{ label: "ID SIKESRA", value: detail?.sikesraId20 ? String(detail.sikesraId20) : "Belum dibuat" },
+						{ label: "Jenis Data", value: `${state.objectTypeCode} / ${state.objectSubtypeCode || "-"}` },
+						{ label: "Nama Tampil", value: state.displayName },
+						{ label: "Wilayah", value: state.officialVillageCode },
+						{ label: "Sensitivitas", value: state.sensitivityLevel },
+						{ label: "Kelengkapan", value: `${state.entityId ? (detail?.completenessPercent ?? 0) : 0}%` },
+					] });
+					stepBlocks.push({ type: "actions", elements: [
+						{ type: "button", label: "Submit untuk Verifikasi", action_id: `wizard_submit_entity_${state.entityId}`, style: "primary" },
+					] });
+				} else {
+					stepBlocks.push({ type: "banner", variant: "alert", title: "Draft belum dibuat", description: "Simpan draft terlebih dahulu sebelum review dan submit." });
+				}
+			} else {
+				stepBlocks.push({ type: "context", text: "Lengkapi bagian ini melalui form draft di bawah lalu simpan secara berkala." });
+			}
+
+			return { label: `${step.label}`, blocks: stepBlocks };
 		}),
 	}];
 }
@@ -1282,6 +1345,10 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	let state = parseWizardState(input);
 	let successMessage = "";
 	let validation = validateWizardState(state);
+	let generateIdSuccess = "";
+	let generateIdError = "";
+	let submitSuccess = "";
+	let submitError = "";
 
 	if (input.type === "form_submit" && input.action_id?.startsWith("wizard_save_")) {
 		const entityId = parseEntityIdFromAction(input.action_id) ?? state.entityId;
@@ -1316,9 +1383,52 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 		}
 	}
 
+	if (input.type === "block_action" && input.action_id?.startsWith("wizard_generate_id_")) {
+		const targetId = input.action_id.replace("wizard_generate_id_", "");
+		if (targetId === state.entityId) {
+			try {
+				const result = await generateSikesraId(db, targetId, ctx);
+				generateIdSuccess = `ID SIKESRA berhasil dibuat: ${result.sikesraId20} (urutan ke-${result.sequence})`;
+			} catch (err) {
+				generateIdError = err instanceof Error ? err.message : "Gagal membuat ID SIKESRA";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("wizard_submit_entity_")) {
+		const targetId = input.action_id.replace("wizard_submit_entity_", "");
+		if (targetId === state.entityId) {
+			try {
+				await submitEntity(db, targetId, ctx);
+				submitSuccess = `Entitas ${targetId} berhasil diajukan untuk verifikasi.`;
+			} catch (err) {
+				submitError = err instanceof Error ? err.message : "Gagal mengajukan entitas";
+			}
+		}
+	}
+
 	validation = validateWizardState(state);
 	const options = await loadWizardOptions(db, ctx.tenantId, ctx.siteId, state);
 	const overall = overallCompleteness(state);
+
+	let detail: Record<string, unknown> | null = null;
+	if (state.entityId) {
+		try {
+			const entityDetail = await getEntityDetail(db, state.entityId, ctx);
+			if (entityDetail) {
+				detail = {
+					sikesraId20: entityDetail.entity.sikesraId20,
+					completenessPercent: entityDetail.entity.completenessPercent,
+					duplicateStatus: entityDetail.entity.duplicateStatus,
+					personCount: entityDetail.benefits?.length ?? 0,
+					documentCount: entityDetail.documents?.length ?? 0,
+					duplicateCount: 0,
+				};
+			}
+		} catch {
+			detail = null;
+		}
+	}
 
 	return [
 			...pageIntro("entities/new", ctx.permissions),
@@ -1329,6 +1439,10 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			description: "Wizard ini memandu pembuatan draft melalui 11 langkah. Simpan draft secara berkala untuk mempertahankan progres kerja operator.",
 		},
 		...(successMessage ? [{ type: "banner", variant: "success", title: "Draft tersimpan", description: successMessage }] : []),
+		...(generateIdSuccess ? [{ type: "banner", variant: "success", title: "ID SIKESRA dibuat", description: generateIdSuccess }] : []),
+		...(generateIdError ? [{ type: "banner", variant: "alert", title: "Gagal membuat ID", description: generateIdError }] : []),
+		...(submitSuccess ? [{ type: "banner", variant: "success", title: "Entitas diajukan", description: submitSuccess }] : []),
+		...(submitError ? [{ type: "banner", variant: "alert", title: "Gagal mengajukan", description: submitError }] : []),
 		...(validation.globalErrors.length ? [{ type: "banner", variant: "alert", title: "Lengkapi field wajib", description: validation.globalErrors.join(" ") }] : []),
 		{ type: "fields", fields: [
 			{ label: "Draft ID", value: state.entityId ?? "Belum dibuat" },
@@ -1336,7 +1450,7 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ label: "Autosave", value: state.entityId ? "Perubahan tersimpan saat Simpan Draft ditekan" : "Draft dibuat saat field minimum terpenuhi dan disimpan" },
 			{ label: "Catatan Verifikator", value: "Belum ada catatan verifikator untuk draft ini" },
 		] },
-		...wizardPanels(state, validation),
+		...wizardPanels(state, validation, detail),
 		{ type: "header", text: "Progress Langkah" },
 		{
 			type: "table",
@@ -1771,13 +1885,14 @@ async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdmin
 			] },
 		] },
 		{ type: "header", text: "Decision Panel" },
-		{ type: "context", text: "Revisi dan penolakan wajib menyertakan alasan. Mengirim keputusan berarti Anda mengonfirmasi bahwa tindakan ini akan dicatat ke audit trail SIKESRA." },
+		{ type: "banner", variant: "default", title: "Konfirmasi Keputusan Verifikasi", description: "Keputusan verifikasi akan dicatat ke audit trail SIKESRA dan tidak dapat dibatalkan. Revisi dan penolakan wajib menyertakan alasan yang jelas." },
 		{ type: "form", block_id: "verification_decision_form", fields: [
 			{ type: "select", action_id: "verificationLevel", label: "Level Verifikasi", initial_value: defaultLevel, options: [option("Desa", "desa"), option("Kecamatan", "kecamatan"), option("Kabupaten", "kabupaten"), option("OPD", "opd")] },
-			{ type: "select", action_id: "action", label: "Keputusan", initial_value: "verify", options: [option("Verifikasi", "verify"), option("Perlu Perbaikan", "need_revision"), option("Tolak", "reject")] },
-			{ type: "text_input", action_id: "note", label: "Alasan / Catatan", multiline: true, initial_value: "", placeholder: "Wajib diisi untuk need revision atau reject" },
-			{ type: "checkbox", action_id: "confirmAudit", label: "Saya memahami keputusan ini akan diaudit" },
-		], submit: { label: "Kirim Keputusan", action_id: `verification_decide_${entityId}` } },
+			{ type: "select", action_id: "action", label: "Keputusan (wajib)", initial_value: "verify", options: [option("✅ Verifikasi - Setuju dan lanjutkan", "verify"), option("🔄 Perlu Perbaikan - Kembalikan untuk revisi", "need_revision"), option("❌ Tolak - Tidak memenuhi syarat", "reject")] },
+			{ type: "text_input", action_id: "note", label: "Alasan / Catatan (wajib untuk revisi/penolakan)", multiline: true, initial_value: "", placeholder: "Jelaskan alasan keputusan Anda. Wajib diisi untuk need revision atau reject." },
+			{ type: "checkbox", action_id: "confirmAudit", label: "✅ Saya memahami bahwa keputusan ini akan dicatat permanen di audit trail dan tidak dapat dibatalkan" },
+		], submit: { label: "Kirim Keputusan Verifikasi", action_id: `verification_decide_${entityId}` } },
+		{ type: "context", text: "Setelah dikirim, keputusan akan: (1) Mengubah status entitas, (2) Mencatat event verifikasi, (3) Menulis audit log dengan actor dan timestamp, (4) Mengirim notifikasi ke operator jika perlu revisi." },
 	];
 }
 
@@ -1830,10 +1945,11 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 			{ label: "Valid row", value: "Hanya row valid/corrected yang boleh lanjut promosi" },
 			{ label: "Laporan akhir", value: "Harus merangkum valid, invalid, duplicate, promoted, skipped, dan failed" },
 		] },
+		{ type: "banner", variant: "default", title: "Panduan Upload Workbook", description: "Pastikan file berformat .xlsx atau .csv. Maksimal 10MB. Kolom harus memiliki header di baris pertama. Gunakan encoding UTF-8." },
 		{ type: "form", block_id: "imports_create_form", fields: [
-			{ type: "text_input", action_id: "filename", label: "Upload workbook (nama file)", initial_value: form.filename, placeholder: "contoh: data-rumah-ibadah-2026.xlsx" },
-			{ type: "text_input", action_id: "sheetName", label: "Select sheet (opsional untuk draft shell)", initial_value: form.sheetName, placeholder: "contoh: Sheet1 / Data Yatim" },
-			{ type: "select", action_id: "objectTypeCode", label: "Jenis data target", initial_value: form.objectTypeCode, options: [option("Pilih jenis data", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
+			{ type: "text_input", action_id: "filename", label: "Nama file workbook (wajib)", initial_value: form.filename, placeholder: "contoh: data-rumah-ibadah-2026.xlsx" },
+			{ type: "text_input", action_id: "sheetName", label: "Nama sheet (opsional, default sheet pertama)", initial_value: form.sheetName, placeholder: "contoh: Sheet1 / Data Yatim" },
+			{ type: "select", action_id: "objectTypeCode", label: "Jenis data target (wajib)", initial_value: form.objectTypeCode, options: [option("Pilih jenis data", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
 		], submit: { label: "Buat Batch Import", action_id: "imports_create_batch" } },
 		{ type: "header", text: "Daftar Batch" },
 		...(rows.results.length ? rows.results.flatMap((row) => ([
@@ -1960,44 +2076,54 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			{ label: "Jenis data", value: batchTemplate?.objectTypeCode ?? "Mengikuti batch / belum diikat" },
 			{ label: "Status validasi", value: batch.status === "validated" ? "Selesai dijalankan" : "Belum dijalankan / masih mapping" },
 		] },
+				{ type: "banner", variant: "default", title: "Panduan Pemetaan Kolom", description: "Petakan kolom dari workbook ke field target SIKESRA. Field bertanda wajib harus dipetakan sebelum validasi dapat dijalankan." },
+				{ type: "table", columns: [{ key: "target", label: "Field Target SIKESRA" }, { key: "required", label: "Wajib" }, { key: "source", label: "Kolom Sumber" }], rows: [
+					{ target: "displayName", required: "Ya", source: templateField("displayName") || "Belum dipetakan" },
+					{ target: "officialVillageCode", required: "Ya", source: templateField("officialVillageCode") || "Belum dipetakan" },
+					{ target: "addressText", required: "Tidak", source: templateField("addressText") || "Belum dipetakan" },
+					{ target: "sourceIdentifier", required: "Tidak", source: templateField("sourceIdentifier") || "Belum dipetakan" },
+				], empty_text: "Belum ada pemetaan kolom." },
 				{ type: "context", text: "Pemetaan ini menyimpan hubungan kolom workbook ke field inti SIKESRA. Setelah template tersimpan, batch naik ke status mapped dan siap untuk validasi berikutnya." },
 				{ type: "form", block_id: "imports_mapping_form", fields: [
-					{ type: "text_input", action_id: "sourceNameColumn", label: "Kolom sumber untuk Nama Tampil", initial_value: mappingForm.sourceNameColumn || templateField("displayName"), placeholder: "contoh: nama_lembaga / nama_masjid" },
-					{ type: "text_input", action_id: "sourceRegionColumn", label: "Kolom sumber untuk Desa/Kelurahan", initial_value: mappingForm.sourceRegionColumn || templateField("officialVillageCode"), placeholder: "contoh: kode_desa / wilayah_resmi" },
-					{ type: "text_input", action_id: "sourceAddressColumn", label: "Kolom sumber untuk Alamat", initial_value: mappingForm.sourceAddressColumn || templateField("addressText"), placeholder: "contoh: alamat / alamat_ringkas" },
-					{ type: "text_input", action_id: "sourceIdentifierColumn", label: "Kolom sumber untuk Identifier Referensi", initial_value: mappingForm.sourceIdentifierColumn || templateField("sourceIdentifier"), placeholder: "contoh: nomor_register / kode_lokal" },
-					{ type: "text_input", action_id: "templateDefaultValue", label: "Default value opsional", initial_value: mappingForm.templateDefaultValue, placeholder: "Digunakan bila kolom identifier kosong" },
+					{ type: "text_input", action_id: "sourceNameColumn", label: "Kolom sumber untuk Nama Tampil (wajib)", initial_value: mappingForm.sourceNameColumn || templateField("displayName"), placeholder: "contoh: nama_lembaga / nama_masjid" },
+					{ type: "text_input", action_id: "sourceRegionColumn", label: "Kolom sumber untuk Desa/Kelurahan (wajib)", initial_value: mappingForm.sourceRegionColumn || templateField("officialVillageCode"), placeholder: "contoh: kode_desa / wilayah_resmi" },
+					{ type: "text_input", action_id: "sourceAddressColumn", label: "Kolom sumber untuk Alamat (opsional)", initial_value: mappingForm.sourceAddressColumn || templateField("addressText"), placeholder: "contoh: alamat / alamat_ringkas" },
+					{ type: "text_input", action_id: "sourceIdentifierColumn", label: "Kolom sumber untuk Identifier (opsional)", initial_value: mappingForm.sourceIdentifierColumn || templateField("sourceIdentifier"), placeholder: "contoh: nomor_register / kode_lokal" },
+					{ type: "text_input", action_id: "templateDefaultValue", label: "Default value untuk identifier (opsional)", initial_value: mappingForm.templateDefaultValue, placeholder: "Digunakan bila kolom identifier kosong" },
 				], submit: { label: "Simpan Mapping", action_id: `imports_save_mapping_${batchId}` } },
 				{ type: "actions", elements: [{ type: "button", label: "Jalankan Validasi Mapping", action_id: `imports_run_validation_${batchId}`, style: "secondary" }] },
 			] },
 			{ label: "Staging Preview", blocks: [
-				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "rowStatus", label: "Status" }, { key: "duplicateRisk", label: "Risk" }, { key: "rawPreview", label: "Preview" }], rows: stagingRows.map((row) => ({ rowNumber: row.rowNumber, rowStatus: rowStatusLabel(row.rowStatus), duplicateRisk: row.duplicateRisk ?? "-", rawPreview: JSON.stringify(row.rawData).slice(0, 80) })), empty_text: "Belum ada staging row untuk batch ini." },
+				{ type: "banner", variant: "default", title: "Preview Data Staging", description: "Berikut adalah preview data yang telah dipetakan dari workbook. Status row menunjukkan hasil validasi: valid, invalid, atau perlu review duplikasi." },
+				{ type: "table", columns: [{ key: "rowNumber", label: "Baris" }, { key: "rowStatus", label: "Status" }, { key: "duplicateRisk", label: "Risiko Duplikasi" }, { key: "namePreview", label: "Nama" }, { key: "regionPreview", label: "Wilayah" }], rows: stagingRows.slice(0, 20).map((row) => ({ rowNumber: row.rowNumber, rowStatus: rowStatusLabel(row.rowStatus), duplicateRisk: row.duplicateRisk ?? "-", namePreview: String((row.mappedData as any)?.displayName ?? (row.rawData as any)?.displayName ?? "-").slice(0, 40), regionPreview: String((row.mappedData as any)?.officialVillageCode ?? (row.rawData as any)?.officialVillageCode ?? "-").slice(0, 10) })), empty_text: "Belum ada staging row untuk batch ini." },
+				...(stagingRows.length > 20 ? [{ type: "context", text: `Menampilkan 20 dari ${stagingRows.length} baris. Gunakan filter untuk melihat baris spesifik.` }] : []),
 			] },
 			{ label: "Correct Invalid Rows", blocks: [
 				...(selectedRow ? [
 					{ type: "fields", fields: [
-						{ label: "Row terpilih", value: String(selectedRow.rowNumber) },
+						{ label: "Baris terpilih", value: String(selectedRow.rowNumber) },
 						{ label: "Status", value: rowStatusLabel(selectedRow.rowStatus) },
-						{ label: "Validation errors", value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "-" },
+						{ label: "Kesalahan validasi", value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "-" },
 					] },
 					{ type: "form", block_id: "imports_correct_row", fields: [
 						{ type: "text_input", action_id: "rowId", label: "Row ID", initial_value: selectedRow.id },
-						{ type: "text_input", action_id: "correctedPreview", label: "Corrected preview", multiline: true, initial_value: JSON.stringify(selectedRow.mappedData ?? selectedRow.rawData, null, 2) },
-						{ type: "text_input", action_id: "validationNote", label: "Catatan validasi", multiline: true, initial_value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "" },
-						{ type: "select", action_id: "rowStatus", label: "Status row", initial_value: selectedRow.rowStatus, options: [option("Valid", "valid"), option("Invalid", "invalid"), option("Corrected", "corrected"), option("Duplicate Review", "duplicate_review"), option("Skipped", "skipped"), option("Failed", "failed")] },
+						{ type: "text_input", action_id: "correctedPreview", label: "Data terkoreksi (JSON)", multiline: true, initial_value: JSON.stringify(selectedRow.mappedData ?? selectedRow.rawData, null, 2) },
+						{ type: "text_input", action_id: "validationNote", label: "Catatan koreksi", multiline: true, initial_value: selectedRow.validationErrors ? JSON.stringify(selectedRow.validationErrors) : "" },
+						{ type: "select", action_id: "rowStatus", label: "Status baris setelah koreksi", initial_value: selectedRow.rowStatus, options: [option("Valid", "valid"), option("Invalid", "invalid"), option("Terkoreksi", "corrected"), option("Review Duplikasi", "duplicate_review"), option("Dilewati", "skipped"), option("Gagal", "failed")] },
 					], submit: { label: "Simpan Koreksi", action_id: `imports_save_row_${batchId}` } },
-				] : [{ type: "empty", title: "Tidak ada row yang perlu dikoreksi", description: "Invalid row atau duplicate review belum tersedia pada batch ini." }]),
+				] : [{ type: "empty", title: "Tidak ada baris yang perlu dikoreksi", description: "Invalid row atau duplicate review belum tersedia pada batch ini." }]),
 			] },
 			{ label: "Duplicate Review", blocks: [
-				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "risk", label: "Risk" }, { key: "decision", label: "Aksi Operator" }], rows: duplicateRows.map((row) => ({ rowNumber: row.rowNumber, risk: row.duplicateRisk ?? "-", decision: row.duplicateRisk === "blocking" ? "Butuh keputusan dan alasan" : "Review sebelum promosi" })), empty_text: "Belum ada kandidat duplikasi untuk direview." },
+				{ type: "banner", variant: "default", title: "Review Kandidat Duplikasi", description: "Baris dengan risiko duplikasi tinggi atau blocking memerlukan keputusan eksplisit sebelum promosi. Risiko blocking memerlukan alasan dan izin khusus." },
+				{ type: "table", columns: [{ key: "rowNumber", label: "Baris" }, { key: "risk", label: "Risiko" }, { key: "namePreview", label: "Nama" }, { key: "decision", label: "Tindakan" }], rows: duplicateRows.map((row) => ({ rowNumber: row.rowNumber, risk: row.duplicateRisk === "blocking" ? "🔴 Blocking" : row.duplicateRisk === "high" ? "🟠 Tinggi" : row.duplicateRisk === "medium" ? "🟡 Sedang" : "🟢 Rendah", namePreview: String((row.mappedData as any)?.displayName ?? "-").slice(0, 40), decision: row.duplicateRisk === "blocking" ? "Butuh keputusan + alasan" : "Review sebelum promosi" })), empty_text: "Belum ada kandidat duplikasi untuk direview." },
 			] },
 			{ label: "Promote & Report", blocks: [
 				{ type: "fields", fields: [
-			{ label: "Promote readiness", value: batch.status === "validated" ? "Siap promosi" : batch.status === "promoted" ? "Sudah dipromosikan" : "Belum siap" },
-			{ label: "Promoted rows", value: String(batch.promotedRowCount) },
-			{ label: "Import report", value: batch.status === "promoted" ? "Laporan siap ditinjau" : "Laporan akan lengkap setelah promosi" },
-			{ label: "Skipped rows", value: String(skippedRows.length) },
-			{ label: "Failed rows", value: String(failedRows.length) },
+			{ label: "Kesiapan promosi", value: batch.status === "validated" ? "Siap promosi" : batch.status === "promoted" ? "Sudah dipromosikan" : "Belum siap" },
+			{ label: "Baris dipromosikan", value: String(batch.promotedRowCount) },
+			{ label: "Laporan import", value: batch.status === "promoted" ? "Laporan siap ditinjau" : "Laporan akan lengkap setelah promosi" },
+			{ label: "Baris dilewati", value: String(skippedRows.length) },
+			{ label: "Baris gagal", value: String(failedRows.length) },
 		] },
 				{ type: "context", text: "Promosi valid row dan duplicate override tetap memerlukan backend workflow lengkap sebelum tombol eksekusi diaktifkan." },
 			] },
@@ -2066,7 +2192,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 				classification: form.classification as any,
 				checksumSha256: form.checksumSha256 || undefined,
 			}, ctx, db);
-			notice = `Dokumen ${form.fileName.trim()} dicatat untuk entitas ${entityId}. Upload URL backend: ${upload.uploadUrl}`;
+			notice = `Dokumen ${form.fileName.trim()} berhasil dicatat untuk entitas ${entityId}. Silakan unggah file melalui URL yang disediakan backend.`;
 		}
 	}
 
@@ -2077,7 +2203,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Document Center", action_id: "documents_back_to_list", style: "secondary" }] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Dokumen dicatat", description: notice }] : []),
 		{ type: "stats", items: [
-			{ label: "Allowed MIME", value: (settings.allowedMimeTypes ?? []).join(" / ") || "Belum diatur", description: "Diambil dari settings modul" },
+			{ label: "Tipe diterima", value: (settings.allowedMimeTypes ?? []).join(" / ") || "Belum diatur", description: "Diambil dari settings modul" },
 			{ label: "Maks ukuran", value: formatBytes(settings.maxUploadBytes), description: "Batas upload aktif" },
 			{ label: "Reason highly restricted", value: settings.requireReasonForHighlyRestrictedDownload ? "Wajib" : "Tidak wajib", description: "Untuk download highly restricted" },
 		] },
@@ -2087,44 +2213,46 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 			{ label: "Akses download", value: entity.access.canDownloadDocuments ? "Diizinkan" : "Terbatas" },
 			{ label: "Sensitivitas entitas", value: SENSITIVITY_LABELS[entity.entity.sensitivityLevel] ?? entity.entity.sensitivityLevel },
 		] },
+		{ type: "banner", variant: "default", title: "Panduan Upload Dokumen", description: "Pastikan file sesuai tipe yang diterima (PDF, JPG, PNG). Maksimal " + formatBytes(settings.maxUploadBytes) + ". File akan divalidasi MIME type, ukuran, dan checksum sebelum dicatat." },
 		{ type: "form", block_id: "documents_upload_form", fields: [
 			{ type: "text_input", action_id: "entityId", label: "Entity ID", initial_value: entityId },
-			{ type: "text_input", action_id: "fileName", label: "Nama file upload", initial_value: form.fileName, placeholder: "contoh: sk-pendirian.pdf" },
-			{ type: "text_input", action_id: "mimeType", label: "MIME type", initial_value: form.mimeType, placeholder: "application/pdf" },
-			{ type: "number_input", action_id: "sizeBytes", label: "Ukuran file (bytes)", initial_value: numberValue(form.sizeBytes) },
-			{ type: "text_input", action_id: "documentType", label: "Document type", initial_value: form.documentType, placeholder: "akta_pendirian / foto_lokasi / surat_keterangan" },
-			{ type: "select", action_id: "classification", label: "Klasifikasi", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
-			{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA-256 (opsional)", initial_value: form.checksumSha256, placeholder: "Masukkan checksum setelah konfirmasi upload" },
-		], submit: { label: "Catat Dokumen", action_id: `documents_create_${entityId}` } },
-		{ type: "context", text: "Accepted type dan max size mengikuti settings aktif. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
+			{ type: "text_input", action_id: "fileName", label: "Nama file (wajib)", initial_value: form.fileName, placeholder: "contoh: sk-pendirian.pdf" },
+			{ type: "text_input", action_id: "mimeType", label: "MIME type (wajib)", initial_value: form.mimeType, placeholder: "application/pdf, image/jpeg, image/png" },
+			{ type: "number_input", action_id: "sizeBytes", label: "Ukuran file dalam bytes (wajib)", initial_value: numberValue(form.sizeBytes) },
+			{ type: "text_input", action_id: "documentType", label: "Jenis dokumen (wajib)", initial_value: form.documentType, placeholder: "akta_pendirian / foto_lokasi / surat_keterangan" },
+			{ type: "select", action_id: "classification", label: "Klasifikasi dokumen (wajib)", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
+			{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA-256 (opsional, diisi setelah upload)", initial_value: form.checksumSha256, placeholder: "Masukkan checksum setelah konfirmasi upload" },
+		], submit: { label: "Catat dan Upload Dokumen", action_id: `documents_create_${entityId}` } },
+		{ type: "context", text: "Setelah dokumen dicatat, Anda akan menerima URL upload dari backend. Unggah file melalui URL tersebut. Raw R2 key tidak akan ditampilkan." },
+		{ type: "header", text: "Daftar Dokumen" },
 		{ type: "table", columns: [
-			{ key: "documentType", label: "Document Type" },
-			{ key: "originalFilename", label: "Original Filename" },
-			{ key: "classification", label: "Classification" },
-			{ key: "verification", label: "Verification Status" },
-			{ key: "uploadedBy", label: "Uploader" },
-			{ key: "mimeType", label: "MIME" },
-			{ key: "sizeBytes", label: "Size" },
-			{ key: "checksum", label: "Checksum" },
-			{ key: "actions", label: "Allowed Actions" },
+			{ key: "documentType", label: "Jenis Dokumen" },
+			{ key: "originalFilename", label: "Nama File" },
+			{ key: "classification", label: "Klasifikasi" },
+			{ key: "verification", label: "Status Verifikasi" },
+			{ key: "mimeType", label: "Tipe" },
+			{ key: "sizeBytes", label: "Ukuran" },
+			{ key: "actions", label: "Aksi" },
 		], rows: documents.map((doc) => ({
 			documentType: doc.documentType,
-			originalFilename: doc.originalFilename ?? "Tersedia via metadata backend",
+			originalFilename: doc.originalFilename ?? "Metadata tersimpan",
 			classification: documentClassificationLabel(doc.classification),
-			verification: doc.isVerified ? "Verified" : "Pending",
-			uploadedBy: doc.uploadedBy ?? "-",
+			verification: doc.isVerified ? "✅ Terverifikasi" : "⏳ Menunggu",
 			mimeType: doc.mimeType ?? "-",
-			sizeBytes: doc.sizeBytes != null ? `${doc.sizeBytes} bytes` : "-",
-			checksum: doc.checksumSha256 ?? "Tersimpan via metadata backend",
-			actions: entity.access.canDownloadDocuments ? "Preview / Download via backend" : "Lihat metadata saja",
+			sizeBytes: doc.sizeBytes != null ? formatBytes(doc.sizeBytes) : "-",
+			actions: [
+				entity.access.canDownloadDocuments ? "Preview / Download" : "",
+				!doc.isVerified ? "Verifikasi" : "",
+				"Ganti"
+			].filter(Boolean).join(" · ") || "Lihat metadata",
 		})), empty_text: "Belum ada dokumen yang ditautkan ke entitas ini." },
 		{ type: "table", columns: [
 			{ key: "rule", label: "Aturan UI Dokumen" },
 			{ key: "status", label: "Status" },
 		], rows: [
-			{ rule: "Accepted types dan max size tampil", status: "Aktif pada form" },
-			{ rule: "Document type wajib", status: "Wajib diisi" },
-			{ rule: "Classification wajib", status: "Wajib diisi" },
+			{ rule: "Tipe diterima dan maks ukuran tampil", status: "Aktif pada form" },
+			{ rule: "Jenis dokumen wajib", status: "Wajib diisi" },
+			{ rule: "Klasifikasi wajib", status: "Wajib diisi" },
 			{ rule: "Checksum dan upload status", status: "Ditampilkan setelah pencatatan" },
 			{ rule: "Quarantine / failed", status: "Disiapkan sebagai state operasional lanjutan" },
 		] },
@@ -2849,6 +2977,8 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			error = "Permission awcms:sikesra:settings:update diperlukan untuk menyimpan perubahan pengaturan.";
 		} else if (!form.reason.trim()) {
 			error = "Alasan perubahan wajib diisi agar update pengaturan tercatat di audit trail.";
+		} else if (!form.confirmSettingsSave) {
+			error = "Konfirmasi eksplisit diperlukan untuk menyimpan perubahan pengaturan. Centang kotak konfirmasi di bawah.";
 		} else {
 			activeSettings = await updateSettings(
 				db,
@@ -2922,6 +3052,7 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			{ label: "Max upload", value: formatBytes(numberValue(form.maxUploadBytes) ?? activeSettings.maxUploadBytes), description: "Batas ukuran dokumen/import" },
 			{ label: "Export sync rows", value: String(numberValue(form.exportMaxSyncRows) ?? activeSettings.exportMaxSyncRows), description: "Batas export sinkron" },
 		] },
+		{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Diperlukan", description: "Perubahan pengaturan mempengaruhi visibilitas publik, threshold keamanan, dan batas operasional. Setiap perubahan dicatat permanen di audit trail (settings.update) dan tidak dapat dibatalkan. Pastikan alasan perubahan jelas dan dampaknya telah dipahami." },
 		{ type: "header", text: "Kontrol Pengaturan" },
 		{ type: "table", columns: [
 			{ key: "rule", label: "Rule" },
@@ -2948,6 +3079,7 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			{ type: "select", action_id: "featureDocuments", label: "Feature flag: documents", initial_value: form.featureDocuments, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
 			{ type: "select", action_id: "featureExports", label: "Feature flag: exports", initial_value: form.featureExports, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
 			{ type: "text_input", action_id: "reason", label: "Alasan perubahan (wajib)", multiline: true, initial_value: form.reason, placeholder: "Jelaskan dasar perubahan konfigurasi dan dampaknya" },
+			{ type: "checkbox", action_id: "confirmSettingsSave", label: "✅ Saya memahami bahwa perubahan pengaturan ini akan dicatat permanen di audit trail (settings.update) dan mempengaruhi visibilitas publik, threshold keamanan, serta batas operasional sistem" },
 		], submit: { label: canUpdate ? "Simpan Pengaturan" : "Butuh Permission Settings Update", action_id: "settings_save" } },
 		{ type: "header", text: "Preview Konfigurasi Aktif" },
 		{ type: "table", columns: [
@@ -2989,16 +3121,34 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 
 	let generateCodeSuccess = "";
 	let generateCodeError = "";
+	let showGenerateCodeConfirm = false;
 
-	if (input.type === "block_action" && input.action_id?.startsWith("entities_generate_code_")) {
-		const targetId = input.action_id.replace("entities_generate_code_", "");
+	if (input.type === "block_action" && input.action_id?.startsWith("entities_generate_code_confirm_")) {
+		const targetId = input.action_id.replace("entities_generate_code_confirm_", "");
 		if (targetId === entityId) {
+			showGenerateCodeConfirm = true;
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "entities_generate_code_submit") {
+		const targetId = stringState(input.values?.entityId);
+		const confirmed = input.values?.confirmGenerateCode === true || input.values?.confirmGenerateCode === "true" || input.values?.confirmGenerateCode === "on";
+		if (targetId === entityId && confirmed) {
 			try {
 				const result = await generateSikesraId(db, entityId, ctx);
 				generateCodeSuccess = `ID SIKESRA berhasil dibuat: ${result.sikesraId20} (urutan ke-${result.sequence})`;
 			} catch (err) {
 				generateCodeError = err instanceof Error ? err.message : "Gagal membuat ID SIKESRA";
 			}
+		} else if (!confirmed) {
+			generateCodeError = "Konfirmasi eksplisit diperlukan untuk generate ID. Centang kotak konfirmasi.";
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("entities_generate_code_") && !input.action_id?.startsWith("entities_generate_code_confirm_") && !input.action_id?.startsWith("entities_generate_code_submit")) {
+		const targetId = input.action_id.replace("entities_generate_code_", "");
+		if (targetId === entityId) {
+			showGenerateCodeConfirm = true;
 		}
 	}
 
@@ -3014,7 +3164,7 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
 		...(detail.access.canVerify ? [{ type: "button", label: "Verifikasi", action_id: "nav_verification", style: "secondary" }] : []),
-		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `entities_generate_code_${entityId}`, style: "secondary" }] : []),
+		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `entities_generate_code_confirm_${entityId}`, style: "secondary" }] : []),
 	];
 
 	const latestAudit = Array.isArray(detail.audit) && detail.audit.length > 0 ? detail.audit[0] as Record<string, unknown> : null;
@@ -3030,8 +3180,12 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 			{ label: "Status Verifikasi", value: formatVerificationStatus(detail.entity.statusVerification) },
 			{ label: "Sensitivitas", value: SENSITIVITY_LABELS[detail.entity.sensitivityLevel] ?? detail.entity.sensitivityLevel },
 		] },
-		...(primaryActions.length ? [{ type: "actions", elements: primaryActions }] : []),
-		{ type: "columns", columns: [[
+	...(primaryActions.length ? [{ type: "actions", elements: primaryActions }] : []),
+	...(showGenerateCodeConfirm ? [{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Generate ID SIKESRA", description: "ID SIKESRA 20 digit akan dibuat berdasarkan sequence desa/jenis/subjenis. ID ini akan tercatat permanen di code history dan audit trail (code.generate). Koreksi ID berikutnya memerlukan permission code:correct dan alasan eksplisit." }, { type: "form", block_id: "generate_code_confirm", fields: [
+		{ type: "hidden", action_id: "entityId", initial_value: entityId },
+		{ type: "checkbox", action_id: "confirmGenerateCode", label: "✅ Saya memahami bahwa ID SIKESRA yang dibuat akan tercatat permanen dan koreksi memerlukan proses audit tersendiri" },
+	], submit: { label: "Konfirmasi & Generate ID", action_id: "entities_generate_code_submit", style: "secondary" } }] : []),
+	{ type: "columns", columns: [[
 			{ type: "header", text: "Ringkasan Entitas" },
 			{ type: "fields", fields: [
 				{ label: "Jenis / Subjenis", value: String(detail.summary["typeLabel"] ?? "-") },

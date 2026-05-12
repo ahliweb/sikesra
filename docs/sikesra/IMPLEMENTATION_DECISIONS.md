@@ -118,18 +118,19 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ## Implementation Status (2026-05-12)
 
 ### Fully Implemented
-- Plugin registration, route registry (30 routes), handler utilities
-- Request context (fail-closed), permissions (33), ABAC evaluator, masking, route guard
+- Plugin registration, route registry (33 routes), handler utilities
+- Request context (fail-closed), permissions (37), ABAC evaluator, masking, route guard
 - API envelope, entity CRUD, verification service, import service, document service
 - Dashboard service, public services, region service, audit service, export service, settings service
-- Admin Block Kit UI (3342 lines covering all major screens)
+- Completeness validation service with field rules per object type, batch validation, and audit logging
+- Confirmation dialogs for high-risk actions (verification decisions, settings save, ID generation) with audit consequence banners
+- Admin Block Kit UI (3400+ lines covering all major screens)
 - 13 migrations, 5 seeds, architecture tests (25 tests)
 - kysely upgraded to 0.28.17 (CVE-2026-44635 fixed)
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
-| #159 | Completeness validation service (inline in admin-routes.ts only) | P0 |
 | #160 | R2 storage adapter (ad-hoc in multiple files) | P0 |
 | #161 | Comprehensive test coverage (only 1 test file) | P0 |
 | #162 | Backup/restore procedures (missing entirely) | P0 |
@@ -142,7 +143,9 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #156 | Verification v1 API routes | ✅ Implemented queue, submit, verify, timeline endpoints wired to registry |
 | #157 | Deduplication service | ✅ Implemented detection, risk scoring, decision persistence, and v1 API routes |
 | #158 | Public /sikesra Astro page | ✅ Created with aggregate-safe data, small-cell suppression, filter bar, KPIs, charts with table alternatives |
+| #159 | Completeness validation service | ✅ Implemented with field rules per object type, batch validation, audit logging, and 3 v1 API endpoints |
 | #167 | Convert public page to Astro component | ✅ Integrated with EmDash layout, mobile-first, Indonesian formal language |
+| #170 | Confirmation dialogs for high-risk actions | ✅ Added explicit confirmation for verification decisions, settings save, and ID generation with audit consequence banners |
 
 ### Remaining P1 Gaps (Post-MVP)
 | Issue | Gap | Priority |
@@ -151,11 +154,11 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #165 | XLSX export generation and enhanced export job lifecycle | P1 |
 
 ### Recommended Implementation Order
-1. #155: ID generation service (blocks import promotion, entity creation)
-2. #156: Verification v1 API routes (service exists, just needs wiring)
-3. #157: Deduplication service (blocks import promotion)
-4. #159: Completeness validation service (blocks submit and ID generation)
-5. #158: Public /sikesra page (public-facing requirement)
+1. #155: ID generation service (blocks import promotion, entity creation) ✅
+2. #156: Verification v1 API routes (service exists, just needs wiring) ✅
+3. #157: Deduplication service (blocks import promotion) ✅
+4. #159: Completeness validation service (blocks submit and ID generation) ✅
+5. #158: Public /sikesra page (public-facing requirement) ✅
 6. #160: R2 storage adapter (security consistency)
 7. #163: InMemoryD1Binding fix (enables repository testing)
 8. #161: Comprehensive test coverage (security regression protection)
