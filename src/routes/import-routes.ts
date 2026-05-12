@@ -5,6 +5,7 @@
 import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
+import { createImportBatch } from "../services/import";
 
 export interface ImportListParams {
   page?: number;
@@ -82,23 +83,12 @@ export const importCreateHandler = async (routeCtx: EmDashRouteContext<ImportCre
 
   const ctx = buildContextFromEmDash(routeCtx);
   const input: ImportCreateInput = routeCtx.input ?? { filename: "upload.xlsx" };
-  const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const tenantId = ctx.tenantId;
-  const siteId = ctx.siteId;
-
-  await db
-    .prepare(
-      `INSERT INTO awcms_sikesra_import_batches
-       (id, tenant_id, site_id, original_filename, status, object_type_code, created_by)
-       VALUES (?, ?, ?, ?, 'pending', ?, ?)`
-    )
-    .bind(id, tenantId, siteId, input.filename ?? "upload.xlsx", input.objectTypeCode ?? null, "api-user")
-    .run();
-
-  const row = await db
-    .prepare(`SELECT * FROM awcms_sikesra_import_batches WHERE id = ?`)
-    .bind(id)
-    .first<Record<string, unknown>>();
-
-  return row ?? { id, status: "pending" };
+  return createImportBatch(
+    db,
+    {
+      originalFilename: input.filename ?? "upload.xlsx",
+      objectTypeCode: input.objectTypeCode,
+    },
+    ctx,
+  );
 };

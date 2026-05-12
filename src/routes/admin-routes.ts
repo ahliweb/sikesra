@@ -15,6 +15,8 @@ import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
 import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
 import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
+import { createImportBatch } from "../services/import";
+import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -36,6 +38,14 @@ interface ImportCreateFormState {
 	filename: string;
 	objectTypeCode: string;
 	sheetName: string;
+}
+
+interface ImportMappingFormState {
+	sourceNameColumn: string;
+	sourceRegionColumn: string;
+	sourceAddressColumn: string;
+	sourceIdentifierColumn: string;
+	templateDefaultValue: string;
 }
 
 interface DocumentUploadFormState {
@@ -700,6 +710,17 @@ function parseImportCreateForm(input: PluginAdminInteraction): ImportCreateFormS
 		filename: stringState(values.filename),
 		objectTypeCode: stringState(values.objectTypeCode),
 		sheetName: stringState(values.sheetName),
+	};
+}
+
+function parseImportMappingForm(input: PluginAdminInteraction): ImportMappingFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		sourceNameColumn: stringState(values.sourceNameColumn),
+		sourceRegionColumn: stringState(values.sourceRegionColumn),
+		sourceAddressColumn: stringState(values.sourceAddressColumn),
+		sourceIdentifierColumn: stringState(values.sourceIdentifierColumn),
+		templateDefaultValue: stringState(values.templateDefaultValue),
 	};
 }
 
@@ -1725,27 +1746,16 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 
 	if (input.type === "form_submit" && input.action_id === "imports_create_batch") {
 		if (form.filename.trim()) {
-			const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-			const now = new Date();
-			const yyyy = String(now.getUTCFullYear());
-			const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-			const safeName = form.filename.trim().replace(/[^a-zA-Z0-9._-]+/g, "-");
-			await db.prepare(
-				`INSERT INTO awcms_sikesra_import_batches
-				 (id, tenant_id, site_id, r2_key, original_filename, sheet_name, status, object_type_code, created_by, updated_by)
-				 VALUES (?, ?, ?, ?, ?, ?, 'uploaded', ?, ?, ?)`,
-			).bind(
-				id,
-				ctx.tenantId,
-				ctx.siteId,
-				`tenants/${ctx.tenantId}/sites/${ctx.siteId}/modules/sikesra/imports/${yyyy}/${mm}/${safeName}`,
-				form.filename.trim(),
-				form.sheetName || null,
-				form.objectTypeCode || null,
-				ctx.userId,
-				ctx.userId,
-			).run();
-			notice = `Batch import ${id} berhasil dibuat. Lanjutkan ke tahap mapping dan validasi.`;
+			const batch = await createImportBatch(
+				db,
+				{
+					originalFilename: form.filename.trim(),
+					sheetName: form.sheetName || undefined,
+					objectTypeCode: form.objectTypeCode || undefined,
+				},
+				ctx,
+			);
+			notice = `Batch import ${batch.id} berhasil dibuat. Lanjutkan ke tahap mapping dan validasi.`;
 		}
 	}
 
@@ -1809,11 +1819,38 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		}
 	}
 
+	let mappingNotice = "";
+	let mappingError = "";
+	const mappingForm = parseImportMappingForm(input);
+	if (input.type === "form_submit" && input.action_id === `imports_save_mapping_${batchId}`) {
+		const mapping: ImportMapping[] = [];
+		if (mappingForm.sourceNameColumn) mapping.push({ sourceColumn: mappingForm.sourceNameColumn, targetField: "displayName" });
+		if (mappingForm.sourceRegionColumn) mapping.push({ sourceColumn: mappingForm.sourceRegionColumn, targetField: "officialVillageCode" });
+		if (mappingForm.sourceAddressColumn) mapping.push({ sourceColumn: mappingForm.sourceAddressColumn, targetField: "addressText" });
+		if (mappingForm.sourceIdentifierColumn) {
+			mapping.push({
+				sourceColumn: mappingForm.sourceIdentifierColumn,
+				targetField: "sourceIdentifier",
+				defaultValue: mappingForm.templateDefaultValue || undefined,
+			});
+		}
+
+		if (!mapping.length) {
+			mappingError = "Isi minimal satu pemetaan kolom sebelum menyimpan template mapping batch.";
+		} else {
+			const mapped = await parseAndStageRows(db, batchId, mapping, ctx);
+			mappingNotice = `Template mapping ${mapped.template.name} tersimpan. Batch sekarang berstatus mapped dan siap menuju validasi.`;
+		}
+	}
+
 	const batch = await getImportBatch(db, batchId, ctx);
 	if (!batch) {
 		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Batch import tidak ditemukan", description: `ID ${batchId} tidak tersedia pada scope backend saat ini.` }];
 	}
 
+	const templates = await getImportMappingTemplates(db, undefined, ctx);
+	const batchTemplate = templates.find((item) => item.name === `batch:${batchId}`);
+	const templateField = (targetField: string) => batchTemplate?.mapping.find((item) => item.targetField === targetField)?.sourceColumn ?? "";
 	const stagingRows = await getStagingRows(db, batchId, ctx);
 	const selectedRow = stagingRows.find((row) => row.rowStatus === "invalid" || row.rowStatus === "duplicate_review") ?? stagingRows[0];
 	const duplicateRows = stagingRows.filter((row) => row.rowStatus === "duplicate_review");
@@ -1826,6 +1863,8 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
+		...(mappingNotice ? [{ type: "banner", variant: "success", title: "Mapping tersimpan", description: mappingNotice }] : []),
+		...(mappingError ? [{ type: "banner", variant: "alert", title: "Mapping belum tersimpan", description: mappingError }] : []),
 		{ type: "stats", items: [
 			{ label: "Valid", value: String(batch.validRowCount), description: "Row valid / corrected" },
 			{ label: "Invalid", value: String(invalidRows.length), description: "Butuh koreksi operator" },
@@ -1847,7 +1886,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		{ type: "table", columns: [{ key: "step", label: "Tahap" }, { key: "status", label: "Status" }, { key: "note", label: "Catatan" }], rows: [
 			{ step: "1. Upload workbook", status: "Selesai", note: `File ${batch.originalFilename} tercatat di batch shell.` },
 			{ step: "2. Select sheet", status: batch.sheetName ? "Selesai" : "Perlu dipilih", note: batch.sheetName ?? "Pilih sheet target sebelum parsing row." },
-			{ step: "3. Map columns", status: batch.status === "uploaded" ? "Menunggu" : "Berjalan / selesai", note: "Pemetaan kolom akan menargetkan field SIKESRA sesuai jenis data." },
+			{ step: "3. Map columns", status: batch.status === "uploaded" ? "Menunggu" : batch.status === "mapped" || batch.status === "validated" || batch.status === "promoting" || batch.status === "promoted" ? "Selesai" : "Berjalan / selesai", note: batchTemplate ? `Template ${batchTemplate.name} tersimpan untuk batch ini.` : "Pemetaan kolom akan menargetkan field SIKESRA sesuai jenis data." },
 			{ step: "4. Validate mapping", status: batch.status === "validated" || batch.status === "promoted" ? "Selesai" : batch.status === "mapped" ? "Siap divalidasi" : "Menunggu", note: "Validasi wajib memeriksa tipe data, region, dan required field." },
 			{ step: "5. Preview staging rows", status: stagingRows.length ? "Tersedia" : "Belum tersedia", note: `${stagingRows.length} row staging pada batch ini.` },
 			{ step: "6. Correct invalid rows", status: invalidRows.length ? "Perlu tindakan" : "Tidak ada invalid row", note: `${invalidRows.length} row invalid memerlukan koreksi.` },
@@ -1856,6 +1895,21 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			{ step: "9. Display import report", status: batch.status === "promoted" ? "Siap ditampilkan" : "Akan lengkap setelah promosi", note: "Laporan merangkum valid, invalid, duplicate, promoted, skipped, dan failed." },
 		] },
 		{ type: "tab", default_tab: 0, panels: [
+			{ label: "Map Columns", blocks: [
+				{ type: "fields", fields: [
+					{ label: "Template aktif", value: batchTemplate?.name ?? "Belum ada template untuk batch ini" },
+					{ label: "Sheet target", value: batch.sheetName ?? "Belum dipilih" },
+					{ label: "Jenis data", value: batchTemplate?.objectTypeCode ?? "Mengikuti batch / belum diikat" },
+				] },
+				{ type: "context", text: "Pemetaan ini menyimpan hubungan kolom workbook ke field inti SIKESRA. Setelah template tersimpan, batch naik ke status mapped dan siap untuk validasi berikutnya." },
+				{ type: "form", block_id: "imports_mapping_form", fields: [
+					{ type: "text_input", action_id: "sourceNameColumn", label: "Kolom sumber untuk Nama Tampil", initial_value: mappingForm.sourceNameColumn || templateField("displayName"), placeholder: "contoh: nama_lembaga / nama_masjid" },
+					{ type: "text_input", action_id: "sourceRegionColumn", label: "Kolom sumber untuk Desa/Kelurahan", initial_value: mappingForm.sourceRegionColumn || templateField("officialVillageCode"), placeholder: "contoh: kode_desa / wilayah_resmi" },
+					{ type: "text_input", action_id: "sourceAddressColumn", label: "Kolom sumber untuk Alamat", initial_value: mappingForm.sourceAddressColumn || templateField("addressText"), placeholder: "contoh: alamat / alamat_ringkas" },
+					{ type: "text_input", action_id: "sourceIdentifierColumn", label: "Kolom sumber untuk Identifier Referensi", initial_value: mappingForm.sourceIdentifierColumn || templateField("sourceIdentifier"), placeholder: "contoh: nomor_register / kode_lokal" },
+					{ type: "text_input", action_id: "templateDefaultValue", label: "Default value opsional", initial_value: mappingForm.templateDefaultValue, placeholder: "Digunakan bila kolom identifier kosong" },
+				], submit: { label: "Simpan Mapping", action_id: `imports_save_mapping_${batchId}` } },
+			] },
 			{ label: "Staging Preview", blocks: [
 				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "rowStatus", label: "Status" }, { key: "duplicateRisk", label: "Risk" }, { key: "rawPreview", label: "Preview" }], rows: stagingRows.map((row) => ({ rowNumber: row.rowNumber, rowStatus: rowStatusLabel(row.rowStatus), duplicateRisk: row.duplicateRisk ?? "-", rawPreview: JSON.stringify(row.rawData).slice(0, 80) })), empty_text: "Belum ada staging row untuk batch ini." },
 			] },
