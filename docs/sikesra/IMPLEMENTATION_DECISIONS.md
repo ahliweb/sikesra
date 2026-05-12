@@ -114,3 +114,45 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 9. No script may patch EmDash source, `node_modules`, or generated EmDash admin chunks without a separately approved adapter decision.
 10. Future SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload.
 11. Public-safe route handlers must build an explicit `public` request context; authenticated admin/API handlers must fail closed when trusted identity, role, or site context is missing.
+
+## Implementation Status (2026-05-12)
+
+### Fully Implemented
+- Plugin registration, route registry (30 routes), handler utilities
+- Request context (fail-closed), permissions (33), ABAC evaluator, masking, route guard
+- API envelope, entity CRUD, verification service, import service, document service
+- Dashboard service, public services, region service, audit service, export service, settings service
+- Admin Block Kit UI (3342 lines covering all major screens)
+- 13 migrations, 5 seeds, architecture tests (25 tests)
+- kysely upgraded to 0.28.17 (CVE-2026-44635 fixed)
+
+### Remaining P0 Gaps (Tracked via GitHub Issues)
+| Issue | Gap | Priority |
+|---|---|---|
+| #155 | ID generation service (stub) | P0 |
+| #156 | Verification v1 API routes (service exists, no routes) | P0 |
+| #157 | Deduplication service (missing entirely) | P0 |
+| #158 | Public /sikesra page (missing entirely) | P0 |
+| #159 | Completeness validation service (inline in admin-routes.ts only) | P0 |
+| #160 | R2 storage adapter (ad-hoc in multiple files) | P0 |
+| #161 | Comprehensive test coverage (only 1 test file) | P0 |
+| #162 | Backup/restore procedures (missing entirely) | P0 |
+| #163 | InMemoryD1Binding fix (no-op, cannot test repository logic) | P0 |
+
+### Remaining P1 Gaps (Post-MVP)
+| Issue | Gap | Priority |
+|---|---|---|
+| #164 | ABAC policy and attribute definition CRUD services | P1 |
+| #165 | XLSX export generation and enhanced export job lifecycle | P1 |
+
+### Recommended Implementation Order
+1. #155: ID generation service (blocks import promotion, entity creation)
+2. #156: Verification v1 API routes (service exists, just needs wiring)
+3. #157: Deduplication service (blocks import promotion)
+4. #159: Completeness validation service (blocks submit and ID generation)
+5. #158: Public /sikesra page (public-facing requirement)
+6. #160: R2 storage adapter (security consistency)
+7. #163: InMemoryD1Binding fix (enables repository testing)
+8. #161: Comprehensive test coverage (security regression protection)
+9. #162: Backup/restore procedures (operations requirement)
+10. #164, #165: Post-MVP hardening
