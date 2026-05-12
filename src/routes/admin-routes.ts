@@ -13,6 +13,7 @@ import { buildAbacSubject, evaluateAbac, type AbacInput, type AbacResource } fro
 import { loadAbacPolicies } from "../repositories/abac-repository";
 import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
 import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
+import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 
 interface PluginAdminInteraction {
@@ -91,6 +92,24 @@ interface AuditFilterFormState {
 	toDate: string;
 	success: string;
 	risk: string;
+}
+
+interface SettingsFormState {
+	publicEnabled: string;
+	publicTitle: string;
+	publicDescription: string;
+	dataScopeNote: string;
+	officialContact: string;
+	smallCellThreshold: string;
+	maxUploadBytes: string;
+	allowedMimeTypes: string;
+	exportMaxSyncRows: string;
+	requireReasonForHighlyRestrictedDownload: string;
+	featurePublicDashboard: string;
+	featureImports: string;
+	featureDocuments: string;
+	featureExports: string;
+	reason: string;
 }
 
 interface ReportFieldPreview {
@@ -720,6 +739,27 @@ function parseAuditFilterForm(input: PluginAdminInteraction): AuditFilterFormSta
 	};
 }
 
+function parseSettingsForm(input: PluginAdminInteraction): SettingsFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		publicEnabled: stringState(values.publicEnabled, "false"),
+		publicTitle: stringState(values.publicTitle),
+		publicDescription: stringState(values.publicDescription),
+		dataScopeNote: stringState(values.dataScopeNote),
+		officialContact: stringState(values.officialContact),
+		smallCellThreshold: stringState(values.smallCellThreshold),
+		maxUploadBytes: stringState(values.maxUploadBytes),
+		allowedMimeTypes: stringState(values.allowedMimeTypes),
+		exportMaxSyncRows: stringState(values.exportMaxSyncRows),
+		requireReasonForHighlyRestrictedDownload: stringState(values.requireReasonForHighlyRestrictedDownload, "true"),
+		featurePublicDashboard: stringState(values.featurePublicDashboard, "true"),
+		featureImports: stringState(values.featureImports, "true"),
+		featureDocuments: stringState(values.featureDocuments, "true"),
+		featureExports: stringState(values.featureExports, "true"),
+		reason: stringState(values.reason),
+	};
+}
+
 function getReportFieldPresets(reportKey: string): ReportFieldPreset[] {
 	return REPORT_FIELD_PRESETS[reportKey] ?? [];
 }
@@ -774,6 +814,25 @@ function permissionResource(permission: string): string {
 
 function formatBooleanPreview(value: boolean): string {
 	return value ? "Ya" : "Tidak";
+}
+
+function parseBooleanState(value: string, fallback: boolean): boolean {
+	if (value === "true") return true;
+	if (value === "false") return false;
+	return fallback;
+}
+
+function parseMimeTypeList(value: string): string[] {
+	return value
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes >= 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MB`;
+	if (bytes >= 1024) return `${Math.round((bytes / 1024) * 10) / 10} KB`;
+	return `${bytes} B`;
 }
 
 function auditRiskLabel(action: string): string {
@@ -2507,6 +2566,174 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 	];
 }
 
+async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const canUpdate = hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SETTINGS_UPDATE);
+	const current = await getSettings(db, ctx);
+	const currentFlags = {
+		publicDashboard: current.featureFlags?.publicDashboard ?? true,
+		imports: current.featureFlags?.imports ?? true,
+		documents: current.featureFlags?.documents ?? true,
+		exports: current.featureFlags?.exports ?? true,
+	};
+
+	let form = parseSettingsForm(input);
+	let notice = "";
+	let error = "";
+
+	const derivedForm = {
+		publicEnabled: form.publicEnabled || String(current.publicEnabled),
+		publicTitle: form.publicTitle || current.publicTitle,
+		publicDescription: form.publicDescription || current.publicDescription || "",
+		dataScopeNote: form.dataScopeNote || current.dataScopeNote || "",
+		officialContact: form.officialContact || current.officialContact || "",
+		smallCellThreshold: form.smallCellThreshold || String(current.smallCellThreshold),
+		maxUploadBytes: form.maxUploadBytes || String(current.maxUploadBytes),
+		allowedMimeTypes: form.allowedMimeTypes || (current.allowedMimeTypes ?? []).join(", "),
+		exportMaxSyncRows: form.exportMaxSyncRows || String(current.exportMaxSyncRows),
+		requireReasonForHighlyRestrictedDownload:
+			form.requireReasonForHighlyRestrictedDownload || String(current.requireReasonForHighlyRestrictedDownload),
+		featurePublicDashboard: form.featurePublicDashboard || String(currentFlags.publicDashboard),
+		featureImports: form.featureImports || String(currentFlags.imports),
+		featureDocuments: form.featureDocuments || String(currentFlags.documents),
+		featureExports: form.featureExports || String(currentFlags.exports),
+		reason: form.reason,
+	};
+	form = derivedForm;
+
+	let activeSettings = current;
+	if (input.type === "form_submit" && input.action_id === "settings_save") {
+		if (!canUpdate) {
+			error = "Permission awcms:sikesra:settings:update diperlukan untuk menyimpan perubahan pengaturan.";
+		} else if (!form.reason.trim()) {
+			error = "Alasan perubahan wajib diisi agar update pengaturan tercatat di audit trail.";
+		} else {
+			activeSettings = await updateSettings(
+				db,
+				{
+					publicEnabled: parseBooleanState(form.publicEnabled, current.publicEnabled),
+					publicTitle: form.publicTitle || "SIKESRA",
+					publicDescription: form.publicDescription || undefined,
+					dataScopeNote: form.dataScopeNote || undefined,
+					officialContact: form.officialContact || undefined,
+					smallCellThreshold: numberValue(form.smallCellThreshold) ?? current.smallCellThreshold,
+					maxUploadBytes: numberValue(form.maxUploadBytes) ?? current.maxUploadBytes,
+					allowedMimeTypes: parseMimeTypeList(form.allowedMimeTypes),
+					exportMaxSyncRows: numberValue(form.exportMaxSyncRows) ?? current.exportMaxSyncRows,
+					requireReasonForHighlyRestrictedDownload: parseBooleanState(
+						form.requireReasonForHighlyRestrictedDownload,
+						current.requireReasonForHighlyRestrictedDownload,
+					),
+					featureFlags: {
+						publicDashboard: parseBooleanState(form.featurePublicDashboard, currentFlags.publicDashboard),
+						imports: parseBooleanState(form.featureImports, currentFlags.imports),
+						documents: parseBooleanState(form.featureDocuments, currentFlags.documents),
+						exports: parseBooleanState(form.featureExports, currentFlags.exports),
+					},
+				},
+				form.reason,
+				ctx,
+			);
+			notice = "Pengaturan SIKESRA berhasil diperbarui. Perubahan ini telah dicatat ke audit trail settings.update.";
+			form = {
+				...form,
+				publicEnabled: String(activeSettings.publicEnabled),
+				publicTitle: activeSettings.publicTitle,
+				publicDescription: activeSettings.publicDescription || "",
+				dataScopeNote: activeSettings.dataScopeNote || "",
+				officialContact: activeSettings.officialContact || "",
+				smallCellThreshold: String(activeSettings.smallCellThreshold),
+				maxUploadBytes: String(activeSettings.maxUploadBytes),
+				allowedMimeTypes: (activeSettings.allowedMimeTypes ?? []).join(", "),
+				exportMaxSyncRows: String(activeSettings.exportMaxSyncRows),
+				requireReasonForHighlyRestrictedDownload: String(activeSettings.requireReasonForHighlyRestrictedDownload),
+				featurePublicDashboard: String(activeSettings.featureFlags?.publicDashboard ?? true),
+				featureImports: String(activeSettings.featureFlags?.imports ?? true),
+				featureDocuments: String(activeSettings.featureFlags?.documents ?? true),
+				featureExports: String(activeSettings.featureFlags?.exports ?? true),
+				reason: "",
+			};
+		}
+	}
+
+	const featureFlags = {
+		publicDashboard: parseBooleanState(form.featurePublicDashboard, true),
+		imports: parseBooleanState(form.featureImports, true),
+		documents: parseBooleanState(form.featureDocuments, true),
+		exports: parseBooleanState(form.featureExports, true),
+	};
+
+	return [
+		...pageIntro("settings"),
+		{ type: "banner", variant: "default", title: "Governance / Pengaturan", description: "Pengaturan SIKESRA mengendalikan visibilitas publik, threshold suppression, batas upload, batas export sinkron, dan feature flag. Setiap perubahan harus melalui permission backend, alasan, dan audit." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Permission baca", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SETTINGS_READ) ? "Aktif" : "Belum terdeteksi" },
+			{ label: "Permission update", value: canUpdate ? "Aktif" : "Readonly" },
+			{ label: "Audit update", value: "settings.update wajib tercatat" },
+		] },
+		...(notice ? [{ type: "banner", variant: "success", title: "Pengaturan tersimpan", description: notice }] : []),
+		...(error ? [{ type: "banner", variant: "alert", title: "Pengaturan belum tersimpan", description: error }] : []),
+		{ type: "stats", items: [
+			{ label: "Public enabled", value: form.publicEnabled === "true" ? "Ya" : "Tidak", description: "Mengontrol permukaan publik /sikesra" },
+			{ label: "Small-cell threshold", value: String(numberValue(form.smallCellThreshold) ?? activeSettings.smallCellThreshold), description: "Batas suppression agregat kecil" },
+			{ label: "Max upload", value: formatBytes(numberValue(form.maxUploadBytes) ?? activeSettings.maxUploadBytes), description: "Batas ukuran dokumen/import" },
+			{ label: "Export sync rows", value: String(numberValue(form.exportMaxSyncRows) ?? activeSettings.exportMaxSyncRows), description: "Batas export sinkron" },
+		] },
+		{ type: "header", text: "Kontrol Pengaturan" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Rule" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Update butuh permission settings:update", status: canUpdate ? "Aktif" : "Readonly" },
+			{ rule: "Update butuh alasan", status: "Wajib diisi pada form" },
+			{ rule: "Update dicatat ke audit trail", status: "Aktif via settings.update" },
+			{ rule: "Public safety threshold harus eksplisit", status: "Ditampilkan sebagai field khusus" },
+		] },
+		{ type: "form", block_id: "settings_form", fields: [
+			{ type: "select", action_id: "publicEnabled", label: "Publikasikan /sikesra", initial_value: form.publicEnabled, options: [option("Tidak", "false"), option("Ya", "true")] },
+			{ type: "text_input", action_id: "publicTitle", label: "Judul publik", initial_value: form.publicTitle, placeholder: "SIKESRA Kabupaten ..." },
+			{ type: "text_input", action_id: "publicDescription", label: "Deskripsi publik", multiline: true, initial_value: form.publicDescription, placeholder: "Ringkasan permukaan publik yang aman" },
+			{ type: "text_input", action_id: "dataScopeNote", label: "Catatan cakupan data", multiline: true, initial_value: form.dataScopeNote, placeholder: "Jelaskan batas cakupan data publik dan internal" },
+			{ type: "text_input", action_id: "officialContact", label: "Kontak resmi", initial_value: form.officialContact, placeholder: "Nama unit / email / nomor layanan" },
+			{ type: "number_input", action_id: "smallCellThreshold", label: "Small-cell threshold", initial_value: numberValue(form.smallCellThreshold) },
+			{ type: "number_input", action_id: "maxUploadBytes", label: "Maksimum upload (bytes)", initial_value: numberValue(form.maxUploadBytes) },
+			{ type: "text_input", action_id: "allowedMimeTypes", label: "Allowed MIME types", initial_value: form.allowedMimeTypes, placeholder: "application/pdf, image/jpeg, image/png" },
+			{ type: "number_input", action_id: "exportMaxSyncRows", label: "Batas export sinkron", initial_value: numberValue(form.exportMaxSyncRows) },
+			{ type: "select", action_id: "requireReasonForHighlyRestrictedDownload", label: "Reason untuk highly restricted download", initial_value: form.requireReasonForHighlyRestrictedDownload, options: [option("Ya", "true"), option("Tidak", "false")] },
+			{ type: "select", action_id: "featurePublicDashboard", label: "Feature flag: public dashboard", initial_value: form.featurePublicDashboard, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
+			{ type: "select", action_id: "featureImports", label: "Feature flag: imports", initial_value: form.featureImports, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
+			{ type: "select", action_id: "featureDocuments", label: "Feature flag: documents", initial_value: form.featureDocuments, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
+			{ type: "select", action_id: "featureExports", label: "Feature flag: exports", initial_value: form.featureExports, options: [option("Aktif", "true"), option("Nonaktif", "false")] },
+			{ type: "text_input", action_id: "reason", label: "Alasan perubahan (wajib)", multiline: true, initial_value: form.reason, placeholder: "Jelaskan dasar perubahan konfigurasi dan dampaknya" },
+		], submit: { label: canUpdate ? "Simpan Pengaturan" : "Butuh Permission Settings Update", action_id: "settings_save" } },
+		{ type: "header", text: "Preview Konfigurasi Aktif" },
+		{ type: "table", columns: [
+			{ key: "group", label: "Kelompok" },
+			{ key: "value", label: "Nilai" },
+		], rows: [
+			{ group: "Public visibility", value: form.publicEnabled === "true" ? "Aktif" : "Tidak aktif" },
+			{ group: "Safety threshold", value: `${numberValue(form.smallCellThreshold) ?? activeSettings.smallCellThreshold}` },
+			{ group: "Upload limit", value: formatBytes(numberValue(form.maxUploadBytes) ?? activeSettings.maxUploadBytes) },
+			{ group: "Allowed MIME", value: parseMimeTypeList(form.allowedMimeTypes).join(", ") || "Belum ditentukan" },
+			{ group: "Export sync rows", value: String(numberValue(form.exportMaxSyncRows) ?? activeSettings.exportMaxSyncRows) },
+			{ group: "Highly restricted reason", value: parseBooleanState(form.requireReasonForHighlyRestrictedDownload, true) ? "Wajib" : "Tidak wajib" },
+		] },
+		{ type: "header", text: "Feature Flags" },
+		{ type: "table", columns: [
+			{ key: "flag", label: "Flag" },
+			{ key: "enabled", label: "Status" },
+			{ key: "note", label: "Catatan" },
+		], rows: [
+			{ flag: "publicDashboard", enabled: formatBooleanPreview(featureFlags.publicDashboard), note: "Mengontrol kelanjutan surface publik /sikesra" },
+			{ flag: "imports", enabled: formatBooleanPreview(featureFlags.imports), note: "Mengontrol workflow import operator" },
+			{ flag: "documents", enabled: formatBooleanPreview(featureFlags.documents), note: "Mengontrol workflow dokumen privat" },
+			{ flag: "exports", enabled: formatBooleanPreview(featureFlags.exports), note: "Mengontrol reports/export center" },
+		] },
+	];
+}
+
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -2757,6 +2984,11 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return auditBlocks(routeCtx, routeCtx.input ?? {});
 	}
 
+	if (page === "settings") {
+		if (!routeCtx) throw new Error("settings page requires route context");
+		return settingsBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
 	if (page.startsWith("audit/")) {
 		if (!routeCtx) throw new Error("audit detail page requires route context");
 		return auditDetailBlocks(routeCtx, page);
@@ -2856,6 +3088,12 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "audit") {
 		return {
 			blocks: await auditBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "settings") {
+		return {
+			blocks: await settingsBlocks(routeCtx, input),
 		};
 	}
 

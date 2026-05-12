@@ -46,6 +46,42 @@ export async function updateSettingsRepo(
   updatedBy: string,
   ctx: SikesraRequestContext,
 ): Promise<SikesraSettings> {
+  const existing = await db.prepare(
+    `SELECT id FROM ${TABLE} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL LIMIT 1`,
+  ).bind(ctx.tenantId, ctx.siteId).first<{ id: string }>();
+
+  if (!existing) {
+    const id = `settings_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.prepare(
+      `INSERT INTO ${TABLE} (
+        id, tenant_id, site_id, public_enabled, public_title, public_description,
+        data_scope_note, official_contact, small_cell_threshold, max_upload_bytes,
+        allowed_mime_types_json, export_max_sync_rows,
+        require_reason_for_highly_restricted_download, feature_flags_json,
+        created_by, updated_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      id,
+      ctx.tenantId,
+      ctx.siteId,
+      input.publicEnabled === true ? 1 : 0,
+      input.publicTitle ?? "SIKESRA",
+      input.publicDescription ?? null,
+      input.dataScopeNote ?? null,
+      input.officialContact ?? null,
+      input.smallCellThreshold ?? 5,
+      input.maxUploadBytes ?? 10485760,
+      input.allowedMimeTypes ? JSON.stringify(input.allowedMimeTypes) : null,
+      input.exportMaxSyncRows ?? 5000,
+      input.requireReasonForHighlyRestrictedDownload === false ? 0 : 1,
+      input.featureFlags ? JSON.stringify(input.featureFlags) : null,
+      updatedBy,
+      updatedBy,
+    ).run();
+
+    return getSettingsRepo(db, ctx);
+  }
+
   const setClauses: string[] = [];
   const params: unknown[] = [];
 
