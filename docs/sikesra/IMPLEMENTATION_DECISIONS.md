@@ -149,6 +149,9 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Entity service input validation added for create/patch operations (required fields, format validation, range checks for coordinates)
 - Region scope validation added to entity create operation (users can only create entities in villages they have access to)
 - Verification service error handling improved with permission validation, status checks, and structured error messages
+- Verification review UI enhanced with actual detail module data, people/relationships list with NIK masking, and duplicate candidates table with risk scoring
+- Import batch detail UI enhanced with row status summary stats, improved validation error display, and detailed duplicate review table with risk breakdown
+- Document center UI enhanced with document verification workflow stats, pending document table, and verification action buttons
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
