@@ -12,6 +12,10 @@ import {
 } from "./entity-routes";
 
 import {
+  entityValidateHandler,
+} from "./entity-validate-routes";
+
+import {
   entityPeopleListHandler,
   entityPeopleAddHandler,
   entityPeopleUpdateHandler,
@@ -151,6 +155,7 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/entities/patch": { handler: entityPatchHandler },
   "v1/entities/delete": { handler: entityDeleteHandler },
   "v1/entities/restore": { handler: entityRestoreHandler },
+  "v1/entities/validate": { handler: entityValidateHandler },
 
   // Entity People/Relationships
   "v1/entities/people": { handler: entityPeopleListHandler },

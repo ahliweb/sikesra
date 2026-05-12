@@ -24,6 +24,7 @@ function makePublicContext(overrides: Partial<SikesraRequestContext> = {}): Sike
     regionScope: {},
     ipAddress: undefined,
     userAgent: undefined,
+    nowIso: new Date().toISOString(),
     ...overrides,
   };
 }

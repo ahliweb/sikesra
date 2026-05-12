@@ -115,18 +115,17 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 10. Future SIKESRA admin Block Kit responses must use EmDash's plugin API envelope (`data.blocks`), not a raw `{ blocks }` payload.
 11. Public-safe route handlers must build an explicit `public` request context; authenticated admin/API handlers must fail closed when trusted identity, role, or site context is missing.
 
-## Implementation Status (2026-05-12)
+## Implementation Status (2026-05-13)
 
 ### Fully Implemented
-- Plugin registration, route registry (50 routes), handler utilities
-- Request context (fail-closed), permissions (37), ABAC evaluator, masking, route guard
+- Plugin registration, route registry (64 routes), handler utilities
+- Request context (fail-closed), permissions (38), ABAC evaluator, masking, route guard
 - API envelope, entity CRUD (including delete/restore), verification service, import service, document service
 - Dashboard service, public services, region service, audit service, export service, settings service
 - Completeness validation service with field rules per object type, batch validation, and audit logging
 - R2 storage adapter with centralized key generation, tenant/site isolation, proxy endpoint, and security controls
 - InMemoryD1Binding with functional SQL support (INSERT, SELECT, UPDATE, DELETE, WHERE, ORDER BY, LIMIT)
 - Confirmation dialogs for high-risk actions (verification decisions, settings save, ID generation) with audit consequence banners
-- Comprehensive security regression tests (54 tests covering RBAC, ABAC, masking, region scope, storage, completeness, audit)
 - D1/R2 backup and restore procedures (automated backups, manual exports, disaster recovery runbook, maintenance tasks)
 - Mobile responsiveness across admin surfaces (responsive stats chunking, mobile table limits, mobile detection hints)
 - Admin Block Kit UI (3700+ lines covering all major screens)
@@ -152,16 +151,41 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Verification review UI enhanced with actual detail module data, people/relationships list with NIK masking, and duplicate candidates table with risk scoring
 - Import batch detail UI enhanced with row status summary stats, improved validation error display, and detailed duplicate review table with risk breakdown
 - Document center UI enhanced with document verification workflow stats, pending document table, and verification action buttons
-- Fixed TypeScript errors: safeName scoping in document.ts, R2Bucket type conversions in document-routes.ts, confirmSettingsSave in settings form
-- Pre-existing TypeScript errors reduced from 6 to 1 (only test file auditEventId issue remains)
-- Audit trail UI enhanced with activity summary table showing action counts and risk levels
-- Dashboard UI enhanced with work queue table showing pending items requiring attention
-- Fixed remaining pre-existing TypeScript error in security.test.ts (AuditWriteResult type narrowing)
 - **TypeScript: 0 errors** (all pre-existing errors resolved)
-- **Tests: 54/54 passing** (25 architecture + 29 security)
-- Build note: Pre-existing EmDash tiptap dependency issue (unrelated to SIKESRA changes)
 - Settings UI enhanced with expanded stats summary (feature flags count, MIME types count)
 - Reports/Export UI enhanced with job status summary table and visual status indicators (✅ Ready, ⏳ Pending, ❌ Failed)
+- Import service enhanced with Excel/CSV file parsing using exceljs library
+- Import file upload handler added with multipart form data processing (10MB limit, .xlsx/.csv support)
+- Import validation rules added per object type (01-08) with field-specific validation
+- Duplicate detection enhanced during import promotion with blocking risk level for exact matches
+- Import rollback capability added for failed promotions with soft-delete and audit logging
+- Route count: 64 routes (added v1/imports/upload, v1/imports/rollback, v1/entities/validate)
+- Gap analysis completed: 24 new issues created for remaining gaps
+- **Rate limiting middleware** implemented with KV-based counters for import (5/hr), export (10/hr), documents (50/hr), ID corrections (10/hr), sensitive reveal (20/hr)
+- **Rate limit bypass permission** (`awcms:sikesra:rate_limit:bypass`) for admin override
+- **Entity validation endpoint** registered at `v1/entities/validate` with section-level validation
+- **MVP Go/No-Go Report** created at `docs/sikesra/MVP_GO_NO_GO_REPORT.md` - Status: CONDITIONAL GO
+
+### Test Coverage (140 tests across 7 test files)
+- `architecture.test.ts`: 25 tests - Core architecture, RBAC, ABAC, request context
+- `security.test.ts`: 29 tests - RBAC enforcement, masking, region scope, storage, completeness, audit
+- `public-privacy.test.ts`: 15 tests - Aggregate-safe output, small-cell suppression, filter safety
+- `masking.test.ts`: 42 tests - All masking functions, security invariants, NIK/KIA protection
+- `import-workflow.test.ts`: 7 tests - Tenant isolation, promotion, rollback, audit
+- `verification-workflow.test.ts`: 9 tests - Permissions, state transitions, note requirements
+- `export-restriction.test.ts`: 13 tests - Field sensitivity, permissions, format support
+
+### MVP Issues Closed
+| Issue | Title | Status |
+|---|---|---|
+| #183 | Rate limiting middleware | ✅ Closed |
+| #182 | Entity validation endpoint | ✅ Closed |
+| #190 | Public privacy tests | ✅ Closed |
+| #191 | Sensitive masking tests | ✅ Closed |
+| #192 | Import workflow tests | ✅ Closed |
+| #193 | Verification workflow tests | ✅ Closed |
+| #194 | Export restriction tests | ✅ Closed |
+| #197 | MVP go/no-go report | ✅ Closed |
 - Import service enhanced with Excel/CSV file parsing using exceljs library
 - Import file upload handler added with multipart form data processing (10MB limit, .xlsx/.csv support)
 - Import validation rules added per object type (01-08) with field-specific validation

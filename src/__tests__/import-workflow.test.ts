@@ -18,6 +18,7 @@ function makeContext(overrides: Partial<SikesraRequestContext> = {}): SikesraReq
     regionScope: {},
     ipAddress: "127.0.0.1",
     userAgent: "test",
+    nowIso: new Date().toISOString(),
     ...overrides,
   };
 }
