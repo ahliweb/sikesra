@@ -1,7 +1,7 @@
 import type { D1Binding } from "../repositories/db";
 import { listEntities, type EntityListFilters } from "../services/entity";
 import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
-import { SIKESRA_PERMISSIONS } from "../security/permissions";
+import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
 import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
@@ -9,6 +9,8 @@ import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEnti
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
 import { createLocalRegion, type LocalRegionCreateInput } from "../services/region";
+import { buildAbacSubject, evaluateAbac, type AbacInput, type AbacResource } from "../security/abac";
+import { loadAbacPolicies } from "../repositories/abac-repository";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 
 interface PluginAdminInteraction {
@@ -63,6 +65,18 @@ interface LocalRegionAdminFormState {
 	description: string;
 	latitude: string;
 	longitude: string;
+}
+
+interface AccessPreviewFormState {
+	resourceType: string;
+	action: string;
+	officialVillageCode: string;
+	localRegionId: string;
+	sensitivityLevel: string;
+	statusData: string;
+	statusVerification: string;
+	documentClassification: string;
+	requireReason: string;
 }
 
 interface ReportFieldPreview {
@@ -150,6 +164,25 @@ const LOCAL_REGION_LEVEL_LABELS: Record<string, string> = {
 	zona: "Zona",
 	area_petugas: "Area Petugas",
 };
+
+const ACCESS_ROLE_CATALOG = [
+	{ role: "super_admin", scope: "Site/system", notes: "Akses tertinggi untuk konfigurasi, tetap diaudit pada aksi kritis." },
+	{ role: "admin_kabupaten", scope: "Regency", notes: "Mengelola data lintas kecamatan sesuai kewenangan kabupaten." },
+	{ role: "admin_kecamatan", scope: "District", notes: "Mengelola data dan workflow dalam kecamatan yang ditugaskan." },
+	{ role: "admin_desa_kelurahan", scope: "Village", notes: "Fokus pada entry/update/submit di desa atau kelurahan." },
+	{ role: "pimpinan_viewer", scope: "Leadership scope", notes: "Aggregate-first, detail dibatasi kecuali ada izin eksplisit." },
+	{ role: "auditor", scope: "Audit scope", notes: "Membaca bukti audit dan export evidence dengan redaksi." },
+	{ role: "opd_teknis", scope: "OPD/module/region", notes: "Validasi teknis sesuai domain dan wilayah tugas." },
+] as const;
+
+const ACCESS_PREVIEW_ACTIONS = [
+	{ value: "read", label: "Read detail" },
+	{ value: "create", label: "Create" },
+	{ value: "update", label: "Update" },
+	{ value: "submit", label: "Submit verifikasi" },
+	{ value: "verify", label: "Verify" },
+	{ value: "download", label: "Download" },
+] as const;
 
 const REPORT_VERIFICATION_FILTERS = [
 	{ value: "", label: "Semua status verifikasi" },
@@ -634,6 +667,21 @@ function parseLocalRegionAdminForm(input: PluginAdminInteraction): LocalRegionAd
 	};
 }
 
+function parseAccessPreviewForm(input: PluginAdminInteraction): AccessPreviewFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		resourceType: stringState(values.resourceType, "entity"),
+		action: stringState(values.action, "read"),
+		officialVillageCode: stringState(values.officialVillageCode),
+		localRegionId: stringState(values.localRegionId),
+		sensitivityLevel: stringState(values.sensitivityLevel, "internal"),
+		statusData: stringState(values.statusData, "active"),
+		statusVerification: stringState(values.statusVerification, "submitted_village"),
+		documentClassification: stringState(values.documentClassification, "restricted"),
+		requireReason: stringState(values.requireReason, "false"),
+	};
+}
+
 function getReportFieldPresets(reportKey: string): ReportFieldPreset[] {
 	return REPORT_FIELD_PRESETS[reportKey] ?? [];
 }
@@ -676,6 +724,18 @@ function formatOfficialRegionLevel(level: string): string {
 
 function formatLocalRegionLevel(level: string): string {
 	return LOCAL_REGION_LEVEL_LABELS[level] ?? level;
+}
+
+function humanizePermission(permission: string): string {
+	return permission.replace("awcms:sikesra:", "").replaceAll(":", " / ");
+}
+
+function permissionResource(permission: string): string {
+	return permission.split(":")[2] ?? "other";
+}
+
+function formatBooleanPreview(value: boolean): string {
+	return value ? "Ya" : "Tidak";
 }
 
 function reportFilterSummary(form: ReportCreateFormState): string {
@@ -937,6 +997,47 @@ async function loadRegionAdminOptions(
 		officialPreview: officialPreview.results,
 		localPreview: localPreview.results,
 		localParents,
+	};
+}
+
+async function loadAccessAdminOptions(
+	db: D1Binding,
+	tenantId: string,
+	siteId: string,
+	state: AccessPreviewFormState,
+) {
+	const attributes = await db.prepare(
+		`SELECT id, code, name, category, value_type, applicable_entity_kinds, applicable_object_types, is_active
+		 FROM awcms_sikesra_attribute_definitions
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+		 ORDER BY category, sort_order, name`,
+	).bind(tenantId, siteId).all<Record<string, unknown>>();
+
+	const attributeScopeRows = await db.prepare(
+		`SELECT user_id, scope_type, scope_value, is_active
+		 FROM awcms_sikesra_user_attribute_scopes
+		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+		 ORDER BY user_id, scope_type, scope_value
+		 LIMIT 120`,
+	).bind(tenantId, siteId).all<Record<string, unknown>>();
+
+	const villages = await db.prepare(
+		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'village' ORDER BY name LIMIT 200",
+	).bind(tenantId, siteId).all<{ code: string; name: string }>();
+
+	let localRegions: Array<{ id: string; level: string; code_local?: string | null; name: string }> = [];
+	if (state.officialVillageCode) {
+		const localResult = await db.prepare(
+			"SELECT id, level, code_local, name FROM awcms_sikesra_local_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND official_village_code = ? ORDER BY name LIMIT 120",
+		).bind(tenantId, siteId, state.officialVillageCode).all<{ id: string; level: string; code_local?: string | null; name: string }>();
+		localRegions = localResult.results;
+	}
+
+	return {
+		attributes: attributes.results,
+		attributeScopes: attributeScopeRows.results,
+		villages: villages.results,
+		localRegions,
 	};
 }
 
@@ -2047,6 +2148,178 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	];
 }
 
+async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const form = parseAccessPreviewForm(input);
+	const [options, policies, policyRows] = await Promise.all([
+		loadAccessAdminOptions(db, ctx.tenantId, ctx.siteId, form),
+		loadAbacPolicies(db, ctx),
+		db.prepare(
+			`SELECT id, name, description, effect, priority, resource_type, actions_json, is_active
+			 FROM awcms_sikesra_abac_policies
+			 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+			 ORDER BY priority DESC, name`,
+		).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>(),
+	]);
+
+	const groupedPermissions = Object.entries(
+		SIKESRA_PERMISSION_LIST.reduce<Record<string, string[]>>((acc, permission) => {
+			const key = permissionResource(permission);
+			acc[key] ??= [];
+			acc[key].push(permission);
+			return acc;
+		}, {}),
+	);
+
+	const attributeCategoryCounts = Object.entries(
+		options.attributes.reduce<Record<string, number>>((acc, row) => {
+			const key = String(row.category ?? "other");
+			acc[key] = (acc[key] ?? 0) + 1;
+			return acc;
+		}, {}),
+	);
+
+	const scopeCounts = Object.entries(
+		options.attributeScopes.reduce<Record<string, number>>((acc, row) => {
+			const key = String(row.scope_type ?? "other");
+			acc[key] = (acc[key] ?? 0) + 1;
+			return acc;
+		}, {}),
+	);
+
+	const resource: AbacResource = {
+		resourceType: form.resourceType,
+		officialVillageCode: form.officialVillageCode || undefined,
+		localRegionId: form.localRegionId || undefined,
+		sensitivityLevel: form.sensitivityLevel,
+		statusData: form.statusData,
+		statusVerification: form.statusVerification,
+		documentClassification: form.documentClassification,
+	};
+	const previewInput: AbacInput = {
+		subject: buildAbacSubject(ctx),
+		resource,
+		action: form.action,
+		environment: {
+			requestId: ctx.requestId,
+			ipAddress: ctx.ipAddress,
+			userAgent: ctx.userAgent,
+			requireReason: form.requireReason === "true",
+		},
+	};
+	const previewResult = evaluateAbac(previewInput, policies, ctx);
+
+	return [
+		...pageIntro("access"),
+		{ type: "banner", variant: "default", title: "Governance / Atribut & Akses", description: "Halaman ini memetakan permission catalog, atribut, scope pengguna, dan kebijakan ABAC. UI hanya membantu observasi dan preview; backend tetap menjadi sumber kebenaran untuk RBAC, ABAC, masking, dan audit." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Role aktif", value: ctx.roles.length ? ctx.roles.join(", ") : "Tanpa role eksplisit" },
+			{ label: "Permission aktif", value: String(ctx.permissions.length) },
+			{ label: "Region Scope", value: describeRegionScopeLabel(ctx) },
+		] },
+		{ type: "stats", items: [
+			{ label: "Permission terdaftar", value: String(SIKESRA_PERMISSION_LIST.length), description: "Namespace awcms:sikesra:*" },
+			{ label: "Atribut aktif", value: String(options.attributes.filter((row) => Number(row.is_active ?? 0) === 1).length), description: "Definition aktif di tenant/site" },
+			{ label: "Scope assignment", value: String(options.attributeScopes.length), description: "Baris user_attribute_scopes terdeteksi" },
+			{ label: "Policy ABAC", value: String(policyRows.results.length), description: "Policy allow/deny tersedia" },
+		] },
+		{ type: "header", text: "Role Governance" },
+		{ type: "table", columns: [
+			{ key: "role", label: "Role" },
+			{ key: "scope", label: "Default Scope" },
+			{ key: "notes", label: "Catatan" },
+		], rows: ACCESS_ROLE_CATALOG.map((item) => ({ role: item.role, scope: item.scope, notes: item.notes })) },
+		{ type: "header", text: "Katalog Permission" },
+		...(groupedPermissions.map(([resourceName, permissions]) => ({
+			type: "table",
+			columns: [
+				{ key: "permission", label: `Resource ${resourceName}` },
+				{ key: "status", label: "Status akun saat ini" },
+			],
+			rows: permissions.map((permission) => ({
+				permission: humanizePermission(permission),
+				status: hasPermission(ctx.permissions, permission) ? "Aktif" : "Tidak aktif",
+			})),
+		}))),
+		{ type: "header", text: "Ringkasan Atribut" },
+		{ type: "table", columns: [
+			{ key: "category", label: "Kategori" },
+			{ key: "total", label: "Jumlah", format: "badge" },
+		], rows: attributeCategoryCounts.map(([category, total]) => ({ category, total })) },
+		{ type: "table", columns: [
+			{ key: "code", label: "Kode" },
+			{ key: "name", label: "Nama" },
+			{ key: "category", label: "Kategori" },
+			{ key: "valueType", label: "Tipe Nilai" },
+		], rows: options.attributes.slice(0, 24).map((row) => ({
+			code: String(row.code ?? "-"),
+			name: String(row.name ?? "-"),
+			category: String(row.category ?? "other"),
+			valueType: String(row.value_type ?? "text"),
+		})), empty_text: "Belum ada attribute definition aktif." },
+		{ type: "header", text: "Scope Assignment Pengguna" },
+		{ type: "table", columns: [
+			{ key: "scopeType", label: "Scope Type" },
+			{ key: "total", label: "Jumlah", format: "badge" },
+		], rows: scopeCounts.map(([scopeType, total]) => ({ scopeType, total })), empty_text: "Belum ada assignment scope pengguna." },
+		{ type: "table", columns: [
+			{ key: "userId", label: "User" },
+			{ key: "scopeType", label: "Scope Type" },
+			{ key: "scopeValue", label: "Scope Value" },
+		], rows: options.attributeScopes.slice(0, 24).map((row) => ({
+			userId: String(row.user_id ?? "-"),
+			scopeType: String(row.scope_type ?? "-"),
+			scopeValue: String(row.scope_value ?? "-"),
+		})), empty_text: "Belum ada contoh scope assignment untuk ditampilkan." },
+		{ type: "header", text: "Policy Matrix ABAC" },
+		{ type: "context", text: "Prinsip utama: explicit deny > explicit allow > inherited allow > default deny. Policy berikut dibaca dari tabel lokal ABAC dan dievaluasi bersama region scope backend." },
+		{ type: "table", columns: [
+			{ key: "name", label: "Policy" },
+			{ key: "effect", label: "Effect" },
+			{ key: "priority", label: "Priority" },
+			{ key: "resourceType", label: "Resource" },
+			{ key: "actions", label: "Actions" },
+			{ key: "conditions", label: "Conditions" },
+		], rows: policyRows.results.map((row) => {
+			const policy = policies.find((item) => item.id === String(row.id));
+			const actions = typeof row.actions_json === "string" ? JSON.parse(row.actions_json) as string[] : [];
+			return {
+				name: String(row.name ?? "-"),
+				effect: String(row.effect ?? "deny").toUpperCase(),
+				priority: Number(row.priority ?? 0),
+				resourceType: String(row.resource_type ?? "-"),
+				actions: Array.isArray(actions) && actions.length ? actions.join(", ") : "Semua aksi terkait",
+				conditions: policy?.conditions.length ? policy.conditions.map((condition) => `${condition.attributeCategory}.${condition.attributeName} ${condition.operator}`).join(" | ") : "Tanpa kondisi",
+			};
+		}), empty_text: "Belum ada policy ABAC yang aktif." },
+		{ type: "header", text: "Effective Access Preview" },
+		{ type: "context", text: "Preview ini mensimulasikan evaluasi ABAC menggunakan trusted context akun saat ini. Tujuannya membantu governance role memahami kenapa aksi diizinkan atau ditolak, bukan menggantikan pengecekan backend sebenarnya." },
+		{ type: "form", block_id: "access_preview_form", fields: [
+			{ type: "select", action_id: "resourceType", label: "Resource type", initial_value: form.resourceType, options: [option("Entity", "entity"), option("Document", "document"), option("Export", "export")] },
+			{ type: "select", action_id: "action", label: "Action", initial_value: form.action, options: ACCESS_PREVIEW_ACTIONS.map((item) => option(item.label, item.value)) },
+			{ type: "select", action_id: "officialVillageCode", label: "Official village", initial_value: form.officialVillageCode, options: [option("Pilih desa/kelurahan atau kosongkan", ""), ...options.villages.map((row) => option(row.name, row.code))] },
+			{ type: "select", action_id: "localRegionId", label: "Local region", initial_value: form.localRegionId, options: [option(form.officialVillageCode ? "Pilih wilayah lokal atau kosongkan" : "Pilih desa resmi terlebih dahulu", ""), ...options.localRegions.map((row) => option(`${formatLocalRegionLevel(row.level)}${row.code_local ? ` ${row.code_local}` : ""} / ${row.name}`, row.id))] },
+			{ type: "select", action_id: "sensitivityLevel", label: "Sensitivity", initial_value: form.sensitivityLevel, options: [option("Publik Aman", "public_safe"), option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
+			{ type: "select", action_id: "statusData", label: "Status data", initial_value: form.statusData, options: [option("Draft", "draft"), option("Submitted", "submitted"), option("Aktif", "active"), option("Archived", "archived")] },
+			{ type: "select", action_id: "statusVerification", label: "Status verifikasi", initial_value: form.statusVerification, options: [option("Submitted desa", "submitted_village"), option("Need revision", "need_revision"), option("Verified", "verified"), option("Rejected", "rejected")] },
+			{ type: "select", action_id: "documentClassification", label: "Klasifikasi dokumen", initial_value: form.documentClassification, options: [option("Internal", "internal"), option("Restricted", "restricted"), option("Highly restricted", "highly_restricted")] },
+			{ type: "select", action_id: "requireReason", label: "Require reason", initial_value: form.requireReason, options: [option("Tidak", "false"), option("Ya", "true")] },
+		], submit: { label: "Jalankan Preview", action_id: "access_preview_run" } },
+		{ type: "fields", fields: [
+			{ label: "Hasil", value: previewResult.allowed ? "ALLOW" : "DENY" },
+			{ label: "Policy match", value: previewResult.matchedPolicyName ?? "Tidak ada policy spesifik" },
+			{ label: "Reason code", value: previewResult.reasonCode ?? "allow_by_policy_or_fallback" },
+			{ label: "Require reason", value: formatBooleanPreview(form.requireReason === "true") },
+		] },
+		{ type: "table", columns: [
+			{ key: "check", label: "Check" },
+			{ key: "passed", label: "Passed" },
+		], rows: Object.entries(previewResult.checks).map(([check, passed]) => ({ check, passed: formatBooleanPreview(passed) })), empty_text: "Tidak ada check tambahan yang terekam." },
+	];
+}
+
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -2287,6 +2560,11 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return regionsBlocks(routeCtx, routeCtx.input ?? {});
 	}
 
+	if (page === "access") {
+		if (!routeCtx) throw new Error("access page requires route context");
+		return accessBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
 	if (page.startsWith("reports/")) {
 		if (!routeCtx) throw new Error("report job detail page requires route context");
 		return reportJobDetailBlocks(routeCtx, page);
@@ -2369,6 +2647,12 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "regions") {
 		return {
 			blocks: await regionsBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "access") {
+		return {
+			blocks: await accessBlocks(routeCtx, input),
 		};
 	}
 
