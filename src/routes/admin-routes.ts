@@ -8,7 +8,7 @@ import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, typ
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
-import { REPORT_CATALOG } from "./report-routes";
+import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -44,10 +44,27 @@ interface DocumentUploadFormState {
 
 interface ReportCreateFormState {
 	reportKey: string;
+	fieldPreset: string;
 	format: string;
 	reason: string;
 	filterRegion: string;
 	filterModule: string;
+	filterYear: string;
+	filterVerificationStatus: string;
+}
+
+interface ReportFieldPreview {
+	key: string;
+	label: string;
+	sensitivity: keyof typeof SENSITIVITY_LABELS;
+	behavior: string;
+}
+
+interface ReportFieldPreset {
+	key: string;
+	label: string;
+	description: string;
+	fields: ReportFieldPreview[];
 }
 
 type Block = Record<string, unknown>;
@@ -103,6 +120,84 @@ const DUPLICATE_STATUS_LABELS: Record<string, string> = {
 	candidate: "Kandidat",
 	confirmed: "Terkonfirmasi",
 	resolved: "Selesai",
+};
+
+const REPORT_VERIFICATION_FILTERS = [
+	{ value: "", label: "Semua status verifikasi" },
+	{ value: "pending", label: "Menunggu" },
+	{ value: "submitted", label: "Sudah diajukan" },
+	{ value: "verified", label: "Terverifikasi" },
+	{ value: "need_revision", label: "Perlu perbaikan" },
+	{ value: "rejected", label: "Ditolak" },
+] as const;
+
+const REPORT_FIELD_PRESETS: Record<string, ReportFieldPreset[]> = {
+	entity_summary: [
+		{
+			key: "executive_summary",
+			label: "Ringkasan Pimpinan",
+			description: "Agregat aman untuk pimpinan: volume data, persebaran wilayah, dan status verifikasi.",
+			fields: [
+				{ key: "total_entities", label: "Total entitas", sensitivity: "internal", behavior: "Angka agregat, aman untuk analitik internal." },
+				{ key: "verified_entities", label: "Total terverifikasi", sensitivity: "internal", behavior: "Digunakan untuk memantau progres validasi." },
+				{ key: "by_object_type", label: "Rekap jenis/subjenis", sensitivity: "internal", behavior: "Kelompok agregat per jenis data tanpa identitas individu." },
+				{ key: "by_region", label: "Rekap wilayah", sensitivity: "internal", behavior: "Tingkat kecamatan/desa sesuai scope backend." },
+			],
+		},
+		{
+			key: "operations_summary",
+			label: "Ringkasan Operasional",
+			description: "Menambahkan indikator antrian operasional dan kualitas data untuk admin internal.",
+			fields: [
+				{ key: "total_entities", label: "Total entitas", sensitivity: "internal", behavior: "Agregat internal." },
+				{ key: "verification_backlog", label: "Backlog verifikasi", sensitivity: "internal", behavior: "Menunjukkan item yang menunggu tindak lanjut." },
+				{ key: "completeness_band", label: "Band kelengkapan", sensitivity: "internal", behavior: "Persentase kualitas data per band." },
+				{ key: "source_input_mix", label: "Komposisi sumber input", sensitivity: "internal", behavior: "Membedakan manual, import, dan integrasi." },
+			],
+		},
+	],
+	verification_status: [
+		{
+			key: "verification_control",
+			label: "Kontrol Verifikasi",
+			description: "Daftar kerja verifikasi dengan identitas yang tetap dikendalikan masking backend.",
+			fields: [
+				{ key: "sikesra_id20", label: "ID SIKESRA", sensitivity: "internal", behavior: "Identifier operasional untuk rekonsiliasi." },
+				{ key: "display_name_masked", label: "Nama tampil termasking", sensitivity: "restricted", behavior: "Nama tetap dimask sesuai policy dan scope." },
+				{ key: "official_region", label: "Wilayah resmi", sensitivity: "internal", behavior: "Wilayah sesuai scope verifikator/pimpinan." },
+				{ key: "verification_status", label: "Status verifikasi", sensitivity: "internal", behavior: "Menunjukkan posisi workflow saat ini." },
+				{ key: "verifier_note_excerpt", label: "Ringkas catatan verifikator", sensitivity: "restricted", behavior: "Catatan disingkat untuk mencegah oversharing." },
+			],
+		},
+	],
+	entity_detail_restricted: [
+		{
+			key: "restricted_case_pack",
+			label: "Paket Kasus Terbatas",
+			description: "Field detail untuk investigasi kasus yang membutuhkan dasar kewenangan dan audit.",
+			fields: [
+				{ key: "sikesra_id20", label: "ID SIKESRA", sensitivity: "internal", behavior: "Identifier utama." },
+				{ key: "display_name_masked", label: "Nama tampil termasking", sensitivity: "restricted", behavior: "Tetap mengikuti masking jika clearance tidak penuh." },
+				{ key: "address_masked", label: "Alamat termasking", sensitivity: "restricted", behavior: "Alamat rinci tidak dibuka penuh pada export biasa." },
+				{ key: "sensitivity_level", label: "Label sensitivitas", sensitivity: "internal", behavior: "Menegaskan konsekuensi akses data." },
+				{ key: "document_completeness", label: "Kelengkapan dokumen", sensitivity: "internal", behavior: "Hanya metadata dokumen, bukan file privat." },
+			],
+		},
+	],
+	audit_evidence: [
+		{
+			key: "audit_pack",
+			label: "Paket Bukti Audit",
+			description: "Ringkasan audit teredaksi untuk pemeriksaan kepatuhan dan investigasi insiden.",
+			fields: [
+				{ key: "request_id", label: "Request ID", sensitivity: "internal", behavior: "Dipakai untuk korelasi insiden." },
+				{ key: "actor_id", label: "Aktor", sensitivity: "restricted", behavior: "Identitas aktor ditampilkan sesuai policy audit." },
+				{ key: "action", label: "Aksi", sensitivity: "internal", behavior: "Nama aksi yang diaudit." },
+				{ key: "resource", label: "Resource", sensitivity: "internal", behavior: "Resource dan ID yang terdampak." },
+				{ key: "reason_redacted", label: "Alasan teredaksi", sensitivity: "restricted", behavior: "Nilai alasan diringkas atau di-redact bila perlu." },
+			],
+		},
+	],
 };
 
 const WIZARD_STEPS = [
@@ -486,11 +581,86 @@ function parseReportCreateForm(input: PluginAdminInteraction): ReportCreateFormS
 	const values = input.type === "form_submit" ? input.values ?? {} : {};
 	return {
 		reportKey: stringState(values.reportKey),
+		fieldPreset: stringState(values.fieldPreset),
 		format: stringState(values.format, "csv"),
 		reason: stringState(values.reason),
 		filterRegion: stringState(values.filterRegion),
 		filterModule: stringState(values.filterModule),
+		filterYear: stringState(values.filterYear),
+		filterVerificationStatus: stringState(values.filterVerificationStatus),
 	};
+}
+
+function getReportFieldPresets(reportKey: string): ReportFieldPreset[] {
+	return REPORT_FIELD_PRESETS[reportKey] ?? [];
+}
+
+function getReportFieldPreset(reportKey: string, presetKey: string): ReportFieldPreset | undefined {
+	const presets = getReportFieldPresets(reportKey);
+	if (!presets.length) return undefined;
+	return presets.find((preset) => preset.key === presetKey) ?? presets[0];
+}
+
+function hasPermission(permissions: string[], permission: string): boolean {
+	return permissions.includes(permission);
+}
+
+function describeReportPermission(permission: string): string {
+	return permission.replace("awcms:sikesra:", "");
+}
+
+function describeReportAccess(permissions: string[], report: ReportMeta): string {
+	return hasPermission(permissions, report.requiredPermission) ? "Tersedia" : "Butuh izin tambahan";
+}
+
+function summarizeExportRights(permissions: string[]): string {
+	const granted = REPORT_CATALOG.filter((report) => hasPermission(permissions, report.requiredPermission)).map((report) => report.label);
+	return granted.length ? granted.join(", ") : "Belum ada izin export aktif";
+}
+
+function describeRegionScopeForReports(ctx: ReturnType<typeof buildContextFromEmDash>): string {
+	if (ctx.regionScope.localRegionIds?.length) return `${ctx.regionScope.localRegionIds.length} wilayah lokal`; 
+	if (ctx.regionScope.villageCodes?.length) return `${ctx.regionScope.villageCodes.length} desa/kelurahan`;
+	if (ctx.regionScope.districtCodes?.length) return `${ctx.regionScope.districtCodes.length} kecamatan`;
+	if (ctx.regionScope.regencyCode) return `Kabupaten ${ctx.regionScope.regencyCode}`;
+	if (ctx.regionScope.provinceCode) return `Provinsi ${ctx.regionScope.provinceCode}`;
+	return "Semua scope backend";
+}
+
+function reportFilterSummary(form: ReportCreateFormState): string {
+	const parts = [
+		form.filterRegion ? `Region ${form.filterRegion}` : "Semua region",
+		form.filterModule ? `Module ${form.filterModule}` : "Semua module",
+		form.filterYear ? `Tahun ${form.filterYear}` : "Semua tahun",
+		form.filterVerificationStatus ? `Status ${form.filterVerificationStatus}` : "Semua status verifikasi",
+	];
+	return parts.join(" | ");
+}
+
+function parseJsonRecord(value: unknown): Record<string, unknown> | null {
+	if (typeof value !== "string" || !value.trim()) return null;
+	try {
+		const parsed = JSON.parse(value) as unknown;
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+	} catch {
+		return null;
+	}
+}
+
+function parseJsonArray(value: unknown): Record<string, unknown>[] {
+	if (typeof value !== "string" || !value.trim()) return [];
+	try {
+		const parsed = JSON.parse(value) as unknown;
+		return Array.isArray(parsed) ? parsed.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object") : [];
+	} catch {
+		return [];
+	}
+}
+
+function stringifyFilterValue(value: unknown): string {
+	if (value == null || value === "") return "-";
+	if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+	return JSON.stringify(value);
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -635,7 +805,14 @@ async function loadReportOptions(db: D1Binding, tenantId: string, siteId: string
 	const districts = await db.prepare(
 		"SELECT code, name FROM awcms_sikesra_official_regions WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND is_active = 1 AND level = 'district' ORDER BY name",
 	).bind(tenantId, siteId).all<{ code: string; name: string }>();
-	return { objectTypes: objectTypes.results, districts: districts.results };
+	const years = await db.prepare(
+		"SELECT DISTINCT substr(created_at, 1, 4) AS year FROM awcms_sikesra_entities WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL ORDER BY year DESC LIMIT 10",
+	).bind(tenantId, siteId).all<{ year: string }>();
+	return {
+		objectTypes: objectTypes.results,
+		districts: districts.results,
+		years: years.results.map((row) => row.year).filter(Boolean),
+	};
 }
 
 function buildIdPreview(state: WizardFormState): string {
@@ -1393,16 +1570,25 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	const db = await getRouteDb(routeCtx.request);
 	const form = parseReportCreateForm(input);
 	const options = await loadReportOptions(db, ctx.tenantId, ctx.siteId);
+	const selectedReport = REPORT_CATALOG.find((item) => item.key === form.reportKey);
+	const accessibleReports = REPORT_CATALOG.filter((item) => hasPermission(ctx.permissions, item.requiredPermission));
+	const selectedPreset = selectedReport ? getReportFieldPreset(selectedReport.key, form.fieldPreset) : undefined;
+	const allowedFormats = selectedReport?.formats ?? ["csv", "xlsx"];
 	let notice = "";
 	let error = "";
 
 	if (input.type === "form_submit" && input.action_id === "reports_create_export") {
-		const selected = REPORT_CATALOG.find((item) => item.key === form.reportKey);
+		const selected = selectedReport;
 		if (!selected) {
 			error = "Pilih jenis laporan yang valid sebelum membuat export job.";
-		} else if ((selected.requiredPermission === "awcms:sikesra:export:restricted" || selected.requiredPermission === "awcms:sikesra:export:audit") && !form.reason.trim()) {
+		} else if (!hasPermission(ctx.permissions, selected.requiredPermission)) {
+			error = `Permission ${selected.requiredPermission} belum aktif untuk akun ini.`;
+		} else if (!selected.formats.includes(form.format || "csv")) {
+			error = `Format ${String(form.format || "csv").toUpperCase()} tidak tersedia untuk ${selected.label}.`;
+		} else if (requiresReasonForReport(selected) && !form.reason.trim()) {
 			error = "Alasan wajib diisi untuk export restricted atau audit evidence.";
 		} else {
+			const preset = getReportFieldPreset(selected.key, form.fieldPreset);
 			const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 			await db.prepare(
 				`INSERT INTO awcms_sikesra_export_jobs
@@ -1413,60 +1599,125 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 				ctx.tenantId,
 				ctx.siteId,
 				selected.key,
-				JSON.stringify({ region: form.filterRegion || null, module: form.filterModule || null }),
-				null,
-				JSON.stringify({ classification: selected.fieldSensitivity }),
+				JSON.stringify({
+					region: form.filterRegion || null,
+					module: form.filterModule || null,
+					year: form.filterYear || null,
+					verificationStatus: form.filterVerificationStatus || null,
+				}),
+				JSON.stringify((preset?.fields ?? []).map((field) => ({ key: field.key, label: field.label, sensitivity: field.sensitivity, behavior: field.behavior }))),
+				JSON.stringify(Object.fromEntries((preset?.fields ?? []).map((field) => [field.key, field.sensitivity]))),
 				form.format || "csv",
 				form.reason || null,
 				ctx.userId,
 				ctx.userId,
 			).run();
-			notice = `Export job ${id} untuk ${selected.label} berhasil dibuat dengan status pending.`;
+			notice = `Export job ${id} untuk ${selected.label} berhasil dibuat dengan status pending. Field preset ${preset?.label ?? "default"} dan filter backend telah tersimpan.`;
 		}
 	}
 
 	const jobRows = await db.prepare(
-		`SELECT id, report_type, status, total_rows, format, reason, created_at, updated_at
+		`SELECT id, report_type, status, total_rows, format, reason, created_at, updated_at, filters_json, fields_json, field_sensitivity_json
 		 FROM awcms_sikesra_export_jobs
 		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT 20`,
 	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 
+	const pendingCount = jobRows.results.filter((row) => String(row.status) === "pending").length;
+	const readyCount = jobRows.results.filter((row) => String(row.status) === "ready").length;
+	const failedCount = jobRows.results.filter((row) => String(row.status) === "failed").length;
+	const restrictedCatalogCount = REPORT_CATALOG.filter((row) => requiresReasonForReport(row)).length;
+
 	return [
 		...pageIntro("reports"),
-		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan menata metadata laporan, sensitivitas field, alasan export restricted, dan histori export job. Semua export harus mengikuti permission dan audit trail backend." },
+		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan untuk pimpinan, admin, dan auditor. Screen ini menekankan scope backend, sensitivitas field, alasan export restricted, dan histori job tanpa membocorkan raw R2 key atau nilai sangat sensitif." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Region Scope", value: describeRegionScopeForReports(ctx) },
+			{ label: "Environment", value: routeCtx.request.url.includes("localhost") ? "Local" : "Cloudflare" },
+			{ label: "Hak export aktif", value: summarizeExportRights(ctx.permissions) },
+		] },
+		...(accessibleReports.length === 0 ? [{ type: "banner", variant: "alert", title: "Belum ada akses export", description: "Halaman tetap dapat dibuka untuk membaca kebijakan, tetapi pembuatan export job memerlukan permission export yang sesuai dengan klasifikasi laporan." }] : []),
 		...(notice ? [{ type: "banner", variant: "success", title: "Export job dibuat", description: notice }] : []),
 		...(error ? [{ type: "banner", variant: "alert", title: "Export belum dibuat", description: error }] : []),
 		{ type: "stats", items: [
-			{ label: "Jenis laporan", value: String(REPORT_CATALOG.length), description: "Katalog metadata laporan" },
-			{ label: "Pending jobs", value: String(jobRows.results.filter((row) => String(row.status) === "pending").length), description: "Menunggu proses export" },
-			{ label: "Ready jobs", value: String(jobRows.results.filter((row) => String(row.status) === "ready").length), description: "Siap diunduh via backend" },
-			{ label: "Failed jobs", value: String(jobRows.results.filter((row) => String(row.status) === "failed").length), description: "Perlu investigasi operator" },
+			{ label: "Katalog tersedia", value: String(accessibleReports.length), description: "Jenis laporan yang bisa dijalankan akun saat ini" },
+			{ label: "Pending jobs", value: String(pendingCount), description: "Menunggu proses export" },
+			{ label: "Ready jobs", value: String(readyCount), description: "Siap diunduh via backend proxy" },
+			{ label: "Restricted / audit", value: String(restrictedCatalogCount), description: "Laporan yang selalu memerlukan alasan dan audit" },
+			{ label: "Failed jobs", value: String(failedCount), description: "Perlu investigasi operator" },
+		] },
+		{ type: "header", text: "Kontrol Keamanan Export" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Aturan" },
+			{ key: "status", label: "Implementasi UI" },
+		], rows: [
+			{ rule: "Pemilihan jenis laporan, filter, dan cakupan field", status: "Aktif melalui form terstruktur" },
+			{ rule: "Preview sensitivitas field sebelum submit", status: selectedReport ? "Aktif pada preview kontrak" : "Pilih laporan untuk melihat preview" },
+			{ rule: "Restricted export memerlukan alasan", status: "Dipaksa oleh UI dan backend route" },
+			{ rule: "Download tidak pernah menampilkan raw R2 key", status: "Hanya readiness/proxy state yang ditampilkan" },
+			{ rule: "Akses laporan mengikuti permission backend", status: "Dipetakan per katalog dan diverifikasi saat submit" },
 		] },
 		{ type: "header", text: "Katalog Laporan" },
 		{ type: "table", columns: [
 			{ key: "label", label: "Laporan" },
+			{ key: "audience", label: "Pengguna Utama" },
 			{ key: "description", label: "Deskripsi" },
 			{ key: "permission", label: "Permission" },
 			{ key: "sensitivity", label: "Sensitivity" },
 			{ key: "formats", label: "Format" },
-		], rows: REPORT_CATALOG.map((item) => ({ label: item.label, description: item.description, permission: item.requiredPermission, sensitivity: item.fieldSensitivity, formats: item.formats.join(", ") })) },
+			{ key: "access", label: "Akses" },
+		], rows: REPORT_CATALOG.map((item) => ({
+			label: item.label,
+			audience: item.audience,
+			description: item.description,
+			permission: describeReportPermission(item.requiredPermission),
+			sensitivity: SENSITIVITY_LABELS[item.fieldSensitivity] ?? item.fieldSensitivity,
+			formats: item.formats.join(", "),
+			access: describeReportAccess(ctx.permissions, item),
+		})) },
+		...(selectedReport ? [
+			{ type: "header", text: "Preview Kontrak Laporan" },
+			{ type: "fields", fields: [
+				{ label: "Laporan terpilih", value: selectedReport.label },
+				{ label: "Permission", value: selectedReport.requiredPermission },
+				{ label: "Sensitivitas", value: SENSITIVITY_LABELS[selectedReport.fieldSensitivity] ?? selectedReport.fieldSensitivity },
+				{ label: "Alasan", value: requiresReasonForReport(selectedReport) ? "Wajib diisi" : "Tidak wajib" },
+				{ label: "Cakupan field", value: selectedPreset?.label ?? "Preset default akan dipilih" },
+				{ label: "Ringkasan filter", value: reportFilterSummary(form) },
+			] },
+			{ type: "context", text: selectedPreset?.description ?? selectedReport.description },
+			{ type: "table", columns: [
+				{ key: "label", label: "Field" },
+				{ key: "sensitivity", label: "Sensitivitas" },
+				{ key: "behavior", label: "Perilaku Output" },
+			], rows: (selectedPreset?.fields ?? []).map((field) => ({
+				label: field.label,
+				sensitivity: SENSITIVITY_LABELS[field.sensitivity] ?? field.sensitivity,
+				behavior: field.behavior,
+			})) },
+		] : []),
 		{ type: "header", text: "Buat Export Job" },
-		{ type: "context", text: "Restricted fields memerlukan alasan. Export tetap harus diproses melalui backend dan tidak boleh mengekspos raw R2 key pada hasil download." },
-		{ type: "form", block_id: "reports_export_form", fields: [
+		{ type: "context", text: "Alur operator: pilih laporan, tentukan cakupan field, tetapkan filter, tinjau sensitivitas, lalu kirim export job. Semua hasil unduhan tetap harus melalui backend proxy/signed flow." },
+		...(accessibleReports.length ? [{ type: "form", block_id: "reports_export_form", fields: [
 			{ type: "select", action_id: "reportKey", label: "Jenis laporan", initial_value: form.reportKey, options: [option("Pilih laporan", ""), ...REPORT_CATALOG.map((item) => option(item.label, item.key))] },
-			{ type: "select", action_id: "format", label: "Format export", initial_value: form.format || "csv", options: [option("CSV", "csv"), option("XLSX", "xlsx")] },
+			{ type: "select", action_id: "fieldPreset", label: "Cakupan field", initial_value: selectedPreset?.key ?? form.fieldPreset, options: [option(selectedReport ? "Pilih cakupan field" : "Pilih laporan terlebih dahulu", ""), ...getReportFieldPresets(form.reportKey).map((preset) => option(preset.label, preset.key))] },
+			{ type: "select", action_id: "format", label: "Format export", initial_value: form.format || "csv", options: allowedFormats.map((format) => option(format.toUpperCase(), format)) },
 			{ type: "select", action_id: "filterRegion", label: "Filter region (opsional)", initial_value: form.filterRegion, options: [option("Semua region", ""), ...options.districts.map((row) => option(row.name, row.code))] },
 			{ type: "select", action_id: "filterModule", label: "Filter module (opsional)", initial_value: form.filterModule, options: [option("Semua module", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
-			{ type: "text_input", action_id: "reason", label: "Alasan export (wajib untuk restricted/audit)", multiline: true, initial_value: form.reason, placeholder: "Jelaskan tujuan export dan dasar kewenangannya" },
-		], submit: { label: "Buat Export Job", action_id: "reports_create_export" } },
+			{ type: "select", action_id: "filterYear", label: "Tahun data (opsional)", initial_value: form.filterYear, options: [option("Semua tahun", ""), ...options.years.map((year) => option(year, year))] },
+			{ type: "select", action_id: "filterVerificationStatus", label: "Status verifikasi (opsional)", initial_value: form.filterVerificationStatus, options: REPORT_VERIFICATION_FILTERS.map((item) => option(item.label, item.value)) },
+			{ type: "text_input", action_id: "reason", label: "Alasan export", multiline: true, initial_value: form.reason, placeholder: selectedReport && requiresReasonForReport(selectedReport) ? "Wajib: jelaskan tujuan export dan dasar kewenangannya" : "Opsional: tambahkan konteks operasional export" },
+		], submit: { label: "Buat Export Job", action_id: "reports_create_export" } }] : [{ type: "empty", title: "Tidak ada laporan yang bisa dijalankan", description: "Minta permission export:create, export:restricted, atau export:audit sesuai kebutuhan peran." }]),
 		{ type: "header", text: "Histori Export Job" },
 		...(jobRows.results.length ? jobRows.results.flatMap((row) => {
 			const reportType = String(row.report_type ?? "");
 			const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
+			const filters = parseJsonRecord(row.filters_json);
+			const fields = parseJsonArray(row.fields_json);
 			return [
 				{ type: "section", text: `${reportMeta?.label ?? reportType} | ${String(row.format ?? "csv").toUpperCase()} | ${String(row.status ?? "pending")}`, accessory: { type: "button", label: "Lihat Job", action_id: `reports_open_${String(row.id)}`, style: "secondary" } },
-				{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · reason ${String(row.reason ?? "-")}` },
+				{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · filter ${Object.values(filters ?? {}).filter(Boolean).length ? reportFilterSummary({ ...form, filterRegion: String(filters?.region ?? ""), filterModule: String(filters?.module ?? ""), filterYear: String(filters?.year ?? ""), filterVerificationStatus: String(filters?.verificationStatus ?? "") }) : "Semua scope"} · field ${fields.length || 0} · reason ${String(row.reason ?? "-")}` },
 			];
 		}) : [{ type: "empty", title: "Belum ada export job", description: "Buat export job pertama untuk mulai menghasilkan laporan CSV/XLSX." }]),
 	];
@@ -1487,19 +1738,53 @@ async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInt
 	}
 	const reportType = String(row.report_type ?? "");
 	const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
+	const filters = parseJsonRecord(row.filters_json);
+	const fieldSensitivity = parseJsonRecord(row.field_sensitivity_json);
+	const fields = parseJsonArray(row.fields_json);
 	return [
 		...pageIntro(page),
-		{ type: "banner", variant: "default", title: `Export Job ${jobId}`, description: "Status job, alasan export, sensitivitas, dan download readiness ditampilkan dari metadata backend tanpa mengekspos raw R2 key." },
+		{ type: "banner", variant: "default", title: `Export Job ${jobId}`, description: "Status job, alasan export, sensitivitas, filter, dan download readiness ditampilkan dari metadata backend tanpa mengekspos raw R2 key." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Report Center", action_id: "reports_back_to_list", style: "secondary" }] },
 		{ type: "fields", fields: [
 			{ label: "Laporan", value: reportMeta?.label ?? reportType },
+			{ label: "Audience", value: reportMeta?.audience ?? "-" },
 			{ label: "Status", value: String(row.status ?? "pending") },
 			{ label: "Format", value: String(row.format ?? "csv").toUpperCase() },
 			{ label: "Rows", value: String(row.total_rows ?? 0) },
 			{ label: "Reason", value: String(row.reason ?? "-") },
-			{ label: "Field Sensitivity", value: String(row.field_sensitivity_json ?? "-") },
-			{ label: "Filters", value: String(row.filters_json ?? "-") },
+			{ label: "Field Sensitivity", value: reportMeta ? (SENSITIVITY_LABELS[reportMeta.fieldSensitivity] ?? reportMeta.fieldSensitivity) : String(row.field_sensitivity_json ?? "-") },
+			{ label: "Filter ringkas", value: reportFilterSummary({ reportKey: reportType, fieldPreset: "", format: String(row.format ?? "csv"), reason: String(row.reason ?? ""), filterRegion: String(filters?.region ?? ""), filterModule: String(filters?.module ?? ""), filterYear: String(filters?.year ?? ""), filterVerificationStatus: String(filters?.verificationStatus ?? "") }) },
 			{ label: "Download", value: row.status === "ready" ? "Siap via backend proxy/signed route" : "Belum siap diunduh" },
+		] },
+		{ type: "header", text: "Filter Tersimpan" },
+		{ type: "table", columns: [
+			{ key: "key", label: "Filter" },
+			{ key: "value", label: "Nilai" },
+		], rows: [
+			{ key: "Region", value: stringifyFilterValue(filters?.region) },
+			{ key: "Module", value: stringifyFilterValue(filters?.module) },
+			{ key: "Tahun", value: stringifyFilterValue(filters?.year) },
+			{ key: "Status verifikasi", value: stringifyFilterValue(filters?.verificationStatus) },
+		] },
+		{ type: "header", text: "Cakupan Field" },
+		...(fields.length ? [{ type: "table", columns: [
+			{ key: "label", label: "Field" },
+			{ key: "sensitivity", label: "Sensitivitas" },
+			{ key: "behavior", label: "Perilaku Output" },
+		], rows: fields.map((field) => ({
+			label: stringifyFilterValue(field.label ?? field.key),
+			sensitivity: SENSITIVITY_LABELS[String(field.sensitivity ?? fieldSensitivity?.[String(field.key ?? "")]) as keyof typeof SENSITIVITY_LABELS] ?? stringifyFilterValue(field.sensitivity ?? fieldSensitivity?.[String(field.key ?? "")]),
+			behavior: stringifyFilterValue(field.behavior),
+		})) }] : [{ type: "empty", title: "Preset field tidak tersimpan", description: "Job lama mungkin dibuat sebelum UI menyimpan detail cakupan field." }]),
+		{ type: "header", text: "Konsekuensi Keamanan" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Rule" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Reason required", status: reportMeta && requiresReasonForReport(reportMeta) ? "Ya" : "Tidak" },
+			{ rule: "Permission required", status: reportMeta?.requiredPermission ?? "-" },
+			{ rule: "Raw R2 key exposure", status: "Dilarang" },
+			{ rule: "Download flow", status: row.status === "ready" ? "Lewat backend proxy/signed route" : "Menunggu backend menyiapkan file" },
 		] },
 	];
 }
