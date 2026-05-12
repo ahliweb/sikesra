@@ -12,6 +12,23 @@ import {
 } from "./entity-routes";
 
 import {
+  entityPeopleListHandler,
+  entityPeopleAddHandler,
+  entityPeopleUpdateHandler,
+  entityPeopleRemoveHandler,
+} from "./entity-people-routes";
+
+import {
+  entityDetailModuleGetHandler,
+  entityDetailModuleUpsertHandler,
+  entityDetailModuleDeleteHandler,
+} from "./detail-module-routes";
+
+import {
+  codeCorrectHandler,
+} from "./code-routes";
+
+import {
   dashboardHandler,
   publicMetadataHandler,
   publicFiltersHandler,
@@ -124,6 +141,20 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/entities/patch": { handler: entityPatchHandler },
   "v1/entities/delete": { handler: entityDeleteHandler },
   "v1/entities/restore": { handler: entityRestoreHandler },
+
+  // Entity People/Relationships
+  "v1/entities/people": { handler: entityPeopleListHandler },
+  "v1/entities/people/add": { handler: entityPeopleAddHandler },
+  "v1/entities/people/update": { handler: entityPeopleUpdateHandler },
+  "v1/entities/people/remove": { handler: entityPeopleRemoveHandler },
+
+  // Entity Detail Modules
+  "v1/entities/detail-module": { handler: entityDetailModuleGetHandler },
+  "v1/entities/detail-module/upsert": { handler: entityDetailModuleUpsertHandler },
+  "v1/entities/detail-module/delete": { handler: entityDetailModuleDeleteHandler },
+
+  // Code Correction
+  "v1/code/correct": { handler: codeCorrectHandler },
 
   // Regions
   "v1/regions/official": { handler: officialRegionsHandler },

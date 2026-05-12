@@ -139,6 +139,10 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Entity patch handler fixed to use entityId from request body instead of URL path
 - ABAC routes now enforce RBAC permissions on all endpoints (POLICY_READ, POLICY_WRITE, POLICY_PREVIEW, ATTRIBUTE_READ, ATTRIBUTE_WRITE)
 - Pagination added to verification queue, import batch list, and export job list with LIMIT/OFFSET support and navigation controls
+- Entity people/relationships management service with 4 v1 API endpoints (list, add, update, remove) and NIK masking
+- Detail modules service with 3 v1 API endpoints (get, upsert, delete) and schemas for all 8 object types (01-08)
+- Code correction endpoint (v1/code/correct) with reason requirement and audit logging
+- Vitest configuration with coverage reporting (npm run test:coverage)
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |

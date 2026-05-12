@@ -31,6 +31,12 @@ export const AUDIT_ACTIONS = {
   ENTITY_UPDATE: "entity.update",
   ENTITY_ARCHIVE: "entity.archive",
   ENTITY_RESTORE: "entity.restore",
+  ENTITY_ADD_PERSON: "entity.add_person",
+  ENTITY_UPDATE_PERSON: "entity.update_person",
+  ENTITY_REMOVE_PERSON: "entity.remove_person",
+  ENTITY_DETAIL_CREATE: "entity.detail_created",
+  ENTITY_DETAIL_UPDATE: "entity.detail_updated",
+  ENTITY_DETAIL_DELETE: "entity.detail_deleted",
 
   // Code
   CODE_GENERATE: "code.generate",
