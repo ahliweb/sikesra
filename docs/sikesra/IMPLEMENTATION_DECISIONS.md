@@ -166,8 +166,13 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - **Entity validation endpoint** registered at `v1/entities/validate` with section-level validation
 - **MVP Go/No-Go Report** created at `docs/sikesra/MVP_GO_NO_GO_REPORT.md` - Status: CONDITIONAL GO
 
-### Test Coverage (140 tests across 7 test files)
-- `architecture.test.ts`: 25 tests - Core architecture, RBAC, ABAC, request context
+### Post-MVP Operational Documentation (Completed)
+- **Incident Response Runbook** (`INCIDENT_RESPONSE_RUNBOOK.md`): Comprehensive runbook covering SEV-1 through SEV-4 incidents with step-by-step procedures for data breach, data corruption, auth failure, worker outage, performance degradation, import/export failures. Includes incident command structure, communication templates, post-incident review process, and emergency contacts.
+- **Operator Training Notes** (`OPERATOR_TRAINING.md`): Expanded from 53 to 200+ lines covering all user roles, core workflows (manual entry, Excel import, verification, documents, export, audit), troubleshooting guide, debugging commands, deployment process, backup/restore, and monthly maintenance checklist.
+- **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 143 tests across 7 test files to 114 validation checklist items. Identifies 89 items covered (78%), 25 partial/manual (22%), 0 uncovered. Documents coverage gaps with recommended test files.
+
+### Test Coverage (143 tests across 7 test files)
+- `architecture.test.ts`: 28 tests - Core architecture, RBAC, ABAC, request context
 - `security.test.ts`: 29 tests - RBAC enforcement, masking, region scope, storage, completeness, audit
 - `public-privacy.test.ts`: 15 tests - Aggregate-safe output, small-cell suppression, filter safety
 - `masking.test.ts`: 42 tests - All masking functions, security invariants, NIK/KIA protection
@@ -185,19 +190,10 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #192 | Import workflow tests | ✅ Closed |
 | #193 | Verification workflow tests | ✅ Closed |
 | #194 | Export restriction tests | ✅ Closed |
+| #195 | Incident response runbook | ✅ Closed |
+| #196 | Operator training notes | ✅ Closed |
 | #197 | MVP go/no-go report | ✅ Closed |
-- Import service enhanced with Excel/CSV file parsing using exceljs library
-- Import file upload handler added with multipart form data processing (10MB limit, .xlsx/.csv support)
-- Import validation rules added per object type (01-08) with field-specific validation
-- Duplicate detection enhanced during import promotion with blocking risk level for exact matches
-- Import rollback capability added for failed promotions with soft-delete and audit logging
-- Route count: 58 routes (added v1/imports/upload and v1/imports/rollback)
-- Gap analysis completed: 24 new issues created for remaining gaps
-  - UI/UX: 7 issues (#175, #176, #177, #178, #179, #180, #181)
-  - Backend/API: 5 issues (#182, #183, #184, #185, #186)
-  - Integration: 3 issues (#187, #188, #189)
-  - Operations/Security: 5 issues (#190, #191, #192, #193, #194, #195)
-  - Documentation: 3 issues (#196, #197, #198)
+| #198 | Test coverage mapping | ✅ Closed |
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
@@ -208,28 +204,11 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #179 | ID correction UI with reason/confirmation | MVP |
 | #180 | Archive/restore UI with reason/confirmation | MVP |
 | #181 | Import rollback UI with status tracking | MVP |
-| #182 | Entity validation endpoint for section-level | MVP |
-| #183 | Rate limiting middleware for import/export | MVP |
 | #184 | Benefit/service history CRUD API | MVP |
 | #185 | Document complete-upload endpoint | MVP |
 | #186 | Enforce reason on delete/restore API | MVP |
-| #190 | Public privacy tests for aggregate-safe | MVP |
-| #191 | Dedicated sensitive masking test suite | MVP |
-| #192 | Import staging/promotion workflow tests | MVP |
-| #193 | Verification workflow state machine tests | MVP |
-| #194 | Export restriction and permission tests | MVP |
-| #197 | MVP go/no-go report | MVP |
 
-### Remaining P1 Gaps (Post-MVP)
-| Issue | Gap | Priority |
-|---|---|---|
-| #176 | ABAC policy/attribute management UI | Post-MVP |
-| #187 | Permission registry to EmDash role UI | Post-MVP |
-| #188 | Cloudflare Access JWT validation | Post-MVP |
-| #189 | R2 lifecycle rules and automated backup | Post-MVP |
-| #195 | Incident response runbook | Post-MVP |
-| #196 | Operator training notes for all roles | Post-MVP |
-| #198 | Test coverage mapping documentation | Post-MVP |
+### Completed Issues
 | Issue | Gap | Status |
 |---|---|---|
 | #155 | ID generation service | ✅ Implemented with sequence table, code history, and audit |
@@ -251,10 +230,6 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #164 | ABAC policy and attribute definition CRUD services | ✅ Implemented with 14 v1 API endpoints, audit logging, and policy preview |
 | #165 | XLSX export generation and enhanced export job lifecycle | ✅ Implemented with exceljs library, supporting all report types with formatting |
 
-### Remaining P1 Gaps (Post-MVP)
-| Issue | Gap | Priority |
-|---|---|---|
-
 ### Recommended Implementation Order
 1. #155: ID generation service (blocks import promotion, entity creation) ✅
 2. #156: Verification v1 API routes (service exists, just needs wiring) ✅
@@ -271,4 +246,4 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 13. #183: Rate limiting (MVP security)
 14. #190-#194: Test suite completion (MVP go/no-go)
 15. #197: MVP go/no-go report (MVP decision)
-16. #176, #187, #188, #189, #195, #196, #198: Post-MVP hardening
+16. #176, #187, #188, #189, #195, #196, #198: Post-MVP hardening ✅

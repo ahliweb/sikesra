@@ -9,7 +9,7 @@ import { listEntities, createEntity, getEntityDetail } from "../services/entity"
 import { fail, ok } from "../api/envelope";
 import { getOrCreateRequestId } from "../api/request-id";
 import { maskNikKia, maskPhone, maskR2Key } from "../security/masking";
-import { SIKESRA_PERMISSIONS } from "../security/permissions";
+import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permissions";
 import { AUDIT_ACTIONS, isHighRiskAction } from "../services/audit";
 import { applySmallCellSuppression } from "../services/public";
 import { evaluateAbac } from "../security/abac";
@@ -288,3 +288,51 @@ describe("SIKESRA Architecture Validation", () => {
     });
   });
 });
+
+  describe("Permission Registry", () => {
+    it("should export all permissions with metadata", async () => {
+      const { getPermissionRegistry } = await import("../security/permission-registry");
+      const registry = getPermissionRegistry();
+
+      expect(registry.pluginId).toBe("sikesra");
+      expect(registry.permissions.length).toBeGreaterThan(0);
+      for (const perm of registry.permissions) {
+        expect(perm.id).toMatch(/^awcms:sikesra:/);
+        expect(perm.displayName).toBeTruthy();
+        expect(perm.description).toBeTruthy();
+        expect(perm.resourceGroup).toBeTruthy();
+        expect(["standard", "high"]).toContain(perm.riskLevel);
+      }
+    });
+
+    it("should group permissions by resource group", async () => {
+      const { getPermissionsByResourceGroup } = await import("../security/permission-registry");
+      const grouped = getPermissionsByResourceGroup();
+
+      expect(Object.keys(grouped).length).toBeGreaterThan(0);
+      for (const [group, perms] of Object.entries(grouped)) {
+        expect(group).toBeTruthy();
+        expect(perms.length).toBeGreaterThan(0);
+        for (const perm of perms) {
+          expect(perm.resourceGroup).toBe(group);
+        }
+      }
+    });
+
+    it("should separate high-risk and standard permissions", async () => {
+      const { getHighRiskPermissions, getStandardPermissions } = await import("../security/permission-registry");
+      const highRisk = getHighRiskPermissions();
+      const standard = getStandardPermissions();
+
+      expect(highRisk.length).toBeGreaterThan(0);
+      expect(standard.length).toBeGreaterThan(0);
+      expect(highRisk.length + standard.length).toBe(SIKESRA_PERMISSION_LIST.length);
+
+      for (const perm of highRisk) {
+        expect(perm.riskLevel).toBe("high");
+      }
+      for (const perm of standard) {
+        expect(perm.riskLevel).toBe("standard");
+      }
+    });
+  });

@@ -7,6 +7,7 @@ import { getOrCreateRequestId } from "../api/request-id";
 import type { D1Binding } from "../repositories/db";
 import { evaluateAbacWithDb, buildAbacSubject, type AbacInput, type AbacResource } from "../security/abac";
 import { buildTrustedRequestContext, type SikesraRegionScope } from "../security/request-context";
+import { validateCloudflareAccessJwt, extractUserIdFromClaims, extractGroupsFromClaims, mapAccessGroupsToRoles, getCloudflareAccessJwtFromRequest } from "../security/cloudflare-access";
 
 export interface RouteEnv {
   SIKESRA_DB: D1Binding;
@@ -76,13 +77,43 @@ function requireSiteContext(routeCtx: EmDashRouteContext): { tenantId: string; s
 }
 
 // Build trusted request context from EmDash route context
+// Supports Cloudflare Access JWT as primary identity, falls back to EmDash session headers
 // Tenant/site/user must come from session/server state, never from query params
 export function buildContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
   const requestId = getOrCreateRequestId(routeCtx.request);
 
-  const userId = readHeader(routeCtx.request, ["x-emdash-user-id", "x-user-id"]);
-  const roles = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-roles", "x-user-roles"]));
-  const permissions = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-permissions", "x-user-permissions"]));
+  // Try Cloudflare Access JWT first
+  const accessJwt = getCloudflareAccessJwtFromRequest(routeCtx.request);
+
+  let userId: string | undefined;
+  let roles: string[] = [];
+  let permissions: string[] = [];
+  let subjectAttributes: Record<string, unknown> = {};
+
+  if (accessJwt) {
+    // Cloudflare Access JWT path
+    const validationResult = validateCloudflareAccessJwt(accessJwt);
+
+    if (validationResult.valid && validationResult.claims) {
+      userId = extractUserIdFromClaims(validationResult.claims);
+      const groups = extractGroupsFromClaims(validationResult.claims);
+      roles = mapAccessGroupsToRoles(groups, ACCESS_GROUP_ROLE_MAPPING);
+      subjectAttributes = {
+        jwtValid: true,
+        jwtIssuer: validationResult.claims.iss,
+        jwtEmail: validationResult.claims.email,
+        jwtName: validationResult.claims.name,
+      };
+    }
+  }
+
+  // Fallback to EmDash session headers if JWT not present or invalid
+  if (!userId || roles.length === 0) {
+    userId = readHeader(routeCtx.request, ["x-emdash-user-id", "x-user-id"]);
+    roles = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-roles", "x-user-roles"]));
+    permissions = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-permissions", "x-user-permissions"]));
+    subjectAttributes = parseJsonHeader<Record<string, unknown>>(readHeader(routeCtx.request, ["x-emdash-subject-attributes"])) ?? {};
+  }
 
   if (!userId || roles.length === 0) {
     throw new Error("AUTH_CONTEXT_REQUIRED");
@@ -96,12 +127,21 @@ export function buildContextFromEmDash(routeCtx: EmDashRouteContext): SikesraReq
     userId,
     roles,
     permissions,
-    subjectAttributes: parseJsonHeader<Record<string, unknown>>(readHeader(routeCtx.request, ["x-emdash-subject-attributes"])),
+    subjectAttributes,
     regionScope: parseJsonHeader<SikesraRegionScope>(readHeader(routeCtx.request, ["x-emdash-region-scope"])),
     ipAddress: routeCtx.requestMeta?.ip,
     userAgent: routeCtx.requestMeta?.userAgent,
   });
 }
+
+// Default mapping from Cloudflare Access groups to SIKESRA roles
+const ACCESS_GROUP_ROLE_MAPPING: Record<string, string> = {
+  "sikesra-admin": "admin",
+  "sikesra-operator": "operator",
+  "sikesra-verifier": "verifier",
+  "sikesra-auditor": "auditor",
+  "sikesra-viewer": "viewer",
+};
 
 export function buildPublicContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
   const requestId = getOrCreateRequestId(routeCtx.request);

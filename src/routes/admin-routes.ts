@@ -99,6 +99,31 @@ interface AccessPreviewFormState {
 	requireReason: string;
 }
 
+interface AbacPolicyFormState {
+	policyId: string;
+	name: string;
+	description: string;
+	effect: string;
+	priority: string;
+	resourceType: string;
+	actions: string;
+	conditionCategory: string;
+	conditionName: string;
+	conditionOperator: string;
+	conditionValue: string;
+}
+
+interface AbacAttributeFormState {
+	attributeId: string;
+	code: string;
+	name: string;
+	description: string;
+	category: string;
+	valueType: string;
+	scopeType: string;
+	scopeValue: string;
+}
+
 interface AuditFilterFormState {
 	actor: string;
 	action: string;
@@ -795,6 +820,37 @@ function parseAccessPreviewForm(input: PluginAdminInteraction): AccessPreviewFor
 		statusVerification: stringState(values.statusVerification, "submitted_village"),
 		documentClassification: stringState(values.documentClassification, "restricted"),
 		requireReason: stringState(values.requireReason, "false"),
+	};
+}
+
+function parseAbacPolicyForm(input: PluginAdminInteraction): AbacPolicyFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		policyId: stringState(values.policyId),
+		name: stringState(values.name),
+		description: stringState(values.description),
+		effect: stringState(values.effect, "allow"),
+		priority: stringState(values.priority, "0"),
+		resourceType: stringState(values.resourceType, "entity"),
+		actions: stringState(values.actions),
+		conditionCategory: stringState(values.conditionCategory, "entity"),
+		conditionName: stringState(values.conditionName),
+		conditionOperator: stringState(values.conditionOperator, "equals"),
+		conditionValue: stringState(values.conditionValue),
+	};
+}
+
+function parseAbacAttributeForm(input: PluginAdminInteraction): AbacAttributeFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		attributeId: stringState(values.attributeId),
+		code: stringState(values.code),
+		name: stringState(values.name),
+		description: stringState(values.description),
+		category: stringState(values.category, "entity"),
+		valueType: stringState(values.valueType, "text"),
+		scopeType: stringState(values.scopeType),
+		scopeValue: stringState(values.scopeValue),
 	};
 }
 
@@ -3189,7 +3245,238 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const form = parseAccessPreviewForm(input);
-	const [options, policies, policyRows] = await Promise.all([
+	const policyForm = parseAbacPolicyForm(input);
+	const attributeForm = parseAbacAttributeForm(input);
+	let notice = "";
+	let error = "";
+
+	// Policy CRUD handlers
+	if (input.type === "form_submit" && input.action_id === "abac_create_policy") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE)) {
+			error = "Permission awcms:sikesra:policy:write diperlukan untuk membuat policy ABAC.";
+		} else if (!policyForm.name.trim()) {
+			error = "Nama policy wajib diisi.";
+		} else if (!policyForm.effect || !["allow", "deny"].includes(policyForm.effect)) {
+			error = "Effect policy harus 'allow' atau 'deny'.";
+		} else {
+			const { createAbacPolicy } = await import("../services/abac-policy-service");
+			const actions = policyForm.actions ? policyForm.actions.split(",").map((a) => a.trim()).filter(Boolean) : [];
+			try {
+				const result = await createAbacPolicy(db, {
+					name: policyForm.name,
+					description: policyForm.description || undefined,
+					effect: policyForm.effect as "allow" | "deny",
+					priority: Number(policyForm.priority) || 0,
+					resourceType: policyForm.resourceType || undefined,
+					actions: actions.length ? actions : undefined,
+					conditions: policyForm.conditionName ? [{
+						attributeCategory: policyForm.conditionCategory === "entity" || policyForm.conditionCategory === "region" || policyForm.conditionCategory === "document" ? "resource" : "subject",
+						attributeName: policyForm.conditionName,
+						operator: policyForm.conditionOperator as any,
+						value: policyForm.conditionValue || null,
+					}] : [],
+				}, ctx);
+				notice = `Policy ABAC "${policyForm.name}" berhasil dibuat dengan effect ${policyForm.effect.toUpperCase()}.`;
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal membuat policy ABAC.";
+			}
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "abac_update_policy") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE)) {
+			error = "Permission awcms:sikesra:policy:write diperlukan untuk mengubah policy ABAC.";
+		} else if (!policyForm.policyId || !policyForm.name.trim()) {
+			error = "ID policy dan nama policy wajib diisi.";
+		} else {
+			const { updateAbacPolicy } = await import("../services/abac-policy-service");
+			const actions = policyForm.actions ? policyForm.actions.split(",").map((a) => a.trim()).filter(Boolean) : [];
+			try {
+				await updateAbacPolicy(db, policyForm.policyId, {
+					name: policyForm.name,
+					description: policyForm.description || undefined,
+					effect: policyForm.effect as "allow" | "deny",
+					priority: Number(policyForm.priority) || 0,
+					resourceType: policyForm.resourceType || undefined,
+					actions: actions.length ? actions : undefined,
+					conditions: policyForm.conditionName ? [{
+						attributeCategory: policyForm.conditionCategory as any,
+						attributeName: policyForm.conditionName,
+						operator: policyForm.conditionOperator as any,
+						value: policyForm.conditionValue || null,
+					}] : undefined,
+				}, ctx);
+				notice = `Policy ABAC "${policyForm.name}" berhasil diperbarui.`;
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal mengubah policy ABAC.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_activate_policy_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE)) {
+			error = "Permission awcms:sikesra:policy:write diperlukan untuk mengaktifkan policy.";
+		} else {
+			const policyId = input.action_id.replace("abac_activate_policy_", "");
+			const { activateAbacPolicy } = await import("../services/abac-policy-service");
+			try {
+				await activateAbacPolicy(db, policyId, ctx);
+				notice = "Policy ABAC berhasil diaktifkan.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal mengaktifkan policy.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_deactivate_policy_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE)) {
+			error = "Permission awcms:sikesra:policy:write diperlukan untuk menonaktifkan policy.";
+		} else {
+			const policyId = input.action_id.replace("abac_deactivate_policy_", "");
+			const { deactivateAbacPolicy } = await import("../services/abac-policy-service");
+			try {
+				await deactivateAbacPolicy(db, policyId, ctx);
+				notice = "Policy ABAC berhasil dinonaktifkan.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal menonaktifkan policy.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_delete_policy_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE)) {
+			error = "Permission awcms:sikesra:policy:write diperlukan untuk menghapus policy.";
+		} else {
+			const policyId = input.action_id.replace("abac_delete_policy_", "");
+			const { deleteAbacPolicy } = await import("../services/abac-policy-service");
+			try {
+				await deleteAbacPolicy(db, policyId, ctx);
+				notice = "Policy ABAC berhasil dihapus.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal menghapus policy.";
+			}
+		}
+	}
+
+	// Attribute CRUD handlers
+	if (input.type === "form_submit" && input.action_id === "abac_create_attribute") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE)) {
+			error = "Permission awcms:sikesra:attribute:write diperlukan untuk membuat atribut.";
+		} else if (!attributeForm.code.trim() || !attributeForm.name.trim()) {
+			error = "Kode dan nama atribut wajib diisi.";
+		} else {
+			const { createAttributeDefinition } = await import("../services/abac-attribute-service");
+			try {
+				const result = await createAttributeDefinition(db, {
+					code: attributeForm.code,
+					name: attributeForm.name,
+					category: attributeForm.category as any,
+					valueType: attributeForm.valueType as any,
+				}, ctx);
+				notice = `Atribut "${attributeForm.name}" berhasil dibuat.`;
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal membuat atribut.";
+			}
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "abac_update_attribute") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE)) {
+			error = "Permission awcms:sikesra:attribute:write diperlukan untuk mengubah atribut.";
+		} else if (!attributeForm.attributeId || !attributeForm.name.trim()) {
+			error = "ID dan nama atribut wajib diisi.";
+		} else {
+			const { updateAttributeDefinition } = await import("../services/abac-attribute-service");
+			try {
+				await updateAttributeDefinition(db, attributeForm.attributeId, {
+					name: attributeForm.name,
+					category: attributeForm.category as any,
+					valueType: attributeForm.valueType as any,
+				}, ctx);
+				notice = `Atribut "${attributeForm.name}" berhasil diperbarui.`;
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal mengubah atribut.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_activate_attribute_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE)) {
+			error = "Permission awcms:sikesra:attribute:write diperlukan untuk mengaktifkan atribut.";
+		} else {
+			const attributeId = input.action_id.replace("abac_activate_attribute_", "");
+			const { activateAttributeDefinition } = await import("../services/abac-attribute-service");
+			try {
+				await activateAttributeDefinition(db, attributeId, ctx);
+				notice = "Atribut berhasil diaktifkan.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal mengaktifkan atribut.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_deactivate_attribute_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE)) {
+			error = "Permission awcms:sikesra:attribute:write diperlukan untuk menonaktifkan atribut.";
+		} else {
+			const attributeId = input.action_id.replace("abac_deactivate_attribute_", "");
+			const { deactivateAttributeDefinition } = await import("../services/abac-attribute-service");
+			try {
+				await deactivateAttributeDefinition(db, attributeId, ctx);
+				notice = "Atribut berhasil dinonaktifkan.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal menonaktifkan atribut.";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_delete_attribute_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE)) {
+			error = "Permission awcms:sikesra:attribute:write diperlukan untuk menghapus atribut.";
+		} else {
+			const attributeId = input.action_id.replace("abac_delete_attribute_", "");
+			const { deleteAttributeDefinition } = await import("../services/abac-attribute-service");
+			try {
+				await deleteAttributeDefinition(db, attributeId, ctx);
+				notice = "Atribut berhasil dihapus.";
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal menghapus atribut.";
+			}
+		}
+	}
+
+	// Load edit form for policy
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_edit_policy_")) {
+		const policyId = input.action_id.replace("abac_edit_policy_", "");
+		const { getAbacPolicyDetail } = await import("../services/abac-policy-service");
+		const policy = await getAbacPolicyDetail(db, policyId, ctx);
+		if (policy) {
+			policyForm.policyId = policy.id;
+			policyForm.name = policy.name;
+			policyForm.description = policy.description ?? "";
+			policyForm.effect = policy.effect;
+			policyForm.priority = String(policy.priority);
+			policyForm.resourceType = policy.resourceType ?? "entity";
+			policyForm.actions = (policy.actions ?? []).join(", ");
+		}
+	}
+
+	// Load edit form for attribute
+	if (input.type === "block_action" && input.action_id?.startsWith("abac_edit_attribute_")) {
+		const attributeId = input.action_id.replace("abac_edit_attribute_", "");
+		const { getAttributeDefinition } = await import("../services/abac-attribute-service");
+		const attr = await getAttributeDefinition(db, attributeId, ctx);
+		if (attr) {
+			attributeForm.attributeId = attr.id;
+			attributeForm.code = attr.code;
+			attributeForm.name = attr.name;
+			attributeForm.description = "";
+			attributeForm.category = attr.category;
+			attributeForm.valueType = attr.valueType;
+		}
+	}
+
+	const [options, policies, policyRows, attributeRows] = await Promise.all([
 		loadAccessAdminOptions(db, ctx.tenantId, ctx.siteId, form),
 		loadAbacPolicies(db, ctx),
 		db.prepare(
@@ -3197,6 +3484,12 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			 FROM awcms_sikesra_abac_policies
 			 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
 			 ORDER BY priority DESC, name`,
+		).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>(),
+		db.prepare(
+			`SELECT id, code, name, description, category, value_type, is_active
+			 FROM awcms_sikesra_attribute_definitions
+			 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+			 ORDER BY category, code`,
 		).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>(),
 	]);
 
@@ -3320,6 +3613,8 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ key: "resourceType", label: "Resource" },
 			{ key: "actions", label: "Actions" },
 			{ key: "conditions", label: "Conditions" },
+			{ key: "status", label: "Status" },
+			...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE) ? [{ key: "actions_col", label: "Aksi" }] : []),
 		], rows: policyRows.results.map((row) => {
 			const policy = policies.find((item) => item.id === String(row.id));
 			const actions = typeof row.actions_json === "string" ? JSON.parse(row.actions_json) as string[] : [];
@@ -3330,8 +3625,74 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 				resourceType: String(row.resource_type ?? "-"),
 				actions: Array.isArray(actions) && actions.length ? actions.join(", ") : "Semua aksi terkait",
 				conditions: policy?.conditions.length ? policy.conditions.map((condition) => `${condition.attributeCategory}.${condition.attributeName} ${condition.operator}`).join(" | ") : "Tanpa kondisi",
+				status: Number(row.is_active ?? 0) === 1 ? "Aktif" : "Nonaktif",
+				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE) ? {
+					actions_col: [
+						{ type: "button", label: "Edit", action_id: `abac_edit_policy_${String(row.id)}`, style: "secondary" },
+						Number(row.is_active ?? 0) === 1
+							? { type: "button", label: "Nonaktifkan", action_id: `abac_deactivate_policy_${String(row.id)}`, style: "warning" }
+							: { type: "button", label: "Aktifkan", action_id: `abac_activate_policy_${String(row.id)}`, style: "primary" },
+						{ type: "button", label: "Hapus", action_id: `abac_delete_policy_${String(row.id)}`, style: "danger" },
+					]
+				} : {}),
 			};
 		}), empty_text: "Belum ada policy ABAC yang aktif." },
+		...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE) ? [
+			{ type: "header", text: policyForm.policyId ? "Edit Policy ABAC" : "Buat Policy ABAC Baru" },
+			{ type: "context", text: "Policy ABAC mengontrol akses berbasis atribut. Effect 'deny' selalu mengalahkan 'allow'. Priority lebih tinggi dievaluasi lebih dulu." },
+			{ type: "form", block_id: "abac_policy_form", fields: [
+				{ type: "hidden", action_id: "policyId", initial_value: policyForm.policyId },
+				{ type: "text", action_id: "name", label: "Nama policy", initial_value: policyForm.name, placeholder: "Contoh: Allow desa access to own entities" },
+				{ type: "textarea", action_id: "description", label: "Deskripsi", initial_value: policyForm.description, placeholder: "Penjelasan tujuan policy" },
+				{ type: "select", action_id: "effect", label: "Effect", initial_value: policyForm.effect, options: [option("Allow", "allow"), option("Deny", "deny")] },
+				{ type: "number", action_id: "priority", label: "Priority", initial_value: policyForm.priority, placeholder: "0 (lebih tinggi = lebih prioritas)" },
+				{ type: "select", action_id: "resourceType", label: "Resource type", initial_value: policyForm.resourceType, options: [option("Entity", "entity"), option("Document", "document"), option("Export", "export"), option("Audit", "audit"), option("*", "*")] },
+				{ type: "text", action_id: "actions", label: "Actions (comma-separated)", initial_value: policyForm.actions, placeholder: "read, create, update (kosongkan untuk semua)" },
+				{ type: "header", text: "Kondisi (opsional)", level: 3 },
+				{ type: "select", action_id: "conditionCategory", label: "Kategori atribut", initial_value: policyForm.conditionCategory, options: [option("Entity", "entity"), option("Region", "region"), option("User", "user"), option("Document", "document")] },
+				{ type: "text", action_id: "conditionName", label: "Nama atribut", initial_value: policyForm.conditionName, placeholder: "Contoh: officialVillageCode" },
+				{ type: "select", action_id: "conditionOperator", label: "Operator", initial_value: policyForm.conditionOperator, options: [option("Equals", "equals"), option("Not equals", "not_equals"), option("In", "in"), option("Not in", "not_in"), option("Greater than", "gt"), option("Less than", "lt")] },
+				{ type: "text", action_id: "conditionValue", label: "Nilai", initial_value: policyForm.conditionValue, placeholder: "Nilai kondisi (JSON untuk array)" },
+			], submit: { label: policyForm.policyId ? "Simpan Perubahan" : "Buat Policy", action_id: policyForm.policyId ? "abac_update_policy" : "abac_create_policy" } },
+		] : []),
+		{ type: "header", text: "Manajemen Atribut" },
+		{ type: "context", text: "Atribut adalah properti yang digunakan dalam kondisi policy ABAC. Setiap atribut memiliki kategori, tipe nilai, dan scope." },
+		{ type: "table", columns: [
+			{ key: "code", label: "Kode" },
+			{ key: "name", label: "Nama" },
+			{ key: "category", label: "Kategori" },
+			{ key: "valueType", label: "Tipe" },
+			{ key: "status", label: "Status" },
+			...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE) ? [{ key: "actions_col", label: "Aksi" }] : []),
+		], rows: attributeRows.results.map((row) => ({
+			code: String(row.code ?? "-"),
+			name: String(row.name ?? "-"),
+			category: String(row.category ?? "-"),
+			valueType: String(row.value_type ?? "text"),
+			status: Number(row.is_active ?? 0) === 1 ? "Aktif" : "Nonaktif",
+			...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE) ? {
+				actions_col: [
+					{ type: "button", label: "Edit", action_id: `abac_edit_attribute_${String(row.id)}`, style: "secondary" },
+					Number(row.is_active ?? 0) === 1
+						? { type: "button", label: "Nonaktifkan", action_id: `abac_deactivate_attribute_${String(row.id)}`, style: "warning" }
+						: { type: "button", label: "Aktifkan", action_id: `abac_activate_attribute_${String(row.id)}`, style: "primary" },
+					{ type: "button", label: "Hapus", action_id: `abac_delete_attribute_${String(row.id)}`, style: "danger" },
+				]
+			} : {}),
+		})), empty_text: "Belum ada attribute definition." },
+		...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.ATTRIBUTE_WRITE) ? [
+			{ type: "header", text: attributeForm.attributeId ? "Edit Atribut" : "Buat Atribut Baru" },
+			{ type: "form", block_id: "abac_attribute_form", fields: [
+				{ type: "hidden", action_id: "attributeId", initial_value: attributeForm.attributeId },
+				{ type: "text", action_id: "code", label: "Kode atribut", initial_value: attributeForm.code, placeholder: "Contoh: officialVillageCode" },
+				{ type: "text", action_id: "name", label: "Nama atribut", initial_value: attributeForm.name, placeholder: "Contoh: Official Village Code" },
+				{ type: "textarea", action_id: "description", label: "Deskripsi", initial_value: attributeForm.description, placeholder: "Penjelasan atribut" },
+				{ type: "select", action_id: "category", label: "Kategori", initial_value: attributeForm.category, options: [option("Entity", "entity"), option("Region", "region"), option("User", "user"), option("Document", "document")] },
+				{ type: "select", action_id: "valueType", label: "Tipe nilai", initial_value: attributeForm.valueType, options: [option("Text", "text"), option("Number", "number"), option("Boolean", "boolean"), option("Date", "date"), option("List", "list")] },
+			], submit: { label: attributeForm.attributeId ? "Simpan Perubahan" : "Buat Atribut", action_id: attributeForm.attributeId ? "abac_update_attribute" : "abac_create_attribute" } },
+		] : []),
+		...(notice ? [{ type: "banner", variant: "success", title: "Operasi berhasil", description: notice }] : []),
+		...(error ? [{ type: "banner", variant: "alert", title: "Operasi gagal", description: error }] : []),
 		{ type: "header", text: "Effective Access Preview" },
 		{ type: "context", text: "Preview ini mensimulasikan evaluasi ABAC menggunakan trusted context akun saat ini. Tujuannya membantu governance role memahami kenapa aksi diizinkan atau ditolak, bukan menggantikan pengecekan backend sebenarnya." },
 		{ type: "form", block_id: "access_preview_form", fields: [
