@@ -100,6 +100,7 @@ export interface EntityCreateInput {
 }
 
 export interface EntityPatchInput {
+  entityId: string;
   displayName?: string;
   localRegionId?: string;
   addressText?: string;
@@ -108,6 +109,8 @@ export interface EntityPatchInput {
   sensitivityLevel?: SensitivityLevel;
   [key: string]: unknown; // section patches
 }
+
+export type EntityPatchData = Omit<EntityPatchInput, "entityId">;
 
 // ---------- Entity Service (Repository-aware) ----------
 
@@ -297,7 +300,7 @@ export async function createEntity(
 export async function patchEntity(
   db: D1Binding,
   entityId: string,
-  input: EntityPatchInput,
+  input: EntityPatchData,
   ctx: SikesraRequestContext,
 ): Promise<SikesraEntitySummary> {
   const updated = await repoPatch(db, entityId, input as Record<string, unknown>, ctx.userId, ctx);
@@ -325,4 +328,77 @@ export async function patchEntity(
     duplicateStatus: updated.duplicate_status, sourceInput: updated.source_input,
     createdAt: updated.created_at, updatedAt: updated.updated_at,
   };
+}
+
+export interface EntityDeleteInput {
+  entityId: string;
+  reason?: string;
+}
+
+export async function deleteEntity(
+  db: D1Binding,
+  input: EntityDeleteInput,
+  ctx: SikesraRequestContext,
+): Promise<{ success: boolean; entityId: string }> {
+  const entity = await getEntityById(db, input.entityId, ctx);
+  if (!entity) throw new Error("ENTITY_NOT_FOUND");
+  if (entity.status_data === "archived") throw new Error("ENTITY_ALREADY_ARCHIVED");
+
+  const now = new Date().toISOString();
+  await db.prepare(
+    `UPDATE awcms_sikesra_entities SET deleted_at = ?, updated_at = ?, updated_by = ? WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
+  ).bind(now, now, ctx.userId, input.entityId, ctx.tenantId, ctx.siteId).run();
+
+  // Write audit event for entity deletion
+  await writeAuditEvent(db, {
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    action: AUDIT_ACTIONS.ENTITY_ARCHIVE,
+    resourceType: "entity",
+    resourceId: input.entityId,
+    success: true,
+    reason: input.reason ?? "Entity deleted",
+    before: {
+      displayName: entity.display_name,
+      statusData: entity.status_data,
+      statusVerification: entity.status_verification,
+    },
+  }, ctx);
+
+  return { success: true, entityId: input.entityId };
+}
+
+export async function restoreEntity(
+  db: D1Binding,
+  input: { entityId: string; reason?: string },
+  ctx: SikesraRequestContext,
+): Promise<{ success: boolean; entityId: string }> {
+  const row = await db.prepare(
+    `SELECT * FROM awcms_sikesra_entities WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NOT NULL`
+  ).bind(input.entityId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+
+  if (!row) throw new Error("ENTITY_NOT_FOUND_OR_NOT_DELETED");
+
+  const now = new Date().toISOString();
+  await db.prepare(
+    `UPDATE awcms_sikesra_entities SET deleted_at = NULL, updated_at = ?, updated_by = ? WHERE id = ? AND tenant_id = ? AND site_id = ?`
+  ).bind(now, ctx.userId, input.entityId, ctx.tenantId, ctx.siteId).run();
+
+  // Write audit event for entity restoration
+  await writeAuditEvent(db, {
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    action: AUDIT_ACTIONS.ENTITY_RESTORE,
+    resourceType: "entity",
+    resourceId: input.entityId,
+    success: true,
+    reason: input.reason ?? "Entity restored",
+    after: {
+      displayName: row.display_name,
+      statusData: row.status_data,
+      statusVerification: row.status_verification,
+    },
+  }, ctx);
+
+  return { success: true, entityId: input.entityId };
 }

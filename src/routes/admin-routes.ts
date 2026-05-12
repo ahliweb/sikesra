@@ -4,7 +4,7 @@ import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils
 import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
-import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchInput } from "../services/entity";
+import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchData } from "../services/entity";
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
@@ -15,9 +15,10 @@ import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
 import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
 import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
-import { createImportBatch } from "../services/import";
+import { createImportBatch, promoteImportRows } from "../services/import";
 import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
 import { generateSikesraId } from "../services/code";
+import { createExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -1362,7 +1363,7 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 					displayName: state.displayName,
 					localRegionId: state.localRegionId || undefined,
 					addressText: state.addressText || undefined,
-					sensitivityLevel: state.sensitivityLevel as EntityPatchInput["sensitivityLevel"],
+					sensitivityLevel: state.sensitivityLevel as EntityPatchData["sensitivityLevel"],
 					sourceInput: state.sourceInput || undefined,
 					sourceInstitution: state.sourceInstitution || undefined,
 					latitude: numberValue(state.latitude),
@@ -2086,13 +2087,31 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	const skippedRows = stagingRows.filter((row) => row.rowStatus === "skipped");
 	const failedRows = stagingRows.filter((row) => row.rowStatus === "failed");
 
+	let promoteNotice = "";
+	let promoteError = "";
+	if (input.type === "block_action" && input.action_id === `imports_promote_${batchId}`) {
+		try {
+			const validRows = stagingRows.filter((row) => row.rowStatus === "valid" || row.rowStatus === "corrected");
+			const duplicateDecisions: Record<string, string> = {};
+			for (const row of duplicateRows) {
+				duplicateDecisions[row.id] = "override";
+			}
+			const result = await promoteImportRows(db, batchId, validRows.map((r) => r.id), duplicateDecisions, ctx);
+			promoteNotice = `Promosi selesai. ${result.promoted} baris berhasil dipromosikan ke entitas SIKESRA. ${result.skipped} baris dilewati.`;
+		} catch (err) {
+			promoteError = err instanceof Error ? err.message : "Gagal mempromosikan baris import";
+		}
+	}
+
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
 		...(mappingNotice ? [{ type: "banner", variant: "success", title: "Mapping tersimpan", description: mappingNotice }] : []),
 		...(validationNotice ? [{ type: "banner", variant: "success", title: "Validasi batch selesai", description: validationNotice }] : []),
+		...(promoteNotice ? [{ type: "banner", variant: "success", title: "Promosi selesai", description: promoteNotice }] : []),
 		...(mappingError ? [{ type: "banner", variant: "alert", title: "Mapping belum tersimpan", description: mappingError }] : []),
+		...(promoteError ? [{ type: "banner", variant: "alert", title: "Promosi gagal", description: promoteError }] : []),
 		{ type: "stats", items: [
 			{ label: "Valid", value: String(batch.validRowCount), description: "Row valid / corrected" },
 			{ label: "Invalid", value: String(invalidRows.length), description: "Butuh koreksi operator" },
@@ -2179,6 +2198,13 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			{ label: "Baris dilewati", value: String(skippedRows.length) },
 			{ label: "Baris gagal", value: String(failedRows.length) },
 		] },
+				...(batch.status === "validated" ? [
+					{ type: "banner", variant: "warning", title: "Konfirmasi Promosi", description: "Promosi akan membuat entitas baru dari baris valid. Pastikan semua invalid row telah dikoreksi dan duplicate review telah diselesaikan." },
+					{ type: "actions", elements: [{ type: "button", label: "Promosi Baris Valid", action_id: `imports_promote_${batchId}`, style: "primary" }] },
+				] : []),
+				...(batch.status === "promoted" ? [
+					{ type: "banner", variant: "success", title: "Promosi Selesai", description: `Semua baris valid telah dipromosikan. Total ${batch.promotedRowCount} entitas baru dibuat.` },
+				] : []),
 				{ type: "context", text: "Promosi valid row dan duplicate override tetap memerlukan backend workflow lengkap sebelum tombol eksekusi diaktifkan." },
 			] },
 		] },
@@ -2326,6 +2352,37 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	let notice = "";
 	let error = "";
 
+	interface R2Bucket {
+		put(key: string, value: ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string } }): Promise<void>;
+		head(key: string): Promise<{ size: number } | null>;
+		delete(key: string): Promise<void>;
+		get(key: string): Promise<{ body: ReadableStream | ArrayBuffer } | null>;
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("reports_generate_")) {
+		const jobId = input.action_id.replace("reports_generate_", "");
+		try {
+			const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+			if (!r2) throw new Error("R2_STORAGE_UNAVAILABLE");
+			const result = await generateExportFile(db, r2, jobId, ctx);
+			notice = `Export job ${jobId} berhasil digenerate. Total rows: ${result.totalRows}. File siap diunduh.`;
+		} catch (err) {
+			error = err instanceof Error ? err.message : "Gagal generate export file";
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("reports_download_")) {
+		const jobId = input.action_id.replace("reports_download_", "");
+		try {
+			const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+			if (!r2) throw new Error("R2_STORAGE_UNAVAILABLE");
+			const result = await downloadExportFile(db, r2, jobId, ctx);
+			notice = `Export job ${jobId} berhasil diunduh. File: ${result.filename}`;
+		} catch (err) {
+			error = err instanceof Error ? err.message : "Gagal download export file";
+		}
+	}
+
 	if (input.type === "form_submit" && input.action_id === "reports_create_export") {
 		const selected = selectedReport;
 		if (!selected) {
@@ -2338,30 +2395,20 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 			error = "Alasan wajib diisi untuk export restricted atau audit evidence.";
 		} else {
 			const preset = getReportFieldPreset(selected.key, form.fieldPreset);
-			const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-			await db.prepare(
-				`INSERT INTO awcms_sikesra_export_jobs
-				 (id, tenant_id, site_id, report_type, filters_json, fields_json, field_sensitivity_json, format, reason, status, created_by, updated_by)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-			).bind(
-				id,
-				ctx.tenantId,
-				ctx.siteId,
-				selected.key,
-				JSON.stringify({
+			const exportInput: ExportCreateInput = {
+				reportType: selected.key,
+				format: (form.format || "csv") as "csv" | "xlsx",
+				reason: form.reason || undefined,
+				filters: {
 					region: form.filterRegion || null,
 					module: form.filterModule || null,
 					year: form.filterYear || null,
 					verificationStatus: form.filterVerificationStatus || null,
-				}),
-				JSON.stringify((preset?.fields ?? []).map((field) => ({ key: field.key, label: field.label, sensitivity: field.sensitivity, behavior: field.behavior }))),
-				JSON.stringify(Object.fromEntries((preset?.fields ?? []).map((field) => [field.key, field.sensitivity]))),
-				form.format || "csv",
-				form.reason || null,
-				ctx.userId,
-				ctx.userId,
-			).run();
-			notice = `Export job ${id} untuk ${selected.label} berhasil dibuat dengan status pending. Field preset ${preset?.label ?? "default"} dan filter backend telah tersimpan.`;
+				},
+				fields: (preset?.fields ?? []).map((field) => field.key),
+			};
+			const result = await createExportJob(db, exportInput, ctx);
+			notice = `Export job ${result.id} untuk ${selected.label} berhasil dibuat dengan status pending. Field preset ${preset?.label ?? "default"} dan filter backend telah tersimpan.`;
 		}
 	}
 
@@ -2535,6 +2582,12 @@ async function reportJobDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInt
 			{ rule: "Permission required", status: reportMeta?.requiredPermission ?? "-" },
 			{ rule: "Raw R2 key exposure", status: "Dilarang" },
 			{ rule: "Download flow", status: row.status === "ready" ? "Lewat backend proxy/signed route" : "Menunggu backend menyiapkan file" },
+		] },
+		{ type: "header", text: "Aksi" },
+		{ type: "actions", elements: [
+			...(row.status === "pending" ? [{ type: "button", label: "Generate Export", action_id: `reports_generate_${jobId}`, style: "primary" }] : []),
+			...(row.status === "ready" ? [{ type: "button", label: "Download Export", action_id: `reports_download_${jobId}`, style: "primary" }] : []),
+			{ type: "button", label: "Kembali ke Report Center", action_id: "reports_back_to_list", style: "secondary" },
 		] },
 	];
 }

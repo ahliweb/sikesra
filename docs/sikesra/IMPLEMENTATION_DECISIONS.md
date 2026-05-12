@@ -118,9 +118,9 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ## Implementation Status (2026-05-12)
 
 ### Fully Implemented
-- Plugin registration, route registry (48 routes), handler utilities
+- Plugin registration, route registry (50 routes), handler utilities
 - Request context (fail-closed), permissions (37), ABAC evaluator, masking, route guard
-- API envelope, entity CRUD, verification service, import service, document service
+- API envelope, entity CRUD (including delete/restore), verification service, import service, document service
 - Dashboard service, public services, region service, audit service, export service, settings service
 - Completeness validation service with field rules per object type, batch validation, and audit logging
 - R2 storage adapter with centralized key generation, tenant/site isolation, proxy endpoint, and security controls
@@ -129,11 +129,14 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Comprehensive security regression tests (54 tests covering RBAC, ABAC, masking, region scope, storage, completeness, audit)
 - D1/R2 backup and restore procedures (automated backups, manual exports, disaster recovery runbook, maintenance tasks)
 - Mobile responsiveness across admin surfaces (responsive stats chunking, mobile table limits, mobile detection hints)
-- Admin Block Kit UI (3600+ lines covering all major screens)
+- Admin Block Kit UI (3700+ lines covering all major screens)
 - 13 migrations, 5 seeds
 - kysely upgraded to 0.28.17 (CVE-2026-44635 fixed)
 - ABAC policy and attribute CRUD services with 14 v1 API endpoints (create, update, activate, deactivate, delete, list, detail, preview)
 - XLSX export generation with exceljs library, supporting all report types with formatting and auto-filter
+- Export generation wired in admin UI with generate/download buttons and R2 integration
+- Import promotion wired in admin UI with promote button and full workflow completion
+- Entity patch handler fixed to use entityId from request body instead of URL path
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |

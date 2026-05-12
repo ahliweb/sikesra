@@ -7,6 +7,8 @@ import {
   entityCreateHandler,
   entityDetailHandler,
   entityPatchHandler,
+  entityDeleteHandler,
+  entityRestoreHandler,
 } from "./entity-routes";
 
 import {
@@ -120,6 +122,8 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/entities/create": { handler: entityCreateHandler },
   "v1/entities/detail": { handler: entityDetailHandler },
   "v1/entities/patch": { handler: entityPatchHandler },
+  "v1/entities/delete": { handler: entityDeleteHandler },
+  "v1/entities/restore": { handler: entityRestoreHandler },
 
   // Regions
   "v1/regions/official": { handler: officialRegionsHandler },
