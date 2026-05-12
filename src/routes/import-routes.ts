@@ -6,6 +6,7 @@ import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } 
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
 import { createImportBatch } from "../services/import";
+import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 
 export interface ImportListParams {
   page?: number;
@@ -28,6 +29,13 @@ export interface ImportBatchSummary {
 export interface ImportCreateInput {
   filename: string;
   objectTypeCode?: string;
+}
+
+export interface ImportRowUpdateInput {
+  rowId: string;
+  mappedData?: Record<string, unknown>;
+  validationErrors?: Record<string, string[]>;
+  rowStatus?: "pending" | "valid" | "invalid" | "corrected" | "duplicate_review" | "promoted" | "skipped" | "failed";
 }
 
 // GET /imports — list import batches
@@ -91,4 +99,53 @@ export const importCreateHandler = async (routeCtx: EmDashRouteContext<ImportCre
     },
     ctx,
   );
+};
+
+// GET /imports/{id}/rows — list staging rows for a batch
+export const importRowsHandler = withHandlerSequence(
+  async (input: { request: Request }, db: D1Binding, ctx: SikesraRequestContext) => {
+    const url = new URL(input.request.url);
+    const batchId = url.searchParams.get("batchId") ?? "";
+    if (!batchId) throw new Error("IMPORT_BATCH_ID_REQUIRED");
+
+    const batch = await getImportBatch(db, batchId, ctx);
+    if (!batch) throw new Error("IMPORT_BATCH_NOT_FOUND");
+
+    const rows = await getStagingRows(db, batchId, ctx);
+    return {
+      batch: {
+        id: batch.id,
+        status: batch.status,
+        originalFilename: batch.originalFilename,
+      },
+      rows,
+    };
+  },
+);
+
+// PATCH /imports/{id}/rows/{rowId} — update a staging row
+export const importRowUpdateHandler = async (routeCtx: EmDashRouteContext<ImportRowUpdateInput>) => {
+  const db = routeCtx.env?.SIKESRA_DB;
+  if (!db) throw new Error("DB_UNAVAILABLE");
+
+  const ctx = buildContextFromEmDash(routeCtx);
+  const input = routeCtx.input;
+  if (!input?.rowId) throw new Error("IMPORT_ROW_ID_REQUIRED");
+
+  await updateStagingRow(
+    db,
+    input.rowId,
+    {
+      mappedData: input.mappedData,
+      validationErrors: input.validationErrors,
+      rowStatus: input.rowStatus,
+    },
+    ctx,
+  );
+
+  return {
+    ok: true,
+    rowId: input.rowId,
+    status: input.rowStatus ?? "unchanged",
+  };
 };

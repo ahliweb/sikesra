@@ -164,3 +164,4 @@ These are not contradictions in the core docs; they are local implementation gap
 2. Shared ABAC/audit adapters are not yet available; SIKESRA uses local D1-backed fallbacks.
 3. Full React admin pages are not implemented yet; current admin pages use EmDash Block Kit payloads.
 4. Admin Block Kit integration must be rebuilt and verified with a real admin session after API security is implemented.
+5. Trusted admin/API request context is now fail-closed in local route helpers. Public-safe routes use an explicit `public` context instead of inheriting any implicit admin fallback behavior.

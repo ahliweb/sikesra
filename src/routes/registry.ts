@@ -40,6 +40,8 @@ import {
 import {
   importListHandler,
   importCreateHandler,
+  importRowsHandler,
+  importRowUpdateHandler,
 } from "./import-routes";
 
 import {
@@ -93,10 +95,11 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   // Imports
   "v1/imports": { handler: importListHandler },
   "v1/imports/create": { handler: importCreateHandler },
+  "v1/imports/rows": { handler: importRowsHandler },
+  "v1/imports/rows/update": { handler: importRowUpdateHandler },
 
   // Reports & Exports
   "v1/reports": { handler: reportListHandler },
   "v1/exports": { handler: exportListHandler },
   "v1/exports/create": { handler: exportCreateHandler },
 };
-
