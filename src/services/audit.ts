@@ -87,11 +87,15 @@ export const AUDIT_ACTIONS = {
   // ABAC / Policy
   ATTRIBUTE_CREATE: "attribute.create",
   ATTRIBUTE_UPDATE: "attribute.update",
+  ATTRIBUTE_ACTIVATE: "attribute.activate",
+  ATTRIBUTE_DEACTIVATE: "attribute.deactivate",
+  ATTRIBUTE_DELETE: "attribute.delete",
   POLICY_CREATE: "policy.create",
   POLICY_UPDATE: "policy.update",
   POLICY_PREVIEW: "policy.preview",
   POLICY_ACTIVATE: "policy.activate",
   POLICY_DISABLE: "policy.disable",
+  POLICY_DELETE: "abac.policy_delete",
 
   // Settings
   SETTINGS_UPDATE: "settings.update",

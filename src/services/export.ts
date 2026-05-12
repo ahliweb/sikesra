@@ -5,6 +5,7 @@
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
+import ExcelJS from "exceljs";
 
 export type ExportFormat = "csv" | "xlsx";
 export type ExportJobStatus = "pending" | "generating" | "ready" | "failed" | "expired";
@@ -210,7 +211,7 @@ export async function generateExportFile(
   ).bind(ctx.userId, jobId, ctx.tenantId, ctx.siteId).run();
 
   try {
-    let content: string;
+    let content: string | ArrayBuffer;
     let contentType: string;
     let totalRows = 0;
 
@@ -223,8 +224,13 @@ export async function generateExportFile(
       ).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 
       totalRows = rows.results.length;
-      content = generateCsv(rows.results);
-      contentType = "text/csv";
+      if (job.format === "xlsx") {
+        content = await generateXlsx(rows.results, "Ringkasan Entitas");
+        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      } else {
+        content = generateCsv(rows.results);
+        contentType = "text/csv";
+      }
     } else if (job.reportType === "verification_status") {
       const rows = await db.prepare(
         `SELECT e.id, e.display_name, e.official_village_code, e.status_verification, e.verification_note
@@ -234,8 +240,46 @@ export async function generateExportFile(
       ).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 
       totalRows = rows.results.length;
-      content = generateCsv(rows.results);
-      contentType = "text/csv";
+      if (job.format === "xlsx") {
+        content = await generateXlsx(rows.results, "Status Verifikasi");
+        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      } else {
+        content = generateCsv(rows.results);
+        contentType = "text/csv";
+      }
+    } else if (job.reportType === "entity_detail_restricted") {
+      const rows = await db.prepare(
+        `SELECT e.id, e.sikesra_id_20, e.display_name, e.address_masked, e.sensitivity_level, e.document_completeness
+         FROM awcms_sikesra_entities e
+         WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
+         ORDER BY e.created_at DESC`
+      ).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
+
+      totalRows = rows.results.length;
+      if (job.format === "xlsx") {
+        content = await generateXlsx(rows.results, "Data Detail (Terbatas)");
+        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      } else {
+        content = generateCsv(rows.results);
+        contentType = "text/csv";
+      }
+    } else if (job.reportType === "audit_evidence") {
+      const rows = await db.prepare(
+        `SELECT a.request_id, a.actor_id, a.action, a.resource_type, a.reason_redacted
+         FROM awcms_sikesra_audit_logs a
+         WHERE a.tenant_id = ? AND a.site_id = ?
+         ORDER BY a.created_at DESC
+         LIMIT 1000`
+      ).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
+
+      totalRows = rows.results.length;
+      if (job.format === "xlsx") {
+        content = await generateXlsx(rows.results, "Bukti Audit");
+        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      } else {
+        content = generateCsv(rows.results);
+        contentType = "text/csv";
+      }
     } else {
       content = "Report type not yet implemented";
       contentType = "text/csv";
@@ -354,4 +398,37 @@ function generateCsv(rows: Record<string, unknown>[]): string {
   ];
 
   return csvRows.join("\n");
+}
+
+async function generateXlsx(rows: Record<string, unknown>[], sheetName: string): Promise<ArrayBuffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName, {
+    properties: { tabColor: { argb: "FF0000" } },
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+
+  if (!rows.length) {
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as ArrayBuffer;
+  }
+
+  const headers = Object.keys(rows[0]);
+  worksheet.columns = headers.map((header) => ({
+    header: header.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+    key: header,
+    width: 20,
+  }));
+
+  for (const row of rows) {
+    worksheet.addRow(row);
+  }
+
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: headers.length },
+  };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer as ArrayBuffer;
 }

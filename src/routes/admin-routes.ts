@@ -453,6 +453,7 @@ async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	const dashboard = await getAdminDashboard(ctx, db);
 	const blocks: Block[] = [
 		...pageIntro("overview", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{
 			type: "banner",
 			variant: "default",
@@ -480,24 +481,14 @@ async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			],
 		},
 		{ type: "header", text: "Antrian Kerja" },
-		{
-			type: "table",
-			columns: [
-				{ key: "label", label: "Antrian" },
-				{ key: "total", label: "Jumlah", format: "badge" },
-				{ key: "permission", label: "Permission" },
-				{ key: "href", label: "Rute" },
-			],
-			rows: dashboard.workQueues
-				.filter((queue) => ctx.permissions.includes(queue.permission))
-				.map((queue) => ({
-					label: queue.label,
-					total: queue.total,
-					permission: queue.permission,
-					href: queue.href,
-				})),
-			empty_text: "Tidak ada antrian kerja yang tersedia untuk permission saat ini.",
-		},
+		...responsiveStats([
+			{ label: "Total", value: String(dashboard.kpis.total), description: "Semua entitas aktif dalam scope" },
+			{ label: "Draft", value: String(dashboard.kpis.draft), description: "Perlu dilengkapi operator" },
+			{ label: "Diajukan", value: String(dashboard.kpis.submitted), description: "Sudah masuk workflow" },
+			{ label: "Terverifikasi", value: String(dashboard.kpis.verified), description: "Siap dipakai laporan" },
+			{ label: "Perlu Revisi", value: String(dashboard.kpis.needRevision), description: "Perlu tindakan operator / verifikator" },
+			{ label: "Ditolak", value: String(dashboard.kpis.rejected), description: "Butuh tindak lanjut dan audit" },
+		]),
 		{ type: "header", text: "Ringkasan Wilayah" },
 		{
 			type: "table",
@@ -1716,6 +1707,67 @@ function formatCompletenessWithBar(percent: number): string {
 	return `${bar} ${percent}%`;
 }
 
+// ---------- Mobile Responsiveness Utilities ----------
+
+function isMobileUserAgent(userAgent?: string): boolean {
+	if (!userAgent) return false;
+	const mobileRegex = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop|BlackBerry|webOS/i;
+	return mobileRegex.test(userAgent);
+}
+
+function responsiveTable(columns: Array<{ key: string; label: string }>, rows: Record<string, unknown>[], options?: { empty_text?: string; mobile_max_columns?: number }): Block {
+	const mobileMaxCols = options?.mobile_max_columns ?? 3;
+	const isMobile = columns.length > mobileMaxCols;
+
+	if (isMobile) {
+		return {
+			type: "table",
+			columns: columns.slice(0, mobileMaxCols),
+			rows: rows.map((row) => {
+				const mobileRow: Record<string, unknown> = {};
+				for (let i = 0; i < mobileMaxCols; i++) {
+					mobileRow[columns[i].key] = row[columns[i].key];
+				}
+				return mobileRow;
+			}),
+			empty_text: options?.empty_text,
+		};
+	}
+
+	return {
+		type: "table",
+		columns,
+		rows,
+		empty_text: options?.empty_text,
+	};
+}
+
+function responsiveStats(items: Array<{ label: string; value: string; description?: string }>): Block[] {
+	if (items.length <= 4) {
+		return [{ type: "stats", items }];
+	}
+
+	const chunks: Array<typeof items> = [];
+	for (let i = 0; i < items.length; i += 4) {
+		chunks.push(items.slice(i, i + 4));
+	}
+
+	return chunks.map((chunk, index) => ({
+		type: "stats",
+		items: chunk,
+	}));
+}
+
+function mobileHint(userAgent?: string): Block[] {
+	if (isMobileUserAgent(userAgent)) {
+		return [{
+			type: "context",
+			text: "📱 Tampilan dioptimalkan untuk perangkat mobile. Beberapa kolom tabel disembunyikan untuk keterbacaan. Gunakan perangkat desktop untuk tampilan lengkap.",
+		}];
+	}
+	return [];
+}
+
 function importStageStatus(status: string): string {
 	const badges: Record<string, string> = {
 		promoted: "🟢 Selesai",
@@ -1766,12 +1818,13 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 
 	return [
 		...pageIntro("verification", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Queue Verifikasi", description: "Antrian ini difilter oleh permission, status, dan region scope backend. Gunakan tombol review untuk membuka layar pemeriksaan entitas." },
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Total antrian", value: String(queue.length), description: "Queue setelah filter" },
 			{ label: "Risiko tinggi", value: String(queue.filter((item) => item.riskLevel === "high").length), description: "Perlu prioritas review" },
 			{ label: "Butuh revisi", value: String(queue.filter((item) => item.currentStatus === "need_revision").length), description: "Draft revisi menunggu tindak lanjut" },
-		] },
+		]),
 		{ type: "fields", fields: [
 			{ label: "Filter aktif", value: String(activeVerificationFilterCount(filters)) },
 			{ label: "Scope region", value: describeRegionScopeLabel(ctx) },
@@ -1930,15 +1983,16 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 
 	return [
 		...pageIntro("imports", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Import Center SIKESRA", description: "Pusat import menata alur upload workbook, pemetaan kolom, staging row, validasi, duplicate review, promosi, dan laporan hasil secara bertahap." },
 		...(notice ? [{ type: "banner", variant: "success", title: "Batch dibuat", description: notice }] : []),
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Batch aktif", value: String(rows.results.length), description: "20 batch terbaru" },
 			{ label: "Perlu mapping", value: String(uploadedCount), description: "Upload baru menunggu mapping" },
 			{ label: "Siap promosi", value: String(validatedCount), description: "Sudah tervalidasi" },
 			{ label: "Selesai", value: String(promotedCount), description: "Batch yang sudah dipromosikan" },
 			{ label: "Gagal", value: String(rows.results.filter((row) => String(row.status) === "failed").length), description: "Perlu investigasi" },
-		] },
+		]),
 		{ type: "fields", fields: [
 			{ label: "Workflow", value: "Upload -> Sheet -> Mapping -> Validasi -> Preview -> Koreksi -> Duplikasi -> Promosi -> Laporan" },
 			{ label: "Duplikasi", value: "Kandidat duplicate review wajib dipisahkan sebelum promosi" },
@@ -2140,12 +2194,13 @@ async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteracti
 
 	return [
 		...pageIntro("documents", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Document Center", description: "Pusat dokumen menampilkan upload guidance, klasifikasi, checksum, status verifikasi, dan akses yang aman. Raw R2 key tidak pernah ditampilkan ke operator." },
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Entitas siap dokumen", value: String(entities.length), description: "100 entitas terbaru pada scope" },
 			{ label: "Accepted type", value: (settings.allowedMimeTypes ?? []).join(" / ") || "Belum diatur", description: "Mengikuti settings modul" },
 			{ label: "Maks ukuran", value: formatBytes(settings.maxUploadBytes), description: "Mengikuti batas upload modul" },
-		] },
+		]),
 		{ type: "fields", fields: [
 			{ label: "Klasifikasi wajib", value: "Internal / Terbatas / Sangat Terbatas" },
 			{ label: "Akses download", value: "Harus melalui backend response URL/proxy" },
@@ -2324,6 +2379,7 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 
 	return [
 		...pageIntro("reports", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Report Center", description: "Pusat laporan untuk pimpinan, admin, dan auditor. Screen ini menekankan scope backend, sensitivitas field, alasan export restricted, dan histori job tanpa membocorkan raw R2 key atau nilai sangat sensitif." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2334,13 +2390,13 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		...(accessibleReports.length === 0 ? [{ type: "banner", variant: "alert", title: "Belum ada akses export", description: "Halaman tetap dapat dibuka untuk membaca kebijakan, tetapi pembuatan export job memerlukan permission export yang sesuai dengan klasifikasi laporan." }] : []),
 		...(notice ? [{ type: "banner", variant: "success", title: "Export job dibuat", description: notice }] : []),
 		...(error ? [{ type: "banner", variant: "alert", title: "Export belum dibuat", description: error }] : []),
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Katalog tersedia", value: String(accessibleReports.length), description: "Jenis laporan yang bisa dijalankan akun saat ini" },
 			{ label: "Pending jobs", value: String(pendingCount), description: "Menunggu proses export" },
 			{ label: "Ready jobs", value: String(readyCount), description: "Siap diunduh via backend proxy" },
 			{ label: "Restricted / audit", value: String(restrictedCatalogCount), description: "Laporan yang selalu memerlukan alasan dan audit" },
 			{ label: "Failed jobs", value: String(failedCount), description: "Perlu investigasi operator" },
-		] },
+		]),
 		{ type: "header", text: "Kontrol Keamanan Export" },
 		{ type: "table", columns: [
 			{ key: "rule", label: "Aturan" },
@@ -2521,6 +2577,7 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 
 	return [
 		...pageIntro("regions", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Referensi Wilayah", description: "Halaman ini memisahkan wilayah resmi Kemendagri dan wilayah rinci lokal. Wilayah resmi dipakai untuk scope administratif dan pembentukan ID, sedangkan wilayah lokal mendukung operasi lapangan tanpa mengubah ID SIKESRA." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2530,13 +2587,13 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Wilayah lokal tersimpan", description: notice }] : []),
 		...(error ? [{ type: "banner", variant: "alert", title: "Wilayah lokal belum tersimpan", description: error }] : []),
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Provinsi", value: String(officialCountMap.province ?? 0), description: "Referensi resmi aktif" },
 			{ label: "Kab/Kota", value: String(officialCountMap.regency ?? 0), description: "Turunan resmi tingkat 2" },
 			{ label: "Kecamatan", value: String(officialCountMap.district ?? 0), description: "Pilihan filter operator" },
 			{ label: "Desa/Kelurahan", value: String(officialCountMap.village ?? 0), description: "Sumber kode 10 digit ID" },
 			{ label: "Wilayah lokal", value: String(Object.values(localCountMap).reduce((sum, value) => sum + value, 0)), description: "Dusun/RW/RT/blok/zona aktif" },
-		] },
+		]),
 		{ type: "header", text: "Aturan UI dan Data" },
 		{ type: "table", columns: [
 			{ key: "rule", label: "Aturan" },
@@ -2680,6 +2737,7 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 
 	return [
 		...pageIntro("access", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Governance / Atribut & Akses", description: "Halaman ini memetakan permission catalog, atribut, scope pengguna, dan kebijakan ABAC. UI hanya membantu observasi dan preview; backend tetap menjadi sumber kebenaran untuk RBAC, ABAC, masking, dan audit." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2687,12 +2745,12 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ label: "Permission aktif", value: String(ctx.permissions.length) },
 			{ label: "Region Scope", value: describeRegionScopeLabel(ctx) },
 		] },
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Permission terdaftar", value: String(SIKESRA_PERMISSION_LIST.length), description: "Namespace awcms:sikesra:*" },
 			{ label: "Atribut aktif", value: String(options.attributes.filter((row) => Number(row.is_active ?? 0) === 1).length), description: "Definition aktif di tenant/site" },
 			{ label: "Scope assignment", value: String(options.attributeScopes.length), description: "Baris user_attribute_scopes terdeteksi" },
 			{ label: "Policy ABAC", value: String(policyRows.results.length), description: "Policy allow/deny tersedia" },
-		] },
+		]),
 		{ type: "header", text: "Role Governance" },
 		{ type: "table", columns: [
 			{ key: "role", label: "Role" },
@@ -2833,6 +2891,7 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 
 	return [
 		...pageIntro("audit", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Audit Trail", description: "Halaman audit dipakai auditor dan super admin untuk menelusuri actor, action, resource, request ID, sukses/gagal, dan konsekuensi keamanan. Nilai before/after sensitif tetap harus teredaksi sesuai izin viewer." },
 		{ type: "fields", fields: [
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
@@ -2840,12 +2899,12 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ label: "Permission audit", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.AUDIT_READ) ? "Aktif" : "Belum terdeteksi" },
 			{ label: "Reveal sensitif", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL) ? "Ya" : "Tidak, before/after diringkas" },
 		] },
-		{ type: "stats", items: [
+		...responsiveStats([
 			{ label: "Total hasil", value: String(auditResult.total), description: "Dari database" },
 			{ label: "High risk", value: String(auditRows.filter((row) => HIGH_RISK_AUDIT_REQUIRED.has(String(row.action ?? "") as never)).length), description: "Perlu perhatian auditor" },
 			{ label: "Gagal", value: String(auditRows.filter((row) => Number(row.success ?? 0) !== 1).length), description: "Operasi yang tidak berhasil" },
 			{ label: "Request ID unik", value: String(new Set(auditRows.map((row) => String(row.request_id ?? "")).filter(Boolean)).size), description: "Korelasi lintas aksi" },
-		] },
+		]),
 		{ type: "fields", fields: [
 			{ label: "Filter aktif", value: String(activeAuditFilterCount(filters)) },
 			{ label: "Scope region", value: describeRegionScopeLabel(ctx) },

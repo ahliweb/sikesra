@@ -82,6 +82,24 @@ import {
   pluginAdminHandler,
 } from "./admin-routes";
 
+import {
+  abacPolicyListHandler,
+  abacPolicyDetailHandler,
+  abacPolicyCreateHandler,
+  abacPolicyUpdateHandler,
+  abacPolicyActivateHandler,
+  abacPolicyDeactivateHandler,
+  abacPolicyDeleteHandler,
+  abacPolicyPreviewHandler,
+  abacAttributeListHandler,
+  abacAttributeDetailHandler,
+  abacAttributeCreateHandler,
+  abacAttributeUpdateHandler,
+  abacAttributeActivateHandler,
+  abacAttributeDeactivateHandler,
+  abacAttributeDeleteHandler,
+} from "./abac-routes";
+
 export interface RouteDefinition {
   handler: (...args: any[]) => Promise<unknown>;
   public?: boolean;
@@ -155,4 +173,23 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/completeness/check": { handler: completenessCheckHandler },
   "v1/completeness/batch-check": { handler: completenessBatchCheckHandler },
   "v1/completeness/update": { handler: completenessUpdateHandler },
+
+  // ABAC Policies
+  "v1/abac/policies": { handler: abacPolicyListHandler },
+  "v1/abac/policies/detail": { handler: abacPolicyDetailHandler },
+  "v1/abac/policies/create": { handler: abacPolicyCreateHandler },
+  "v1/abac/policies/update": { handler: abacPolicyUpdateHandler },
+  "v1/abac/policies/activate": { handler: abacPolicyActivateHandler },
+  "v1/abac/policies/deactivate": { handler: abacPolicyDeactivateHandler },
+  "v1/abac/policies/delete": { handler: abacPolicyDeleteHandler },
+  "v1/abac/policies/preview": { handler: abacPolicyPreviewHandler },
+
+  // ABAC Attributes
+  "v1/abac/attributes": { handler: abacAttributeListHandler },
+  "v1/abac/attributes/detail": { handler: abacAttributeDetailHandler },
+  "v1/abac/attributes/create": { handler: abacAttributeCreateHandler },
+  "v1/abac/attributes/update": { handler: abacAttributeUpdateHandler },
+  "v1/abac/attributes/activate": { handler: abacAttributeActivateHandler },
+  "v1/abac/attributes/deactivate": { handler: abacAttributeDeactivateHandler },
+  "v1/abac/attributes/delete": { handler: abacAttributeDeleteHandler },
 };

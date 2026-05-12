@@ -118,7 +118,7 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ## Implementation Status (2026-05-12)
 
 ### Fully Implemented
-- Plugin registration, route registry (34 routes), handler utilities
+- Plugin registration, route registry (48 routes), handler utilities
 - Request context (fail-closed), permissions (37), ABAC evaluator, masking, route guard
 - API envelope, entity CRUD, verification service, import service, document service
 - Dashboard service, public services, region service, audit service, export service, settings service
@@ -128,9 +128,12 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Confirmation dialogs for high-risk actions (verification decisions, settings save, ID generation) with audit consequence banners
 - Comprehensive security regression tests (54 tests covering RBAC, ABAC, masking, region scope, storage, completeness, audit)
 - D1/R2 backup and restore procedures (automated backups, manual exports, disaster recovery runbook, maintenance tasks)
-- Admin Block Kit UI (3400+ lines covering all major screens)
+- Mobile responsiveness across admin surfaces (responsive stats chunking, mobile table limits, mobile detection hints)
+- Admin Block Kit UI (3600+ lines covering all major screens)
 - 13 migrations, 5 seeds
 - kysely upgraded to 0.28.17 (CVE-2026-44635 fixed)
+- ABAC policy and attribute CRUD services with 14 v1 API endpoints (create, update, activate, deactivate, delete, list, detail, preview)
+- XLSX export generation with exceljs library, supporting all report types with formatting and auto-filter
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
@@ -150,12 +153,17 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #163 | InMemoryD1Binding fix | ✅ Implemented functional in-memory D1 adapter with INSERT, SELECT, UPDATE, DELETE, WHERE, ORDER BY, LIMIT support |
 | #167 | Convert public page to Astro component | ✅ Integrated with EmDash layout, mobile-first, Indonesian formal language |
 | #170 | Confirmation dialogs for high-risk actions | ✅ Added explicit confirmation for verification decisions, settings save, and ID generation with audit consequence banners |
+| #174 | Mobile responsiveness across admin surfaces | ✅ Added responsive stats chunking, mobile table column limits, mobile detection hints, and optimized layouts for all major admin screens |
+
+### Completed P1 Gaps
+| Issue | Gap | Status |
+|---|---|---|
+| #164 | ABAC policy and attribute definition CRUD services | ✅ Implemented with 14 v1 API endpoints, audit logging, and policy preview |
+| #165 | XLSX export generation and enhanced export job lifecycle | ✅ Implemented with exceljs library, supporting all report types with formatting |
 
 ### Remaining P1 Gaps (Post-MVP)
 | Issue | Gap | Priority |
 |---|---|---|
-| #164 | ABAC policy and attribute definition CRUD services | P1 |
-| #165 | XLSX export generation and enhanced export job lifecycle | P1 |
 
 ### Recommended Implementation Order
 1. #155: ID generation service (blocks import promotion, entity creation) ✅
