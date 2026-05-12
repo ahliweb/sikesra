@@ -1,0 +1,693 @@
+---
+import Base from "../layouts/Base.astro";
+import { getPublicMetadata, getPublicFilters, getPublicSummary } from "../services/public";
+import { buildPublicContextFromEmDash } from "../routes/handler-utils";
+import type { PublicMetadataResponse, PublicFiltersResponse, PublicSummaryResponse, AggregatePoint } from "../services/public";
+import { getRouteDb } from "../routes/route-db";
+
+// Fetch public data server-side
+const publicCtx = buildPublicContextFromEmDash({ request: Astro.request, input: {} } as any);
+const db = await getRouteDb(Astro.request);
+const [meta, filters, summary] = await Promise.all([
+  getPublicMetadata(db, publicCtx),
+  getPublicFilters(db, publicCtx),
+  getPublicSummary(db, publicCtx),
+]);
+
+// If public is disabled, return 404
+if (!meta.enabled) {
+  return Astro.response.status(404);
+}
+
+// Serialize data for client-side hydration
+const metaJson = JSON.stringify(meta);
+const filtersJson = JSON.stringify(filters);
+const summaryJson = JSON.stringify(summary);
+
+function fmt(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return Number(v).toLocaleString("id-ID");
+}
+
+function ago(t?: string): string {
+  if (!t) return "—";
+  const d = Math.floor((Date.now() - new Date(t).getTime()) / 864e5);
+  return d <= 0 ? "Hari ini" : d === 1 ? "Kemarin" : `${d} hari lalu`;
+}
+
+function renderBars(items: AggregatePoint[], threshold: number, emptyText: string): string {
+  if (!items || !items.length) return `<div class="loading">${emptyText}</div>`;
+  const mx = Math.max(...items.map(t => t.total || 0), 1);
+  return items.map(t => {
+    const pct = t.suppressed ? 10 : Math.max(3, Math.round((t.total / mx) * 100));
+    const cls = t.suppressed ? " suppressed" : "";
+    const val = t.suppressed ? `<${threshold}` : fmt(t.total);
+    return `<div class="bar-row"><span class="bar-name">${esc(t.label)}</span><div class="bar-track"><div class="bar-fill${cls}" style="width:${pct}%"></div></div><span class="bar-count${cls}">${esc(val)}</span></div>`;
+  }).join("");
+}
+
+function renderRegionList(items: AggregatePoint[], threshold: number): string {
+  if (!items || !items.length) return '<div class="loading">Belum ada data wilayah</div>';
+  return `<div class="region-list">${items.map(t => {
+    const val = t.suppressed ? `<${threshold}` : fmt(t.total);
+    return `<div class="region-item"><div><strong>${esc(t.label)}</strong><span>Agregat wilayah aman publik</span></div><strong>${esc(val)}</strong></div>`;
+  }).join("")}</div>`;
+}
+
+function renderStatus(items: AggregatePoint[], threshold: number): string {
+  if (!items || !items.length) return '<div class="loading">—</div>';
+  const labels: Record<string, string> = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu", submitted_village: "Submit Desa", submitted_subdistrict: "Submit Kecamatan", submitted_regency: "Submit Kabupaten" };
+  return items.map(v => {
+    const val = v.suppressed ? `<${threshold}` : fmt(v.total);
+    return `<div class="status-chip"><div class="sv">${esc(val)}</div><div class="sl">${esc(labels[v.key] || v.label || v.key)}</div></div>`;
+  }).join("");
+}
+
+function renderTable(items: AggregatePoint[], headers: Array<{label: string; render: (i: AggregatePoint) => string}>, threshold: number, emptyText: string): string {
+  if (!items || !items.length) return `<div class="loading">${emptyText}</div>`;
+  const head = headers.map(h => `<th style="text-align:left;padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.78rem;color:var(--color-muted)">${esc(h.label)}</th>`).join('');
+  const body = items.map(item => `<tr>${headers.map(h => `<td style="padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.84rem">${esc(h.render(item))}</td>`).join('')}</tr>`).join('');
+  return `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+function esc(v: unknown): string {
+  return String(v == null ? "" : v).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] || c));
+}
+
+// Pre-render initial HTML
+const kpiTotal = fmt(summary.kpis.totalEntities);
+const kpiVerified = fmt(summary.kpis.verifiedEntities);
+const kpiVillages = fmt(summary.kpis.activeVillages);
+const kpiUpdate = ago(summary.kpis.latestUpdateAt);
+const threshold = summary.suppression.threshold;
+const suppressionCount = fmt(summary.suppression.suppressedCells);
+
+const barsTypes = renderBars(summary.charts.byObjectType, threshold, "Belum ada data kategori");
+const barsRegion = renderRegionList(summary.charts.byRegion, threshold);
+const barsVerif = renderStatus(summary.charts.byVerificationStatus, threshold);
+const barsAttr = renderBars(summary.charts.bySafeAttribute, threshold, "Belum ada atribut aman untuk ditampilkan");
+
+const tableTypes = renderTable(summary.charts.byObjectType, [
+  { label: "Kategori", render: i => i.label },
+  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
+], threshold, "Belum ada tabel kategori");
+
+const tableRegion = renderTable(summary.charts.byRegion, [
+  { label: "Wilayah", render: i => i.label },
+  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
+], threshold, "Belum ada tabel wilayah");
+
+const tableVerif = renderTable(summary.charts.byVerificationStatus, [
+  { label: "Status", render: i => {
+    const labels: Record<string, string> = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu" };
+    return labels[i.key] || i.label || i.key;
+  }},
+  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
+], threshold, "Belum ada tabel status");
+
+const tableAttr = renderTable(summary.charts.bySafeAttribute, [
+  { label: "Atribut", render: i => i.label },
+  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
+], threshold, "Belum ada tabel atribut");
+
+const districtOptions = filters.districts.map(d => `<option value="${esc(d.code)}">${esc(d.name)}</option>`).join("");
+const villageOptions = filters.villages.map(v => `<option value="${esc(v.code)}">${esc(v.name)}</option>`).join("");
+const typeOptions = filters.objectTypes.map(t => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join("");
+const yearOptions = filters.years.map(y => `<option value="${esc(String(y))}">${esc(String(y))}</option>`).join("");
+const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">${esc(s.label)}</option>`).join("");
+---
+
+<Base title="SIKESRA — Sistem Informasi Kesejahteraan Rakyat" description={meta.description}>
+  <style>
+    .sikesra-hero {
+      background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #0ea5e9 100%);
+      color: #fff;
+      padding: 3.5rem 1.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .sikesra-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,.05) 0%, transparent 60%);
+      animation: pulse 8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .sikesra-hero-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .sikesra-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(4px);
+      padding: .28rem .8rem;
+      border-radius: 999px;
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .sikesra-hero h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin-top: 1rem;
+      max-width: 720px;
+      color: #fff;
+    }
+    .sikesra-subtitle {
+      font-size: 1rem;
+      opacity: .92;
+      margin-top: .75rem;
+      max-width: 760px;
+    }
+    .sikesra-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .65rem;
+      margin-top: 1rem;
+    }
+    .sikesra-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      background: rgba(255,255,255,.14);
+      padding: .36rem .8rem;
+      border-radius: 999px;
+      font-size: .78rem;
+    }
+    .sikesra-wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 2.5rem;
+    }
+    .sikesra-notice {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid var(--color-accent);
+      padding: .9rem 1rem;
+      border-radius: var(--radius-lg);
+      font-size: .86rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    .sikesra-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      margin-bottom: 1.5rem;
+    }
+    .sikesra-filter-card {
+      display: grid;
+      gap: 1rem;
+    }
+    .sikesra-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: .9rem;
+    }
+    .sikesra-field {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .sikesra-field label {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--color-muted);
+    }
+    .sikesra-field select, .sikesra-field button {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: .7rem .8rem;
+      font: inherit;
+    }
+    .sikesra-field select:disabled {
+      opacity: .7;
+      cursor: not-allowed;
+    }
+    .sikesra-filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .sikesra-btn-primary, .sikesra-btn-secondary {
+      border-radius: 10px;
+      padding: .78rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      font: inherit;
+    }
+    .sikesra-btn-primary {
+      background: linear-gradient(135deg, var(--color-accent), #0ea5e9);
+      color: #fff;
+      border: none;
+    }
+    .sikesra-btn-primary:hover {
+      opacity: .9;
+    }
+    .sikesra-btn-secondary {
+      background: var(--color-surface);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+    .sikesra-btn-secondary:hover {
+      background: var(--color-bg-subtle);
+    }
+    .sikesra-meta-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: .75rem;
+      margin-top: .5rem;
+    }
+    .sikesra-meta-item {
+      background: var(--color-bg-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: .8rem;
+    }
+    .sikesra-meta-item .mk {
+      font-size: .74rem;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .sikesra-meta-item .mv {
+      font-size: .92rem;
+      font-weight: 600;
+      margin-top: .2rem;
+    }
+    .sikesra-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .sikesra-kpi {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .sikesra-kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0,0,0,.08);
+    }
+    .sikesra-kpi .val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--color-accent), #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sikesra-kpi .lbl {
+      font-size: .78rem;
+      color: var(--color-muted);
+      margin-top: .25rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .sikesra-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .sikesra-section-title::before {
+      content: '';
+      width: 4px;
+      height: 1.1em;
+      background: var(--color-accent);
+      border-radius: 2px;
+    }
+    .sikesra-two-col {
+      display: grid;
+      grid-template-columns: 1.25fr .95fr;
+      gap: 1.25rem;
+    }
+    .sikesra-bar-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .55rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .sikesra-bar-row:last-child {
+      border-bottom: none;
+    }
+    .sikesra-bar-name {
+      width: 200px;
+      font-size: .85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+    .sikesra-bar-track {
+      flex: 1;
+      height: 26px;
+      background: var(--color-bg-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .sikesra-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--color-accent), #0ea5e9);
+      transition: width .6s ease;
+      min-width: 3px;
+    }
+    .sikesra-bar-fill.suppressed {
+      background: var(--color-border);
+    }
+    .sikesra-bar-count {
+      width: 44px;
+      font-size: .82rem;
+      font-weight: 600;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .sikesra-bar-count.suppressed {
+      color: var(--color-muted);
+      font-style: italic;
+    }
+    .sikesra-status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .75rem;
+    }
+    .sikesra-status-chip {
+      background: var(--color-bg-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: .8rem;
+      text-align: center;
+      font-size: .8rem;
+    }
+    .sikesra-status-chip .sv {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--color-accent);
+    }
+    .sikesra-status-chip .sl {
+      color: var(--color-muted);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      margin-top: .15rem;
+    }
+    .sikesra-region-list {
+      display: grid;
+      gap: .7rem;
+    }
+    .sikesra-region-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .8rem .9rem;
+      background: var(--color-bg-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+    }
+    .sikesra-region-item strong {
+      font-size: .9rem;
+    }
+    .sikesra-region-item span {
+      font-size: .84rem;
+      color: var(--color-muted);
+    }
+    .sikesra-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .sikesra-info-card {
+      background: var(--color-bg-subtle);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .sikesra-info-card h3 {
+      font-size: .9rem;
+      font-weight: 700;
+      margin-bottom: .35rem;
+    }
+    .sikesra-info-card p {
+      font-size: .84rem;
+      color: var(--color-text-secondary);
+    }
+    .sikesra-caveat {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      margin-top: 1.5rem;
+      font-size: .82rem;
+      color: var(--color-text-secondary);
+    }
+    .sikesra-caveat h3 {
+      font-size: .88rem;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: .35rem;
+    }
+    .sikesra-loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-muted);
+      font-size: .85rem;
+    }
+    .sikesra-err {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      font-size: .85rem;
+    }
+    :root.dark .sikesra-err {
+      background: #450a0a;
+      border-color: #7f1d1d;
+      color: #fca5a5;
+    }
+    @media (max-width: 860px) {
+      .sikesra-two-col {
+        grid-template-columns: 1fr;
+      }
+      .sikesra-bar-name {
+        width: 140px;
+      }
+    }
+    @media (max-width: 600px) {
+      .sikesra-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .sikesra-hero {
+        padding: 2.5rem 1rem 2rem;
+      }
+      .sikesra-hero-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+
+  <!-- Hero Section -->
+  <div class="sikesra-hero" role="banner">
+    <div class="sikesra-hero-inner">
+      <div class="sikesra-eyebrow">Data Agregat Publik SIKESRA</div>
+      <h1>{meta.title}</h1>
+      <p class="sikesra-subtitle">{meta.description}</p>
+      <div class="sikesra-hero-meta">
+        <div class="sikesra-hero-badge" id="meta-update">
+          {meta.latestUpdateAt ? `Diperbarui ${ago(meta.latestUpdateAt)}` : "Belum ada pembaruan"}
+        </div>
+        <div class="sikesra-hero-badge" id="meta-scope">{meta.dataScopeNote}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="sikesra-wrap" id="main-content">
+    <!-- Public Safety Notice -->
+    <section class="sikesra-notice" aria-labelledby="public-safety-title">
+      <strong id="public-safety-title" style="display:block;margin-bottom:.35rem;color:var(--color-text)">Pemberitahuan Keamanan Data Publik</strong>
+      Halaman ini menampilkan data agregat yang telah diverifikasi. Data pribadi, alamat detail, identitas anak, detail disabilitas, desil individu, dan informasi sensitif lainnya tidak ditampilkan.
+    </section>
+
+    <!-- Filter Section -->
+    <section class="sikesra-card sikesra-filter-card" aria-labelledby="filter-title">
+      <h2 class="sikesra-section-title" id="filter-title">Filter Ringkasan</h2>
+      <div class="sikesra-filter-grid">
+        <div class="sikesra-field">
+          <label for="filter-district">Kecamatan</label>
+          <select id="filter-district">
+            <option value="">Semua kecamatan</option>
+            {districtOptions}
+          </select>
+        </div>
+        <div class="sikesra-field">
+          <label for="filter-village">Desa/Kelurahan</label>
+          <select id="filter-village">
+            <option value="">Semua desa/kelurahan</option>
+            {villageOptions}
+          </select>
+        </div>
+        <div class="sikesra-field">
+          <label for="filter-type">Jenis Data</label>
+          <select id="filter-type">
+            <option value="">Semua jenis data</option>
+            {typeOptions}
+          </select>
+        </div>
+        <div class="sikesra-field">
+          <label for="filter-year">Tahun</label>
+          <select id="filter-year">
+            <option value="">Semua tahun</option>
+            {yearOptions}
+          </select>
+        </div>
+        <div class="sikesra-field">
+          <label for="filter-status">Status Agregat</label>
+          <select id="filter-status">
+            <option value="">Semua status agregat</option>
+            {statusOptions}
+          </select>
+        </div>
+      </div>
+      <div class="sikesra-filter-actions">
+        <button class="sikesra-btn-primary" id="apply-filters" type="button">Terapkan Filter</button>
+        <button class="sikesra-btn-secondary" id="reset-filters" type="button">Reset</button>
+      </div>
+      <div class="sikesra-meta-strip">
+        <div class="sikesra-meta-item"><div class="mk">Filter Aktif</div><div class="mv" id="filter-count">0</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Status Publik</div><div class="mv" id="meta-enabled">{meta.enabled ? "Publik aktif" : "Publik dibatasi"}</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Ambang Suppression</div><div class="mv" id="suppression-threshold">{String(threshold)}</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Cell Tersuppress</div><div class="mv" id="suppression-count">{suppressionCount}</div></div>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="sikesra-kpi-grid" aria-label="Indikator utama publik">
+      <div class="sikesra-kpi"><div class="val" id="kpi-total">{kpiTotal}</div><div class="lbl">Total Data</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-verified">{kpiVerified}</div><div class="lbl">Terverifikasi</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-villages">{kpiVillages}</div><div class="lbl">Desa Aktif</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-update">{kpiUpdate}</div><div class="lbl">Pembaruan</div></div>
+    </section>
+
+    <!-- Charts: Types and Region -->
+    <section class="sikesra-two-col" aria-label="Grafik agregat utama">
+      <section>
+        <h2 class="sikesra-section-title">Kategori Data</h2>
+        <div class="sikesra-card" id="chart-types" set:html={barsTypes}></div>
+        <div class="sikesra-card" id="chart-types-table" set:html={tableTypes}></div>
+      </section>
+      <section>
+        <h2 class="sikesra-section-title">Sebaran Wilayah</h2>
+        <div class="sikesra-card" id="chart-region" set:html={barsRegion}></div>
+        <div class="sikesra-card" id="chart-region-table" set:html={tableRegion}></div>
+      </section>
+    </section>
+
+    <!-- Charts: Verification and Attributes -->
+    <section class="sikesra-two-col" aria-label="Grafik status dan atribut aman">
+      <section>
+        <h2 class="sikesra-section-title">Status Verifikasi</h2>
+        <div class="sikesra-card"><div class="sikesra-status-grid" id="chart-verif" set:html={barsVerif}></div></div>
+        <div class="sikesra-card" id="chart-verif-table" set:html={tableVerif}></div>
+      </section>
+      <section>
+        <h2 class="sikesra-section-title">Atribut Aman</h2>
+        <div class="sikesra-card" id="chart-attributes" set:html={barsAttr}></div>
+        <div class="sikesra-card" id="chart-attributes-table" set:html={tableAttr}></div>
+      </section>
+    </section>
+
+    <!-- Program Information -->
+    <section aria-labelledby="program-info-title">
+      <h2 class="sikesra-section-title" id="program-info-title">Informasi Program</h2>
+      <div class="sikesra-info-grid">
+        <div class="sikesra-info-card"><h3>Deskripsi Publik</h3><p id="program-description">{meta.description}</p></div>
+        <div class="sikesra-info-card"><h3>Kontak Resmi</h3><p id="program-contact">{meta.officialContact || "Kontak resmi belum tersedia"}</p></div>
+        <div class="sikesra-info-card"><h3>Cakupan Data</h3><p id="program-scope">{meta.dataScopeNote}</p></div>
+      </div>
+    </section>
+
+    <!-- Privacy Caveat -->
+    <section class="sikesra-caveat" aria-labelledby="privacy-caveat-title">
+      <h3 id="privacy-caveat-title">Catatan Privasi</h3>
+      <p id="caveat-text">{summary.caveat}</p>
+    </section>
+  </main>
+
+  <!-- Client-side JavaScript for filter interactivity -->
+  <script is:inline>
+    (function() {
+      var API = "/_emdash/api/plugins/sikesra";
+      var state = { districtCode: "", villageCode: "", objectTypeCode: "", year: "", status: "" };
+      var allFilters = JSON.parse(document.getElementById('filters-data').textContent);
+      var meta = JSON.parse(document.getElementById('meta-data').textContent);
+
+      function ge(id) { return document.getElementById(id); }
+      function fmt(v) { return v != null && v !== "" ? Number(v).toLocaleString("id-ID") : "—"; }
+      function ago(t) { if (!t) return "—"; var d = Math.floor((Date.now() - new Date(t).getTime()) / 864e5); return d <= 0 ? "Hari ini" : d === 1 ? "Kemarin" : d + " hari lalu"; }
+      function esc(v) { return String(v == null ? "" : v).replace(/[&<>'"]/g, function(c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] || c; }); }
+      function filterCount() { var n = 0; Object.keys(state).forEach(function(k) { if (state[k]) n++; }); return n; }
+      function queryString() { var q = new URLSearchParams(); Object.keys(state).forEach(function(k) { if (state[k]) q.set(k, state[k]); }); return q.toString(); }
+      function syncUrl() { var q = queryString(); history.replaceState(null, "", q ? "/sikesra?" + q : "/sikesra"); }
+      function readUrl() { var q = new URLSearchParams(location.search); state.districtCode = q.get("districtCode") || ""; state.villageCode = q.get("villageCode") || ""; state.objectTypeCode = q.get("objectTypeCode") || ""; state.year = q.get("year") || ""; state.status = q.get("status") || ""; }
+      async function load(u) { var r = await fetch(u); var j = await r.json(); if (!r.ok) throw new Error(j && j.error && j.error.message || "Gagal"); if (j && typeof j === "object") { if ("ok" in j) { if (!j.ok) throw new Error(j.error && j.error.message || "Gagal"); return "data" in j ? j.data : null; } if ("data" in j) return j.data; return j; } throw new Error("Gagal"); }
+      function setOptions(el, items, placeholder, current, disabled) { el.innerHTML = ""; var first = document.createElement("option"); first.value = ""; first.textContent = placeholder; el.appendChild(first); items.forEach(function(item) { var opt = document.createElement("option"); opt.value = String(item.value); opt.textContent = item.label; el.appendChild(opt); }); el.value = current || ""; el.disabled = !!disabled; }
+      function visibleVillages() { return allFilters.villages.filter(function(v) { return !state.districtCode || v.districtCode === state.districtCode; }); }
+      function renderFilterControls() { setOptions(ge("filter-district"), allFilters.districts.map(function(d) { return { value: d.code, label: d.name }; }), "Semua kecamatan", state.districtCode, false); setOptions(ge("filter-village"), visibleVillages().map(function(v) { return { value: v.code, label: v.name }; }), state.districtCode ? "Semua desa/kelurahan" : "Pilih kecamatan atau tampilkan semua", state.villageCode, false); setOptions(ge("filter-type"), allFilters.objectTypes.map(function(t) { return { value: t.code, label: t.name }; }), "Semua jenis data", state.objectTypeCode, false); setOptions(ge("filter-year"), allFilters.years.map(function(y) { return { value: y, label: String(y) }; }), "Semua tahun", state.year, false); setOptions(ge("filter-status"), allFilters.statuses.map(function(s) { return { value: s.code, label: s.label }; }), "Semua status agregat", state.status, false); ge("filter-count").textContent = String(filterCount()); }
+      function renderBarChart(targetId, items, emptyText) { var el = ge(targetId); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">' + emptyText + '</div>'; return; } var mx = Math.max.apply(null, items.map(function(t) { return t.total || 0; })) || 1; var threshold = Number(ge("suppression-threshold").textContent) || 5; el.innerHTML = items.map(function(t) { var pct = t.suppressed ? 10 : Math.max(3, Math.round((t.total / mx) * 100)); var cls = t.suppressed ? " suppressed" : ""; var val = t.suppressed ? "<" + threshold : fmt(t.total); return '<div class="sikesra-bar-row"><span class="sikesra-bar-name">' + esc(t.label) + '</span><div class="sikesra-bar-track"><div class="sikesra-bar-fill' + cls + '" style="width:' + pct + '%"></div></div><span class="sikesra-bar-count' + cls + '">' + esc(val) + '</span></div>'; }).join(""); }
+      function renderRegionList(items) { var el = ge("chart-region"); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">Belum ada data wilayah</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; el.innerHTML = '<div class="sikesra-region-list">' + items.map(function(t) { var val = t.suppressed ? "<" + threshold : fmt(t.total); return '<div class="sikesra-region-item"><div><strong>' + esc(t.label) + '</strong><span>Agregat wilayah aman publik</span></div><strong>' + esc(val) + '</strong></div>'; }).join("") + '</div>'; }
+      function renderStatus(items) { var el = ge("chart-verif"); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">—</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; var labels = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu", submitted_village: "Submit Desa", submitted_subdistrict: "Submit Kecamatan", submitted_regency: "Submit Kabupaten" }; el.innerHTML = items.map(function(v) { var val = v.suppressed ? "<" + threshold : fmt(v.total); return '<div class="sikesra-status-chip"><div class="sv">' + esc(val) + '</div><div class="sl">' + esc(labels[v.key] || v.label || v.key) + '</div></div>'; }).join(""); }
+      function renderTable(targetId, items, headers, emptyText) { var el = ge(targetId); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">' + emptyText + '</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; var head = headers.map(function(h) { return '<th style="text-align:left;padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.78rem;color:var(--color-muted)">' + esc(h.label) + '</th>'; }).join(''); var body = items.map(function(item) { return '<tr>' + headers.map(function(h) { return '<td style="padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.84rem">' + esc(h.render(item)) + '</td>'; }).join('') + '</tr>'; }).join(''); el.innerHTML = '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>'; }
+      function renderSummary(meta, summary) { ge("kpi-total").textContent = fmt(summary.kpis.totalEntities); ge("kpi-verified").textContent = fmt(summary.kpis.verifiedEntities); ge("kpi-villages").textContent = fmt(summary.kpis.activeVillages); ge("kpi-update").textContent = ago(summary.kpis.latestUpdateAt); ge("suppression-threshold").textContent = String(summary.suppression.threshold || 5); ge("suppression-count").textContent = fmt(summary.suppression.suppressedCells || 0); ge("caveat-text").textContent = summary.caveat || ""; renderBarChart("chart-types", summary.charts && summary.charts.byObjectType, "Belum ada data kategori"); renderRegionList(summary.charts && summary.charts.byRegion); renderStatus(summary.charts && summary.charts.byVerificationStatus); renderBarChart("chart-attributes", summary.charts && summary.charts.bySafeAttribute, "Belum ada atribut aman untuk ditampilkan"); renderTable("chart-types-table", summary.charts && summary.charts.byObjectType, [{ label: "Kategori", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel kategori"); renderTable("chart-region-table", summary.charts && summary.charts.byRegion, [{ label: "Wilayah", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel wilayah"); renderTable("chart-verif-table", summary.charts && summary.charts.byVerificationStatus, [{ label: "Status", render: function(i) { var l = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu" }; return l[i.key] || i.label || i.key; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel status"); renderTable("chart-attributes-table", summary.charts && summary.charts.bySafeAttribute, [{ label: "Atribut", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel atribut"); }
+      async function refreshSummary() { var qs = queryString(); var summary = await load(API + "/public/summary" + (qs ? "?" + qs : "")); renderSummary(meta, summary); syncUrl(); }
+      function handleError(e) { ge("main-content").innerHTML = '<div class="sikesra-err">Gagal memuat data. Silakan coba lagi nanti.</div>'; console.error(e); }
+
+      readUrl();
+      renderFilterControls();
+
+      ge("filter-district").addEventListener("change", function() { state.districtCode = this.value || ""; if (state.villageCode && visibleVillages().every(function(v) { return v.code !== state.villageCode; })) state.villageCode = ""; renderFilterControls(); });
+      ge("filter-village").addEventListener("change", function() { state.villageCode = this.value || ""; });
+      ge("filter-type").addEventListener("change", function() { state.objectTypeCode = this.value || ""; });
+      ge("filter-year").addEventListener("change", function() { state.year = this.value || ""; });
+      ge("filter-status").addEventListener("change", function() { state.status = this.value || ""; });
+      ge("apply-filters").addEventListener("click", function() { refreshSummary().catch(handleError); });
+      ge("reset-filters").addEventListener("click", function() { state = { districtCode: "", villageCode: "", objectTypeCode: "", year: "", status: "" }; renderFilterControls(); refreshSummary().catch(handleError); });
+    })();
+  </script>
+
+  <!-- Hidden data elements for client-side hydration -->
+  <script id="meta-data" type="application/json">{metaJson}</script>
+  <script id="filters-data" type="application/json">{filtersJson}</script>
+</Base>

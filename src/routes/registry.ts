@@ -59,6 +59,19 @@ import {
 } from "./report-routes";
 
 import {
+  verificationQueueHandler,
+  verificationSubmitHandler,
+  verificationVerifyHandler,
+  verificationTimelineHandler,
+} from "./verification-routes";
+
+import {
+  duplicatesListHandler,
+  duplicatesDecideHandler,
+  duplicatesDetectHandler,
+} from "./deduplication-routes";
+
+import {
   pluginAdminHandler,
 } from "./admin-routes";
 
@@ -118,4 +131,15 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/exports/detail": { handler: exportDetailHandler },
   "v1/exports/generate": { handler: exportGenerateHandler },
   "v1/exports/download": { handler: exportDownloadHandler },
+
+  // Verification
+  "v1/verification/queue": { handler: verificationQueueHandler },
+  "v1/verification/submit": { handler: verificationSubmitHandler },
+  "v1/verification/verify": { handler: verificationVerifyHandler },
+  "v1/verification/timeline": { handler: verificationTimelineHandler },
+
+  // Deduplication
+  "v1/duplicates": { handler: duplicatesListHandler },
+  "v1/duplicates/decide": { handler: duplicatesDecideHandler },
+  "v1/duplicates/detect": { handler: duplicatesDetectHandler },
 };

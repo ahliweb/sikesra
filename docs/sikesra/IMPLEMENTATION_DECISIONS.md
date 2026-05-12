@@ -129,9 +129,6 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
-| #156 | Verification v1 API routes (service exists, no routes) | P0 |
-| #157 | Deduplication service (missing entirely) | P0 |
-| #158 | Public /sikesra page (missing entirely) | P0 |
 | #159 | Completeness validation service (inline in admin-routes.ts only) | P0 |
 | #160 | R2 storage adapter (ad-hoc in multiple files) | P0 |
 | #161 | Comprehensive test coverage (only 1 test file) | P0 |
@@ -142,6 +139,10 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | Issue | Gap | Status |
 |---|---|---|
 | #155 | ID generation service | ✅ Implemented with sequence table, code history, and audit |
+| #156 | Verification v1 API routes | ✅ Implemented queue, submit, verify, timeline endpoints wired to registry |
+| #157 | Deduplication service | ✅ Implemented detection, risk scoring, decision persistence, and v1 API routes |
+| #158 | Public /sikesra Astro page | ✅ Created with aggregate-safe data, small-cell suppression, filter bar, KPIs, charts with table alternatives |
+| #167 | Convert public page to Astro component | ✅ Integrated with EmDash layout, mobile-first, Indonesian formal language |
 
 ### Remaining P1 Gaps (Post-MVP)
 | Issue | Gap | Priority |

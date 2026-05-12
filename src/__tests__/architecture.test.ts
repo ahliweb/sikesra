@@ -71,8 +71,8 @@ describe("SIKESRA Architecture Validation", () => {
       expect(maskR2Key("tenants/x/sites/y/documents/secret.pdf", {} as never)).toBeNull();
     });
 
-    it("should have all 33 permissions registered", () => {
-      expect(Object.keys(SIKESRA_PERMISSIONS).length).toBe(33);
+    it("should have all 36 permissions registered", () => {
+      expect(Object.keys(SIKESRA_PERMISSIONS).length).toBe(36);
     });
 
     it("should identify high-risk audit actions", () => {

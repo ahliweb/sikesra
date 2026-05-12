@@ -61,6 +61,9 @@ export const AUDIT_ACTIONS = {
   IMPORT_SKIP_ROW: "import.skip_row",
   IMPORT_OVERRIDE_DUPLICATE: "import.override_duplicate",
 
+  // Duplicate
+  DUPLICATE_DECISION: "duplicate.decision",
+
   // Export
   EXPORT_CREATE: "export.create",
   EXPORT_DOWNLOAD: "export.download",
@@ -155,6 +158,7 @@ export const HIGH_RISK_AUDIT_REQUIRED: Set<AuditAction> = new Set([
   AUDIT_ACTIONS.EXPORT_RESTRICTED_CREATE,
   AUDIT_ACTIONS.IMPORT_PROMOTE,
   AUDIT_ACTIONS.IMPORT_OVERRIDE_DUPLICATE,
+  AUDIT_ACTIONS.DUPLICATE_DECISION,
   AUDIT_ACTIONS.SENSITIVE_REVEAL,
   AUDIT_ACTIONS.SETTINGS_UPDATE,
 ]);

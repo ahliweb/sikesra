@@ -32,6 +32,11 @@ export const SIKESRA_PERMISSIONS = {
   IMPORT_READ: "awcms:sikesra:import:read",
   IMPORT_PROMOTE: "awcms:sikesra:import:promote",
 
+  // Duplicate
+  DUPLICATE_READ: "awcms:sikesra:duplicate:read",
+  DUPLICATE_DECIDE: "awcms:sikesra:duplicate:decide",
+  DUPLICATE_OVERRIDE: "awcms:sikesra:duplicate:override",
+
   // Export
   EXPORT_CREATE: "awcms:sikesra:export:create",
   EXPORT_RESTRICTED: "awcms:sikesra:export:restricted",
