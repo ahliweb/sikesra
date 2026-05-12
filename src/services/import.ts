@@ -284,16 +284,116 @@ export async function getImportMappingTemplates(
 }
 
 export async function promoteImportRows(
+  db: D1Binding,
   batchId: string,
   rowIds: string[],
   duplicateDecisions: Record<string, string>,
   ctx: SikesraRequestContext,
 ): Promise<{ promoted: number; skipped: number }> {
-  // TODO: validate all rows are valid
-  // Ensure duplicate decisions exist for candidates
-  // Promote: create entity + detail + person + attribute + document records
-  // Generate IDs where requirements pass
-  // Audit import.promote
-  // Promoted entity is not auto-verified
-  throw new Error("Not implemented");
+  const batch = await getImportBatch(db, batchId, ctx);
+  if (!batch) {
+    throw new Error("IMPORT_BATCH_NOT_FOUND");
+  }
+  if (batch.status !== "validated") {
+    throw new Error("IMPORT_BATCH_NOT_VALIDATED");
+  }
+
+  const stagingRows = await getStagingRows(db, batchId, ctx);
+  const rowsToPromote = stagingRows.filter((row) => rowIds.includes(row.id));
+
+  let promotedCount = 0;
+  let skippedCount = 0;
+
+  for (const row of rowsToPromote) {
+    if (row.rowStatus === "invalid" || row.rowStatus === "failed") {
+      skippedCount++;
+      await updateStagingRow(db, row.id, { rowStatus: "skipped" }, ctx);
+      continue;
+    }
+
+    if (row.rowStatus === "duplicate_review") {
+      const decision = duplicateDecisions[row.id];
+      if (!decision) {
+        skippedCount++;
+        await updateStagingRow(db, row.id, { rowStatus: "skipped" }, ctx);
+        continue;
+      }
+      if (decision === "skip") {
+        skippedCount++;
+        await updateStagingRow(db, row.id, { rowStatus: "skipped" }, ctx);
+        continue;
+      }
+    }
+
+    if (!row.mappedData) {
+      skippedCount++;
+      await updateStagingRow(db, row.id, { rowStatus: "failed" }, ctx);
+      continue;
+    }
+
+    try {
+      const entityId = `ent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const displayName = String(row.mappedData.displayName ?? "").trim();
+      const officialVillageCode = String(row.mappedData.officialVillageCode ?? "").trim();
+      const objectTypeCode = batch.objectTypeCode ?? "general";
+      const objectSubtypeCode = String(row.mappedData.objectSubtypeCode ?? "default");
+      const addressText = String(row.mappedData.addressText ?? "");
+      const sensitivityLevel = String(row.mappedData.sensitivityLevel ?? "internal");
+      const sourceInput = "import";
+
+      await db.prepare(
+        `INSERT INTO awcms_sikesra_entities 
+         (id, tenant_id, site_id, display_name, object_type_code, object_subtype_code, 
+          official_village_code, address_text, sensitivity_level, source_input, 
+          status_data, status_verification, created_by, updated_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 'pending', ?, ?)`
+      ).bind(
+        entityId, ctx.tenantId, ctx.siteId, displayName, objectTypeCode, objectSubtypeCode,
+        officialVillageCode, addressText, sensitivityLevel, sourceInput,
+        ctx.userId, ctx.userId,
+      ).run();
+
+      await updateStagingRow(db, row.id, { rowStatus: "promoted" }, ctx);
+      promotedCount++;
+    } catch (error) {
+      await updateStagingRow(db, row.id, { rowStatus: "failed" }, ctx);
+      skippedCount++;
+    }
+  }
+
+  await updateBatchCounts(
+    db,
+    batchId,
+    {
+      promotedRowCount: batch.promotedRowCount + promotedCount,
+      status: promotedCount > 0 ? "promoted" : batch.status,
+    },
+    ctx,
+  );
+
+  await writeAuditEvent(
+    db,
+    {
+      tenantId: ctx.tenantId,
+      siteId: ctx.siteId,
+      actorId: ctx.userId,
+      actorRole: ctx.roles[0],
+      action: AUDIT_ACTIONS.IMPORT_PROMOTE,
+      resourceType: "import_batch",
+      resourceId: batchId,
+      requestId: ctx.requestId,
+      success: true,
+      reason: `promote ${promotedCount} rows from import batch ${batchId}`,
+      after: {
+        promotedCount,
+        skippedCount,
+        batchId,
+      },
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    },
+    ctx,
+  );
+
+  return { promoted: promotedCount, skipped: skippedCount };
 }

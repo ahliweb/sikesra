@@ -5,7 +5,7 @@
 import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
-import { createImportBatch } from "../services/import";
+import { createImportBatch, promoteImportRows } from "../services/import";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 
 export interface ImportListParams {
@@ -148,4 +148,26 @@ export const importRowUpdateHandler = async (routeCtx: EmDashRouteContext<Import
     rowId: input.rowId,
     status: input.rowStatus ?? "unchanged",
   };
+};
+
+// POST /imports/{id}/promote — promote valid rows to entities
+export const importPromoteHandler = async (routeCtx: EmDashRouteContext<{ rowIds: string[]; duplicateDecisions?: Record<string, string> }>) => {
+  const db = routeCtx.env?.SIKESRA_DB;
+  if (!db) throw new Error("DB_UNAVAILABLE");
+
+  const ctx = buildContextFromEmDash(routeCtx);
+  const url = new URL(routeCtx.request.url);
+  const parts = url.pathname.split("/");
+  const batchId = parts[parts.indexOf("imports") + 1];
+
+  const input = routeCtx.input;
+  if (!input?.rowIds || !input.rowIds.length) throw new Error("IMPORT_ROW_IDS_REQUIRED");
+
+  return promoteImportRows(
+    db,
+    batchId,
+    input.rowIds,
+    input.duplicateDecisions ?? {},
+    ctx,
+  );
 };

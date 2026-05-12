@@ -71,3 +71,91 @@ export async function listAuditLogs(
 
   return { items: result.results as Record<string, unknown>[], total };
 }
+
+export interface AuditDetailResult {
+  id: string;
+  tenantId: string;
+  siteId: string;
+  actorId: string | null;
+  actorRole: string | null;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  requestId: string | null;
+  success: boolean;
+  reason: string | null;
+  beforeJson: Record<string, unknown> | null;
+  afterJson: Record<string, unknown> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export async function getAuditLogDetail(
+  db: D1Binding,
+  auditId: string,
+  ctx: SikesraRequestContext,
+): Promise<AuditDetailResult | null> {
+  const result = await db.prepare(
+    `SELECT * FROM ${TABLE} WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
+  ).bind(auditId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+
+  if (!result) return null;
+
+  let beforeJson: Record<string, unknown> | null = null;
+  let afterJson: Record<string, unknown> | null = null;
+
+  if (result.before_json) {
+    try {
+      beforeJson = JSON.parse(result.before_json as string);
+    } catch {
+      beforeJson = null;
+    }
+  }
+
+  if (result.after_json) {
+    try {
+      afterJson = JSON.parse(result.after_json as string);
+    } catch {
+      afterJson = null;
+    }
+  }
+
+  return {
+    id: result.id as string,
+    tenantId: result.tenant_id as string,
+    siteId: result.site_id as string,
+    actorId: result.actor_id as string | null,
+    actorRole: result.actor_role as string | null,
+    action: result.action as string,
+    resourceType: result.resource_type as string | null,
+    resourceId: result.resource_id as string | null,
+    requestId: result.request_id as string | null,
+    success: Number(result.success) === 1,
+    reason: result.reason as string | null,
+    beforeJson,
+    afterJson,
+    ipAddress: result.ip_address as string | null,
+    userAgent: result.user_agent as string | null,
+    createdAt: result.created_at as string,
+  };
+}
+
+export async function redactAuditValues(
+  data: Record<string, unknown> | null,
+  canReveal: boolean,
+): Promise<Record<string, unknown> | null> {
+  if (!data) return null;
+  if (canReveal) return data;
+
+  const redacted: Record<string, unknown> = {};
+  const sensitiveKeys = ["nik", "kia", "phone", "email", "address", "guardian", "disability", "hash", "secret", "password", "token"];
+
+  for (const [key, value] of Object.entries(data)) {
+    const lowerKey = key.toLowerCase();
+    const isSensitive = sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive));
+    redacted[key] = isSensitive ? "[REDACTED]" : value;
+  }
+
+  return redacted;
+}

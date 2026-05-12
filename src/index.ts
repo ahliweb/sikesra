@@ -36,7 +36,9 @@ export {
   generateUploadUrl,
   completeUpload,
   getEntityDocuments,
-  getDocumentDownloadUrl,
+  getDocumentDownload,
+  verifyDocument,
+  replaceDocument,
 } from "./services/document";
 export { createImportBatch, parseAndStageRows, promoteImportRows } from "./services/import";
 export { getReports, createExportJob, getExportJob } from "./services/export";

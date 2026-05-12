@@ -45,6 +45,7 @@ export const AUDIT_ACTIONS = {
 
   // Document
   DOCUMENT_UPLOAD: "document.upload",
+  DOCUMENT_COMPLETE: "document.complete",
   DOCUMENT_PREVIEW: "document.preview",
   DOCUMENT_DOWNLOAD: "document.download",
   DOCUMENT_REPLACE: "document.replace",

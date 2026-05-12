@@ -26,6 +26,8 @@ import {
   entityDocumentsHandler,
   uploadUrlHandler,
   documentDownloadHandler,
+  documentVerifyHandler,
+  documentReplaceHandler,
 } from "./document-routes";
 
 import {
@@ -35,6 +37,8 @@ import {
 
 import {
   auditListHandler,
+  auditDetailHandler,
+  auditExportHandler,
 } from "./audit-routes";
 
 import {
@@ -42,12 +46,16 @@ import {
   importCreateHandler,
   importRowsHandler,
   importRowUpdateHandler,
+  importPromoteHandler,
 } from "./import-routes";
 
 import {
   reportListHandler,
   exportListHandler,
   exportCreateHandler,
+  exportDetailHandler,
+  exportGenerateHandler,
+  exportDownloadHandler,
 } from "./report-routes";
 
 import {
@@ -84,6 +92,8 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/entities/documents": { handler: entityDocumentsHandler },
   "v1/documents/upload-url": { handler: uploadUrlHandler },
   "v1/documents/download": { handler: documentDownloadHandler },
+  "v1/documents/verify": { handler: documentVerifyHandler },
+  "v1/documents/replace": { handler: documentReplaceHandler },
 
   // Settings
   "v1/settings": { handler: settingsGetHandler },
@@ -91,15 +101,21 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
 
   // Audit
   "v1/audit": { handler: auditListHandler },
+  "v1/audit/detail": { handler: auditDetailHandler },
+  "v1/audit/export": { handler: auditExportHandler },
 
   // Imports
   "v1/imports": { handler: importListHandler },
   "v1/imports/create": { handler: importCreateHandler },
   "v1/imports/rows": { handler: importRowsHandler },
   "v1/imports/rows/update": { handler: importRowUpdateHandler },
+  "v1/imports/promote": { handler: importPromoteHandler },
 
   // Reports & Exports
   "v1/reports": { handler: reportListHandler },
   "v1/exports": { handler: exportListHandler },
   "v1/exports/create": { handler: exportCreateHandler },
+  "v1/exports/detail": { handler: exportDetailHandler },
+  "v1/exports/generate": { handler: exportGenerateHandler },
+  "v1/exports/download": { handler: exportDownloadHandler },
 };

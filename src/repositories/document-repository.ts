@@ -81,3 +81,146 @@ export async function getEntityDocumentsRepo(
     uploadedAt: r.created_at as string,
   }));
 }
+
+export interface DocumentWithFile {
+  id: string;
+  entityId: string;
+  fileObjectId: string;
+  documentType: string;
+  classification: DocumentClassification;
+  isVerified: boolean;
+  verificationNote?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  replacedById?: string;
+  supersedesId?: string;
+  createdAt: string;
+  r2Key: string;
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  checksumSha256?: string;
+}
+
+export async function getDocumentWithFile(
+  db: D1Binding,
+  documentId: string,
+  ctx: SikesraRequestContext,
+): Promise<DocumentWithFile | null> {
+  const sql = `SELECT d.id, d.entity_id, d.file_object_id, d.document_type, d.classification, 
+    d.is_verified, d.verification_note, d.verified_at, d.verified_by,
+    d.replaced_by_id, d.supersedes_id, d.created_at,
+    f.r2_key, f.original_filename, f.mime_type, f.size_bytes, f.checksum_sha256
+    FROM ${DOCS_TABLE} d
+    INNER JOIN ${FILES_TABLE} f ON d.file_object_id = f.id AND f.deleted_at IS NULL
+    WHERE d.id = ? AND d.tenant_id = ? AND d.site_id = ? AND d.deleted_at IS NULL`;
+
+  const result = await db.prepare(sql).bind(documentId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+  if (!result) return null;
+
+  return {
+    id: result.id as string,
+    entityId: result.entity_id as string,
+    fileObjectId: result.file_object_id as string,
+    documentType: result.document_type as string,
+    classification: result.classification as DocumentClassification,
+    isVerified: !!(result.is_verified),
+    verificationNote: result.verification_note as string | undefined,
+    verifiedAt: result.verified_at as string | undefined,
+    verifiedBy: result.verified_by as string | undefined,
+    replacedById: result.replaced_by_id as string | undefined,
+    supersedesId: result.supersedes_id as string | undefined,
+    createdAt: result.created_at as string,
+    r2Key: result.r2_key as string,
+    originalFilename: result.original_filename as string,
+    mimeType: result.mime_type as string,
+    sizeBytes: result.size_bytes as number,
+    checksumSha256: result.checksum_sha256 as string | undefined,
+  };
+}
+
+export async function verifyDocument(
+  db: D1Binding,
+  documentId: string,
+  note: string,
+  verifiedBy: string,
+  ctx: SikesraRequestContext,
+): Promise<void> {
+  const sql = `UPDATE ${DOCS_TABLE} 
+    SET is_verified = 1, verification_note = ?, verified_at = datetime('now'), verified_by = ?, updated_at = datetime('now')
+    WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`;
+
+  await db.prepare(sql).bind(note, verifiedBy, documentId, ctx.tenantId, ctx.siteId).run();
+}
+
+export async function rejectDocument(
+  db: D1Binding,
+  documentId: string,
+  note: string,
+  rejectedBy: string,
+  ctx: SikesraRequestContext,
+): Promise<void> {
+  const sql = `UPDATE ${DOCS_TABLE} 
+    SET is_verified = 0, verification_note = ?, verified_at = datetime('now'), verified_by = ?, updated_at = datetime('now')
+    WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`;
+
+  await db.prepare(sql).bind(note, rejectedBy, documentId, ctx.tenantId, ctx.siteId).run();
+}
+
+export async function replaceDocument(
+  db: D1Binding,
+  oldDocumentId: string,
+  newDocumentId: string,
+  replacedBy: string,
+  ctx: SikesraRequestContext,
+): Promise<void> {
+  await db.batch([
+    db.prepare(
+      `UPDATE ${DOCS_TABLE} 
+       SET replaced_by_id = ?, updated_at = datetime('now')
+       WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
+    ).bind(newDocumentId, oldDocumentId, ctx.tenantId, ctx.siteId),
+    db.prepare(
+      `UPDATE ${DOCS_TABLE} 
+       SET supersedes_id = ?, updated_at = datetime('now')
+       WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
+    ).bind(oldDocumentId, newDocumentId, ctx.tenantId, ctx.siteId),
+  ]);
+}
+
+export async function getDocumentByFileObjectId(
+  db: D1Binding,
+  fileObjectId: string,
+  ctx: SikesraRequestContext,
+): Promise<DocumentWithFile | null> {
+  const sql = `SELECT d.id, d.entity_id, d.file_object_id, d.document_type, d.classification, 
+    d.is_verified, d.verification_note, d.verified_at, d.verified_by,
+    d.replaced_by_id, d.supersedes_id, d.created_at,
+    f.r2_key, f.original_filename, f.mime_type, f.size_bytes, f.checksum_sha256
+    FROM ${DOCS_TABLE} d
+    INNER JOIN ${FILES_TABLE} f ON d.file_object_id = f.id AND f.deleted_at IS NULL
+    WHERE d.file_object_id = ? AND d.tenant_id = ? AND d.site_id = ? AND d.deleted_at IS NULL`;
+
+  const result = await db.prepare(sql).bind(fileObjectId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+  if (!result) return null;
+
+  return {
+    id: result.id as string,
+    entityId: result.entity_id as string,
+    fileObjectId: result.file_object_id as string,
+    documentType: result.document_type as string,
+    classification: result.classification as DocumentClassification,
+    isVerified: !!(result.is_verified),
+    verificationNote: result.verification_note as string | undefined,
+    verifiedAt: result.verified_at as string | undefined,
+    verifiedBy: result.verified_by as string | undefined,
+    replacedById: result.replaced_by_id as string | undefined,
+    supersedesId: result.supersedes_id as string | undefined,
+    createdAt: result.created_at as string,
+    r2Key: result.r2_key as string,
+    originalFilename: result.original_filename as string,
+    mimeType: result.mime_type as string,
+    sizeBytes: result.size_bytes as number,
+    checksumSha256: result.checksum_sha256 as string | undefined,
+  };
+}
