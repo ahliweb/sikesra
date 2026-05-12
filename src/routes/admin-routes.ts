@@ -1842,6 +1842,19 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			mappingNotice = `Template mapping ${mapped.template.name} tersimpan. Batch sekarang berstatus mapped dan siap menuju validasi.`;
 		}
 	}
+	let validationNotice = "";
+	if (input.type === "block_action" && input.action_id === `imports_run_validation_${batchId}`) {
+		const existingTemplates = await getImportMappingTemplates(db, undefined, ctx);
+		const template = existingTemplates.find((item) => item.name === `batch:${batchId}`);
+		if (!template || !template.mapping.length) {
+			mappingError = "Simpan template mapping terlebih dahulu sebelum menjalankan validasi batch.";
+		} else {
+			const validation = await parseAndStageRows(db, batchId, template.mapping, ctx);
+			validationNotice = validation.staged > 0
+				? `Validasi selesai untuk ${validation.staged} row. Row bermasalah: ${validation.validationErrors}.`
+				: "Template mapping tersimpan, tetapi belum ada staging row untuk divalidasi.";
+		}
+	}
 
 	const batch = await getImportBatch(db, batchId, ctx);
 	if (!batch) {
@@ -1864,6 +1877,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
 		...(mappingNotice ? [{ type: "banner", variant: "success", title: "Mapping tersimpan", description: mappingNotice }] : []),
+		...(validationNotice ? [{ type: "banner", variant: "success", title: "Validasi batch selesai", description: validationNotice }] : []),
 		...(mappingError ? [{ type: "banner", variant: "alert", title: "Mapping belum tersimpan", description: mappingError }] : []),
 		{ type: "stats", items: [
 			{ label: "Valid", value: String(batch.validRowCount), description: "Row valid / corrected" },
@@ -1897,10 +1911,11 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		{ type: "tab", default_tab: 0, panels: [
 			{ label: "Map Columns", blocks: [
 				{ type: "fields", fields: [
-					{ label: "Template aktif", value: batchTemplate?.name ?? "Belum ada template untuk batch ini" },
-					{ label: "Sheet target", value: batch.sheetName ?? "Belum dipilih" },
-					{ label: "Jenis data", value: batchTemplate?.objectTypeCode ?? "Mengikuti batch / belum diikat" },
-				] },
+			{ label: "Template aktif", value: batchTemplate?.name ?? "Belum ada template untuk batch ini" },
+			{ label: "Sheet target", value: batch.sheetName ?? "Belum dipilih" },
+			{ label: "Jenis data", value: batchTemplate?.objectTypeCode ?? "Mengikuti batch / belum diikat" },
+			{ label: "Status validasi", value: batch.status === "validated" ? "Selesai dijalankan" : "Belum dijalankan / masih mapping" },
+		] },
 				{ type: "context", text: "Pemetaan ini menyimpan hubungan kolom workbook ke field inti SIKESRA. Setelah template tersimpan, batch naik ke status mapped dan siap untuk validasi berikutnya." },
 				{ type: "form", block_id: "imports_mapping_form", fields: [
 					{ type: "text_input", action_id: "sourceNameColumn", label: "Kolom sumber untuk Nama Tampil", initial_value: mappingForm.sourceNameColumn || templateField("displayName"), placeholder: "contoh: nama_lembaga / nama_masjid" },
@@ -1909,6 +1924,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 					{ type: "text_input", action_id: "sourceIdentifierColumn", label: "Kolom sumber untuk Identifier Referensi", initial_value: mappingForm.sourceIdentifierColumn || templateField("sourceIdentifier"), placeholder: "contoh: nomor_register / kode_lokal" },
 					{ type: "text_input", action_id: "templateDefaultValue", label: "Default value opsional", initial_value: mappingForm.templateDefaultValue, placeholder: "Digunakan bila kolom identifier kosong" },
 				], submit: { label: "Simpan Mapping", action_id: `imports_save_mapping_${batchId}` } },
+				{ type: "actions", elements: [{ type: "button", label: "Jalankan Validasi Mapping", action_id: `imports_run_validation_${batchId}`, style: "secondary" }] },
 			] },
 			{ label: "Staging Preview", blocks: [
 				{ type: "table", columns: [{ key: "rowNumber", label: "Row" }, { key: "rowStatus", label: "Status" }, { key: "duplicateRisk", label: "Risk" }, { key: "rawPreview", label: "Preview" }], rows: stagingRows.map((row) => ({ rowNumber: row.rowNumber, rowStatus: rowStatusLabel(row.rowStatus), duplicateRisk: row.duplicateRisk ?? "-", rawPreview: JSON.stringify(row.rawData).slice(0, 80) })), empty_text: "Belum ada staging row untuk batch ini." },

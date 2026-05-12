@@ -4,7 +4,7 @@
 
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
-import { createImportBatchRepo, getImportBatch, listImportMappingTemplatesRepo, updateBatchCounts, upsertImportMappingTemplateRepo } from "../repositories/import-repository";
+import { createImportBatchRepo, getImportBatch, getStagingRows, listImportMappingTemplatesRepo, updateBatchCounts, updateStagingRow, upsertImportMappingTemplateRepo } from "../repositories/import-repository";
 import { AUDIT_ACTIONS, writeAuditEvent } from "./audit";
 
 export type ImportBatchStatus = "uploaded" | "mapped" | "validated" | "promoting" | "promoted" | "failed";
@@ -48,6 +48,32 @@ export interface ImportMappingTemplate {
   mapping: ImportMapping[];
   isActive: boolean;
   updatedAt?: string;
+}
+
+function buildMappedRow(
+  rawData: Record<string, unknown>,
+  mapping: ImportMapping[],
+): Record<string, unknown> {
+  const mapped: Record<string, unknown> = {};
+  for (const item of mapping) {
+    const rawValue = rawData[item.sourceColumn];
+    mapped[item.targetField] = rawValue ?? item.defaultValue ?? null;
+  }
+  return mapped;
+}
+
+function validateMappedRow(mapped: Record<string, unknown>): Record<string, string[]> | undefined {
+  const errors: Record<string, string[]> = {};
+  if (!String(mapped.displayName ?? "").trim()) {
+    errors.displayName = ["Nama tampil wajib tersedia dari mapping atau default value."];
+  }
+  const villageCode = String(mapped.officialVillageCode ?? "").trim();
+  if (!villageCode) {
+    errors.officialVillageCode = ["Desa/kelurahan resmi wajib tersedia untuk validasi region."];
+  } else if (!/^\d{10}$/.test(villageCode)) {
+    errors.officialVillageCode = ["Kode desa/kelurahan resmi harus 10 digit agar konsisten dengan format ID SIKESRA."];
+  }
+  return Object.keys(errors).length ? errors : undefined;
 }
 
 export interface ImportBatchCreateInput {
@@ -165,9 +191,80 @@ export async function parseAndStageRows(
     ctx,
   );
 
+  const stagingRows = await getStagingRows(db, batchId, ctx);
+  let validCount = 0;
+  let invalidCount = 0;
+  let duplicateReviewCount = 0;
+
+  for (const row of stagingRows) {
+    if (row.rowStatus === "promoted" || row.rowStatus === "skipped" || row.rowStatus === "failed") {
+      continue;
+    }
+
+    const mappedData = buildMappedRow(row.rawData, mapping);
+    const validationErrors = validateMappedRow(mappedData);
+    let rowStatus: StagingRowStatus = validationErrors ? "invalid" : "valid";
+    if (!validationErrors && row.duplicateRisk) {
+      rowStatus = "duplicate_review";
+    }
+
+    await updateStagingRow(
+      db,
+      row.id,
+      {
+        mappedData,
+        validationErrors,
+        rowStatus,
+      },
+      ctx,
+    );
+
+    if (rowStatus === "valid") validCount++;
+    if (rowStatus === "invalid") invalidCount++;
+    if (rowStatus === "duplicate_review") duplicateReviewCount++;
+  }
+
+  await updateBatchCounts(
+    db,
+    batchId,
+    {
+      rowCount: stagingRows.length,
+      validRowCount: validCount,
+      invalidRowCount: invalidCount + duplicateReviewCount,
+      status: stagingRows.length > 0 ? "validated" : "mapped",
+    },
+    ctx,
+  );
+
+  await writeAuditEvent(
+    db,
+    {
+      tenantId: ctx.tenantId,
+      siteId: ctx.siteId,
+      actorId: ctx.userId,
+      actorRole: ctx.roles[0],
+      action: AUDIT_ACTIONS.IMPORT_VALIDATE,
+      resourceType: "import_batch",
+      resourceId: batchId,
+      requestId: ctx.requestId,
+      success: true,
+      reason: `validate mapping for ${batchId}`,
+      after: {
+        rowCount: stagingRows.length,
+        validRowCount: validCount,
+        invalidRowCount: invalidCount,
+        duplicateReviewCount,
+        status: stagingRows.length > 0 ? "validated" : "mapped",
+      },
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    },
+    ctx,
+  );
+
   return {
-    staged: 0,
-    validationErrors: 0,
+    staged: stagingRows.length,
+    validationErrors: invalidCount + duplicateReviewCount,
     template: {
       id: templateId,
       name: templateName,
