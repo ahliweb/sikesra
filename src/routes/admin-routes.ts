@@ -1755,6 +1755,9 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT 20`,
 	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
+	const uploadedCount = rows.results.filter((row) => String(row.status) === "uploaded").length;
+	const validatedCount = rows.results.filter((row) => String(row.status) === "validated").length;
+	const promotedCount = rows.results.filter((row) => String(row.status) === "promoted").length;
 
 	return [
 		...pageIntro("imports", ctx.permissions),
@@ -1762,9 +1765,16 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		...(notice ? [{ type: "banner", variant: "success", title: "Batch dibuat", description: notice }] : []),
 		{ type: "stats", items: [
 			{ label: "Batch aktif", value: String(rows.results.length), description: "20 batch terbaru" },
-			{ label: "Perlu mapping", value: String(rows.results.filter((row) => String(row.status) === "uploaded").length), description: "Upload baru menunggu mapping" },
-			{ label: "Siap promosi", value: String(rows.results.filter((row) => String(row.status) === "validated").length), description: "Sudah tervalidasi" },
+			{ label: "Perlu mapping", value: String(uploadedCount), description: "Upload baru menunggu mapping" },
+			{ label: "Siap promosi", value: String(validatedCount), description: "Sudah tervalidasi" },
+			{ label: "Selesai", value: String(promotedCount), description: "Batch yang sudah dipromosikan" },
 			{ label: "Gagal", value: String(rows.results.filter((row) => String(row.status) === "failed").length), description: "Perlu investigasi" },
+		] },
+		{ type: "fields", fields: [
+			{ label: "Workflow", value: "Upload -> Sheet -> Mapping -> Validasi -> Preview -> Koreksi -> Duplikasi -> Promosi -> Laporan" },
+			{ label: "Duplikasi", value: "Kandidat duplicate review wajib dipisahkan sebelum promosi" },
+			{ label: "Valid row", value: "Hanya row valid/corrected yang boleh lanjut promosi" },
+			{ label: "Laporan akhir", value: "Harus merangkum valid, invalid, duplicate, promoted, skipped, dan failed" },
 		] },
 		{ type: "form", block_id: "imports_create_form", fields: [
 			{ type: "text_input", action_id: "filename", label: "Upload workbook (nama file)", initial_value: form.filename, placeholder: "contoh: data-rumah-ibadah-2026.xlsx" },
@@ -1808,11 +1818,21 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	const selectedRow = stagingRows.find((row) => row.rowStatus === "invalid" || row.rowStatus === "duplicate_review") ?? stagingRows[0];
 	const duplicateRows = stagingRows.filter((row) => row.rowStatus === "duplicate_review");
 	const invalidRows = stagingRows.filter((row) => row.rowStatus === "invalid");
+	const promotedRows = stagingRows.filter((row) => row.rowStatus === "promoted");
+	const skippedRows = stagingRows.filter((row) => row.rowStatus === "skipped");
+	const failedRows = stagingRows.filter((row) => row.rowStatus === "failed");
 
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Daftar Batch", action_id: "imports_back_to_list", style: "secondary" }] },
+		{ type: "stats", items: [
+			{ label: "Valid", value: String(batch.validRowCount), description: "Row valid / corrected" },
+			{ label: "Invalid", value: String(invalidRows.length), description: "Butuh koreksi operator" },
+			{ label: "Duplicate", value: String(duplicateRows.length), description: "Perlu review kandidat" },
+			{ label: "Promoted", value: String(promotedRows.length), description: "Sudah dipromosikan" },
+			{ label: "Skipped / Failed", value: String(skippedRows.length + failedRows.length), description: "Tidak ikut promosi" },
+		] },
 		{ type: "fields", fields: [
 			{ label: "Workbook", value: batch.originalFilename },
 			{ label: "Sheet", value: batch.sheetName ?? "Belum dipilih" },
@@ -1823,6 +1843,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			{ label: "Promoted row", value: String(batch.promotedRowCount) },
 			{ label: "Dibuat", value: batch.createdAt },
 		] },
+		{ type: "context", text: "Status row harus jelas terpisah: invalid, duplicate review, promoted, skipped, dan failed. Koreksi invalid row tidak sama dengan keputusan duplicate review." },
 		{ type: "table", columns: [{ key: "step", label: "Tahap" }, { key: "status", label: "Status" }, { key: "note", label: "Catatan" }], rows: [
 			{ step: "1. Upload workbook", status: "Selesai", note: `File ${batch.originalFilename} tercatat di batch shell.` },
 			{ step: "2. Select sheet", status: batch.sheetName ? "Selesai" : "Perlu dipilih", note: batch.sheetName ?? "Pilih sheet target sebelum parsing row." },
@@ -1858,10 +1879,12 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 			] },
 			{ label: "Promote & Report", blocks: [
 				{ type: "fields", fields: [
-					{ label: "Promote readiness", value: batch.status === "validated" ? "Siap promosi" : batch.status === "promoted" ? "Sudah dipromosikan" : "Belum siap" },
-					{ label: "Promoted rows", value: String(batch.promotedRowCount) },
-					{ label: "Import report", value: batch.status === "promoted" ? "Laporan siap ditinjau" : "Laporan akan lengkap setelah promosi" },
-				] },
+			{ label: "Promote readiness", value: batch.status === "validated" ? "Siap promosi" : batch.status === "promoted" ? "Sudah dipromosikan" : "Belum siap" },
+			{ label: "Promoted rows", value: String(batch.promotedRowCount) },
+			{ label: "Import report", value: batch.status === "promoted" ? "Laporan siap ditinjau" : "Laporan akan lengkap setelah promosi" },
+			{ label: "Skipped rows", value: String(skippedRows.length) },
+			{ label: "Failed rows", value: String(failedRows.length) },
+		] },
 				{ type: "context", text: "Promosi valid row dan duplicate override tetap memerlukan backend workflow lengkap sebelum tombol eksekusi diaktifkan." },
 			] },
 		] },
@@ -1909,6 +1932,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 	if (!entity) {
 		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Entitas dokumen tidak ditemukan", description: `ID ${entityId} tidak tersedia pada scope backend saat ini.` }];
 	}
+	const settings = await getSettings(db, ctx);
 
 	let notice = "";
 	const form = parseDocumentUploadForm(input);
@@ -1938,6 +1962,11 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 		{ type: "banner", variant: "default", title: `Dokumen Entitas: ${entity.entity.displayName}`, description: "Upload, metadata, status verifikasi, dan akses dokumen harus tetap aman. R2 key mentah tidak ditampilkan." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Document Center", action_id: "documents_back_to_list", style: "secondary" }] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Dokumen dicatat", description: notice }] : []),
+		{ type: "stats", items: [
+			{ label: "Allowed MIME", value: (settings.allowedMimeTypes ?? []).join(" / ") || "Belum diatur", description: "Diambil dari settings modul" },
+			{ label: "Maks ukuran", value: formatBytes(settings.maxUploadBytes), description: "Batas upload aktif" },
+			{ label: "Reason highly restricted", value: settings.requireReasonForHighlyRestrictedDownload ? "Wajib" : "Tidak wajib", description: "Untuk download highly restricted" },
+		] },
 		{ type: "fields", fields: [
 			{ label: "Entitas", value: entity.entity.displayName },
 			{ label: "ID SIKESRA", value: entity.entity.sikesraId20 ?? "Belum dibuat" },
@@ -1953,7 +1982,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 			{ type: "select", action_id: "classification", label: "Classification", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Restricted", "restricted"), option("Highly Restricted", "highly_restricted")] },
 			{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA-256 (opsional)", initial_value: form.checksumSha256, placeholder: "Masukkan checksum setelah konfirmasi upload" },
 		], submit: { label: "Catat Dokumen", action_id: `documents_create_${entityId}` } },
-		{ type: "context", text: "Accepted type dan max size harus ditampilkan jelas pada operasional. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
+		{ type: "context", text: "Accepted type dan max size mengikuti settings aktif. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
 		{ type: "table", columns: [
 			{ key: "documentType", label: "Document Type" },
 			{ key: "originalFilename", label: "Original Filename" },
