@@ -219,12 +219,12 @@ const ACCESS_ROLE_CATALOG = [
 ] as const;
 
 const ACCESS_PREVIEW_ACTIONS = [
-	{ value: "read", label: "Read detail" },
-	{ value: "create", label: "Create" },
-	{ value: "update", label: "Update" },
-	{ value: "submit", label: "Submit verifikasi" },
-	{ value: "verify", label: "Verify" },
-	{ value: "download", label: "Download" },
+	{ value: "read", label: "Baca detail" },
+	{ value: "create", label: "Buat" },
+	{ value: "update", label: "Perbarui" },
+	{ value: "submit", label: "Ajukan verifikasi" },
+	{ value: "verify", label: "Verifikasi" },
+	{ value: "download", label: "Unduh" },
 ] as const;
 
 const REPORT_VERIFICATION_FILTERS = [
@@ -1586,8 +1586,8 @@ function rowStatusLabel(status: string): string {
 function documentClassificationLabel(value: string): string {
 	return ({
 		internal: "Internal",
-		restricted: "Restricted",
-		highly_restricted: "Highly Restricted",
+		restricted: "Terbatas",
+		highly_restricted: "Sangat Terbatas",
 	} as Record<string, string>)[value] ?? value;
 }
 
@@ -1730,7 +1730,7 @@ async function verificationReviewBlocks(routeCtx: EmDashRouteContext<PluginAdmin
 		{ type: "context", text: "Revisi dan penolakan wajib menyertakan alasan. Mengirim keputusan berarti Anda mengonfirmasi bahwa tindakan ini akan dicatat ke audit trail SIKESRA." },
 		{ type: "form", block_id: "verification_decision_form", fields: [
 			{ type: "select", action_id: "verificationLevel", label: "Level Verifikasi", initial_value: defaultLevel, options: [option("Desa", "desa"), option("Kecamatan", "kecamatan"), option("Kabupaten", "kabupaten"), option("OPD", "opd")] },
-			{ type: "select", action_id: "action", label: "Keputusan", initial_value: "verify", options: [option("Verify", "verify"), option("Need revision", "need_revision"), option("Reject", "reject")] },
+			{ type: "select", action_id: "action", label: "Keputusan", initial_value: "verify", options: [option("Verifikasi", "verify"), option("Perlu Perbaikan", "need_revision"), option("Tolak", "reject")] },
 			{ type: "text_input", action_id: "note", label: "Alasan / Catatan", multiline: true, initial_value: "", placeholder: "Wajib diisi untuk need revision atau reject" },
 			{ type: "checkbox", action_id: "confirmAudit", label: "Saya memahami keputusan ini akan diaudit" },
 		], submit: { label: "Kirim Keputusan", action_id: `verification_decide_${entityId}` } },
@@ -1977,7 +1977,7 @@ async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteracti
 			{ label: "Maks ukuran", value: formatBytes(settings.maxUploadBytes), description: "Mengikuti batas upload modul" },
 		] },
 		{ type: "fields", fields: [
-			{ label: "Klasifikasi wajib", value: "Internal / Restricted / Highly Restricted" },
+			{ label: "Klasifikasi wajib", value: "Internal / Terbatas / Sangat Terbatas" },
 			{ label: "Akses download", value: "Harus melalui backend response URL/proxy" },
 			{ label: "Checksum", value: "Ditampilkan setelah konfirmasi upload" },
 			{ label: "Quarantine / failed", value: "Ditandai sebagai status khusus saat tersedia" },
@@ -2049,7 +2049,7 @@ async function documentDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInte
 			{ type: "text_input", action_id: "mimeType", label: "MIME type", initial_value: form.mimeType, placeholder: "application/pdf" },
 			{ type: "number_input", action_id: "sizeBytes", label: "Ukuran file (bytes)", initial_value: numberValue(form.sizeBytes) },
 			{ type: "text_input", action_id: "documentType", label: "Document type", initial_value: form.documentType, placeholder: "akta_pendirian / foto_lokasi / surat_keterangan" },
-			{ type: "select", action_id: "classification", label: "Classification", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Restricted", "restricted"), option("Highly Restricted", "highly_restricted")] },
+			{ type: "select", action_id: "classification", label: "Klasifikasi", initial_value: form.classification || "internal", options: [option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
 			{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA-256 (opsional)", initial_value: form.checksumSha256, placeholder: "Masukkan checksum setelah konfirmasi upload" },
 		], submit: { label: "Catat Dokumen", action_id: `documents_create_${entityId}` } },
 		{ type: "context", text: "Accepted type dan max size mengikuti settings aktif. Upload aktual tetap harus melalui backend response URL/proxy dan tidak boleh mengekspos raw R2 key." },
@@ -2599,8 +2599,8 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ type: "select", action_id: "localRegionId", label: "Local region", initial_value: form.localRegionId, options: [option(form.officialVillageCode ? "Pilih wilayah lokal atau kosongkan" : "Pilih desa resmi terlebih dahulu", ""), ...options.localRegions.map((row) => option(`${formatLocalRegionLevel(row.level)}${row.code_local ? ` ${row.code_local}` : ""} / ${row.name}`, row.id))] },
 			{ type: "select", action_id: "sensitivityLevel", label: "Sensitivity", initial_value: form.sensitivityLevel, options: [option("Publik Aman", "public_safe"), option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
 			{ type: "select", action_id: "statusData", label: "Status data", initial_value: form.statusData, options: [option("Draft", "draft"), option("Submitted", "submitted"), option("Aktif", "active"), option("Archived", "archived")] },
-			{ type: "select", action_id: "statusVerification", label: "Status verifikasi", initial_value: form.statusVerification, options: [option("Submitted desa", "submitted_village"), option("Need revision", "need_revision"), option("Verified", "verified"), option("Rejected", "rejected")] },
-			{ type: "select", action_id: "documentClassification", label: "Klasifikasi dokumen", initial_value: form.documentClassification, options: [option("Internal", "internal"), option("Restricted", "restricted"), option("Highly restricted", "highly_restricted")] },
+			{ type: "select", action_id: "statusVerification", label: "Status verifikasi", initial_value: form.statusVerification, options: [option("Submitted desa", "submitted_village"), option("Perlu Perbaikan", "need_revision"), option("Terverifikasi", "verified"), option("Ditolak", "rejected")] },
+			{ type: "select", action_id: "documentClassification", label: "Klasifikasi dokumen", initial_value: form.documentClassification, options: [option("Internal", "internal"), option("Terbatas", "restricted"), option("Sangat Terbatas", "highly_restricted")] },
 			{ type: "select", action_id: "requireReason", label: "Require reason", initial_value: form.requireReason, options: [option("Tidak", "false"), option("Ya", "true")] },
 		], submit: { label: "Jalankan Preview", action_id: "access_preview_run" } },
 		{ type: "fields", fields: [
@@ -2620,6 +2620,12 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const filters = parseAuditFilterForm(input);
+	const page = input.type === "block_action" && input.action_id?.startsWith("audit_page_")
+		? Number(input.action_id.replace("audit_page_", ""))
+		: 1;
+	const perPage = 50;
+	const offset = (page - 1) * perPage;
+
 	const params: AuditListParams = {
 		actor: filters.actor || undefined,
 		action: filters.action || undefined,
@@ -2627,10 +2633,11 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 		resourceId: filters.resourceId || undefined,
 		fromDate: filters.fromDate || undefined,
 		toDate: filters.toDate || undefined,
-		limit: 50,
-		offset: 0,
+		limit: perPage,
+		offset,
 	};
 	const auditResult = await listAuditLogs(db, params, ctx);
+	const totalPages = Math.ceil(auditResult.total / perPage);
 	const auditRows = auditResult.items.filter((row) => {
 		if (filters.requestId && String(row.request_id ?? "") !== filters.requestId) return false;
 		if (filters.success === "success" && Number(row.success ?? 0) !== 1) return false;
@@ -2643,6 +2650,15 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 	const distinctActors = Array.from(new Set(auditResult.items.map((row) => String(row.actor_id ?? "")).filter(Boolean))).sort();
 	const distinctResourceTypes = Array.from(new Set(auditResult.items.map((row) => String(row.resource_type ?? "")).filter(Boolean))).sort();
 
+	const paginationElements: Block[] = [];
+	if (totalPages > 1) {
+		const elements: any[] = [];
+		if (page > 1) elements.push({ type: "button", label: "← Sebelumnya", action_id: `audit_page_${page - 1}`, style: "secondary" });
+		elements.push({ type: "label", text: `Halaman ${page} dari ${totalPages}` });
+		if (page < totalPages) elements.push({ type: "button", label: "Selanjutnya →", action_id: `audit_page_${page + 1}`, style: "secondary" });
+		paginationElements.push({ type: "actions", elements });
+	}
+
 	return [
 		...pageIntro("audit", ctx.permissions),
 		{ type: "banner", variant: "default", title: "Audit Trail", description: "Halaman audit dipakai auditor dan super admin untuk menelusuri actor, action, resource, request ID, sukses/gagal, dan konsekuensi keamanan. Nilai before/after sensitif tetap harus teredaksi sesuai izin viewer." },
@@ -2653,7 +2669,7 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ label: "Reveal sensitif", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL) ? "Ya" : "Tidak, before/after diringkas" },
 		] },
 		{ type: "stats", items: [
-			{ label: "Total hasil", value: String(auditRows.length), description: "Setelah filter UI" },
+			{ label: "Total hasil", value: String(auditResult.total), description: "Dari database" },
 			{ label: "High risk", value: String(auditRows.filter((row) => HIGH_RISK_AUDIT_REQUIRED.has(String(row.action ?? "") as never)).length), description: "Perlu perhatian auditor" },
 			{ label: "Gagal", value: String(auditRows.filter((row) => Number(row.success ?? 0) !== 1).length), description: "Operasi yang tidak berhasil" },
 			{ label: "Request ID unik", value: String(new Set(auditRows.map((row) => String(row.request_id ?? "")).filter(Boolean)).size), description: "Korelasi lintas aksi" },
@@ -2673,16 +2689,18 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ type: "text_input", action_id: "fromDate", label: "Dari waktu", initial_value: filters.fromDate, placeholder: "2026-05-12T00:00:00Z" },
 			{ type: "text_input", action_id: "toDate", label: "Sampai waktu", initial_value: filters.toDate, placeholder: "2026-05-12T23:59:59Z" },
 			{ type: "select", action_id: "success", label: "Status hasil", initial_value: filters.success, options: [option("Semua", ""), option("Sukses", "success"), option("Gagal", "failed")] },
-			{ type: "select", action_id: "risk", label: "Risk", initial_value: filters.risk, options: [option("Semua risk", ""), option("High risk", "high"), option("Standar", "standard")] },
+			{ type: "select", action_id: "risk", label: "Risiko", initial_value: filters.risk, options: [option("Semua risiko", ""), option("Risiko tinggi", "high"), option("Standar", "standard")] },
 		], submit: { label: "Terapkan Filter", action_id: "audit_apply_filters" } },
 		{ type: "actions", elements: [
 			{ type: "button", label: "Reset filter", action_id: "audit_reset", style: "secondary" },
 		] },
+		...paginationElements,
 		{ type: "header", text: "Daftar Audit" },
 		...(auditRows.length ? auditRows.flatMap((row) => ([
 			{ type: "section", text: `${String(row.action ?? "-")} | ${auditSuccessLabel(row.success)} | ${auditRiskLabel(String(row.action ?? ""))}`, accessory: { type: "button", label: "Lihat Detail", action_id: `audit_open_${String(row.id)}`, style: "secondary" } },
 			{ type: "context", text: `Aktor ${String(row.actor_id ?? "-")} · Resource ${String(row.resource_type ?? "-")}/${String(row.resource_id ?? "-")} · Request ${String(row.request_id ?? "-")} · ${String(row.created_at ?? "-")}` },
 		])) : [{ type: "empty", title: "Belum ada audit yang cocok", description: "Ubah filter actor, action, resource, success, risk, atau request ID untuk melihat hasil lain." }]),
+		...paginationElements,
 		{ type: "header", text: "Kontrol Audit" },
 		{ type: "table", columns: [
 			{ key: "rule", label: "Rule" },
@@ -3040,15 +3058,29 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const filters = parseRegistryFilters(input);
+	const page = input.type === "block_action" && input.action_id?.startsWith("entities_page_")
+		? Number(input.action_id.replace("entities_page_", ""))
+		: 1;
+	const perPage = 20;
 
 	const [result, options] = await Promise.all([
-		listEntities(db, { filters, page: 1, perPage: 20 }, ctx),
+		listEntities(db, { filters, page, perPage }, ctx),
 		loadSelectOptions(db, ctx.tenantId, ctx.siteId, filters),
 	]);
 
+	const totalPages = Math.ceil(result.meta.total / perPage);
 	const verifiedCount = result.items.filter((item) => item.statusVerification === "verified").length;
 	const restrictedCount = result.items.filter((item) => item.sensitivityLevel === "restricted" || item.sensitivityLevel === "highly_restricted").length;
 	const followUpCount = result.items.filter((item) => item.statusVerification.startsWith("submitted") || item.statusVerification === "need_revision").length;
+
+	const paginationElements: Block[] = [];
+	if (totalPages > 1) {
+		const elements: any[] = [];
+		if (page > 1) elements.push({ type: "button", label: "← Sebelumnya", action_id: `entities_page_${page - 1}`, style: "secondary" });
+		elements.push({ type: "label", text: `Halaman ${page} dari ${totalPages}` });
+		if (page < totalPages) elements.push({ type: "button", label: "Selanjutnya →", action_id: `entities_page_${page + 1}`, style: "secondary" });
+		paginationElements.push({ type: "actions", elements });
+	}
 
 	const blocks: Block[] = [
 		...pageIntro("entities", ctx.permissions),
@@ -3098,11 +3130,12 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			fields: [
 				{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
 				{ label: "Filter aktif", value: String(activeFilterCount(filters)) },
-				{ label: "Per halaman", value: "20" },
+				{ label: "Per halaman", value: String(perPage) },
 				{ label: "Masking sensitif", value: "Aktif sesuai permission backend" },
 			],
 		},
 		{ type: "context", text: "Kolom Registry mengikuti spesifikasi SIKESRA: ID, jenis/subjenis, nama tampil, wilayah resmi, wilayah lokal, status data, status verifikasi, kelengkapan, sensitivitas, dan aksi kontekstual." },
+		...paginationElements,
 		{
 			type: "table",
 			block_id: "entities_registry_table",
@@ -3132,6 +3165,7 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			})),
 			empty_text: "Tidak ada data yang cocok dengan filter dan scope backend saat ini.",
 		},
+		...paginationElements,
 	];
 
 	return blocks;
