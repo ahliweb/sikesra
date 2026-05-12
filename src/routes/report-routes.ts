@@ -107,7 +107,7 @@ export const exportCreateHandler = async (routeCtx: EmDashRouteContext<ExportCre
   const db = routeCtx.env?.SIKESRA_DB;
   if (!db) throw new Error("DB_UNAVAILABLE");
 
-  const input = routeCtx.input ?? {};
+  const input: ExportCreateInput = routeCtx.input ?? { reportKey: "" };
   const reportMeta = REPORT_CATALOG.find((r) => r.key === input.reportKey);
   if (!reportMeta) throw new Error("INVALID_REPORT_KEY");
 

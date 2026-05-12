@@ -32,9 +32,6 @@ const formattedDate = date
 		})
 	: null;
 
-const safeBylines = Array.isArray(bylines)
-	? bylines.filter((credit) => credit?.byline?.displayName)
-	: [];
 ---
 
 <article class="post-card">
@@ -51,10 +48,10 @@ const safeBylines = Array.isArray(bylines)
 		<div class="card-body">
 			<div class="card-meta">
 				{
-					safeBylines.length > 0 && (
+					bylines && bylines.length > 0 && (
 						<>
 							<div class="card-bylines">
-								{safeBylines.slice(0, 1).map((credit) => (
+								{bylines.slice(0, 1).map((credit) => (
 									<span class="card-byline">
 										{credit.byline.avatarMediaId && (
 											<img
@@ -68,20 +65,20 @@ const safeBylines = Array.isArray(bylines)
 										</span>
 									</span>
 								))}
-								{safeBylines.length > 1 && (
+								{bylines.length > 1 && (
 									<span
 										class="byline-more"
-										data-tooltip={safeBylines
+										data-tooltip={bylines
 											.slice(1)
 											.map((c) => c.byline.displayName)
 											.join(", ")}
-										title={safeBylines
+										title={bylines
 											.slice(1)
 											.map((c) => c.byline.displayName)
 											.join(", ")}
 										tabindex="0"
 									>
-										+{safeBylines.length - 1}
+										+{bylines.length - 1}
 									</span>
 								)}
 							</div>

@@ -1,16 +1,17 @@
-# Environment
+node_modules
+dist
+.astro
+uploads
+data.db
+
+# Environment / Wrangler secrets
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-build/
-
-# Local databases
+# Local databases and Worker state
 *.db
 *.sqlite
 *.sqlite3
@@ -32,5 +33,5 @@ Thumbs.db
 credentials.json
 service-account.json
 
-# misc
+# Misc
 temp/

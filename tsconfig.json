@@ -1,9 +1,9 @@
 {
-  "extends": "astro/tsconfigs/strict",
+  "extends": "astro/tsconfigs/base",
   "compilerOptions": {
-    "types": ["vitest/globals", "@cloudflare/workers-types"],
+    "types": ["node", "vitest/globals", "@cloudflare/workers-types"],
     "moduleResolution": "Bundler",
     "noEmit": true
   },
-  "include": ["src", "scripts", "astro.config.mjs", "worker-configuration.d.ts", ".astro/types.d.ts"]
+  "include": ["src", "scripts", "astro.config.mjs", "worker-configuration.d.ts", ".astro/types.d.ts", "emdash-env.d.ts"]
 }

@@ -80,7 +80,7 @@ export const importCreateHandler = async (routeCtx: EmDashRouteContext<ImportCre
   const db = routeCtx.env?.SIKESRA_DB;
   if (!db) throw new Error("DB_UNAVAILABLE");
 
-  const input = routeCtx.input ?? {};
+  const input: ImportCreateInput = routeCtx.input ?? { filename: "upload.xlsx" };
   const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const tenantId = routeCtx.site?.tenantId ?? "default";
   const siteId = routeCtx.site?.id ?? "default";

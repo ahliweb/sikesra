@@ -1,6 +1,6 @@
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import { d1, r2 } from "@emdash-cms/cloudflare";
+import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { sikesraPlugin } from "./src/plugin-entry";
@@ -34,6 +34,8 @@ export default defineConfig({
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [sikesraPlugin()],
+			sandboxRunner: sandbox(),
+			marketplace: "https://marketplace.emdashcms.com",
 		}),
 	],
 	fonts: [

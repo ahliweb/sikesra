@@ -1,5 +1,4 @@
 ---
-// @ts-nocheck
 import { getEmDashEntry, decodeSlug } from "emdash";
 import { PortableText } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
@@ -16,7 +15,7 @@ if (!page) {
 	return Astro.redirect("/404");
 }
 
-Astro.cache?.set(cacheHint);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 ---
 
 <Base

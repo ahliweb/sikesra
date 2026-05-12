@@ -1,5 +1,4 @@
 ---
-// @ts-nocheck
 import {
 	getEmDashCollection,
 	getTermsForEntries,
@@ -11,32 +10,20 @@ import PostCard from "../components/PostCard.astro";
 import { getReadingTime } from "../utils/reading-time";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
-function getSafeBylines(bylines) {
-	if (!Array.isArray(bylines)) return [];
-	return bylines.filter((credit) => credit?.byline?.displayName);
-}
-
 // Limit to what we render (1 featured + 6 grid). The DB does the slicing
 // instead of fetching every post and discarding the tail in JS.
 const POSTS_PER_PAGE = 7;
 
-const [postsResult, settingsResult] = await Promise.allSettled([
+const [{ entries: posts, cacheHint }, settings] = await Promise.all([
 	getEmDashCollection("posts", {
 		orderBy: { published_at: "desc" },
 		limit: POSTS_PER_PAGE + 1, // +1 to detect "view all" need
 	}),
 	getSiteSettings(),
 ]);
-
-const postsResponse = postsResult.status === "fulfilled" ? postsResult.value : { entries: [], cacheHint: null };
-const posts = postsResponse.entries;
-const cacheHint = postsResponse.cacheHint;
-const settings = settingsResult.status === "fulfilled" ? settingsResult.value : undefined;
 const { siteTitle, siteTagline } = resolveBlogSiteIdentity(settings);
 
-if (cacheHint) {
-	Astro.cache?.set(cacheHint);
-}
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Trim the lookahead post used to detect overflow
 const visiblePosts = posts.slice(0, POSTS_PER_PAGE);
@@ -56,7 +43,7 @@ const tagEntryIds = [
 	...(featuredPost ? [featuredPost.data.id] : []),
 	...gridPosts.map((p) => p.data.id),
 ];
-const tagsByEntry = tagEntryIds.length > 0 ? await getTermsForEntries("posts", tagEntryIds, "tag") : new Map();
+const tagsByEntry = await getTermsForEntries("posts", tagEntryIds, "tag");
 
 const featuredTags = featuredPost
 	? (tagsByEntry.get(featuredPost.data.id) ?? []).map((t) => ({
@@ -64,7 +51,7 @@ const featuredTags = featuredPost
 			label: t.label,
 		}))
 	: [];
-const featuredBylines = getSafeBylines(featuredPost?.data.bylines);
+const featuredBylines = featuredPost?.data.bylines ?? [];
 
 const gridPostsWithTags = gridPosts.map((post) => ({
 	post,
@@ -72,7 +59,7 @@ const gridPostsWithTags = gridPosts.map((post) => ({
 		slug: t.slug,
 		label: t.label,
 	})),
-	bylines: getSafeBylines(post.data.bylines),
+	bylines: post.data.bylines ?? [],
 }));
 
 // Format date helper

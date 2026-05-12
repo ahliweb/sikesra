@@ -23,8 +23,9 @@ export const GET: APIRoute = async ({ site, url }) => {
 		.map((post) => {
 			const data = post.data as RssPostData;
 			if (!data.publishedAt) return null;
-			const publishedAt = data.publishedAt instanceof Date ? data.publishedAt : new Date(data.publishedAt);
-			const pubDate = publishedAt.toUTCString();
+			const pubDate = data.publishedAt instanceof Date
+				? data.publishedAt.toUTCString()
+				: new Date(data.publishedAt).toUTCString();
 
 			const postUrl = `${siteUrl}/posts/${post.id}`;
 			const title = escapeXml(data.title || "Untitled");
