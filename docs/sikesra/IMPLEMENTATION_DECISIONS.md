@@ -144,6 +144,15 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Vitest configuration with coverage reporting (npm run test:coverage)
 - Entity create wizard steps 6-9 enhanced with actual data integration (detail module schema display, people/relationships list with NIK masking, document list with size aggregation, duplicate detection results with risk scoring)
 - Entity detail screen enhanced to show actual detail module data with schema-aware field display for all 8 object types
+- Entity detail UI enhanced with interactive tabbed data display: verification timeline with actual events, benefit/service history CRUD with add/delete forms, people/relationships table, document table, and audit log
+- Region management UI enhanced with full official region CRUD (create, edit, delete) alongside existing local region management, with permission-gated actions and dependency warnings
+- Audit detail view enhanced with field-level redaction (non-sensitive fields visible without SENSITIVE_REVEAL), formatted JSON payloads, high-risk action indicators, and deleted_at enforcement
+- ID correction UI fully implemented with entity search, reason requirement (min 20 chars), confirmation dialog, and audit trail
+- Archive/restore UI fully implemented with reason requirement, confirmation dialogs, and audit logging
+- Import rollback UI fully implemented with confirmation dialog and status tracking
+- Benefit/service history CRUD API fully implemented with list, create, update, delete endpoints
+- Document complete-upload endpoint fully implemented with R2 integration
+- Delete/restore API enforces reason requirement (min 20 characters) with audit logging
 - Wizard action handlers added for manage people, manage documents, and check duplicates buttons with success feedback banners
 - Entity service input validation added for create/patch operations (required fields, format validation, range checks for coordinates)
 - Region scope validation added to entity create operation (users can only create entities in villages they have access to)
@@ -194,19 +203,26 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #196 | Operator training notes | ✅ Closed |
 | #197 | MVP go/no-go report | ✅ Closed |
 | #198 | Test coverage mapping | ✅ Closed |
+| #175 | Entity detail UI with tabbed data display | ✅ Closed |
+| #177 | Region management UI with official/local CRUD | ✅ Closed |
+| #178 | Audit detail view with redacted before/after | ✅ Closed |
+| #179 | ID correction UI with reason/confirmation | ✅ Closed |
+| #180 | Archive/restore UI with reason/confirmation | ✅ Closed |
+| #181 | Import rollback UI with status tracking | ✅ Closed |
+| #184 | Benefit/service history CRUD API | ✅ Closed |
+| #185 | Document complete-upload endpoint | ✅ Closed |
+| #186 | Enforce reason on delete/restore API | ✅ Closed |
+| #179 | ID correction UI with reason/confirmation | ✅ Closed |
+| #180 | Archive/restore UI with reason/confirmation | ✅ Closed |
+| #181 | Import rollback UI with status tracking | ✅ Closed |
+| #184 | Benefit/service history CRUD API | ✅ Closed |
+| #185 | Document complete-upload endpoint | ✅ Closed |
+| #186 | Enforce reason on delete/restore API | ✅ Closed |
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
-| #175 | Entity detail UI with tabbed data display | MVP |
-| #177 | Region management UI with official/local CRUD | MVP |
-| #178 | Audit detail view with redacted before/after | MVP |
-| #179 | ID correction UI with reason/confirmation | MVP |
-| #180 | Archive/restore UI with reason/confirmation | MVP |
-| #181 | Import rollback UI with status tracking | MVP |
-| #184 | Benefit/service history CRUD API | MVP |
-| #185 | Document complete-upload endpoint | MVP |
-| #186 | Enforce reason on delete/restore API | MVP |
+| (none) | All P0 gaps resolved | - |
 
 ### Completed Issues
 | Issue | Gap | Status |

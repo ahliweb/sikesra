@@ -8,11 +8,11 @@ import { createEntity, getEntityDetail, patchEntity, deleteEntity, restoreEntity
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
-import { createLocalRegion, updateLocalRegion, deleteLocalRegion, type LocalRegionCreateInput, type LocalRegionUpdateInput } from "../services/region";
+import { createLocalRegion, updateLocalRegion, deleteLocalRegion, createOfficialRegion, updateOfficialRegion, deleteOfficialRegion, type LocalRegionCreateInput, type LocalRegionUpdateInput, type OfficialRegionCreateInput, type OfficialRegionUpdateInput } from "../services/region";
 import { buildAbacSubject, evaluateAbac, type AbacInput, type AbacResource } from "../security/abac";
 import { loadAbacPolicies } from "../repositories/abac-repository";
-import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
-import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
+import { HIGH_RISK_AUDIT_REQUIRED, isHighRiskAction } from "../services/audit";
+import { listAuditLogs, type AuditListParams, redactAuditValues } from "../repositories/audit-repository";
 import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 import { createImportBatch, promoteImportRows, rollbackImportPromotion } from "../services/import";
@@ -23,6 +23,7 @@ import { listEntityPeople, type EntityPersonSummary } from "../services/entity-p
 import { getEntityDetailModule, DETAIL_MODULE_SCHEMAS, type DetailModuleSchema } from "../services/detail-modules";
 import { findDuplicateCandidates, type DuplicateCandidateResult } from "../services/deduplication";
 import type { DuplicateCandidateSummary } from "../repositories/deduplication-repository";
+import { listEntityBenefits, createBenefit, deleteBenefit, type BenefitHistoryInput } from "../services/benefits";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -3098,6 +3099,80 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		}
 	}
 
+	let officialNotice = "";
+	let officialError = "";
+	let showAddOfficialForm = false;
+	let editingOfficialCode = "";
+
+	if (input.type === "block_action" && input.action_id === "regions_add_official") {
+		showAddOfficialForm = true;
+	}
+
+	if (input.type === "form_submit" && input.action_id === "regions_create_official") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			officialError = "Permission awcms:sikesra:region:manage diperlukan untuk menambah wilayah resmi.";
+		} else {
+			try {
+				const officialInput: OfficialRegionCreateInput = {
+					code: String(input.values?.code ?? ""),
+					name: String(input.values?.name ?? ""),
+					level: String(input.values?.level) as any,
+					parentCode: input.values?.parentCode ? String(input.values.parentCode) : undefined,
+					kemendagriVersion: input.values?.kemendagriVersion ? String(input.values.kemendagriVersion) : undefined,
+				};
+				if (!officialInput.code || !officialInput.name || !officialInput.level) throw new Error("Kode, nama, dan level wajib diisi");
+				await createOfficialRegion(db, officialInput, ctx);
+				officialNotice = `Wilayah resmi ${officialInput.name} (${officialInput.code}) berhasil dibuat.`;
+				showAddOfficialForm = false;
+			} catch (err) {
+				officialError = err instanceof Error ? err.message : "Gagal menambah wilayah resmi";
+			}
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "regions_update_official") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			officialError = "Permission awcms:sikesra:region:manage diperlukan untuk mengubah wilayah resmi.";
+		} else {
+			try {
+				const code = String(input.values?.code ?? "");
+				const updateInput: OfficialRegionUpdateInput = {
+					name: input.values?.name ? String(input.values.name) : undefined,
+					parentCode: input.values?.parentCode !== undefined ? String(input.values.parentCode) || null : undefined,
+					kemendagriVersion: input.values?.kemendagriVersion !== undefined ? String(input.values.kemendagriVersion) || null : undefined,
+					isActive: input.values?.isActive !== undefined ? (input.values.isActive === true || input.values.isActive === "true" || input.values.isActive === "on") : undefined,
+				};
+				await updateOfficialRegion(db, code, updateInput, ctx);
+				officialNotice = `Wilayah resmi (${code}) berhasil diperbarui.`;
+				editingOfficialCode = "";
+			} catch (err) {
+				officialError = err instanceof Error ? err.message : "Gagal mengubah wilayah resmi";
+			}
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("regions_edit_official_")) {
+		editingOfficialCode = input.action_id.replace("regions_edit_official_", "");
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("regions_delete_official_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			officialError = "Permission awcms:sikesra:region:manage diperlukan untuk menghapus wilayah resmi.";
+		} else {
+			const code = input.action_id.replace("regions_delete_official_", "");
+			try {
+				const result = await deleteOfficialRegion(db, code, ctx);
+				if (result.hasLocalRegions || result.hasEntities) {
+					officialNotice = `Wilayah resmi dihapus. Terdapat ${result.localRegionCount} wilayah lokal dan ${result.entityCount} entitas yang terpengaruh.`;
+				} else {
+					officialNotice = "Wilayah resmi berhasil dihapus.";
+				}
+			} catch (err) {
+				officialError = err instanceof Error ? err.message : "Gagal menghapus wilayah resmi";
+			}
+		}
+	}
+
 	const options = await loadRegionAdminOptions(db, ctx.tenantId, ctx.siteId, form);
 	const officialCountMap = Object.fromEntries(options.officialCounts.map((row) => [row.level, Number(row.total)]));
 	const localCountMap = Object.fromEntries(options.localCounts.map((row) => [row.level, Number(row.total)]));
@@ -3134,6 +3209,8 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Wilayah lokal tersimpan", description: notice }] : []),
 		...(error ? [{ type: "banner", variant: "alert", title: "Wilayah lokal belum tersimpan", description: error }] : []),
+		...(officialNotice ? [{ type: "banner", variant: "success", title: "Wilayah resmi", description: officialNotice }] : []),
+		...(officialError ? [{ type: "banner", variant: "alert", title: "Wilayah resmi", description: officialError }] : []),
 		...responsiveStats([
 			{ label: "Provinsi", value: String(officialCountMap.province ?? 0), description: "Referensi resmi aktif" },
 			{ label: "Kab/Kota", value: String(officialCountMap.regency ?? 0), description: "Turunan resmi tingkat 2" },
@@ -3163,18 +3240,58 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 				{ level: "Kecamatan", total: officialCountMap.district ?? 0 },
 				{ level: "Desa/Kelurahan", total: officialCountMap.village ?? 0 },
 			] },
+			...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? [{
+				type: "actions",
+				elements: [
+					{ type: "button", label: "Tambah Wilayah Resmi", action_id: "regions_add_official", style: "primary" },
+				],
+			}] : []),
+			...(showAddOfficialForm ? [{
+				type: "form",
+				block_id: "regions_official_create",
+				fields: [
+					{ type: "select", action_id: "level", label: "Level (wajib)", options: [
+						{ label: "Pilih level", value: "" },
+						{ label: "Provinsi", value: "province" },
+						{ label: "Kabupaten/Kota", value: "regency" },
+						{ label: "Kecamatan", value: "district" },
+						{ label: "Desa/Kelurahan", value: "village" },
+					] },
+					{ type: "text_input", action_id: "code", label: "Kode Kemendagri (wajib)", placeholder: "Contoh: 3201 untuk kabupaten, 320101 untuk kecamatan" },
+					{ type: "text_input", action_id: "name", label: "Nama wilayah (wajib)", placeholder: "Contoh: Kabupaten Bogor" },
+					{ type: "text_input", action_id: "parentCode", label: "Kode parent (opsional)", placeholder: "Kode wilayah induk" },
+					{ type: "text_input", action_id: "kemendagriVersion", label: "Versi Kemendagri (opsional)", placeholder: "Contoh: 2024" },
+				],
+				submit: { label: "Tambah Wilayah Resmi", action_id: "regions_create_official", style: "primary" },
+			}] : []),
 			{ type: "header", text: "Preview Wilayah Resmi" },
 			...(options.officialPreview.length ? [{ type: "table", columns: [
 				{ key: "level", label: "Level" },
 				{ key: "code", label: "Kode" },
 				{ key: "name", label: "Nama" },
 				{ key: "parent", label: "Parent" },
+				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? [{ key: "actions", label: "Aksi" }] : []),
 			], rows: options.officialPreview.map((row) => ({
 				level: formatOfficialRegionLevel(String(row.level ?? "")),
 				code: String(row.code ?? "-"),
 				name: String(row.name ?? "-"),
 				parent: String(row.parent_code ?? "-"),
+				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? {
+					actions: [
+						{ type: "button", label: "Edit", action_id: `regions_edit_official_${String(row.code)}`, style: "secondary" },
+						{ type: "button", label: "Hapus", action_id: `regions_delete_official_${String(row.code)}`, style: "danger" },
+					]
+				} : {}),
 			})) }] : [{ type: "empty", title: "Belum ada wilayah resmi", description: "Seed atau sinkronisasi wilayah resmi belum tersedia pada tenant/site ini." }]),
+			...(editingOfficialCode ? [
+				{ type: "form", block_id: "regions_official_edit", fields: [
+					{ type: "hidden", action_id: "code", initial_value: editingOfficialCode },
+					{ type: "text_input", action_id: "name", label: "Nama wilayah (wajib)", initial_value: String(options.officialPreview.find(r => String(r.code) === editingOfficialCode)?.name ?? "") },
+					{ type: "text_input", action_id: "parentCode", label: "Kode parent (opsional)", initial_value: String(options.officialPreview.find(r => String(r.code) === editingOfficialCode)?.parent_code ?? "") },
+					{ type: "text_input", action_id: "kemendagriVersion", label: "Versi Kemendagri (opsional)", initial_value: String(options.officialPreview.find(r => String(r.code) === editingOfficialCode)?.kemendagri_version ?? "") },
+					{ type: "checkbox", action_id: "isActive", label: "Aktif", initial_value: Boolean(options.officialPreview.find(r => String(r.code) === editingOfficialCode)?.is_active) },
+				], submit: { label: "Simpan Perubahan", action_id: "regions_update_official", style: "primary" } },
+			] : []),
 		], [
 			{ type: "header", text: "Wilayah Lokal" },
 			{ type: "context", text: "Wilayah lokal mendukung operasi RT/RW/dusun/zona. Data ini boleh lebih rinci untuk kerja lapangan, tetapi tidak boleh mengubah kode ID SIKESRA yang berasal dari wilayah resmi." },
@@ -3839,7 +3956,7 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 	const db = await getRouteDb(routeCtx.request);
 	const auditId = page.slice("audit/".length);
 	const row = await db.prepare(
-		`SELECT * FROM awcms_sikesra_audit_logs WHERE id = ? AND tenant_id = ? AND site_id = ?`,
+		`SELECT * FROM awcms_sikesra_audit_logs WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
 	).bind(auditId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 	if (!row) {
 		return [...pageIntro(page, ctx.permissions), { type: "banner", variant: "alert", title: "Audit tidak ditemukan", description: `ID ${auditId} tidak tersedia pada scope backend saat ini.` }];
@@ -3848,44 +3965,50 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 	const beforeValue = parseAuditRecordJson(row.before_json);
 	const afterValue = parseAuditRecordJson(row.after_json);
 
+	const redactedBefore = await redactAuditValues(beforeValue as Record<string, unknown>, canReveal);
+	const redactedAfter = await redactAuditValues(afterValue as Record<string, unknown>, canReveal);
+
 	let relatedEvents: Array<Record<string, unknown>> = [];
 	const requestId = String(row.request_id ?? "");
 	if (requestId) {
 		const relatedResult = await db.prepare(
 			`SELECT id, action, actor_id, resource_type, resource_id, success, created_at
 			 FROM awcms_sikesra_audit_logs
-			 WHERE tenant_id = ? AND site_id = ? AND request_id = ? AND id != ?
+			 WHERE tenant_id = ? AND site_id = ? AND request_id = ? AND id != ? AND deleted_at IS NULL
 			 ORDER BY created_at ASC LIMIT 20`
 		).bind(ctx.tenantId, ctx.siteId, requestId, auditId).all<Record<string, unknown>>();
 		relatedEvents = relatedResult.results;
 	}
 
-	const changedFields: Array<{ field: string; before: string; after: string }> = [];
-	if (typeof beforeValue === "object" && beforeValue !== null && typeof afterValue === "object" && afterValue !== null) {
-		const allKeys = new Set([...Object.keys(beforeValue), ...Object.keys(afterValue)]);
+	const changedFields: Array<{ field: string; before: string; after: string; changed: boolean }> = [];
+	if (typeof redactedBefore === "object" && redactedBefore !== null && typeof redactedAfter === "object" && redactedAfter !== null) {
+		const allKeys = new Set([...Object.keys(redactedBefore), ...Object.keys(redactedAfter)]);
 		for (const key of allKeys) {
-			const before = JSON.stringify((beforeValue as any)[key] ?? null);
-			const after = JSON.stringify((afterValue as any)[key] ?? null);
-			if (before !== after) {
-				changedFields.push({ field: key, before: canReveal ? before : "[teredaksi]", after: canReveal ? after : "[teredaksi]" });
-			}
+			const before = (redactedBefore as any)[key];
+			const after = (redactedAfter as any)[key];
+			const beforeStr = before !== undefined ? JSON.stringify(before, null, 2) : "(tidak ada)";
+			const afterStr = after !== undefined ? JSON.stringify(after, null, 2) : "(tidak ada)";
+			const isRedacted = typeof before === "string" && before === "[REDACTED]" || typeof after === "string" && after === "[REDACTED]";
+			changedFields.push({ field: key, before: beforeStr, after: afterStr, changed: beforeStr !== afterStr && !isRedacted });
 		}
 	}
 
+	const isHighRisk = isHighRiskAction(String(row.action ?? "") as any);
+
 	return [
 		...pageIntro(page, ctx.permissions),
-		{ type: "banner", variant: "default", title: `Audit ${auditId}`, description: "Detail audit menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer. Raw secret dan nilai sangat sensitif tidak boleh bocor lewat layar ini." },
+		{ type: "banner", variant: isHighRisk ? "warning" : "default", title: `Audit ${auditId}`, description: isHighRisk ? "⚠️ Aksi berisiko tinggi. Detail audit ini menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer." : "Detail audit menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer. Field sensitif diredaksi sesuai permission." },
 		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Audit Trail", action_id: "audit_back_to_list", style: "secondary" }] },
 		{ type: "fields", fields: [
 			{ label: "Aksi", value: String(row.action ?? "-") },
 			{ label: "Status", value: auditSuccessLabel(row.success) },
-			{ label: "Risk", value: auditRiskLabel(String(row.action ?? "")) },
+			{ label: "Risk", value: isHighRisk ? "🔴 Tinggi" : "🟢 Standar" },
 			{ label: "Aktor", value: String(row.actor_id ?? "-") },
 			{ label: "Role", value: String(row.actor_role ?? "-") },
 			{ label: "Resource", value: `${String(row.resource_type ?? "-")}/${String(row.resource_id ?? "-")}` },
 			{ label: "Request ID", value: String(row.request_id ?? "-") },
 			{ label: "Waktu", value: String(row.created_at ?? "-") },
-			{ label: "Reason", value: String(row.reason ?? "-") },
+			{ label: "Reason", value: String(row.reason ?? "(tidak ada)") },
 		] },
 		{ type: "header", text: "Request Metadata" },
 		{ type: "table", columns: [
@@ -3898,19 +4021,24 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 		] },
 		...(changedFields.length > 0 ? [
 			{ type: "header", text: "Perubahan Field" },
+			{ type: "context", text: canReveal ? "Menampilkan semua perubahan field. Field sensitif tetap diredaksi." : "Field sensitif diredaksi ([REDACTED]). Field non-sensitif ditampilkan untuk transparansi audit." },
 			{ type: "table", columns: [
 				{ key: "field", label: "Field" },
 				{ key: "before", label: "Sebelum" },
 				{ key: "after", label: "Sesudah" },
-			], rows: changedFields.map((f) => ({ field: f.field, before: f.before, after: f.after })) },
+			], rows: changedFields.filter(f => f.changed || !canReveal).map((f) => ({
+				field: f.field,
+				before: f.before.substring(0, 100) + (f.before.length > 100 ? "..." : ""),
+				after: f.after.substring(0, 100) + (f.after.length > 100 ? "..." : ""),
+			})) },
 		] : []),
 		{ type: "header", text: "Payload Sebelum / Sesudah" },
 		{ type: "table", columns: [
 			{ key: "label", label: "Payload" },
 			{ key: "value", label: "Nilai" },
 		], rows: [
-			{ label: "Before", value: redactAuditValue(beforeValue, canReveal) },
-			{ label: "After", value: redactAuditValue(afterValue, canReveal) },
+			{ label: "Before", value: redactedBefore && Object.keys(redactedBefore).length > 0 ? JSON.stringify(redactedBefore, null, 2).substring(0, 500) + (JSON.stringify(redactedBefore, null, 2).length > 500 ? "\n...(truncated)" : "") : "(tidak ada)" },
+			{ label: "After", value: redactedAfter && Object.keys(redactedAfter).length > 0 ? JSON.stringify(redactedAfter, null, 2).substring(0, 500) + (JSON.stringify(redactedAfter, null, 2).length > 500 ? "\n...(truncated)" : "") : "(tidak ada)" },
 		] },
 		...(relatedEvents.length > 0 ? [
 			{ type: "header", text: `Event Terkait (Request ID: ${requestId})` },
@@ -3926,7 +4054,7 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 				createdAt: String(e.created_at ?? "-"),
 			})) },
 		] : []),
-		{ type: "context", text: canReveal ? "Viewer memiliki permission sensitive:reveal. Tetap perlakukan payload ini sebagai material audit rahasia." : "Viewer tidak memiliki permission sensitive:reveal. Payload before/after diringkas untuk mencegah kebocoran nilai sensitif." },
+		{ type: "context", text: canReveal ? "Viewer memiliki permission sensitive:reveal. Field sensitif tetap diredaksi untuk keamanan. Tetap perlakukan payload ini sebagai material audit rahasia." : "Viewer tidak memiliki permission sensitive:reveal. Field sensitif diredaksi otomatis. Field non-sensitif ditampilkan untuk transparansi audit." },
 	];
 }
 
@@ -4367,6 +4495,62 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		people = [];
 	}
 
+	let benefits: Awaited<ReturnType<typeof listEntityBenefits>> = [];
+	try {
+		benefits = await listEntityBenefits(db, entityId, ctx);
+	} catch {
+		benefits = [];
+	}
+
+	let verificationTimeline: Awaited<ReturnType<typeof getVerificationTimeline>> = [];
+	try {
+		verificationTimeline = await getVerificationTimeline(db, entityId, ctx);
+	} catch {
+		verificationTimeline = [];
+	}
+
+	let benefitSuccess = "";
+	let benefitError = "";
+	let showAddBenefitForm = false;
+	let benefitDeleteSuccess = "";
+
+	if (input.type === "block_action" && input.action_id === `benefits_add_${entityId}`) {
+		showAddBenefitForm = true;
+	}
+
+	if (input.type === "form_submit" && input.action_id === `benefits_create_submit_${entityId}`) {
+		try {
+			const benefitInput: BenefitHistoryInput = {
+				entityId,
+				benefitType: String(input.values?.benefitType ?? ""),
+				benefitName: input.values?.benefitName ? String(input.values.benefitName) : undefined,
+				sourceInstitution: input.values?.sourceInstitution ? String(input.values.sourceInstitution) : undefined,
+				year: input.values?.year ? Number(input.values.year) : undefined,
+				amountValue: input.values?.amountValue ? Number(input.values.amountValue) : undefined,
+				amountUnit: input.values?.amountUnit ? String(input.values.amountUnit) : undefined,
+				notes: input.values?.notes ? String(input.values.notes) : undefined,
+			};
+			if (!benefitInput.benefitType) throw new Error("Jenis bantuan wajib diisi");
+			await createBenefit(db, benefitInput, ctx);
+			benefitSuccess = "Riwayat bantuan berhasil ditambahkan";
+			showAddBenefitForm = false;
+		} catch (err) {
+			benefitError = err instanceof Error ? err.message : "Gagal menambahkan riwayat bantuan";
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id?.startsWith(`benefits_delete_submit_`)) {
+		const benefitId = input.values?.benefitId ? String(input.values.benefitId) : "";
+		if (benefitId) {
+			try {
+				await deleteBenefit(db, benefitId, ctx);
+				benefitDeleteSuccess = "Riwayat bantuan berhasil dihapus";
+			} catch (err) {
+				benefitError = err instanceof Error ? err.message : "Gagal menghapus riwayat bantuan";
+			}
+		}
+	}
+
 	const primaryActions = [
 		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
@@ -4387,6 +4571,9 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	...(archiveError ? [{ type: "banner", variant: "alert", title: "Gagal mengarsipkan", description: archiveError }] : []),
 	...(restoreSuccess ? [{ type: "banner", variant: "success", title: "Entitas dipulihkan", description: restoreSuccess }] : []),
 	...(restoreError ? [{ type: "banner", variant: "alert", title: "Gagal memulihkan", description: restoreError }] : []),
+	...(benefitSuccess ? [{ type: "banner", variant: "success", title: "Riwayat bantuan", description: benefitSuccess }] : []),
+	...(benefitDeleteSuccess ? [{ type: "banner", variant: "success", title: "Riwayat bantuan", description: benefitDeleteSuccess }] : []),
+	...(benefitError ? [{ type: "banner", variant: "alert", title: "Riwayat bantuan", description: benefitError }] : []),
 		{ type: "fields", fields: [
 			{ label: "ID SIKESRA", value: detail.entity.sikesraId20 ?? "Belum dibuat" },
 			{ label: "Status Data", value: formatDataStatus(detail.entity.statusData) },
@@ -4479,12 +4666,78 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 						{ label: "Level", value: String(detail.verification?.["verificationLevel"] ?? detail.entity.verificationLevel ?? "none") },
 						{ label: "Aksi Berikutnya", value: String(detail.verification?.["nextAction"] ?? "Belum tersedia") },
 					] },
+					...(verificationTimeline.length > 0 ? [
+						{ type: "header", text: "Riwayat Verifikasi" },
+						{ type: "table", columns: [
+							{ key: "timestamp", label: "Waktu" },
+							{ key: "action", label: "Aksi" },
+							{ key: "level", label: "Level" },
+							{ key: "actor", label: "Aktor" },
+							{ key: "note", label: "Catatan" },
+						], rows: verificationTimeline.map((t) => ({
+							timestamp: String(t.createdAt ?? "-"),
+							action: String(t.action ?? "-"),
+							level: String(t.verificationLevel ?? "-"),
+							actor: String(t.actorId ?? "-"),
+							note: String(t.note ?? "-").substring(0, 50) + (String(t.note ?? "").length > 50 ? "..." : ""),
+						})), empty_text: "Belum ada riwayat verifikasi." },
+					] : [
+						{ type: "context", text: "Belum ada aktivitas verifikasi untuk entitas ini." },
+					]),
 				] },
 				{ label: "Riwayat Bantuan/Layanan", blocks: [
-					{ type: "table", columns: [
-						{ key: "label", label: "Ringkasan" },
-						{ key: "value", label: "Nilai" },
-					], rows: (detail.benefits ?? []).map((row) => ({ label: String(row["label"] ?? "Riwayat"), value: String(row["value"] ?? "-") })), empty_text: "Belum ada riwayat bantuan/layanan." },
+					{ type: "fields", fields: [
+						{ label: "Jumlah Riwayat", value: `${benefits.length} catatan` },
+					] },
+					...(benefits.length > 0 ? [{
+						type: "table",
+						columns: [
+							{ key: "benefitType", label: "Jenis" },
+							{ key: "benefitName", label: "Nama Bantuan" },
+							{ key: "sourceInstitution", label: "Lembaga" },
+							{ key: "year", label: "Tahun" },
+							{ key: "amount", label: "Jumlah" },
+							{ key: "actions", label: "Aksi" },
+						],
+						rows: benefits.map((b) => ({
+							benefitType: b.benefitType ?? "-",
+							benefitName: b.benefitName ?? "-",
+							sourceInstitution: b.sourceInstitution ?? "-",
+							year: b.year ? String(b.year) : "-",
+							amount: b.amountValue ? `${b.amountValue} ${b.amountUnit ?? ""}`.trim() : "-",
+							actions: `nav_benefits/${b.id}`,
+						})),
+						empty_text: "Belum ada riwayat bantuan/layanan.",
+					}] : [
+						{ type: "context", text: "Belum ada riwayat bantuan/layanan untuk entitas ini." },
+					]),
+					...(showAddBenefitForm ? [{
+						type: "form",
+						block_id: `benefits_create_${entityId}`,
+						fields: [
+							{ type: "hidden", action_id: "entityId", initial_value: entityId },
+							{ type: "select", action_id: "benefitType", label: "Jenis Bantuan", options: [
+								{ label: "Pilih jenis", value: "" },
+								{ label: "Bantuan Sosial", value: "bantuan_sosial" },
+								{ label: "Layanan Kesehatan", value: "layanan_kesehatan" },
+								{ label: "Layanan Pendidikan", value: "layanan_pendidikan" },
+								{ label: "Bantuan Hukum", value: "bantuan_hukum" },
+								{ label: "Layanan Lainnya", value: "layanan_lainnya" },
+							] },
+							{ type: "text_input", action_id: "benefitName", label: "Nama Bantuan", placeholder: "Contoh: PKH, BPNT, PIP" },
+							{ type: "text_input", action_id: "sourceInstitution", label: "Lembaga Sumber", placeholder: "Contoh: Kemensos, Dinas Sosial" },
+							{ type: "number_input", action_id: "year", label: "Tahun" },
+							{ type: "number_input", action_id: "amountValue", label: "Jumlah/Nilai" },
+							{ type: "text_input", action_id: "amountUnit", label: "Satuan", placeholder: "Contoh: rupiah, kg, bulan" },
+							{ type: "text_input", action_id: "notes", label: "Catatan", multiline: true, placeholder: "Catatan tambahan (opsional)" },
+						],
+						submit: { label: "Tambah Riwayat", action_id: `benefits_create_submit_${entityId}`, style: "primary" },
+					}] : [{
+						type: "actions",
+						elements: [
+							{ type: "button", label: "Tambah Riwayat Bantuan", action_id: `benefits_add_${entityId}`, style: "secondary" },
+						],
+					}]),
 				] },
 				{ label: "Audit", blocks: [
 					{ type: "table", columns: [
