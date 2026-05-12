@@ -108,6 +108,7 @@ export async function generateUploadUrl(
   
   // Use storage adapter for key generation if available
   let key: string;
+  const safeName = input.fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "document";
   if (storage) {
     key = storage.generateKey(ctx, {
       filename: input.fileName.trim(),
@@ -119,7 +120,6 @@ export async function generateUploadUrl(
     const now = new Date();
     const yyyy = String(now.getUTCFullYear());
     const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-    const safeName = input.fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "document";
     key = `tenants/${ctx.tenantId}/sites/${ctx.siteId}/documents/${yyyy}/${mm}/${fileObjectId}/${safeName}`;
   }
 

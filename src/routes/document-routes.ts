@@ -31,7 +31,7 @@ export const entityDocumentsHandler = withHandlerSequence(async (input: { reques
 export const uploadUrlHandler = async (routeCtx: EmDashRouteContext<GenerateUploadUrlInput>) => {
   const ctx = buildContextFromEmDash(routeCtx);
   const db = routeCtx.env?.SIKESRA_DB;
-  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as unknown as R2Bucket | undefined;
   
   if (!db) throw new Error("Database not available");
   
@@ -66,7 +66,7 @@ export const completeUploadHandler = async (routeCtx: EmDashRouteContext) => {
 export const documentDownloadHandler = async (routeCtx: EmDashRouteContext) => {
   const ctx = buildContextFromEmDash(routeCtx);
   const db = await getRouteDb(routeCtx.request);
-  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as unknown as R2Bucket | undefined;
   
   if (!db) throw new Error("Database not available");
   if (!r2) throw new Error("R2 storage not available");
@@ -92,7 +92,7 @@ export const documentDownloadHandler = async (routeCtx: EmDashRouteContext) => {
 export const documentProxyHandler = async (routeCtx: EmDashRouteContext) => {
   const ctx = buildContextFromEmDash(routeCtx);
   const db = await getRouteDb(routeCtx.request);
-  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as unknown as R2Bucket | undefined;
   
   if (!db) throw new Error("Database not available");
   if (!r2) throw new Error("R2 storage not available");

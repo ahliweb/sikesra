@@ -486,14 +486,15 @@ async function overviewBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 			],
 		},
 		{ type: "header", text: "Antrian Kerja" },
-		...responsiveStats([
-			{ label: "Total", value: String(dashboard.kpis.total), description: "Semua entitas aktif dalam scope" },
-			{ label: "Draft", value: String(dashboard.kpis.draft), description: "Perlu dilengkapi operator" },
-			{ label: "Diajukan", value: String(dashboard.kpis.submitted), description: "Sudah masuk workflow" },
-			{ label: "Terverifikasi", value: String(dashboard.kpis.verified), description: "Siap dipakai laporan" },
-			{ label: "Perlu Revisi", value: String(dashboard.kpis.needRevision), description: "Perlu tindakan operator / verifikator" },
-			{ label: "Ditolak", value: String(dashboard.kpis.rejected), description: "Butuh tindak lanjut dan audit" },
-		]),
+		{ type: "table", columns: [
+			{ key: "label", label: "Antrian" },
+			{ key: "total", label: "Jumlah", format: "badge" },
+			{ key: "action", label: "Aksi" },
+		], rows: dashboard.workQueues.filter((q) => q.total > 0).map((q) => ({
+			label: q.label,
+			total: q.total,
+			action: ctx.permissions.includes(q.permission as any) ? `Buka →` : "Permission tidak cukup",
+		})), empty_text: "Tidak ada antrian kerja yang memerlukan perhatian saat ini." },
 		{ type: "header", text: "Ringkasan Wilayah" },
 		{
 			type: "table",
@@ -3274,6 +3275,22 @@ async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>,
 			{ label: "Gagal", value: String(auditRows.filter((row) => Number(row.success ?? 0) !== 1).length), description: "Operasi yang tidak berhasil" },
 			{ label: "Request ID unik", value: String(new Set(auditRows.map((row) => String(row.request_id ?? "")).filter(Boolean)).size), description: "Korelasi lintas aksi" },
 		]),
+		{ type: "header", text: "Ringkasan Aktivitas" },
+		{ type: "table", columns: [
+			{ key: "action", label: "Aksi" },
+			{ key: "count", label: "Jumlah" },
+			{ key: "risk", label: "Risiko" },
+		], rows: Object.entries(
+			auditRows.reduce<Record<string, number>>((acc, row) => {
+				const action = String(row.action ?? "");
+				acc[action] = (acc[action] || 0) + 1;
+				return acc;
+			}, {})
+		).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([action, count]) => ({
+			action,
+			count: String(count),
+			risk: HIGH_RISK_AUDIT_REQUIRED.has(action as never) ? "🔴 Tinggi" : "🟢 Standar",
+		})), empty_text: "Belum ada aktivitas audit untuk dirangkum." },
 		{ type: "fields", fields: [
 			{ label: "Filter aktif", value: String(activeAuditFilterCount(filters)) },
 			{ label: "Scope region", value: describeRegionScopeLabel(ctx) },
@@ -3396,6 +3413,7 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 		featureDocuments: form.featureDocuments || String(currentFlags.documents),
 		featureExports: form.featureExports || String(currentFlags.exports),
 		reason: form.reason,
+		confirmSettingsSave: form.confirmSettingsSave,
 	};
 	form = derivedForm;
 

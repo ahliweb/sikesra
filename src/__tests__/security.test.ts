@@ -271,7 +271,9 @@ describe("SIKESRA Security Regression Tests", () => {
       }, ctx);
       
       expect(result.ok).toBe(true);
-      expect(result.auditEventId).toBeTruthy();
+      if (result.ok) {
+        expect(result.auditEventId).toBeTruthy();
+      }
     });
 
     it("should identify high-risk actions", () => {
