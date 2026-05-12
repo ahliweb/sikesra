@@ -8,7 +8,7 @@ import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, typ
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
-import { createLocalRegion, type LocalRegionCreateInput } from "../services/region";
+import { createLocalRegion, updateLocalRegion, deleteLocalRegion, type LocalRegionCreateInput, type LocalRegionUpdateInput } from "../services/region";
 import { buildAbacSubject, evaluateAbac, type AbacInput, type AbacResource } from "../security/abac";
 import { loadAbacPolicies } from "../repositories/abac-repository";
 import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
@@ -17,7 +17,7 @@ import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 import { createImportBatch, promoteImportRows } from "../services/import";
 import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
-import { generateSikesraId } from "../services/code";
+import { generateSikesraId, correctSikesraId } from "../services/code";
 import { createExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
 import { listEntityPeople, type EntityPersonSummary } from "../services/entity-people";
 import { getEntityDetailModule, DETAIL_MODULE_SCHEMAS, type DetailModuleSchema } from "../services/detail-modules";
@@ -84,6 +84,7 @@ interface LocalRegionAdminFormState {
 	description: string;
 	latitude: string;
 	longitude: string;
+	localRegionId: string;
 }
 
 interface AccessPreviewFormState {
@@ -156,6 +157,7 @@ const PAGE_LABELS: Record<string, string> = {
 	access: "Atribut & Akses",
 	audit: "Audit",
 	settings: "Pengaturan",
+	code: "Koreksi ID",
 };
 
 const DATA_STATUS_LABELS: Record<string, string> = {
@@ -196,6 +198,16 @@ const DUPLICATE_STATUS_LABELS: Record<string, string> = {
 	candidate: "Kandidat",
 	confirmed: "Terkonfirmasi",
 	resolved: "Selesai",
+};
+
+const RELATION_TYPE_LABELS: Record<string, string> = {
+	pengurus: "Pengurus",
+	wali: "Wali",
+	pengasuh: "Pengasuh",
+	anggota: "Anggota",
+	pimpinan: "Pimpinan",
+	penanggung_jawab: "Penanggung Jawab",
+	lainnya: "Lainnya",
 };
 
 const OFFICIAL_REGION_LEVEL_LABELS: Record<string, string> = {
@@ -752,7 +764,7 @@ function parseReportCreateForm(input: PluginAdminInteraction): ReportCreateFormS
 
 function parseLocalRegionAdminForm(input: PluginAdminInteraction): LocalRegionAdminFormState {
 	const values = input.type === "form_submit" ? input.values ?? {} : {};
-	return {
+	const state: LocalRegionAdminFormState = {
 		officialVillageCode: stringState(values.officialVillageCode),
 		parentId: stringState(values.parentId),
 		level: stringState(values.level),
@@ -761,7 +773,14 @@ function parseLocalRegionAdminForm(input: PluginAdminInteraction): LocalRegionAd
 		description: stringState(values.description),
 		latitude: stringState(values.latitude),
 		longitude: stringState(values.longitude),
+		localRegionId: stringState(values.localRegionId),
 	};
+
+	if (input.type === "block_action" && input.action_id?.startsWith("regions_edit_")) {
+		state.localRegionId = input.action_id.replace("regions_edit_", "");
+	}
+
+	return state;
 }
 
 function parseAccessPreviewForm(input: PluginAdminInteraction): AccessPreviewFormState {
@@ -2951,10 +2970,63 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		}
 	}
 
+	if (input.type === "form_submit" && input.action_id === "regions_update_local") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			error = "Permission awcms:sikesra:region:manage diperlukan untuk mengubah wilayah lokal.";
+		} else if (!form.localRegionId || !form.name.trim()) {
+			error = "ID wilayah lokal dan nama wilayah wajib diisi.";
+		} else {
+			const updateInput: LocalRegionUpdateInput = {
+				parentId: form.parentId || undefined,
+				level: form.level as LocalRegionUpdateInput["level"],
+				codeLocal: form.codeLocal || undefined,
+				name: form.name,
+				description: form.description || undefined,
+				latitude: numberValue(form.latitude),
+				longitude: numberValue(form.longitude),
+			};
+			await updateLocalRegion(db, form.localRegionId, updateInput, ctx);
+			notice = `Wilayah lokal "${form.name}" berhasil diperbarui.`;
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("regions_delete_local_")) {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE)) {
+			error = "Permission awcms:sikesra:region:manage diperlukan untuk menghapus wilayah lokal.";
+		} else {
+			const regionId = input.action_id.replace("regions_delete_local_", "");
+			const result = await deleteLocalRegion(db, regionId, ctx);
+			if (result.hasEntities) {
+				notice = `Wilayah lokal berhasil dihapus. Terdapat ${result.entityCount} entitas yang menggunakan desa terkait (tidak terpengaruh).`;
+			} else {
+				notice = "Wilayah lokal berhasil dihapus.";
+			}
+		}
+	}
+
 	const options = await loadRegionAdminOptions(db, ctx.tenantId, ctx.siteId, form);
 	const officialCountMap = Object.fromEntries(options.officialCounts.map((row) => [row.level, Number(row.total)]));
 	const localCountMap = Object.fromEntries(options.localCounts.map((row) => [row.level, Number(row.total)]));
 	const villageOptionLabel = options.villages.find((row) => row.code === form.officialVillageCode)?.name ?? (form.officialVillageCode || "Belum dipilih");
+
+	if (form.localRegionId && input.type === "block_action" && input.action_id?.startsWith("regions_edit_")) {
+		const regionRow = await db.prepare(
+			`SELECT id, official_village_code, parent_id, level, code_local, name, description, latitude, longitude
+			 FROM awcms_sikesra_local_regions
+			 WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
+		).bind(form.localRegionId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+
+		if (regionRow) {
+			form.officialVillageCode = String(regionRow.official_village_code ?? "");
+			form.parentId = String(regionRow.parent_id ?? "");
+			form.level = String(regionRow.level ?? "");
+			form.codeLocal = String(regionRow.code_local ?? "");
+			form.name = String(regionRow.name ?? "");
+			form.description = String(regionRow.description ?? "");
+			form.latitude = regionRow.latitude !== null && regionRow.latitude !== undefined ? String(regionRow.latitude) : "";
+			form.longitude = regionRow.longitude !== null && regionRow.longitude !== undefined ? String(regionRow.longitude) : "";
+		}
+	}
 
 	return [
 		...pageIntro("regions", ctx.permissions),
@@ -3023,12 +3095,19 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 				{ key: "name", label: "Nama" },
 				{ key: "village", label: "Desa Resmi" },
 				{ key: "updatedAt", label: "Update" },
+				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? [{ key: "actions", label: "Aksi" }] : []),
 			], rows: options.localPreview.map((row) => ({
 				level: formatLocalRegionLevel(String(row.level ?? "")),
 				codeLocal: String(row.code_local ?? "-"),
 				name: String(row.name ?? "-"),
 				village: String(row.official_village_code ?? "-"),
 				updatedAt: String(row.updated_at ?? "-"),
+				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? {
+					actions: [
+						{ type: "button", label: "Edit", action_id: `regions_edit_${String(row.id)}`, style: "secondary" },
+						{ type: "button", label: "Hapus", action_id: `regions_delete_local_${String(row.id)}`, style: "danger" },
+					]
+				} : {}),
 			})) }] : [{ type: "empty", title: "Belum ada wilayah lokal", description: "Tambahkan dusun/RW/RT/zona sesuai kebutuhan operasional setelah wilayah resmi tersedia." }]),
 		]] },
 		{ type: "header", text: "Tambah Wilayah Lokal" },
@@ -3043,6 +3122,20 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 			{ type: "number_input", action_id: "latitude", label: "Latitude (opsional)", initial_value: numberValue(form.latitude) },
 			{ type: "number_input", action_id: "longitude", label: "Longitude (opsional)", initial_value: numberValue(form.longitude) },
 		], submit: { label: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? "Tambah Wilayah Lokal" : "Butuh Permission Region Manage", action_id: "regions_create_local" } },
+	...(form.localRegionId && hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.REGION_MANAGE) ? [
+		{ type: "header", text: "Edit Wilayah Lokal" },
+		{ type: "context", text: `Mengubah wilayah lokal: ${form.name || form.localRegionId}` },
+		{ type: "form", block_id: "regions_edit_form", fields: [
+			{ type: "hidden", action_id: "localRegionId", initial_value: form.localRegionId },
+			{ type: "select", action_id: "parentId", label: "Parent wilayah lokal (opsional)", initial_value: form.parentId, options: [option("Pilih parent atau biarkan kosong", ""), ...options.localParents.map((row) => option(row.label, row.id))] },
+			{ type: "select", action_id: "level", label: "Level wilayah lokal (wajib)", initial_value: form.level, options: [option("Pilih level wilayah lokal", ""), ...Object.entries(LOCAL_REGION_LEVEL_LABELS).map(([value, label]) => option(label, value))] },
+			{ type: "text_input", action_id: "codeLocal", label: "Kode lokal (opsional)", initial_value: form.codeLocal, placeholder: "Contoh: RW 03 / RT 07 / ZN-A" },
+			{ type: "text_input", action_id: "name", label: "Nama wilayah lokal (wajib)", initial_value: form.name, placeholder: "Contoh: RW 03 Sidorejo Barat" },
+			{ type: "text_input", action_id: "description", label: "Deskripsi operasional", multiline: true, initial_value: form.description, placeholder: "Catatan lapangan atau batas operasional bila diperlukan" },
+			{ type: "number_input", action_id: "latitude", label: "Latitude (opsional)", initial_value: numberValue(form.latitude) },
+			{ type: "number_input", action_id: "longitude", label: "Longitude (opsional)", initial_value: numberValue(form.longitude) },
+		], submit: { label: "Simpan Perubahan", action_id: "regions_update_local" } },
+	] : []),
 		{ type: "header", text: "Preview Input Saat Ini" },
 		{ type: "fields", fields: [
 			{ label: "Desa resmi", value: villageOptionLabel },
@@ -3355,6 +3448,31 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 	const canReveal = hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL);
 	const beforeValue = parseAuditRecordJson(row.before_json);
 	const afterValue = parseAuditRecordJson(row.after_json);
+
+	let relatedEvents: Array<Record<string, unknown>> = [];
+	const requestId = String(row.request_id ?? "");
+	if (requestId) {
+		const relatedResult = await db.prepare(
+			`SELECT id, action, actor_id, resource_type, resource_id, success, created_at
+			 FROM awcms_sikesra_audit_logs
+			 WHERE tenant_id = ? AND site_id = ? AND request_id = ? AND id != ?
+			 ORDER BY created_at ASC LIMIT 20`
+		).bind(ctx.tenantId, ctx.siteId, requestId, auditId).all<Record<string, unknown>>();
+		relatedEvents = relatedResult.results;
+	}
+
+	const changedFields: Array<{ field: string; before: string; after: string }> = [];
+	if (typeof beforeValue === "object" && beforeValue !== null && typeof afterValue === "object" && afterValue !== null) {
+		const allKeys = new Set([...Object.keys(beforeValue), ...Object.keys(afterValue)]);
+		for (const key of allKeys) {
+			const before = JSON.stringify((beforeValue as any)[key] ?? null);
+			const after = JSON.stringify((afterValue as any)[key] ?? null);
+			if (before !== after) {
+				changedFields.push({ field: key, before: canReveal ? before : "[teredaksi]", after: canReveal ? after : "[teredaksi]" });
+			}
+		}
+	}
+
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Audit ${auditId}`, description: "Detail audit menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer. Raw secret dan nilai sangat sensitif tidak boleh bocor lewat layar ini." },
@@ -3379,6 +3497,14 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 			{ label: "User Agent", value: String(row.user_agent ?? "-") },
 			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
 		] },
+		...(changedFields.length > 0 ? [
+			{ type: "header", text: "Perubahan Field" },
+			{ type: "table", columns: [
+				{ key: "field", label: "Field" },
+				{ key: "before", label: "Sebelum" },
+				{ key: "after", label: "Sesudah" },
+			], rows: changedFields.map((f) => ({ field: f.field, before: f.before, after: f.after })) },
+		] : []),
 		{ type: "header", text: "Payload Sebelum / Sesudah" },
 		{ type: "table", columns: [
 			{ key: "label", label: "Payload" },
@@ -3387,7 +3513,155 @@ async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInterac
 			{ label: "Before", value: redactAuditValue(beforeValue, canReveal) },
 			{ label: "After", value: redactAuditValue(afterValue, canReveal) },
 		] },
+		...(relatedEvents.length > 0 ? [
+			{ type: "header", text: `Event Terkait (Request ID: ${requestId})` },
+			{ type: "table", columns: [
+				{ key: "action", label: "Aksi" },
+				{ key: "resource", label: "Resource" },
+				{ key: "success", label: "Status" },
+				{ key: "createdAt", label: "Waktu" },
+			], rows: relatedEvents.map((e) => ({
+				action: String(e.action ?? "-"),
+				resource: `${String(e.resource_type ?? "-")}/${String(e.resource_id ?? "-")}`,
+				success: auditSuccessLabel(e.success),
+				createdAt: String(e.created_at ?? "-"),
+			})) },
+		] : []),
 		{ type: "context", text: canReveal ? "Viewer memiliki permission sensitive:reveal. Tetap perlakukan payload ini sebagai material audit rahasia." : "Viewer tidak memiliki permission sensitive:reveal. Payload before/after diringkas untuk mencegah kebocoran nilai sensitif." },
+	];
+}
+
+interface CodeCorrectionFormState {
+	entityId: string;
+	entitySearch: string;
+	newId: string;
+	reason: string;
+	confirmCorrection: boolean;
+}
+
+function parseCodeCorrectionForm(input: PluginAdminInteraction): CodeCorrectionFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		entityId: stringState(values.entityId),
+		entitySearch: stringState(values.entitySearch),
+		newId: stringState(values.newId),
+		reason: stringState(values.reason),
+		confirmCorrection: values.confirmCorrection === true || values.confirmCorrection === "true" || values.confirmCorrection === "on",
+	};
+}
+
+async function codeCorrectionBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const form = parseCodeCorrectionForm(input);
+	let notice = "";
+	let error = "";
+	let showConfirm = false;
+	let entityInfo: { displayName: string; currentId: string } | null = null;
+
+	if (input.type === "block_action" && input.action_id?.startsWith("code_search_entity_")) {
+		form.entitySearch = input.action_id.replace("code_search_entity_", "");
+	}
+
+	if (form.entitySearch) {
+		const searchResult = await db.prepare(
+			`SELECT id, display_name, sikesra_id_20 FROM awcms_sikesra_entities
+			 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
+			 AND (display_name LIKE ? OR id = ? OR sikesra_id_20 = ?)
+			 ORDER BY display_name LIMIT 10`
+		).bind(ctx.tenantId, ctx.siteId, `%${form.entitySearch}%`, form.entitySearch, form.entitySearch).all<Record<string, unknown>>();
+
+		if (searchResult.results.length === 1) {
+			const row = searchResult.results[0];
+			entityInfo = {
+				displayName: String(row.display_name ?? ""),
+				currentId: String(row.sikesra_id_20 ?? "Belum dibuat"),
+			};
+			if (!form.entityId) form.entityId = String(row.id);
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "code_correction_submit") {
+		if (!hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.CODE_CORRECT)) {
+			error = "Permission awcms:sikesra:code:correct diperlukan untuk mengoreksi ID SIKESRA.";
+		} else if (!form.entityId || !form.newId || !form.reason) {
+			error = "Entitas, ID baru, dan alasan wajib diisi.";
+		} else if (form.reason.length < 20) {
+			error = "Alasan harus minimal 20 karakter untuk keperluan audit.";
+		} else if (!form.confirmCorrection) {
+			error = "Konfirmasi eksplisit diperlukan untuk koreksi ID.";
+		} else {
+			try {
+				await correctSikesraId(db, form.entityId, form.newId, form.reason, ctx);
+				notice = `ID SIKESRA berhasil dikoreksi menjadi ${form.newId}. Perubahan ini tercatat di audit trail (code.correct).`;
+				form.entityId = "";
+				form.newId = "";
+				form.reason = "";
+				form.confirmCorrection = false;
+			} catch (err) {
+				error = err instanceof Error ? err.message : "Gagal mengoreksi ID SIKESRA";
+			}
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "code_correction_confirm") {
+		if (!form.entityId || !form.newId || !form.reason) {
+			error = "Entitas, ID baru, dan alasan wajib diisi sebelum konfirmasi.";
+		} else if (form.reason.length < 20) {
+			error = "Alasan harus minimal 20 karakter.";
+		} else {
+			showConfirm = true;
+		}
+	}
+
+	const canCorrect = hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.CODE_CORRECT);
+
+	return [
+		...pageIntro("code", ctx.permissions),
+		...mobileHint(routeCtx.requestMeta?.userAgent),
+		{ type: "banner", variant: "default", title: "Koreksi ID SIKESRA", description: "Halaman ini untuk mengoreksi ID SIKESRA 20 digit yang sudah dibuat. Koreksi memerlukan permission code:correct dan alasan eksplisit minimal 20 karakter. Semua koreksi tercatat di audit trail." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Permission koreksi", value: canCorrect ? "Aktif" : "Belum terdeteksi" },
+		] },
+		...(notice ? [{ type: "banner", variant: "success", title: "ID SIKESRA dikoreksi", description: notice }] : []),
+		...(error ? [{ type: "banner", variant: "alert", title: "Koreksi ID gagal", description: error }] : []),
+		{ type: "header", text: "Cari Entitas" },
+		{ type: "form", block_id: "code_search_form", fields: [
+			{ type: "text_input", action_id: "entitySearch", label: "Cari nama atau ID entitas", initial_value: form.entitySearch, placeholder: "Contoh: Masjid Al-Ikhlas atau ent_xxx" },
+		], submit: { label: "Cari", action_id: "code_search_entity" } },
+		...(entityInfo ? [{ type: "fields", fields: [
+			{ label: "Entitas ditemukan", value: entityInfo.displayName },
+			{ label: "ID SIKESRA saat ini", value: entityInfo.currentId },
+		] }] : []),
+		{ type: "header", text: "Form Koreksi ID" },
+		{ type: "context", text: canCorrect ? "Gunakan form ini untuk mengoreksi ID SIKESRA. Pastikan ID baru sesuai dengan format 20 digit dan alasan jelas untuk audit." : "Akun ini belum memiliki izin koreksi ID. Form ditampilkan sebagai referensi kontrak input." },
+		{ type: "form", block_id: "code_correction_form", fields: [
+			{ type: "hidden", action_id: "entityId", initial_value: form.entityId },
+			{ type: "text_input", action_id: "entityIdDisplay", label: "ID Entitas (wajib)", initial_value: form.entityId, placeholder: "ent_xxx atau ID entitas dari pencarian" },
+			{ type: "text_input", action_id: "newId", label: "ID SIKESRA Baru (20 digit, wajib)", initial_value: form.newId, placeholder: "Contoh: 330101202501000001" },
+			{ type: "text_input", action_id: "reason", label: "Alasan koreksi (wajib, min 20 karakter)", multiline: true, initial_value: form.reason, placeholder: "Jelaskan alasan koreksi ID secara detail untuk keperluan audit..." },
+		], submit: { label: "Lanjutkan ke Konfirmasi", action_id: "code_correction_confirm" } },
+		...(showConfirm ? [
+			{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Koreksi ID SIKESRA", description: `ID SIKESRA akan dikoreksi dari "${entityInfo?.currentId ?? form.entityId}" menjadi "${form.newId}". Koreksi ini akan tercatat permanen di audit trail (code.correct) dan code history. Pastikan ID baru sudah benar.` },
+			{ type: "form", block_id: "code_confirm_form", fields: [
+				{ type: "hidden", action_id: "entityId", initial_value: form.entityId },
+				{ type: "hidden", action_id: "newId", initial_value: form.newId },
+				{ type: "hidden", action_id: "reason", initial_value: form.reason },
+				{ type: "checkbox", action_id: "confirmCorrection", label: "✅ Saya memahami bahwa koreksi ID ini akan tercatat permanen di audit trail dan code history" },
+			], submit: { label: "Konfirmasi & Koreksi ID", action_id: "code_correction_submit", style: "primary" } },
+		] : []),
+		{ type: "header", text: "Aturan Koreksi ID" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Aturan" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Permission code:correct wajib", status: canCorrect ? "Aktif" : "Dibutuhkan" },
+			{ rule: "Alasan min 20 karakter", status: "Dienforce di backend" },
+			{ rule: "Konfirmasi eksplisit", status: "Checkbox wajib dicentang" },
+			{ rule: "Audit event code.correct", status: "Tercatat otomatis" },
+			{ rule: "Code history update", status: "ID lama disimpan di history" },
+		] },
 	];
 }
 
@@ -3631,6 +3905,13 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		}
 	}
 
+	let people: EntityPersonSummary[] = [];
+	try {
+		people = await listEntityPeople(db, entityId, ctx);
+	} catch {
+		people = [];
+	}
+
 	const primaryActions = [
 		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
@@ -3699,6 +3980,27 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 						{ key: "value", label: "Nilai" },
 						{ key: "access", label: "Akses" },
 					], rows: (detail.documents ?? []).map((row) => ({ label: String(row["label"] ?? "Dokumen"), value: String(row["value"] ?? "-") , access: String(row["access"] ?? "-") })), empty_text: "Belum ada dokumen yang ditautkan." },
+				] },
+				{ label: "Pengurus / Relasi", blocks: [
+					{ type: "fields", fields: [
+						{ label: "Jumlah Relasi", value: `${people.length} orang` },
+						{ label: "Relasi Utama", value: people.find((p) => p.isPrimary)?.personName ?? "Belum ditentukan" },
+					] },
+					...(people.length > 0 ? [{
+						type: "table",
+						columns: [
+							{ key: "personName", label: "Nama" },
+							{ key: "relationType", label: "Jenis Relasi" },
+							{ key: "isPrimary", label: "Utama" },
+						],
+						rows: people.map((p) => ({
+							personName: p.personName ?? "-",
+							relationType: RELATION_TYPE_LABELS[p.relationType] ?? p.relationType,
+							isPrimary: p.isPrimary ? "✅ Ya" : "-",
+						})),
+					}] : [
+						{ type: "context", text: "Belum ada pengurus atau relasi yang ditautkan ke entitas ini." },
+					]),
 				] },
 				{ label: "Verifikasi", blocks: [
 					{ type: "fields", fields: [
@@ -3998,6 +4300,12 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "settings") {
 		return {
 			blocks: await settingsBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "code") {
+		return {
+			blocks: await codeCorrectionBlocks(routeCtx, input),
 		};
 	}
 

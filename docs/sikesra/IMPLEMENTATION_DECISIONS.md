@@ -168,12 +168,44 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Duplicate detection enhanced during import promotion with blocking risk level for exact matches
 - Import rollback capability added for failed promotions with soft-delete and audit logging
 - Route count: 58 routes (added v1/imports/upload and v1/imports/rollback)
+- Gap analysis completed: 24 new issues created for remaining gaps
+  - UI/UX: 7 issues (#175, #176, #177, #178, #179, #180, #181)
+  - Backend/API: 5 issues (#182, #183, #184, #185, #186)
+  - Integration: 3 issues (#187, #188, #189)
+  - Operations/Security: 5 issues (#190, #191, #192, #193, #194, #195)
+  - Documentation: 3 issues (#196, #197, #198)
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
+| #175 | Entity detail UI with tabbed data display | MVP |
+| #177 | Region management UI with official/local CRUD | MVP |
+| #178 | Audit detail view with redacted before/after | MVP |
+| #179 | ID correction UI with reason/confirmation | MVP |
+| #180 | Archive/restore UI with reason/confirmation | MVP |
+| #181 | Import rollback UI with status tracking | MVP |
+| #182 | Entity validation endpoint for section-level | MVP |
+| #183 | Rate limiting middleware for import/export | MVP |
+| #184 | Benefit/service history CRUD API | MVP |
+| #185 | Document complete-upload endpoint | MVP |
+| #186 | Enforce reason on delete/restore API | MVP |
+| #190 | Public privacy tests for aggregate-safe | MVP |
+| #191 | Dedicated sensitive masking test suite | MVP |
+| #192 | Import staging/promotion workflow tests | MVP |
+| #193 | Verification workflow state machine tests | MVP |
+| #194 | Export restriction and permission tests | MVP |
+| #197 | MVP go/no-go report | MVP |
 
-### Completed P0 Gaps
+### Remaining P1 Gaps (Post-MVP)
+| Issue | Gap | Priority |
+|---|---|---|
+| #176 | ABAC policy/attribute management UI | Post-MVP |
+| #187 | Permission registry to EmDash role UI | Post-MVP |
+| #188 | Cloudflare Access JWT validation | Post-MVP |
+| #189 | R2 lifecycle rules and automated backup | Post-MVP |
+| #195 | Incident response runbook | Post-MVP |
+| #196 | Operator training notes for all roles | Post-MVP |
+| #198 | Test coverage mapping documentation | Post-MVP |
 | Issue | Gap | Status |
 |---|---|---|
 | #155 | ID generation service | ✅ Implemented with sequence table, code history, and audit |
@@ -209,4 +241,10 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 7. #163: InMemoryD1Binding fix (enables repository testing) ✅
 8. #161: Comprehensive test coverage (security regression protection) ✅
 9. #162: Backup/restore procedures (operations requirement) ✅
-10. #164, #165: Post-MVP hardening
+10. #164, #165: Post-MVP hardening ✅
+11. #175, #177, #178, #179, #180, #181: Admin UI completion (MVP)
+12. #182, #184, #185, #186: Backend API completion (MVP)
+13. #183: Rate limiting (MVP security)
+14. #190-#194: Test suite completion (MVP go/no-go)
+15. #197: MVP go/no-go report (MVP decision)
+16. #176, #187, #188, #189, #195, #196, #198: Post-MVP hardening
