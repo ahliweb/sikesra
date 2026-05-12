@@ -1812,17 +1812,35 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const filters = parseVerificationFilters(input);
-	const [queue, options] = await Promise.all([
-		getVerificationQueue(db, filters, ctx),
+	const page = input.type === "block_action" && input.action_id?.startsWith("verification_page_")
+		? Number(input.action_id.replace("verification_page_", ""))
+		: 1;
+	const perPage = 50;
+	const offset = (page - 1) * perPage;
+
+	const [queueResult, options] = await Promise.all([
+		getVerificationQueue(db, { ...filters, limit: perPage, offset }, ctx),
 		loadVerificationOptions(db, ctx.tenantId, ctx.siteId),
 	]);
+	const queue = queueResult.items;
+	const totalPages = Math.ceil(queueResult.total / perPage);
+
+	const paginationElements: Block[] = [];
+	if (totalPages > 1) {
+		const elements: any[] = [];
+		if (page > 1) elements.push({ type: "button", label: "← Sebelumnya", action_id: `verification_page_${page - 1}`, style: "secondary" });
+		elements.push({ type: "label", text: `Halaman ${page} dari ${totalPages}` });
+		if (page < totalPages) elements.push({ type: "button", label: "Selanjutnya →", action_id: `verification_page_${page + 1}`, style: "secondary" });
+		paginationElements.push({ type: "actions", elements });
+	}
 
 	return [
 		...pageIntro("verification", ctx.permissions),
 		...mobileHint(routeCtx.requestMeta?.userAgent),
 		{ type: "banner", variant: "default", title: "Queue Verifikasi", description: "Antrian ini difilter oleh permission, status, dan region scope backend. Gunakan tombol review untuk membuka layar pemeriksaan entitas." },
 		...responsiveStats([
-			{ label: "Total antrian", value: String(queue.length), description: "Queue setelah filter" },
+			{ label: "Total antrian", value: String(queueResult.total), description: "Total item setelah filter" },
+			{ label: "Ditampilkan", value: String(queue.length), description: "Item pada halaman ini" },
 			{ label: "Risiko tinggi", value: String(queue.filter((item) => item.riskLevel === "high").length), description: "Perlu prioritas review" },
 			{ label: "Butuh revisi", value: String(queue.filter((item) => item.currentStatus === "need_revision").length), description: "Draft revisi menunggu tindak lanjut" },
 		]),
@@ -1844,11 +1862,13 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		{ type: "actions", elements: [
 			{ type: "button", label: "Reset filter", action_id: "verification_reset", style: "secondary" },
 		] },
+		...paginationElements,
 		{ type: "header", text: "Daftar Review" },
 		...(queue.length ? queue.flatMap((item) => ([
 			{ type: "section", text: `${item.displayName} | ${item.objectTypeCode}/${item.objectSubtypeCode} | ${formatVerificationStatusWithBadge(item.currentStatus)} | ${formatCompletenessWithBar(item.completenessPercent)} | ${formatVerificationRisk(item.riskLevel)}`, accessory: { type: "button", label: "Review", action_id: `verification_open_${item.entityId}`, style: "primary" } },
 			{ type: "context", text: `Wilayah ${item.officialVillageCode} · Submit ${item.submittedAt} · Duplikasi ${DUPLICATE_STATUS_LABELS[item.duplicateStatus] ?? item.duplicateStatus}` },
 		])) : [{ type: "empty", title: "Antrian kosong", description: "Tidak ada item verifikasi yang cocok dengan filter dan scope backend saat ini." }]),
+		...paginationElements,
 	];
 }
 

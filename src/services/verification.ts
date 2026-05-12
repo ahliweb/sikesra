@@ -18,6 +18,13 @@ export interface VerificationQueueFilters {
   risk?: "low" | "medium" | "high";
   completeness?: "lt50" | "50to79" | "80plus";
   duplicateStatus?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface VerificationQueueResult {
+  items: VerificationQueueItem[];
+  total: number;
 }
 
 export interface VerificationQueueItem {
@@ -102,7 +109,7 @@ export async function getVerificationQueue(
   db: D1Binding,
   filters: VerificationQueueFilters,
   ctx: SikesraRequestContext,
-): Promise<VerificationQueueItem[]> {
+): Promise<VerificationQueueResult> {
   const statuses = queueStatusesForLevel(filters.level);
   const params: unknown[] = [ctx.tenantId, ctx.siteId, ...statuses];
   const placeholders = statuses.map(() => "?").join(",");
@@ -126,10 +133,24 @@ export async function getVerificationQueue(
     params.push(...ctx.regionScope.villageCodes);
   }
 
+  // Get total count
+  const countSql = `SELECT COUNT(*) as total FROM awcms_sikesra_entities WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL AND status_verification IN (${placeholders})`;
+  const countParams = [...params];
+  const countResult = await db.prepare(countSql).bind(...countParams).first<{ total: number }>();
+  const total = countResult?.total ?? 0;
+
+  // Add pagination
   sql += " ORDER BY updated_at ASC";
+  if (filters.limit) {
+    sql += ` LIMIT ${filters.limit}`;
+    if (filters.offset) {
+      sql += ` OFFSET ${filters.offset}`;
+    }
+  }
+
   const result = await db.prepare(sql).bind(...params).all<Record<string, unknown>>();
 
-  return result.results.map((row) => {
+  const items = result.results.map((row) => {
     const completenessPercent = Number(row.completeness_percent ?? 0);
     const duplicateStatus = String(row.duplicate_status ?? "unknown");
     return {
@@ -152,6 +173,8 @@ export async function getVerificationQueue(
     if (!satisfiesCompleteness(item.completenessPercent, filters.completeness)) return false;
     return true;
   });
+
+  return { items, total };
 }
 
 export async function submitEntity(

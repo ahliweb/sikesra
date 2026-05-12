@@ -137,6 +137,8 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Export generation wired in admin UI with generate/download buttons and R2 integration
 - Import promotion wired in admin UI with promote button and full workflow completion
 - Entity patch handler fixed to use entityId from request body instead of URL path
+- ABAC routes now enforce RBAC permissions on all endpoints (POLICY_READ, POLICY_WRITE, POLICY_PREVIEW, ATTRIBUTE_READ, ATTRIBUTE_WRITE)
+- Pagination added to verification queue with LIMIT/OFFSET support and navigation controls
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
