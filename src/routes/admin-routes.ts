@@ -1976,6 +1976,11 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	const options = await loadImportOptions(db, ctx.tenantId, ctx.siteId);
 	let notice = "";
 	const form = parseImportCreateForm(input);
+	const page = input.type === "block_action" && input.action_id?.startsWith("imports_page_")
+		? Number(input.action_id.replace("imports_page_", ""))
+		: 1;
+	const perPage = 20;
+	const offset = (page - 1) * perPage;
 
 	if (input.type === "form_submit" && input.action_id === "imports_create_batch") {
 		if (form.filename.trim()) {
@@ -1992,15 +1997,30 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		}
 	}
 
+	const countResult = await db.prepare(
+		`SELECT COUNT(*) as total FROM awcms_sikesra_import_batches WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+	).bind(ctx.tenantId, ctx.siteId).first<{ total: number }>();
+	const total = countResult?.total ?? 0;
+	const totalPages = Math.ceil(total / perPage);
+
 	const rows = await db.prepare(
 		`SELECT id, original_filename, sheet_name, status, object_type_code, row_count, valid_row_count, invalid_row_count, promoted_row_count, created_at, updated_at
 		 FROM awcms_sikesra_import_batches
 		 WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL
-		 ORDER BY created_at DESC LIMIT 20`,
+		 ORDER BY created_at DESC LIMIT ${perPage} OFFSET ${offset}`,
 	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 	const uploadedCount = rows.results.filter((row) => String(row.status) === "uploaded").length;
 	const validatedCount = rows.results.filter((row) => String(row.status) === "validated").length;
 	const promotedCount = rows.results.filter((row) => String(row.status) === "promoted").length;
+
+	const paginationElements: Block[] = [];
+	if (totalPages > 1) {
+		const elements: any[] = [];
+		if (page > 1) elements.push({ type: "button", label: "← Sebelumnya", action_id: `imports_page_${page - 1}`, style: "secondary" });
+		elements.push({ type: "label", text: `Halaman ${page} dari ${totalPages}` });
+		if (page < totalPages) elements.push({ type: "button", label: "Selanjutnya →", action_id: `imports_page_${page + 1}`, style: "secondary" });
+		paginationElements.push({ type: "actions", elements });
+	}
 
 	return [
 		...pageIntro("imports", ctx.permissions),
@@ -2008,7 +2028,7 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		{ type: "banner", variant: "default", title: "Import Center SIKESRA", description: "Pusat import menata alur upload workbook, pemetaan kolom, staging row, validasi, duplicate review, promosi, dan laporan hasil secara bertahap." },
 		...(notice ? [{ type: "banner", variant: "success", title: "Batch dibuat", description: notice }] : []),
 		...responsiveStats([
-			{ label: "Batch aktif", value: String(rows.results.length), description: "20 batch terbaru" },
+			{ label: "Total batch", value: String(total), description: "Semua batch pada scope" },
 			{ label: "Perlu mapping", value: String(uploadedCount), description: "Upload baru menunggu mapping" },
 			{ label: "Siap promosi", value: String(validatedCount), description: "Sudah tervalidasi" },
 			{ label: "Selesai", value: String(promotedCount), description: "Batch yang sudah dipromosikan" },
@@ -2026,11 +2046,13 @@ async function importsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 			{ type: "text_input", action_id: "sheetName", label: "Nama sheet (opsional, default sheet pertama)", initial_value: form.sheetName, placeholder: "contoh: Sheet1 / Data Yatim" },
 			{ type: "select", action_id: "objectTypeCode", label: "Jenis data target (wajib)", initial_value: form.objectTypeCode, options: [option("Pilih jenis data", ""), ...options.objectTypes.map((row) => option(row.name, row.code))] },
 		], submit: { label: "Buat Batch Import", action_id: "imports_create_batch" } },
+		...paginationElements,
 		{ type: "header", text: "Daftar Batch" },
 		...(rows.results.length ? rows.results.flatMap((row) => ([
 			{ type: "section", text: `${String(row.original_filename ?? "upload.xlsx")} | ${importStageStatus(String(row.status ?? "uploaded"))} | ${String(row.row_count ?? 0)} row`, accessory: { type: "button", label: "Buka Batch", action_id: `imports_open_${String(row.id)}`, style: "primary" } },
 			{ type: "context", text: `Sheet ${String(row.sheet_name ?? "belum dipilih")} · valid ${String(row.valid_row_count ?? 0)} · invalid ${String(row.invalid_row_count ?? 0)} · promoted ${String(row.promoted_row_count ?? 0)}` },
 		])) : [{ type: "empty", title: "Belum ada batch import", description: "Buat batch pertama untuk memulai alur upload workbook dan staging row." }]),
+		...paginationElements,
 	];
 }
 
@@ -2439,10 +2461,23 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		 ORDER BY created_at DESC LIMIT 20`,
 	).bind(ctx.tenantId, ctx.siteId).all<Record<string, unknown>>();
 
+	const jobTotalResult = await db.prepare(
+		`SELECT COUNT(*) as total FROM awcms_sikesra_export_jobs WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+	).bind(ctx.tenantId, ctx.siteId).first<{ total: number }>();
+	const jobTotal = jobTotalResult?.total ?? 0;
+	const jobTotalPages = Math.ceil(jobTotal / 20);
+
 	const pendingCount = jobRows.results.filter((row) => String(row.status) === "pending").length;
 	const readyCount = jobRows.results.filter((row) => String(row.status) === "ready").length;
 	const failedCount = jobRows.results.filter((row) => String(row.status) === "failed").length;
 	const restrictedCatalogCount = REPORT_CATALOG.filter((row) => requiresReasonForReport(row)).length;
+
+	const jobPaginationElements: Block[] = [];
+	if (jobTotalPages > 1) {
+		const elements: any[] = [];
+		elements.push({ type: "label", text: `Menampilkan ${jobRows.results.length} dari ${jobTotal} job` });
+		jobPaginationElements.push({ type: "actions", elements });
+	}
 
 	return [
 		...pageIntro("reports", ctx.permissions),
@@ -2527,6 +2562,7 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 			{ type: "text_input", action_id: "reason", label: "Alasan export", multiline: true, initial_value: form.reason, placeholder: selectedReport && requiresReasonForReport(selectedReport) ? "Wajib: jelaskan tujuan export dan dasar kewenangannya" : "Opsional: tambahkan konteks operasional export" },
 		], submit: { label: "Buat Export Job", action_id: "reports_create_export" } }] : [{ type: "empty", title: "Tidak ada laporan yang bisa dijalankan", description: "Minta permission export:create, export:restricted, atau export:audit sesuai kebutuhan peran." }]),
 		{ type: "header", text: "Histori Export Job" },
+		...jobPaginationElements,
 		...(jobRows.results.length ? jobRows.results.flatMap((row) => {
 			const reportType = String(row.report_type ?? "");
 			const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
@@ -2537,6 +2573,7 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 				{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · filter ${Object.values(filters ?? {}).filter(Boolean).length ? reportFilterSummary({ ...form, filterRegion: String(filters?.region ?? ""), filterModule: String(filters?.module ?? ""), filterYear: String(filters?.year ?? ""), filterVerificationStatus: String(filters?.verificationStatus ?? "") }) : "Semua scope"} · field ${fields.length || 0} · reason ${String(row.reason ?? "-")}` },
 			];
 		}) : [{ type: "empty", title: "Belum ada export job", description: "Buat export job pertama untuk mulai menghasilkan laporan CSV/XLSX." }]),
+		...jobPaginationElements,
 	];
 }
 
