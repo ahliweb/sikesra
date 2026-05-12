@@ -11,6 +11,8 @@ import { generateUploadUrl, getEntityDocuments, completeUpload } from "../servic
 import { createLocalRegion, type LocalRegionCreateInput } from "../services/region";
 import { buildAbacSubject, evaluateAbac, type AbacInput, type AbacResource } from "../security/abac";
 import { loadAbacPolicies } from "../repositories/abac-repository";
+import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
+import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 
 interface PluginAdminInteraction {
@@ -77,6 +79,18 @@ interface AccessPreviewFormState {
 	statusVerification: string;
 	documentClassification: string;
 	requireReason: string;
+}
+
+interface AuditFilterFormState {
+	actor: string;
+	action: string;
+	resourceType: string;
+	resourceId: string;
+	requestId: string;
+	fromDate: string;
+	toDate: string;
+	success: string;
+	risk: string;
 }
 
 interface ReportFieldPreview {
@@ -323,6 +337,7 @@ function pageLabel(page: string): string {
 	if (page.startsWith("imports/")) return "Review Batch Import";
 	if (page.startsWith("documents/")) return "Dokumen Entitas";
 	if (page.startsWith("reports/")) return "Detail Export Job";
+	if (page.startsWith("audit/")) return "Detail Audit";
 	return PAGE_LABELS[page] ?? PAGE_LABELS.overview;
 }
 
@@ -511,6 +526,9 @@ function resolvePage(input: PluginAdminInteraction): string {
 	if (normalizedPage.startsWith("reports/")) {
 		return normalizedPage;
 	}
+	if (normalizedPage.startsWith("audit/")) {
+		return normalizedPage;
+	}
 	if (normalizedPage.startsWith("documents/")) {
 		return normalizedPage;
 	}
@@ -545,6 +563,11 @@ function resolvePage(input: PluginAdminInteraction): string {
 	if (input.action_id?.startsWith("documents_open_") || input.action_id === "documents_back_to_list" || input.action_id?.startsWith("documents_create_") || input.action_id?.startsWith("documents_complete_") || input.action_id?.startsWith("documents_refresh_") ) {
 		const id = /^documents_(?:open|create|complete|refresh)_(.+)$/.exec(input.action_id)?.[1];
 		return id ? `documents/${id}` : "documents";
+	}
+
+	if (input.action_id?.startsWith("audit_open_") || input.action_id === "audit_back_to_list") {
+		const id = /^audit_open_(.+)$/.exec(input.action_id)?.[1];
+		return id ? `audit/${id}` : "audit";
 	}
 
 	if (input.action_id?.startsWith("reports_open_") || input.action_id === "reports_back_to_list") {
@@ -682,6 +705,21 @@ function parseAccessPreviewForm(input: PluginAdminInteraction): AccessPreviewFor
 	};
 }
 
+function parseAuditFilterForm(input: PluginAdminInteraction): AuditFilterFormState {
+	const values = input.type === "form_submit" ? input.values ?? {} : {};
+	return {
+		actor: stringState(values.actor),
+		action: stringState(values.action),
+		resourceType: stringState(values.resourceType),
+		resourceId: stringState(values.resourceId),
+		requestId: stringState(values.requestId),
+		fromDate: stringState(values.fromDate),
+		toDate: stringState(values.toDate),
+		success: stringState(values.success),
+		risk: stringState(values.risk),
+	};
+}
+
 function getReportFieldPresets(reportKey: string): ReportFieldPreset[] {
 	return REPORT_FIELD_PRESETS[reportKey] ?? [];
 }
@@ -736,6 +774,35 @@ function permissionResource(permission: string): string {
 
 function formatBooleanPreview(value: boolean): string {
 	return value ? "Ya" : "Tidak";
+}
+
+function auditRiskLabel(action: string): string {
+	return HIGH_RISK_AUDIT_REQUIRED.has(action as never) ? "Tinggi" : "Standar";
+}
+
+function auditSuccessLabel(value: unknown): string {
+	return Number(value ?? 0) === 1 ? "Sukses" : "Gagal";
+}
+
+function redactAuditValue(
+	value: Record<string, unknown> | null,
+	canReveal: boolean,
+): string {
+	if (!value || Object.keys(value).length === 0) return "-";
+	if (canReveal) return JSON.stringify(value);
+	return `Teredaksi (${Object.keys(value).join(", ")})`;
+}
+
+function parseAuditRecordJson(value: unknown): Record<string, unknown> | null {
+	if (typeof value !== "string" || !value.trim()) return null;
+	try {
+		const parsed = JSON.parse(value) as unknown;
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+			? (parsed as Record<string, unknown>)
+			: null;
+	} catch {
+		return null;
+	}
 }
 
 function reportFilterSummary(form: ReportCreateFormState): string {
@@ -2320,6 +2387,126 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	];
 }
 
+async function auditBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const filters = parseAuditFilterForm(input);
+	const params: AuditListParams = {
+		actor: filters.actor || undefined,
+		action: filters.action || undefined,
+		resourceType: filters.resourceType || undefined,
+		resourceId: filters.resourceId || undefined,
+		fromDate: filters.fromDate || undefined,
+		toDate: filters.toDate || undefined,
+		limit: 50,
+		offset: 0,
+	};
+	const auditResult = await listAuditLogs(db, params, ctx);
+	const auditRows = auditResult.items.filter((row) => {
+		if (filters.requestId && String(row.request_id ?? "") !== filters.requestId) return false;
+		if (filters.success === "success" && Number(row.success ?? 0) !== 1) return false;
+		if (filters.success === "failed" && Number(row.success ?? 0) !== 0) return false;
+		if (filters.risk === "high" && !HIGH_RISK_AUDIT_REQUIRED.has(String(row.action ?? "") as never)) return false;
+		if (filters.risk === "standard" && HIGH_RISK_AUDIT_REQUIRED.has(String(row.action ?? "") as never)) return false;
+		return true;
+	});
+	const distinctActions = Array.from(new Set(auditResult.items.map((row) => String(row.action ?? "")).filter(Boolean))).sort();
+	const distinctActors = Array.from(new Set(auditResult.items.map((row) => String(row.actor_id ?? "")).filter(Boolean))).sort();
+	const distinctResourceTypes = Array.from(new Set(auditResult.items.map((row) => String(row.resource_type ?? "")).filter(Boolean))).sort();
+
+	return [
+		...pageIntro("audit"),
+		{ type: "banner", variant: "default", title: "Audit Trail", description: "Halaman audit dipakai auditor dan super admin untuk menelusuri actor, action, resource, request ID, sukses/gagal, dan konsekuensi keamanan. Nilai before/after sensitif tetap harus teredaksi sesuai izin viewer." },
+		{ type: "fields", fields: [
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+			{ label: "Role aktif", value: ctx.roles.length ? ctx.roles.join(", ") : "Tanpa role eksplisit" },
+			{ label: "Permission audit", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.AUDIT_READ) ? "Aktif" : "Belum terdeteksi" },
+			{ label: "Reveal sensitif", value: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL) ? "Ya" : "Tidak, before/after diringkas" },
+		] },
+		{ type: "stats", items: [
+			{ label: "Total hasil", value: String(auditRows.length), description: "Setelah filter UI" },
+			{ label: "High risk", value: String(auditRows.filter((row) => HIGH_RISK_AUDIT_REQUIRED.has(String(row.action ?? "") as never)).length), description: "Perlu perhatian auditor" },
+			{ label: "Gagal", value: String(auditRows.filter((row) => Number(row.success ?? 0) !== 1).length), description: "Operasi yang tidak berhasil" },
+			{ label: "Request ID unik", value: String(new Set(auditRows.map((row) => String(row.request_id ?? "")).filter(Boolean)).size), description: "Korelasi lintas aksi" },
+		] },
+		{ type: "form", block_id: "audit_filters", fields: [
+			{ type: "select", action_id: "actor", label: "Aktor", initial_value: filters.actor, options: [option("Semua aktor", ""), ...distinctActors.map((item) => option(item, item))] },
+			{ type: "select", action_id: "action", label: "Aksi", initial_value: filters.action, options: [option("Semua aksi", ""), ...distinctActions.map((item) => option(item, item))] },
+			{ type: "select", action_id: "resourceType", label: "Resource", initial_value: filters.resourceType, options: [option("Semua resource", ""), ...distinctResourceTypes.map((item) => option(item, item))] },
+			{ type: "text_input", action_id: "resourceId", label: "Resource ID", initial_value: filters.resourceId, placeholder: "Filter resource spesifik" },
+			{ type: "text_input", action_id: "requestId", label: "Request ID", initial_value: filters.requestId, placeholder: "Korelasi lintas event" },
+			{ type: "text_input", action_id: "fromDate", label: "Dari waktu", initial_value: filters.fromDate, placeholder: "2026-05-12T00:00:00Z" },
+			{ type: "text_input", action_id: "toDate", label: "Sampai waktu", initial_value: filters.toDate, placeholder: "2026-05-12T23:59:59Z" },
+			{ type: "select", action_id: "success", label: "Status hasil", initial_value: filters.success, options: [option("Semua", ""), option("Sukses", "success"), option("Gagal", "failed")] },
+			{ type: "select", action_id: "risk", label: "Risk", initial_value: filters.risk, options: [option("Semua risk", ""), option("High risk", "high"), option("Standar", "standard")] },
+		], submit: { label: "Terapkan Filter", action_id: "audit_apply_filters" } },
+		{ type: "header", text: "Daftar Audit" },
+		...(auditRows.length ? auditRows.flatMap((row) => ([
+			{ type: "section", text: `${String(row.action ?? "-")} | ${auditSuccessLabel(row.success)} | ${auditRiskLabel(String(row.action ?? ""))}`, accessory: { type: "button", label: "Lihat Detail", action_id: `audit_open_${String(row.id)}`, style: "secondary" } },
+			{ type: "context", text: `Aktor ${String(row.actor_id ?? "-")} · Resource ${String(row.resource_type ?? "-")}/${String(row.resource_id ?? "-")} · Request ${String(row.request_id ?? "-")} · ${String(row.created_at ?? "-")}` },
+		])) : [{ type: "empty", title: "Belum ada audit yang cocok", description: "Ubah filter actor, action, resource, success, risk, atau request ID untuk melihat hasil lain." }]),
+		{ type: "header", text: "Kontrol Audit" },
+		{ type: "table", columns: [
+			{ key: "rule", label: "Rule" },
+			{ key: "status", label: "Status" },
+		], rows: [
+			{ rule: "Filter actor, action, resource, success, risk, request ID", status: "Aktif" },
+			{ rule: "Audit detail menampilkan request metadata", status: "Aktif pada halaman detail" },
+			{ rule: "Before/after sensitif harus teredaksi", status: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL) ? "Viewer dapat melihat payload penuh" : "Viewer hanya melihat ringkasan teredaksi" },
+			{ rule: "Audit export memerlukan permission dan reason", status: hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.AUDIT_EXPORT) ? "Permission export audit terdeteksi" : "Belum ada export audit di UI ini" },
+		] },
+	];
+}
+
+async function auditDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
+	const ctx = buildContextFromEmDash(routeCtx);
+	const db = await getRouteDb(routeCtx.request);
+	const auditId = page.slice("audit/".length);
+	const row = await db.prepare(
+		`SELECT * FROM awcms_sikesra_audit_logs WHERE id = ? AND tenant_id = ? AND site_id = ?`,
+	).bind(auditId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+	if (!row) {
+		return [...pageIntro(page), { type: "banner", variant: "alert", title: "Audit tidak ditemukan", description: `ID ${auditId} tidak tersedia pada scope backend saat ini.` }];
+	}
+	const canReveal = hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.SENSITIVE_REVEAL);
+	const beforeValue = parseAuditRecordJson(row.before_json);
+	const afterValue = parseAuditRecordJson(row.after_json);
+	return [
+		...pageIntro(page),
+		{ type: "banner", variant: "default", title: `Audit ${auditId}`, description: "Detail audit menampilkan metadata permintaan, alasan, dan payload before/after yang telah disesuaikan dengan izin viewer. Raw secret dan nilai sangat sensitif tidak boleh bocor lewat layar ini." },
+		{ type: "actions", elements: [{ type: "button", label: "Kembali ke Audit Trail", action_id: "audit_back_to_list", style: "secondary" }] },
+		{ type: "fields", fields: [
+			{ label: "Aksi", value: String(row.action ?? "-") },
+			{ label: "Status", value: auditSuccessLabel(row.success) },
+			{ label: "Risk", value: auditRiskLabel(String(row.action ?? "")) },
+			{ label: "Aktor", value: String(row.actor_id ?? "-") },
+			{ label: "Role", value: String(row.actor_role ?? "-") },
+			{ label: "Resource", value: `${String(row.resource_type ?? "-")}/${String(row.resource_id ?? "-")}` },
+			{ label: "Request ID", value: String(row.request_id ?? "-") },
+			{ label: "Waktu", value: String(row.created_at ?? "-") },
+			{ label: "Reason", value: String(row.reason ?? "-") },
+		] },
+		{ type: "header", text: "Request Metadata" },
+		{ type: "table", columns: [
+			{ key: "label", label: "Field" },
+			{ key: "value", label: "Nilai" },
+		], rows: [
+			{ label: "IP Address", value: String(row.ip_address ?? "-") },
+			{ label: "User Agent", value: String(row.user_agent ?? "-") },
+			{ label: "Tenant / Site", value: `${ctx.tenantId} / ${ctx.siteId}` },
+		] },
+		{ type: "header", text: "Payload Sebelum / Sesudah" },
+		{ type: "table", columns: [
+			{ key: "label", label: "Payload" },
+			{ key: "value", label: "Nilai" },
+		], rows: [
+			{ label: "Before", value: redactAuditValue(beforeValue, canReveal) },
+			{ label: "After", value: redactAuditValue(afterValue, canReveal) },
+		] },
+		{ type: "context", text: canReveal ? "Viewer memiliki permission sensitive:reveal. Tetap perlakukan payload ini sebagai material audit rahasia." : "Viewer tidak memiliki permission sensitive:reveal. Payload before/after diringkas untuk mencegah kebocoran nilai sensitif." },
+	];
+}
+
 async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -2565,6 +2752,16 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 		return accessBlocks(routeCtx, routeCtx.input ?? {});
 	}
 
+	if (page === "audit") {
+		if (!routeCtx) throw new Error("audit page requires route context");
+		return auditBlocks(routeCtx, routeCtx.input ?? {});
+	}
+
+	if (page.startsWith("audit/")) {
+		if (!routeCtx) throw new Error("audit detail page requires route context");
+		return auditDetailBlocks(routeCtx, page);
+	}
+
 	if (page.startsWith("reports/")) {
 		if (!routeCtx) throw new Error("report job detail page requires route context");
 		return reportJobDetailBlocks(routeCtx, page);
@@ -2653,6 +2850,18 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	if (page === "access") {
 		return {
 			blocks: await accessBlocks(routeCtx, input),
+		};
+	}
+
+	if (page === "audit") {
+		return {
+			blocks: await auditBlocks(routeCtx, input),
+		};
+	}
+
+	if (page.startsWith("audit/")) {
+		return {
+			blocks: await auditDetailBlocks(routeCtx, page),
 		};
 	}
 
