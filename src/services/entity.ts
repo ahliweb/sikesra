@@ -112,6 +112,46 @@ export interface EntityPatchInput {
 
 export type EntityPatchData = Omit<EntityPatchInput, "entityId">;
 
+// ---------- Validation ----------
+
+function validateEntityCreate(input: EntityCreateInput): string[] {
+  const errors: string[] = [];
+  if (!input.objectTypeCode) errors.push("objectTypeCode is required");
+  if (!input.objectSubtypeCode) errors.push("objectSubtypeCode is required");
+  if (!input.displayName || String(input.displayName).trim().length === 0) errors.push("displayName is required");
+  if (input.displayName && String(input.displayName).length > 255) errors.push("displayName must be 255 characters or less");
+  if (!input.officialVillageCode) errors.push("officialVillageCode is required");
+  if (input.officialVillageCode && !/^\d{10}$/.test(String(input.officialVillageCode))) errors.push("officialVillageCode must be 10 digits");
+  if (input.sensitivityLevel && !["public_safe", "internal", "restricted", "highly_restricted"].includes(String(input.sensitivityLevel))) {
+    errors.push("Invalid sensitivityLevel");
+  }
+  if (input.sourceInput && !["manual", "import", "integration"].includes(String(input.sourceInput))) {
+    errors.push("Invalid sourceInput");
+  }
+  return errors;
+}
+
+function validateEntityPatch(input: EntityPatchData): string[] {
+  const errors: string[] = [];
+  if (input.displayName !== undefined) {
+    const name = String(input.displayName);
+    if (name.trim().length === 0) errors.push("displayName cannot be empty");
+    if (name.length > 255) errors.push("displayName must be 255 characters or less");
+  }
+  if (input.sensitivityLevel !== undefined && !["public_safe", "internal", "restricted", "highly_restricted"].includes(String(input.sensitivityLevel))) {
+    errors.push("Invalid sensitivityLevel");
+  }
+  if (input.latitude !== undefined) {
+    const lat = Number(input.latitude);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) errors.push("latitude must be between -90 and 90");
+  }
+  if (input.longitude !== undefined) {
+    const lon = Number(input.longitude);
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) errors.push("longitude must be between -180 and 180");
+  }
+  return errors;
+}
+
 // ---------- Entity Service (Repository-aware) ----------
 
 import type { D1Binding } from "../repositories/db";
@@ -241,6 +281,18 @@ export async function createEntity(
   input: EntityCreateInput,
   ctx: SikesraRequestContext,
 ): Promise<SikesraEntitySummary> {
+  const validationErrors = validateEntityCreate(input);
+  if (validationErrors.length > 0) {
+    throw new Error(`Validation failed: ${validationErrors.join(", ")}`);
+  }
+
+  // Validate region scope: user can only create entities in villages they have access to
+  if (ctx.regionScope.villageCodes && ctx.regionScope.villageCodes.length > 0) {
+    if (!ctx.regionScope.villageCodes.includes(input.officialVillageCode)) {
+      throw new Error(`REGION_SCOPE_VIOLATION: User does not have access to village ${input.officialVillageCode}`);
+    }
+  }
+
   const id = `ent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const row = await repoCreate(db, {
     id, objectTypeCode: input.objectTypeCode, objectSubtypeCode: input.objectSubtypeCode,
@@ -303,6 +355,11 @@ export async function patchEntity(
   input: EntityPatchData,
   ctx: SikesraRequestContext,
 ): Promise<SikesraEntitySummary> {
+  const validationErrors = validateEntityPatch(input);
+  if (validationErrors.length > 0) {
+    throw new Error(`Validation failed: ${validationErrors.join(", ")}`);
+  }
+
   const updated = await repoPatch(db, entityId, input as Record<string, unknown>, ctx.userId, ctx);
   if (!updated) throw new Error("Entity not found");
 

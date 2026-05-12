@@ -143,6 +143,12 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Detail modules service with 3 v1 API endpoints (get, upsert, delete) and schemas for all 8 object types (01-08)
 - Code correction endpoint (v1/code/correct) with reason requirement and audit logging
 - Vitest configuration with coverage reporting (npm run test:coverage)
+- Entity create wizard steps 6-9 enhanced with actual data integration (detail module schema display, people/relationships list with NIK masking, document list with size aggregation, duplicate detection results with risk scoring)
+- Entity detail screen enhanced to show actual detail module data with schema-aware field display for all 8 object types
+- Wizard action handlers added for manage people, manage documents, and check duplicates buttons with success feedback banners
+- Entity service input validation added for create/patch operations (required fields, format validation, range checks for coordinates)
+- Region scope validation added to entity create operation (users can only create entities in villages they have access to)
+- Verification service error handling improved with permission validation, status checks, and structured error messages
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |

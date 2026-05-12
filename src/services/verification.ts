@@ -6,6 +6,7 @@ import type { D1Binding } from "../repositories/db";
 import type { SikesraRequestContext } from "../security/request-context";
 import { AUDIT_ACTIONS, writeAuditEvent, type AuditAction } from "./audit";
 import { getVerificationEvents, transitionEntityStatus, writeVerificationEvent } from "../repositories/verification-repository";
+import { SIKESRA_PERMISSIONS } from "../security/permissions";
 
 export type VerificationAction = "submit" | "verify" | "need_revision" | "reject" | "re_submit";
 export type VerificationLevel = "desa" | "kecamatan" | "kabupaten" | "opd";
@@ -182,16 +183,21 @@ export async function submitEntity(
   entityId: string,
   ctx: SikesraRequestContext,
 ): Promise<{ ok: boolean; newStatus: string }> {
+  // Validate permission
+  if (!ctx.permissions.includes(SIKESRA_PERMISSIONS.VERIFICATION_SUBMIT)) {
+    throw new Error("PERMISSION_DENIED: User does not have permission to submit entities");
+  }
+
   const entity = await db.prepare(
     `SELECT id, status_data, status_verification, verification_level FROM awcms_sikesra_entities
      WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
   ).bind(entityId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 
-  if (!entity) throw new Error("Entity not found");
+  if (!entity) throw new Error("ENTITY_NOT_FOUND");
   const currentStatusData = String(entity.status_data ?? "draft");
   const currentStatusVerification = String(entity.status_verification ?? "pending");
   if (!(currentStatusData === "draft" || currentStatusVerification === "need_revision")) {
-    throw new Error("Entity is not eligible for submit");
+    throw new Error("ENTITY_NOT_ELIGIBLE_FOR_SUBMIT: Entity must be in draft or need_revision status");
   }
 
   await transitionEntityStatus(db, entityId, "submitted_village", "submitted", "desa", ctx.userId, ctx);
@@ -225,8 +231,13 @@ export async function verifyEntity(
   decision: VerificationDecision,
   ctx: SikesraRequestContext,
 ): Promise<{ ok: boolean; newStatus: string }> {
+  // Validate permission
+  if (!ctx.permissions.includes(SIKESRA_PERMISSIONS.VERIFICATION_VERIFY)) {
+    throw new Error("PERMISSION_DENIED: User does not have permission to verify entities");
+  }
+
   if ((decision.action === "need_revision" || decision.action === "reject") && !decision.note?.trim()) {
-    throw new Error("Note is required for revision or rejection");
+    throw new Error("NOTE_REQUIRED: Note is required for revision or rejection");
   }
 
   const entity = await db.prepare(
@@ -234,8 +245,11 @@ export async function verifyEntity(
      WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
   ).bind(entityId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 
-  if (!entity) throw new Error("Entity not found");
+  if (!entity) throw new Error("ENTITY_NOT_FOUND");
   const currentStatus = String(entity.status_verification ?? "pending");
+  if (!currentStatus.startsWith("submitted") && currentStatus !== "need_revision") {
+    throw new Error("ENTITY_NOT_SUBMITTED: Entity must be in submitted or need_revision status to verify");
+  }
   let nextVerification = currentStatus;
   let nextData = String(entity.status_data ?? "submitted");
   let auditAction: AuditAction = AUDIT_ACTIONS.VERIFICATION_VERIFY;

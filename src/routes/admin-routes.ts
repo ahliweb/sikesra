@@ -19,6 +19,10 @@ import { createImportBatch, promoteImportRows } from "../services/import";
 import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
 import { generateSikesraId } from "../services/code";
 import { createExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
+import { listEntityPeople, type EntityPersonSummary } from "../services/entity-people";
+import { getEntityDetailModule, DETAIL_MODULE_SCHEMAS, type DetailModuleSchema } from "../services/detail-modules";
+import { findDuplicateCandidates, type DuplicateCandidateResult } from "../services/deduplication";
+import type { DuplicateCandidateSummary } from "../repositories/deduplication-repository";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -1240,7 +1244,16 @@ function buildIdPreview(state: WizardFormState): string {
 	return `${state.officialVillageCode}${state.objectTypeCode}${subtypeCode}000001`;
 }
 
-function wizardPanels(state: WizardFormState, validation: WizardValidationState, detail: Record<string, unknown> | null): Block[] {
+function wizardPanels(
+	state: WizardFormState,
+	validation: WizardValidationState,
+	detail: Record<string, unknown> | null,
+	people: EntityPersonSummary[],
+	detailModule: Record<string, unknown> | null,
+	detailSchema: DetailModuleSchema | null,
+	duplicates: DuplicateCandidateSummary[],
+	documents: Array<{ id: string; fileName: string; documentType: string; classification: string; sizeBytes: number; uploadedAt: string }>,
+): Block[] {
 	return [{
 		type: "tab",
 		default_tab: 0,
@@ -1258,40 +1271,85 @@ function wizardPanels(state: WizardFormState, validation: WizardValidationState,
 
 			if (step.key === "detail_modul") {
 				stepBlocks.push({ type: "context", text: "Detail modul akan menyesuaikan berdasarkan jenis data yang dipilih. Field inti seperti agama, status keterlantaran, dan desil telah tersedia di langkah atribut." });
-				if (state.objectTypeCode) {
+				if (state.objectTypeCode && detailSchema) {
 					stepBlocks.push({ type: "fields", fields: [
-						{ label: "Jenis Data", value: state.objectTypeCode },
+						{ label: "Jenis Data", value: `${detailSchema.objectTypeCode} - ${detailSchema.fields.length} field detail` },
 						{ label: "Subjenis Data", value: state.objectSubtypeCode || "Belum dipilih" },
-						{ label: "Detail Modul", value: "Form detail akan diaktifkan setelah konfigurasi jenis data selesai" },
+						{ label: "Tabel Detail", value: detailSchema.tableName },
 					] });
+					if (detailModule) {
+						const moduleFields = detailSchema.fields.map((f) => ({ label: f.label, value: (detailModule[f.key] as string) ?? "-" }));
+						stepBlocks.push({ type: "fields", fields: moduleFields });
+					} else {
+						stepBlocks.push({ type: "context", text: "Belum ada data detail yang tersimpan untuk entitas ini." });
+					}
+				} else if (state.objectTypeCode) {
+					stepBlocks.push({ type: "banner", variant: "alert", title: "Skema tidak ditemukan", description: `Tidak ada skema detail modul untuk jenis data ${state.objectTypeCode}` });
 				}
 			} else if (step.key === "relasi_orang") {
 				stepBlocks.push({ type: "context", text: "Tambahkan pengurus, wali, atau pengasuh yang terkait dengan entitas ini. Data relasi akan disimpan terpisah dan dapat diedit setelah draft dibuat." });
 				stepBlocks.push({ type: "fields", fields: [
-					{ label: "Jumlah Relasi", value: detail?.personCount ? String(detail.personCount) : "Belum ada relasi" },
-					{ label: "Jenis Relasi", value: "Pengurus, Wali, Pengasuh (akan dikonfigurasi setelah draft)" },
+					{ label: "Jumlah Relasi", value: `${people.length} orang` },
+					{ label: "Relasi Utama", value: people.find((p) => p.isPrimary)?.personName || "Belum ditentukan" },
 				] });
-				if (state.entityId) {
-					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Kelola Relasi Orang", action_id: `wizard_manage_people_${state.entityId}`, style: "secondary" }] });
+				if (people.length > 0) {
+					const peopleRows = people.map((p) => ({
+						nama: p.personName ?? "-",
+						nik: p.personNikMasked ?? "-",
+						jenis: p.relationType,
+						utama: p.isPrimary ? "Ya" : "Tidak",
+						catatan: p.notes || "-",
+					}));
+					stepBlocks.push({ type: "table", columns: [
+						{ key: "nama", label: "Nama" },
+						{ key: "nik", label: "NIK" },
+						{ key: "jenis", label: "Jenis Relasi" },
+						{ key: "utama", label: "Utama" },
+						{ key: "catatan", label: "Catatan" },
+					], rows: peopleRows });
 				}
 			} else if (step.key === "dokumen_pendukung") {
 				stepBlocks.push({ type: "context", text: "Unggah dokumen pendukung seperti SK, foto, atau surat keterangan. Dokumen akan diklasifikasikan dan diaudit aksesnya." });
 				stepBlocks.push({ type: "fields", fields: [
-					{ label: "Jumlah Dokumen", value: detail?.documentCount ? String(detail.documentCount) : "Belum ada dokumen" },
-					{ label: "Status Dokumen", value: detail?.documentCount ? "Dokumen tersedia" : "Belum ada dokumen diunggah" },
+					{ label: "Jumlah Dokumen", value: `${documents.length} dokumen` },
+					{ label: "Total Ukuran", value: `${(documents.reduce((sum, d) => sum + (d.sizeBytes ?? 0), 0) / 1024).toFixed(1)} KB` },
 				] });
-				if (state.entityId) {
-					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Kelola Dokumen", action_id: `wizard_manage_documents_${state.entityId}`, style: "secondary" }] });
+				if (documents.length > 0) {
+					const docRows = documents.map((d) => ({
+						nama: d.fileName,
+						jenis: d.documentType,
+						klasifikasi: d.classification,
+						ukuran: `${(d.sizeBytes / 1024).toFixed(1)} KB`,
+						tanggal: d.uploadedAt?.slice(0, 10) ?? "-",
+					}));
+					stepBlocks.push({ type: "table", columns: [
+						{ key: "nama", label: "Nama File" },
+						{ key: "jenis", label: "Jenis" },
+						{ key: "klasifikasi", label: "Klasifikasi" },
+						{ key: "ukuran", label: "Ukuran" },
+						{ key: "tanggal", label: "Tanggal" },
+					], rows: docRows });
 				}
 			} else if (step.key === "validasi_duplikasi") {
 				stepBlocks.push({ type: "context", text: "Validasi kelengkapan dan preview duplikasi akan ditampilkan setelah data inti lengkap." });
 				stepBlocks.push({ type: "fields", fields: [
 					{ label: "Kelengkapan Data", value: `${state.entityId ? (detail?.completenessPercent ?? 0) : 0}%` },
 					{ label: "Status Duplikasi", value: detail?.duplicateStatus ? String(detail.duplicateStatus) : "Belum diperiksa" },
-					{ label: "Kandidat Duplikat", value: detail?.duplicateCount ? `${detail.duplicateCount} kandidat ditemukan` : "Tidak ada kandidat duplikat" },
+					{ label: "Kandidat Duplikat", value: `${duplicates.length} kandidat ditemukan` },
 				] });
-				if (state.entityId) {
-					stepBlocks.push({ type: "actions", elements: [{ type: "button", label: "Periksa Duplikasi", action_id: `wizard_check_duplicates_${state.entityId}`, style: "secondary" }] });
+				if (duplicates.length > 0) {
+					const dupRows = duplicates.map((d) => ({
+						nama: d.displayNameB || d.entityIdB.slice(0, 12),
+						wilayah: "-",
+						skore: `${d.matchScore ?? 0}%`,
+						alasan: d.riskLevel,
+					}));
+					stepBlocks.push({ type: "table", columns: [
+						{ key: "nama", label: "Nama" },
+						{ key: "wilayah", label: "Wilayah" },
+						{ key: "skore", label: "Skore" },
+						{ key: "alasan", label: "Level Risiko" },
+					], rows: dupRows });
 				}
 			} else if (step.key === "generate_id") {
 				const canGenerate = state.entityId && state.officialVillageCode && state.objectTypeCode && state.objectSubtypeCode;
@@ -1341,6 +1399,9 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	let generateIdError = "";
 	let submitSuccess = "";
 	let submitError = "";
+	let managePeopleMessage = "";
+	let manageDocumentsMessage = "";
+	let checkDuplicatesMessage = "";
 
 	if (input.type === "form_submit" && input.action_id?.startsWith("wizard_save_")) {
 		const entityId = parseEntityIdFromAction(input.action_id) ?? state.entityId;
@@ -1399,11 +1460,38 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 		}
 	}
 
+	if (input.type === "block_action" && input.action_id?.startsWith("wizard_manage_people_")) {
+		const targetId = input.action_id.replace("wizard_manage_people_", "");
+		if (targetId === state.entityId) {
+			managePeopleMessage = `Membuka manajemen relasi orang untuk entitas ${targetId}. Data relasi akan ditampilkan pada tab Detail Modul.`;
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("wizard_manage_documents_")) {
+		const targetId = input.action_id.replace("wizard_manage_documents_", "");
+		if (targetId === state.entityId) {
+			manageDocumentsMessage = `Membuka manajemen dokumen untuk entitas ${targetId}. Dokumen dapat diunggah dan diklasifikasikan melalui panel Dokumen.`;
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("wizard_check_duplicates_")) {
+		const targetId = input.action_id.replace("wizard_check_duplicates_", "");
+		if (targetId === state.entityId) {
+			checkDuplicatesMessage = `Memeriksa duplikasi untuk entitas ${targetId}. Hasil pemeriksaan akan ditampilkan pada tab Validasi dan Duplikasi.`;
+		}
+	}
+
 	validation = validateWizardState(state);
 	const options = await loadWizardOptions(db, ctx.tenantId, ctx.siteId, state);
 	const overall = overallCompleteness(state);
 
 	let detail: Record<string, unknown> | null = null;
+	let people: EntityPersonSummary[] = [];
+	let detailModule: Record<string, unknown> | null = null;
+	let detailSchema: DetailModuleSchema | null = null;
+	let duplicates: DuplicateCandidateSummary[] = [];
+	let documents: Array<{ id: string; fileName: string; documentType: string; classification: string; sizeBytes: number; uploadedAt: string }> = [];
+
 	if (state.entityId) {
 		try {
 			const entityDetail = await getEntityDetail(db, state.entityId, ctx);
@@ -1416,6 +1504,37 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 					documentCount: entityDetail.documents?.length ?? 0,
 					duplicateCount: 0,
 				};
+				documents = (entityDetail.documents ?? []).map((d: Record<string, unknown>) => ({
+					id: d.id as string,
+					fileName: d.file_name as string,
+					documentType: d.document_type as string,
+					classification: d.classification as string,
+					sizeBytes: d.size_bytes as number,
+					uploadedAt: d.created_at as string,
+				}));
+			}
+
+			people = await listEntityPeople(db, state.entityId, ctx);
+
+			if (state.objectTypeCode && DETAIL_MODULE_SCHEMAS[state.objectTypeCode]) {
+				detailSchema = DETAIL_MODULE_SCHEMAS[state.objectTypeCode];
+				try {
+					const moduleData = await getEntityDetailModule(db, state.entityId, state.objectTypeCode, ctx);
+					if (moduleData) {
+						detailModule = moduleData;
+					}
+				} catch {
+					detailModule = null;
+				}
+			}
+
+			if (state.displayName && state.officialVillageCode) {
+				try {
+					const dupResult = await findDuplicateCandidates(db, { entityId: state.entityId }, ctx);
+					duplicates = dupResult.candidates;
+				} catch {
+					duplicates = [];
+				}
 			}
 		} catch {
 			detail = null;
@@ -1435,6 +1554,9 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 		...(generateIdError ? [{ type: "banner", variant: "alert", title: "Gagal membuat ID", description: generateIdError }] : []),
 		...(submitSuccess ? [{ type: "banner", variant: "success", title: "Entitas diajukan", description: submitSuccess }] : []),
 		...(submitError ? [{ type: "banner", variant: "alert", title: "Gagal mengajukan", description: submitError }] : []),
+		...(managePeopleMessage ? [{ type: "banner", variant: "success", title: "Manajemen Relasi", description: managePeopleMessage }] : []),
+		...(manageDocumentsMessage ? [{ type: "banner", variant: "success", title: "Manajemen Dokumen", description: manageDocumentsMessage }] : []),
+		...(checkDuplicatesMessage ? [{ type: "banner", variant: "success", title: "Pemeriksaan Duplikasi", description: checkDuplicatesMessage }] : []),
 		...(validation.globalErrors.length ? [{ type: "banner", variant: "alert", title: "Lengkapi field wajib", description: validation.globalErrors.join(" ") }] : []),
 		{ type: "fields", fields: [
 			{ label: "Draft ID", value: state.entityId ?? "Belum dibuat" },
@@ -1442,7 +1564,7 @@ async function wizardBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ label: "Autosave", value: state.entityId ? "Perubahan tersimpan saat Simpan Draft ditekan" : "Draft dibuat saat field minimum terpenuhi dan disimpan" },
 			{ label: "Catatan Verifikator", value: "Belum ada catatan verifikator untuk draft ini" },
 		] },
-		...wizardPanels(state, validation, detail),
+		...wizardPanels(state, validation, detail, people, detailModule, detailSchema, duplicates, documents),
 		{ type: "header", text: "Progress Langkah" },
 		{
 			type: "table",
@@ -3329,6 +3451,17 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		];
 	}
 
+	let detailModuleData: Record<string, unknown> | null = null;
+	let detailModuleSchema: DetailModuleSchema | null = null;
+	if (detail.entity.objectTypeCode && DETAIL_MODULE_SCHEMAS[detail.entity.objectTypeCode]) {
+		detailModuleSchema = DETAIL_MODULE_SCHEMAS[detail.entity.objectTypeCode];
+		try {
+			detailModuleData = await getEntityDetailModule(db, entityId, detail.entity.objectTypeCode, ctx);
+		} catch {
+			detailModuleData = null;
+		}
+	}
+
 	const primaryActions = [
 		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
@@ -3375,10 +3508,15 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 				] },
 				{ label: "Detail Modul", blocks: [
 					{ type: "fields", fields: [
-						{ label: "Status", value: String(detail.details?.["moduleStatus"] ?? "Belum tersedia") },
-						{ label: "Entity Kind", value: String(detail.details?.["entityKind"] ?? detail.entity.entityKind) },
+						{ label: "Jenis Data", value: detail.entity.objectTypeCode ?? "-" },
+						{ label: "Tabel Detail", value: detailModuleSchema?.tableName ?? "Belum tersedia" },
+						{ label: "Jumlah Field", value: detailModuleSchema ? `${detailModuleSchema.fields.length} field` : "-" },
 					] },
-					{ type: "context", text: "Detail modul spesifik per jenis data akan diperkaya seiring rebuild service/detail table berikutnya." },
+					...(detailModuleData && detailModuleSchema ? [
+						{ type: "fields", fields: detailModuleSchema.fields.map((f) => ({ label: f.label, value: (detailModuleData[f.key] as string) ?? "-" })) },
+					] : [
+						{ type: "context", text: detailModuleSchema ? "Belum ada data detail yang tersimpan untuk entitas ini." : "Detail modul spesifik per jenis data akan diperkaya seiring rebuild service/detail table berikutnya." },
+					]),
 				] },
 				{ label: "Atribut", blocks: [
 					{ type: "table", columns: [
