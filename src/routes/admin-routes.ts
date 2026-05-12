@@ -2823,16 +2823,27 @@ async function reportsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 		], submit: { label: "Buat Export Job", action_id: "reports_create_export" } }] : [{ type: "empty", title: "Tidak ada laporan yang bisa dijalankan", description: "Minta permission export:create, export:restricted, atau export:audit sesuai kebutuhan peran." }]),
 		{ type: "header", text: "Histori Export Job" },
 		...jobPaginationElements,
-		...(jobRows.results.length ? jobRows.results.flatMap((row) => {
-			const reportType = String(row.report_type ?? "");
-			const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
-			const filters = parseJsonRecord(row.filters_json);
-			const fields = parseJsonArray(row.fields_json);
-			return [
-				{ type: "section", text: `${reportMeta?.label ?? reportType} | ${String(row.format ?? "csv").toUpperCase()} | ${String(row.status ?? "pending")}`, accessory: { type: "button", label: "Lihat Job", action_id: `reports_open_${String(row.id)}`, style: "secondary" } },
-				{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · filter ${Object.values(filters ?? {}).filter(Boolean).length ? reportFilterSummary({ ...form, filterRegion: String(filters?.region ?? ""), filterModule: String(filters?.module ?? ""), filterYear: String(filters?.year ?? ""), filterVerificationStatus: String(filters?.verificationStatus ?? "") }) : "Semua scope"} · field ${fields.length || 0} · reason ${String(row.reason ?? "-")}` },
-			];
-		}) : [{ type: "empty", title: "Belum ada export job", description: "Buat export job pertama untuk mulai menghasilkan laporan CSV/XLSX." }]),
+		...(jobRows.results.length ? [
+			{ type: "table", columns: [
+				{ key: "status", label: "Status" },
+				{ key: "count", label: "Jumlah" },
+			], rows: [
+				{ status: "✅ Ready", count: String(readyCount) },
+				{ status: "⏳ Pending", count: String(pendingCount) },
+				{ status: "❌ Failed", count: String(failedCount) },
+			] },
+			...jobRows.results.flatMap((row) => {
+				const reportType = String(row.report_type ?? "");
+				const reportMeta = REPORT_CATALOG.find((item) => item.key === reportType);
+				const filters = parseJsonRecord(row.filters_json);
+				const fields = parseJsonArray(row.fields_json);
+				const statusLabel = row.status === "ready" ? "✅ Ready" : row.status === "failed" ? "❌ Failed" : row.status === "generating" ? "⏳ Generating" : "⏸️ Pending";
+				return [
+					{ type: "section", text: `${reportMeta?.label ?? reportType} | ${String(row.format ?? "csv").toUpperCase()} | ${statusLabel}`, accessory: { type: "button", label: row.status === "ready" ? "Download" : "Lihat Job", action_id: row.status === "ready" ? `reports_download_${String(row.id)}` : `reports_open_${String(row.id)}`, style: row.status === "ready" ? "primary" : "secondary" } },
+					{ type: "context", text: `Rows ${String(row.total_rows ?? 0)} · dibuat ${String(row.created_at ?? "")} · filter ${Object.values(filters ?? {}).filter(Boolean).length ? reportFilterSummary({ ...form, filterRegion: String(filters?.region ?? ""), filterModule: String(filters?.module ?? ""), filterYear: String(filters?.year ?? ""), filterVerificationStatus: String(filters?.verificationStatus ?? "") }) : "Semua scope"} · field ${fields.length || 0} · reason ${String(row.reason ?? "-")}` },
+				];
+			}),
+		] : [{ type: "empty", title: "Belum ada export job", description: "Buat export job pertama untuk mulai menghasilkan laporan CSV/XLSX." }]),
 		...jobPaginationElements,
 	];
 }
@@ -3492,11 +3503,14 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 		] },
 		...(notice ? [{ type: "banner", variant: "success", title: "Pengaturan tersimpan", description: notice }] : []),
 		...(error ? [{ type: "banner", variant: "alert", title: "Pengaturan belum tersimpan", description: error }] : []),
+		{ type: "header", text: "Ringkasan Pengaturan Aktif" },
 		{ type: "stats", items: [
 			{ label: "Public enabled", value: form.publicEnabled === "true" ? "Ya" : "Tidak", description: "Mengontrol permukaan publik /sikesra" },
 			{ label: "Small-cell threshold", value: String(numberValue(form.smallCellThreshold) ?? activeSettings.smallCellThreshold), description: "Batas suppression agregat kecil" },
 			{ label: "Max upload", value: formatBytes(numberValue(form.maxUploadBytes) ?? activeSettings.maxUploadBytes), description: "Batas ukuran dokumen/import" },
 			{ label: "Export sync rows", value: String(numberValue(form.exportMaxSyncRows) ?? activeSettings.exportMaxSyncRows), description: "Batas export sinkron" },
+			{ label: "Feature flags aktif", value: Object.values(featureFlags).filter(Boolean).length, description: "Dari 4 fitur tersedia" },
+			{ label: "MIME types", value: (activeSettings.allowedMimeTypes ?? []).length, description: "Tipe file yang diizinkan" },
 		] },
 		{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Diperlukan", description: "Perubahan pengaturan mempengaruhi visibilitas publik, threshold keamanan, dan batas operasional. Setiap perubahan dicatat permanen di audit trail (settings.update) dan tidak dapat dibatalkan. Pastikan alasan perubahan jelas dan dampaknya telah dipahami." },
 		{ type: "header", text: "Kontrol Pengaturan" },

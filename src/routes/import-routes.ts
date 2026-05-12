@@ -5,7 +5,7 @@
 import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
-import { createImportBatch, promoteImportRows } from "../services/import";
+import { createImportBatch, promoteImportRows, loadExcelIntoStaging, loadCsvIntoStaging, rollbackImportPromotion } from "../services/import";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 
 export interface ImportListParams {
@@ -169,5 +169,72 @@ export const importPromoteHandler = async (routeCtx: EmDashRouteContext<{ rowIds
     input.rowIds,
     input.duplicateDecisions ?? {},
     ctx,
+  );
+};
+
+// POST /imports/{id}/upload — upload file and parse into staging rows
+export const importUploadHandler = async (routeCtx: EmDashRouteContext) => {
+  const db = routeCtx.env?.SIKESRA_DB;
+  if (!db) throw new Error("DB_UNAVAILABLE");
+
+  const ctx = buildContextFromEmDash(routeCtx);
+  const url = new URL(routeCtx.request.url);
+  const parts = url.pathname.split("/");
+  const batchId = parts[parts.indexOf("imports") + 1];
+
+  const formData = await routeCtx.request.formData();
+  const file = formData.get("file") as File | null;
+  if (!file) throw new Error("IMPORT_FILE_REQUIRED");
+
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    throw new Error("IMPORT_FILE_TOO_LARGE");
+  }
+
+  const fileName = file.name.toLowerCase();
+  const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+  const isCsv = fileName.endsWith(".csv");
+
+  if (!isExcel && !isCsv) {
+    throw new Error("IMPORT_UNSUPPORTED_FORMAT");
+  }
+
+  const fileContent = await file.arrayBuffer();
+  const sheetName = formData.get("sheetName") as string | undefined;
+
+  let result: { staged: number; headers: string[] };
+
+  if (isExcel) {
+    result = await loadExcelIntoStaging(db, batchId, fileContent, sheetName, ctx);
+  } else {
+    result = await loadCsvIntoStaging(db, batchId, fileContent, ctx);
+  }
+
+  return {
+    success: true,
+    batchId,
+    staged: result.staged,
+    headers: result.headers,
+    fileName: file.name,
+    fileSize: file.size,
+  };
+};
+
+// POST /imports/{id}/rollback — rollback promoted rows
+export const importRollbackHandler = async (routeCtx: EmDashRouteContext<{ rowIds?: string[] }>) => {
+  const db = routeCtx.env?.SIKESRA_DB;
+  if (!db) throw new Error("DB_UNAVAILABLE");
+
+  const ctx = buildContextFromEmDash(routeCtx);
+  const url = new URL(routeCtx.request.url);
+  const parts = url.pathname.split("/");
+  const batchId = parts[parts.indexOf("imports") + 1];
+
+  const input = routeCtx.input;
+  return rollbackImportPromotion(
+    db,
+    batchId,
+    ctx,
+    input?.rowIds,
   );
 };

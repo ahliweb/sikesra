@@ -160,6 +160,14 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - **TypeScript: 0 errors** (all pre-existing errors resolved)
 - **Tests: 54/54 passing** (25 architecture + 29 security)
 - Build note: Pre-existing EmDash tiptap dependency issue (unrelated to SIKESRA changes)
+- Settings UI enhanced with expanded stats summary (feature flags count, MIME types count)
+- Reports/Export UI enhanced with job status summary table and visual status indicators (✅ Ready, ⏳ Pending, ❌ Failed)
+- Import service enhanced with Excel/CSV file parsing using exceljs library
+- Import file upload handler added with multipart form data processing (10MB limit, .xlsx/.csv support)
+- Import validation rules added per object type (01-08) with field-specific validation
+- Duplicate detection enhanced during import promotion with blocking risk level for exact matches
+- Import rollback capability added for failed promotions with soft-delete and audit logging
+- Route count: 58 routes (added v1/imports/upload and v1/imports/rollback)
 
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |

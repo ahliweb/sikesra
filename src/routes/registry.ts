@@ -67,6 +67,8 @@ import {
   importRowsHandler,
   importRowUpdateHandler,
   importPromoteHandler,
+  importUploadHandler,
+  importRollbackHandler,
 } from "./import-routes";
 
 import {
@@ -181,9 +183,11 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   // Imports
   "v1/imports": { handler: importListHandler },
   "v1/imports/create": { handler: importCreateHandler },
+  "v1/imports/upload": { handler: importUploadHandler },
   "v1/imports/rows": { handler: importRowsHandler },
   "v1/imports/rows/update": { handler: importRowUpdateHandler },
   "v1/imports/promote": { handler: importPromoteHandler },
+  "v1/imports/rollback": { handler: importRollbackHandler },
 
   // Reports & Exports
   "v1/reports": { handler: reportListHandler },
