@@ -131,8 +131,8 @@ export const exportCreateHandler = async (routeCtx: EmDashRouteContext<ExportCre
   if (requiresReasonForReport(reportMeta) && !(input.reason ?? "").trim()) throw new Error("EXPORT_REASON_REQUIRED");
 
   const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const tenantId = routeCtx.site?.tenantId ?? "default";
-  const siteId = routeCtx.site?.id ?? "default";
+  const tenantId = ctx.tenantId;
+  const siteId = ctx.siteId;
 
   await db
     .prepare(

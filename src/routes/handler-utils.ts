@@ -6,6 +6,7 @@ import type { SikesraRequestContext } from "../security/request-context";
 import { getOrCreateRequestId } from "../api/request-id";
 import type { D1Binding } from "../repositories/db";
 import { evaluateAbacWithDb, buildAbacSubject, type AbacInput, type AbacResource } from "../security/abac";
+import { buildTrustedRequestContext, type SikesraRegionScope } from "../security/request-context";
 
 export interface RouteEnv {
   SIKESRA_DB: D1Binding;
@@ -43,37 +44,78 @@ export interface RouteHandlerInput {
   input?: unknown;
 }
 
+function readHeader(request: Request, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = request.headers.get(key);
+    if (value && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function parseDelimitedHeader(value?: string): string[] {
+  return value?.split(",").map((item) => item.trim()).filter(Boolean) ?? [];
+}
+
+function parseJsonHeader<T>(value?: string): T | undefined {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+function requireSiteContext(routeCtx: EmDashRouteContext): { tenantId: string; siteId: string } {
+  const tenantId = routeCtx.site?.tenantId;
+  const siteId = routeCtx.site?.id;
+  if (!tenantId || !siteId) {
+    throw new Error("AUTH_CONTEXT_SITE_MISSING");
+  }
+  return { tenantId, siteId };
+}
+
 // Build trusted request context from EmDash route context
 // Tenant/site/user must come from session/server state, never from query params
 export function buildContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
   const requestId = getOrCreateRequestId(routeCtx.request);
-  
-  // Extract user info from EmDash context
-  // EmDash passes user info through the request headers or context
-  // For MVP, derive from standard EmDash auth patterns
-  const userId = routeCtx.request.headers.get("x-emdash-user-id") 
-    ?? routeCtx.request.headers.get("x-user-id") 
-    ?? "system";
-  
-  const roles = routeCtx.request.headers.get("x-emdash-user-roles")?.split(",").filter(Boolean) 
-    ?? ["admin"]; // Default to admin for MVP testing
-  
-  const permissions = routeCtx.request.headers.get("x-emdash-user-permissions")?.split(",").filter(Boolean) 
-    ?? [];
-  
-  return {
+
+  const userId = readHeader(routeCtx.request, ["x-emdash-user-id", "x-user-id"]);
+  const roles = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-roles", "x-user-roles"]));
+  const permissions = parseDelimitedHeader(readHeader(routeCtx.request, ["x-emdash-user-permissions", "x-user-permissions"]));
+
+  if (!userId || roles.length === 0) {
+    throw new Error("AUTH_CONTEXT_REQUIRED");
+  }
+
+  const { tenantId, siteId } = requireSiteContext(routeCtx);
+  return buildTrustedRequestContext({
     requestId,
-    tenantId: routeCtx.site?.tenantId ?? "default",
-    siteId: routeCtx.site?.id ?? "default",
+    tenantId,
+    siteId,
     userId,
     roles,
     permissions,
+    subjectAttributes: parseJsonHeader<Record<string, unknown>>(readHeader(routeCtx.request, ["x-emdash-subject-attributes"])),
+    regionScope: parseJsonHeader<SikesraRegionScope>(readHeader(routeCtx.request, ["x-emdash-region-scope"])),
+    ipAddress: routeCtx.requestMeta?.ip,
+    userAgent: routeCtx.requestMeta?.userAgent,
+  });
+}
+
+export function buildPublicContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
+  const requestId = getOrCreateRequestId(routeCtx.request);
+  return buildTrustedRequestContext({
+    requestId,
+    tenantId: routeCtx.site?.tenantId ?? "default",
+    siteId: routeCtx.site?.id ?? "default",
+    userId: "public",
+    roles: ["public"],
+    permissions: [],
     subjectAttributes: {},
     regionScope: {},
     ipAddress: routeCtx.requestMeta?.ip,
     userAgent: routeCtx.requestMeta?.userAgent,
-    nowIso: new Date().toISOString(),
-  };
+  });
 }
 
 // Full admin API handler sequence with ABAC enforcement
@@ -92,6 +134,7 @@ export async function handleAdminRequest<TInput, TOutput>(
   // 2-6. Build trusted context, validate, auth, check RBAC, load resource metadata (placeholder)
   // 7. Evaluate ABAC
   const db = routeCtx.env?.SIKESRA_DB;
+  if (!db) throw new Error("DB_UNAVAILABLE");
   if (db) {
     const abacInput: AbacInput = {
       subject: buildAbacSubject(ctx),
@@ -108,7 +151,7 @@ export async function handleAdminRequest<TInput, TOutput>(
   }
 
   // 8. Execute service method
-  return await handler(routeCtx.input, db!, ctx);
+  return await handler(routeCtx.input, db, ctx);
 }
 
 // Lightweight wrapper for handlers that don't need ABAC evaluation
@@ -118,7 +161,8 @@ export function withHandlerSequence<TInput, TOutput>(
 ) {
   return async (routeCtx: EmDashRouteContext<TInput>): Promise<TOutput> => {
     const ctx = buildContextFromEmDash(routeCtx);
-    const db = routeCtx.env?.SIKESRA_DB!;
+    const db = routeCtx.env?.SIKESRA_DB;
+    if (!db) throw new Error("DB_UNAVAILABLE");
     return handler(routeCtx.input, db, ctx);
   };
 }

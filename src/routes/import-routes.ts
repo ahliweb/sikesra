@@ -2,7 +2,7 @@
 // Import batch list and creation endpoints
 // Source: docs/sikesra/04_api_contracts.md, docs/sikesra/07_operations_sop.md
 
-import { withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
+import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
 
@@ -80,10 +80,11 @@ export const importCreateHandler = async (routeCtx: EmDashRouteContext<ImportCre
   const db = routeCtx.env?.SIKESRA_DB;
   if (!db) throw new Error("DB_UNAVAILABLE");
 
+  const ctx = buildContextFromEmDash(routeCtx);
   const input: ImportCreateInput = routeCtx.input ?? { filename: "upload.xlsx" };
   const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const tenantId = routeCtx.site?.tenantId ?? "default";
-  const siteId = routeCtx.site?.id ?? "default";
+  const tenantId = ctx.tenantId;
+  const siteId = ctx.siteId;
 
   await db
     .prepare(

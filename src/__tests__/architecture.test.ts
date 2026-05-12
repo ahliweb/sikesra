@@ -204,7 +204,13 @@ describe("SIKESRA Architecture Validation", () => {
   describe("Handler Sequence", () => {
     it("should build context from EmDash route context", () => {
       const ctx = buildContextFromEmDash({
-        request: new Request("https://example.com"),
+        request: new Request("https://example.com", {
+          headers: {
+            "x-emdash-user-id": "user-1",
+            "x-emdash-user-roles": "admin",
+            "x-emdash-user-permissions": "awcms:sikesra:entity:read",
+          },
+        }),
         input: {},
         requestMeta: { ip: "1.2.3.4", userAgent: "test" },
         site: { id: "site-1", tenantId: "tenant-1" },
@@ -215,10 +221,31 @@ describe("SIKESRA Architecture Validation", () => {
       expect(ctx.requestId).toBeTruthy();
     });
 
+    it("should fail closed when trusted identity is missing", () => {
+      expect(() =>
+        buildContextFromEmDash({
+          request: new Request("https://example.com"),
+          input: {},
+          site: { id: "site-1", tenantId: "tenant-1" },
+        }),
+      ).toThrow("AUTH_CONTEXT_REQUIRED");
+    });
+
     it("should propagate errors from handler", async () => {
+      const db = new InMemoryD1Binding();
       await expect(
         handleAdminRequest(
-          { request: new Request("https://example.com"), input: {}, site: { id: "s1" } },
+          {
+            request: new Request("https://example.com", {
+              headers: {
+                "x-emdash-user-id": "user-1",
+                "x-emdash-user-roles": "admin",
+              },
+            }),
+            input: {},
+            site: { id: "s1", tenantId: "t1" },
+            env: { SIKESRA_DB: db, SIKESRA_DOCUMENTS: { put: async () => undefined, head: async () => null, delete: async () => undefined } },
+          },
           { resourceType: "entity" },
           "read",
           async () => {
