@@ -224,6 +224,15 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 |---|---|---|
 | (none) | All P0 gaps resolved | - |
 
+### GitHub Issues Status (2026-05-13)
+All 28 tracked GitHub issues have been closed:
+- **MVP Core**: #155-#163, #167, #170, #174
+- **UI/UX**: #175, #177, #178, #179, #180, #181
+- **Backend/API**: #182, #183, #184, #185, #186
+- **Tests**: #190, #191, #192, #193, #194
+- **Documentation**: #195, #196, #197, #198
+- **Post-MVP**: #164, #165, #176, #187, #188, #189
+
 ### Completed Issues
 | Issue | Gap | Status |
 |---|---|---|
