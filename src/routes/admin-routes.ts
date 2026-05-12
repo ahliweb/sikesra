@@ -17,6 +17,7 @@ import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
 import { createImportBatch } from "../services/import";
 import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
+import { generateSikesraId } from "../services/code";
 
 interface PluginAdminInteraction {
 	type?: string;
@@ -906,11 +907,11 @@ function formatBytes(bytes: number): string {
 }
 
 function auditRiskLabel(action: string): string {
-	return HIGH_RISK_AUDIT_REQUIRED.has(action as never) ? "Tinggi" : "Standar";
+	return HIGH_RISK_AUDIT_REQUIRED.has(action as never) ? "🔴 Tinggi" : "🟢 Standar";
 }
 
 function auditSuccessLabel(value: unknown): string {
-	return Number(value ?? 0) === 1 ? "Sukses" : "Gagal";
+	return Number(value ?? 0) === 1 ? "✅ Sukses" : "❌ Gagal";
 }
 
 function redactAuditValue(
@@ -1556,31 +1557,74 @@ function contextualActions(
 }
 
 function formatVerificationRisk(risk: string): string {
-	if (risk === "high") return "Risiko Tinggi";
-	if (risk === "medium") return "Risiko Sedang";
-	return "Risiko Rendah";
+	if (risk === "high") return "🔴 Risiko Tinggi";
+	if (risk === "medium") return "🟡 Risiko Sedang";
+	return "🟢 Risiko Rendah";
+}
+
+function formatDataStatusWithBadge(status: string): string {
+	const badges: Record<string, string> = {
+		draft: "⚪ Draft",
+		submitted: "🔵 Diajukan",
+		active: "🟢 Aktif",
+		archived: "⚫ Arsip",
+	};
+	return badges[status] ?? status;
+}
+
+function formatVerificationStatusWithBadge(status: string): string {
+	const badges: Record<string, string> = {
+		pending: "⏳ Menunggu",
+		submitted_village: "📤 Submit Desa",
+		verified_village: "✅ Verifikasi Desa",
+		submitted_subdistrict: "📤 Submit Kecamatan",
+		verified_subdistrict: "✅ Verifikasi Kecamatan",
+		submitted_regency: "📤 Submit Kabupaten",
+		verified: "✅ Terverifikasi",
+		need_revision: "🔄 Perlu Perbaikan",
+		rejected: "❌ Ditolak",
+	};
+	return badges[status] ?? status;
+}
+
+function formatSensitivityWithBadge(level: string): string {
+	const badges: Record<string, string> = {
+		public_safe: "🟢 Publik Aman",
+		internal: "🔵 Internal",
+		restricted: "🟠 Terbatas",
+		highly_restricted: "🔴 Sangat Terbatas",
+	};
+	return badges[level] ?? level;
+}
+
+function formatCompletenessWithBar(percent: number): string {
+	const bar = percent >= 80 ? "🟢" : percent >= 50 ? "🟡" : "🔴";
+	return `${bar} ${percent}%`;
 }
 
 function importStageStatus(status: string): string {
-	if (status === "promoted") return "Selesai";
-	if (status === "validated") return "Siap Promosi";
-	if (status === "mapped") return "Perlu Validasi";
-	if (status === "uploaded") return "Perlu Mapping";
-	if (status === "failed") return "Gagal";
-	return status || "Draft";
+	const badges: Record<string, string> = {
+		promoted: "🟢 Selesai",
+		validated: "🔵 Siap Promosi",
+		mapped: "🟡 Perlu Validasi",
+		uploaded: "⚪ Perlu Mapping",
+		failed: "🔴 Gagal",
+	};
+	return badges[status] ?? status;
 }
 
 function rowStatusLabel(status: string): string {
-	return ({
-		pending: "Pending",
-		valid: "Valid",
-		invalid: "Invalid",
-		corrected: "Corrected",
-		duplicate_review: "Duplicate Review",
-		promoted: "Promoted",
-		skipped: "Skipped",
-		failed: "Failed",
-	} as Record<string, string>)[status] ?? status;
+	const badges: Record<string, string> = {
+		pending: "⏳ Pending",
+		valid: "✅ Valid",
+		invalid: "❌ Invalid",
+		corrected: "🔧 Corrected",
+		duplicate_review: "🔍 Duplicate Review",
+		promoted: "🟢 Promoted",
+		skipped: "⚪ Skipped",
+		failed: "🔴 Failed",
+	};
+	return badges[status] ?? status;
 }
 
 function documentClassificationLabel(value: string): string {
@@ -1634,8 +1678,8 @@ async function verificationQueueBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		] },
 		{ type: "header", text: "Daftar Review" },
 		...(queue.length ? queue.flatMap((item) => ([
-			{ type: "section", text: `${item.displayName} | ${item.objectTypeCode}/${item.objectSubtypeCode} | ${item.currentStatus} | ${item.completenessPercent}% | ${formatVerificationRisk(item.riskLevel)}`, accessory: { type: "button", label: "Review", action_id: `verification_open_${item.entityId}`, style: "primary" } },
-			{ type: "context", text: `Wilayah ${item.officialVillageCode} · Submit ${item.submittedAt} · Duplicate ${DUPLICATE_STATUS_LABELS[item.duplicateStatus] ?? item.duplicateStatus}` },
+			{ type: "section", text: `${item.displayName} | ${item.objectTypeCode}/${item.objectSubtypeCode} | ${formatVerificationStatusWithBadge(item.currentStatus)} | ${formatCompletenessWithBar(item.completenessPercent)} | ${formatVerificationRisk(item.riskLevel)}`, accessory: { type: "button", label: "Review", action_id: `verification_open_${item.entityId}`, style: "primary" } },
+			{ type: "context", text: `Wilayah ${item.officialVillageCode} · Submit ${item.submittedAt} · Duplikasi ${DUPLICATE_STATUS_LABELS[item.duplicateStatus] ?? item.duplicateStatus}` },
 		])) : [{ type: "empty", title: "Antrian kosong", description: "Tidak ada item verifikasi yang cocok dengan filter dan scope backend saat ini." }]),
 	];
 }
@@ -2931,7 +2975,7 @@ async function settingsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 	];
 }
 
-async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string): Promise<Block[]> {
+async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, page: string, input: PluginAdminInteraction): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const entityId = parseDetailEntityId(page);
@@ -2941,6 +2985,21 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 			...pageIntro(page, ctx.permissions),
 			{ type: "banner", variant: "alert", title: "Detail entitas tidak valid", description: `page: ${page}` },
 		];
+	}
+
+	let generateCodeSuccess = "";
+	let generateCodeError = "";
+
+	if (input.type === "block_action" && input.action_id?.startsWith("entities_generate_code_")) {
+		const targetId = input.action_id.replace("entities_generate_code_", "");
+		if (targetId === entityId) {
+			try {
+				const result = await generateSikesraId(db, entityId, ctx);
+				generateCodeSuccess = `ID SIKESRA berhasil dibuat: ${result.sikesraId20} (urutan ke-${result.sequence})`;
+			} catch (err) {
+				generateCodeError = err instanceof Error ? err.message : "Gagal membuat ID SIKESRA";
+			}
+		}
 	}
 
 	const detail = await getEntityDetail(db, entityId, ctx);
@@ -2955,7 +3014,7 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		...(detail.access.canEdit ? [{ type: "button", label: "Edit Draft", action_id: `nav_entities/${entityId}`, style: "primary" }] : []),
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
 		...(detail.access.canVerify ? [{ type: "button", label: "Verifikasi", action_id: "nav_verification", style: "secondary" }] : []),
-		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
+		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `entities_generate_code_${entityId}`, style: "secondary" }] : []),
 	];
 
 	const latestAudit = Array.isArray(detail.audit) && detail.audit.length > 0 ? detail.audit[0] as Record<string, unknown> : null;
@@ -2963,6 +3022,8 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: detail.entity.displayName, description: "Detail entitas ini mengikuti masking, permission, dan ABAC backend. Aksi utama dikendalikan oleh access flags dari backend." },
+		...(generateCodeSuccess ? [{ type: "banner", variant: "success", title: "ID SIKESRA dibuat", description: generateCodeSuccess }] : []),
+		...(generateCodeError ? [{ type: "banner", variant: "alert", title: "Gagal membuat ID", description: generateCodeError }] : []),
 		{ type: "fields", fields: [
 			{ label: "ID SIKESRA", value: detail.entity.sikesraId20 ?? "Belum dibuat" },
 			{ label: "Status Data", value: formatDataStatus(detail.entity.statusData) },
@@ -3157,10 +3218,10 @@ async function registryBlocks(routeCtx: EmDashRouteContext<PluginAdminInteractio
 				displayName: item.masked ? `${item.displayName} (masked)` : item.displayName,
 				officialRegion: formatOfficialRegion(item),
 				localRegion: formatLocalRegion(item),
-				statusData: formatDataStatus(item.statusData),
-				statusVerification: formatVerificationStatus(item.statusVerification),
-				completeness: `${item.completenessPercent}%`,
-				sensitivity: SENSITIVITY_LABELS[item.sensitivityLevel] ?? item.sensitivityLevel,
+				statusData: formatDataStatusWithBadge(item.statusData),
+				statusVerification: formatVerificationStatusWithBadge(item.statusVerification),
+				completeness: formatCompletenessWithBar(item.completenessPercent),
+				sensitivity: formatSensitivityWithBadge(item.sensitivityLevel),
 				actions: contextualActions(item, ctx.permissions),
 			})),
 			empty_text: "Tidak ada data yang cocok dengan filter dan scope backend saat ini.",
@@ -3244,7 +3305,7 @@ function getBlocksForPage(page: string, routeCtx?: EmDashRouteContext<PluginAdmi
 
 	if (page.startsWith("entities/") && page !== "entities/new") {
 		if (!routeCtx) throw new Error("entity detail page requires route context");
-		return entityDetailBlocks(routeCtx, page);
+		return entityDetailBlocks(routeCtx, page, routeCtx.input ?? {});
 	}
 
 	if (page === "entities/new") {
@@ -3360,7 +3421,7 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 
 	if (page.startsWith("entities/") && page !== "entities/new") {
 		return {
-			blocks: await entityDetailBlocks(routeCtx, page),
+			blocks: await entityDetailBlocks(routeCtx, page, input),
 		};
 	}
 

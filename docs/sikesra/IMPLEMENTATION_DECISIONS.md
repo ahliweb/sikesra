@@ -129,7 +129,6 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ### Remaining P0 Gaps (Tracked via GitHub Issues)
 | Issue | Gap | Priority |
 |---|---|---|
-| #155 | ID generation service (stub) | P0 |
 | #156 | Verification v1 API routes (service exists, no routes) | P0 |
 | #157 | Deduplication service (missing entirely) | P0 |
 | #158 | Public /sikesra page (missing entirely) | P0 |
@@ -138,6 +137,11 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 | #161 | Comprehensive test coverage (only 1 test file) | P0 |
 | #162 | Backup/restore procedures (missing entirely) | P0 |
 | #163 | InMemoryD1Binding fix (no-op, cannot test repository logic) | P0 |
+
+### Completed P0 Gaps
+| Issue | Gap | Status |
+|---|---|---|
+| #155 | ID generation service | ✅ Implemented with sequence table, code history, and audit |
 
 ### Remaining P1 Gaps (Post-MVP)
 | Issue | Gap | Priority |
