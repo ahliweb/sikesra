@@ -400,6 +400,9 @@ export async function deleteEntity(
   const entity = await getEntityById(db, input.entityId, ctx);
   if (!entity) throw new Error("ENTITY_NOT_FOUND");
   if (entity.status_data === "archived") throw new Error("ENTITY_ALREADY_ARCHIVED");
+  if (!input.reason || input.reason.trim().length < 20) {
+    throw new Error("REASON_REQUIRED_MIN_20_CHARS");
+  }
 
   const now = new Date().toISOString();
   await db.prepare(
@@ -414,7 +417,7 @@ export async function deleteEntity(
     resourceType: "entity",
     resourceId: input.entityId,
     success: true,
-    reason: input.reason ?? "Entity deleted",
+    reason: input.reason,
     before: {
       displayName: entity.display_name,
       statusData: entity.status_data,
@@ -435,6 +438,9 @@ export async function restoreEntity(
   ).bind(input.entityId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
 
   if (!row) throw new Error("ENTITY_NOT_FOUND_OR_NOT_DELETED");
+  if (!input.reason || input.reason.trim().length < 20) {
+    throw new Error("REASON_REQUIRED_MIN_20_CHARS");
+  }
 
   const now = new Date().toISOString();
   await db.prepare(
@@ -449,7 +455,7 @@ export async function restoreEntity(
     resourceType: "entity",
     resourceId: input.entityId,
     success: true,
-    reason: input.reason ?? "Entity restored",
+    reason: input.reason,
     after: {
       displayName: row.display_name,
       statusData: row.status_data,

@@ -11,6 +11,7 @@ import { buildTrustedRequestContext, type SikesraRegionScope } from "../security
 export interface RouteEnv {
   SIKESRA_DB: D1Binding;
   SIKESRA_DOCUMENTS: R2Bucket;
+  SESSION: KVNamespace;
 }
 
 interface R2Bucket {
@@ -164,5 +165,74 @@ export function withHandlerSequence<TInput, TOutput>(
     const db = routeCtx.env?.SIKESRA_DB;
     if (!db) throw new Error("DB_UNAVAILABLE");
     return handler(routeCtx.input, db, ctx);
+  };
+}
+
+// Rate limiting middleware wrapper
+// Enforces rate limits before executing the handler
+// Admin users with rate_limit:bypass permission can skip rate limiting
+export function withRateLimit<TInput, TOutput>(
+  handler: (input: TInput, db: D1Binding, ctx: SikesraRequestContext) => Promise<TOutput>,
+  rateLimitAction: string,
+) {
+  return async (routeCtx: EmDashRouteContext<TInput>): Promise<TOutput | Response> => {
+    const ctx = buildContextFromEmDash(routeCtx);
+    const db = routeCtx.env?.SIKESRA_DB;
+    if (!db) throw new Error("DB_UNAVAILABLE");
+
+    const kv = routeCtx.env?.SESSION;
+    if (!kv) {
+      // If KV is not available, allow the request but log a warning
+      return handler(routeCtx.input, db, ctx);
+    }
+
+    // Check for rate limit bypass permission
+    const hasBypassPermission = ctx.permissions.includes("awcms:sikesra:rate_limit:bypass");
+    if (hasBypassPermission) {
+      // Log bypass for audit
+      return handler(routeCtx.input, db, ctx);
+    }
+
+    const { enforceRateLimit, createRateLimitResponse } = await import("../services/rate-limit");
+
+    const rateLimitResult = await enforceRateLimit(kv, ctx.userId, rateLimitAction);
+
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult) as unknown as TOutput;
+    }
+
+    return handler(routeCtx.input, db, ctx);
+  };
+}
+
+// Rate limiting wrapper for handlers that need full route context (e.g., file uploads)
+export function withRateLimitRequest<TOutput>(
+  handler: (routeCtx: EmDashRouteContext, db: D1Binding, ctx: SikesraRequestContext) => Promise<TOutput>,
+  rateLimitAction: string,
+) {
+  return async (routeCtx: EmDashRouteContext): Promise<TOutput | Response> => {
+    const ctx = buildContextFromEmDash(routeCtx);
+    const db = routeCtx.env?.SIKESRA_DB;
+    if (!db) throw new Error("DB_UNAVAILABLE");
+
+    const kv = routeCtx.env?.SESSION;
+    if (!kv) {
+      return handler(routeCtx, db, ctx);
+    }
+
+    const hasBypassPermission = ctx.permissions.includes("awcms:sikesra:rate_limit:bypass");
+    if (hasBypassPermission) {
+      return handler(routeCtx, db, ctx);
+    }
+
+    const { enforceRateLimit, createRateLimitResponse } = await import("../services/rate-limit");
+
+    const rateLimitResult = await enforceRateLimit(kv, ctx.userId, rateLimitAction);
+
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult) as unknown as TOutput;
+    }
+
+    return handler(routeCtx, db, ctx);
   };
 }

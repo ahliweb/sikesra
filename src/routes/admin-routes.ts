@@ -4,7 +4,7 @@ import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils
 import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permissions";
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
-import { createEntity, getEntityDetail, patchEntity, type EntityCreateInput, type EntityPatchData } from "../services/entity";
+import { createEntity, getEntityDetail, patchEntity, deleteEntity, restoreEntity, type EntityCreateInput, type EntityPatchData } from "../services/entity";
 import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
@@ -15,7 +15,7 @@ import { HIGH_RISK_AUDIT_REQUIRED } from "../services/audit";
 import { listAuditLogs, type AuditListParams } from "../repositories/audit-repository";
 import { getSettings, updateSettings } from "../services/settings";
 import { REPORT_CATALOG, requiresReasonForReport, type ReportMeta } from "./report-routes";
-import { createImportBatch, promoteImportRows } from "../services/import";
+import { createImportBatch, promoteImportRows, rollbackImportPromotion } from "../services/import";
 import { getImportMappingTemplates, parseAndStageRows, type ImportMapping } from "../services/import";
 import { generateSikesraId, correctSikesraId } from "../services/code";
 import { createExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
@@ -2369,6 +2369,31 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		}
 	}
 
+	let rollbackNotice = "";
+	let rollbackError = "";
+	let showRollbackConfirm = false;
+
+	if (input.type === "block_action" && input.action_id === `imports_rollback_confirm_${batchId}`) {
+		showRollbackConfirm = true;
+	}
+
+	if (input.type === "form_submit" && input.action_id === `imports_rollback_submit_${batchId}`) {
+		const reason = stringState(input.values?.reason);
+		const confirmed = input.values?.confirmRollback === true || input.values?.confirmRollback === "true" || input.values?.confirmRollback === "on";
+		if (confirmed && reason && reason.length >= 20) {
+			try {
+				const result = await rollbackImportPromotion(db, batchId, ctx);
+				rollbackNotice = `Rollback selesai. ${result.rolledBack} entitas dikembalikan ke staging. ${result.failed} gagal.`;
+			} catch (err) {
+				rollbackError = err instanceof Error ? err.message : "Gagal melakukan rollback";
+			}
+		} else if (!confirmed) {
+			rollbackError = "Konfirmasi eksplisit diperlukan untuk rollback.";
+		} else if (!reason || reason.length < 20) {
+			rollbackError = "Alasan harus minimal 20 karakter.";
+		}
+	}
+
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: `Batch Import ${batch.id}`, description: "Gunakan halaman batch untuk menavigasi setiap tahap import: upload workbook, mapping, validasi, staging preview, koreksi invalid row, duplicate review, promosi, dan laporan hasil." },
@@ -2378,6 +2403,8 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 		...(promoteNotice ? [{ type: "banner", variant: "success", title: "Promosi selesai", description: promoteNotice }] : []),
 		...(mappingError ? [{ type: "banner", variant: "alert", title: "Mapping belum tersimpan", description: mappingError }] : []),
 		...(promoteError ? [{ type: "banner", variant: "alert", title: "Promosi gagal", description: promoteError }] : []),
+		...(rollbackNotice ? [{ type: "banner", variant: "success", title: "Rollback selesai", description: rollbackNotice }] : []),
+		...(rollbackError ? [{ type: "banner", variant: "alert", title: "Rollback gagal", description: rollbackError }] : []),
 		{ type: "stats", items: [
 			{ label: "Valid", value: String(batch.validRowCount), description: "Row valid / corrected" },
 			{ label: "Invalid", value: String(invalidRows.length), description: "Butuh koreksi operator" },
@@ -2491,6 +2518,17 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 				] : []),
 				...(batch.status === "promoted" ? [
 					{ type: "banner", variant: "success", title: "Promosi Selesai", description: `Semua baris valid telah dipromosikan. Total ${batch.promotedRowCount} entitas baru dibuat.` },
+					...(promotedRows.length > 0 ? [
+						{ type: "banner", variant: "warning", title: "⚠️ Rollback Tersedia", description: "Anda dapat membatalkan promosi dan mengembalikan entitas ke staging. Aksi ini memerlukan alasan minimal 20 karakter dan tercatat di audit trail." },
+						{ type: "actions", elements: [{ type: "button", label: "Rollback Promosi", action_id: `imports_rollback_confirm_${batchId}`, style: "danger" }] },
+					] : []),
+				] : []),
+				...(showRollbackConfirm ? [
+					{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Rollback Promosi", description: `Semua ${promotedRows.length} entitas yang dipromosikan akan dikembalikan ke staging. Entitas akan dihapus (soft delete) dan baris staging kembali ke status valid. Aksi ini tercatat permanen di audit trail (import.promote).` },
+					{ type: "form", block_id: "rollback_confirm", fields: [
+						{ type: "text_input", action_id: "reason", label: "Alasan rollback (wajib, min 20 karakter)", multiline: true, initial_value: "", placeholder: "Jelaskan alasan rollback promosi untuk keperluan audit..." },
+						{ type: "checkbox", action_id: "confirmRollback", label: "✅ Saya memahami bahwa entitas yang dipromosikan akan dikembalikan ke staging dan dihapus dari daftar entitas aktif" },
+					], submit: { label: "Konfirmasi & Rollback", action_id: `imports_rollback_submit_${batchId}`, style: "danger" } },
 				] : []),
 				{ type: "context", text: "Promosi valid row dan duplicate override tetap memerlukan backend workflow lengkap sebelum tombol eksekusi diaktifkan." },
 			] },
@@ -3856,6 +3894,12 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	let generateCodeSuccess = "";
 	let generateCodeError = "";
 	let showGenerateCodeConfirm = false;
+	let archiveSuccess = "";
+	let archiveError = "";
+	let restoreSuccess = "";
+	let restoreError = "";
+	let showArchiveConfirm = false;
+	let showRestoreConfirm = false;
 
 	if (input.type === "block_action" && input.action_id?.startsWith("entities_generate_code_confirm_")) {
 		const targetId = input.action_id.replace("entities_generate_code_confirm_", "");
@@ -3883,6 +3927,56 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		const targetId = input.action_id.replace("entities_generate_code_", "");
 		if (targetId === entityId) {
 			showGenerateCodeConfirm = true;
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("entities_archive_confirm_")) {
+		const targetId = input.action_id.replace("entities_archive_confirm_", "");
+		if (targetId === entityId) {
+			showArchiveConfirm = true;
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "entities_archive_submit") {
+		const targetId = stringState(input.values?.entityId);
+		const reason = stringState(input.values?.reason);
+		const confirmed = input.values?.confirmArchive === true || input.values?.confirmArchive === "true" || input.values?.confirmArchive === "on";
+		if (targetId === entityId && confirmed && reason && reason.length >= 20) {
+			try {
+				await deleteEntity(db, { entityId: targetId, reason }, ctx);
+				archiveSuccess = "Entitas berhasil diarsipkan. Perubahan ini tercatat di audit trail.";
+			} catch (err) {
+				archiveError = err instanceof Error ? err.message : "Gagal mengarsipkan entitas";
+			}
+		} else if (!confirmed) {
+			archiveError = "Konfirmasi eksplisit diperlukan untuk arsip.";
+		} else if (!reason || reason.length < 20) {
+			archiveError = "Alasan harus minimal 20 karakter.";
+		}
+	}
+
+	if (input.type === "block_action" && input.action_id?.startsWith("entities_restore_confirm_")) {
+		const targetId = input.action_id.replace("entities_restore_confirm_", "");
+		if (targetId === entityId) {
+			showRestoreConfirm = true;
+		}
+	}
+
+	if (input.type === "form_submit" && input.action_id === "entities_restore_submit") {
+		const targetId = stringState(input.values?.entityId);
+		const reason = stringState(input.values?.reason);
+		const confirmed = input.values?.confirmRestore === true || input.values?.confirmRestore === "true" || input.values?.confirmRestore === "on";
+		if (targetId === entityId && confirmed && reason && reason.length >= 20) {
+			try {
+				await restoreEntity(db, { entityId: targetId, reason }, ctx);
+				restoreSuccess = "Entitas berhasil dipulihkan. Perubahan ini tercatat di audit trail.";
+			} catch (err) {
+				restoreError = err instanceof Error ? err.message : "Gagal memulihkan entitas";
+			}
+		} else if (!confirmed) {
+			restoreError = "Konfirmasi eksplisit diperlukan untuk restore.";
+		} else if (!reason || reason.length < 20) {
+			restoreError = "Alasan harus minimal 20 karakter.";
 		}
 	}
 
@@ -3917,6 +4011,8 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		...(detail.access.canSubmit ? [{ type: "button", label: "Siapkan Submit", action_id: `nav_entities/${entityId}`, style: "secondary" }] : []),
 		...(detail.access.canVerify ? [{ type: "button", label: "Verifikasi", action_id: "nav_verification", style: "secondary" }] : []),
 		...(detail.access.canGenerateCode ? [{ type: "button", label: "Generate ID", action_id: `entities_generate_code_confirm_${entityId}`, style: "secondary" }] : []),
+		...(detail.entity.statusData !== "archived" ? [{ type: "button", label: "Arsipkan", action_id: `entities_archive_confirm_${entityId}`, style: "danger" }] : []),
+		...(detail.entity.statusData === "archived" ? [{ type: "button", label: "Pulihkan", action_id: `entities_restore_confirm_${entityId}`, style: "primary" }] : []),
 	];
 
 	const latestAudit = Array.isArray(detail.audit) && detail.audit.length > 0 ? detail.audit[0] as Record<string, unknown> : null;
@@ -3924,8 +4020,12 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 	return [
 		...pageIntro(page, ctx.permissions),
 		{ type: "banner", variant: "default", title: detail.entity.displayName, description: "Detail entitas ini mengikuti masking, permission, dan ABAC backend. Aksi utama dikendalikan oleh access flags dari backend." },
-		...(generateCodeSuccess ? [{ type: "banner", variant: "success", title: "ID SIKESRA dibuat", description: generateCodeSuccess }] : []),
-		...(generateCodeError ? [{ type: "banner", variant: "alert", title: "Gagal membuat ID", description: generateCodeError }] : []),
+	...(generateCodeSuccess ? [{ type: "banner", variant: "success", title: "ID SIKESRA dibuat", description: generateCodeSuccess }] : []),
+	...(generateCodeError ? [{ type: "banner", variant: "alert", title: "Gagal membuat ID", description: generateCodeError }] : []),
+	...(archiveSuccess ? [{ type: "banner", variant: "success", title: "Entitas diarsipkan", description: archiveSuccess }] : []),
+	...(archiveError ? [{ type: "banner", variant: "alert", title: "Gagal mengarsipkan", description: archiveError }] : []),
+	...(restoreSuccess ? [{ type: "banner", variant: "success", title: "Entitas dipulihkan", description: restoreSuccess }] : []),
+	...(restoreError ? [{ type: "banner", variant: "alert", title: "Gagal memulihkan", description: restoreError }] : []),
 		{ type: "fields", fields: [
 			{ label: "ID SIKESRA", value: detail.entity.sikesraId20 ?? "Belum dibuat" },
 			{ label: "Status Data", value: formatDataStatus(detail.entity.statusData) },
@@ -3937,6 +4037,16 @@ async function entityDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminIntera
 		{ type: "hidden", action_id: "entityId", initial_value: entityId },
 		{ type: "checkbox", action_id: "confirmGenerateCode", label: "✅ Saya memahami bahwa ID SIKESRA yang dibuat akan tercatat permanen dan koreksi memerlukan proses audit tersendiri" },
 	], submit: { label: "Konfirmasi & Generate ID", action_id: "entities_generate_code_submit", style: "secondary" } }] : []),
+	...(showArchiveConfirm ? [{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Arsip Entitas", description: "Entitas akan diarsipkan (soft delete). Data tidak akan muncul di daftar utama tetapi tetap tersimpan untuk audit. Aksi ini memerlukan alasan minimal 20 karakter dan tercatat di audit trail (entity.delete)." }, { type: "form", block_id: "archive_confirm", fields: [
+		{ type: "hidden", action_id: "entityId", initial_value: entityId },
+		{ type: "text_input", action_id: "reason", label: "Alasan arsip (wajib, min 20 karakter)", multiline: true, initial_value: "", placeholder: "Jelaskan alasan pengarsipan entitas ini untuk keperluan audit..." },
+		{ type: "checkbox", action_id: "confirmArchive", label: "✅ Saya memahami bahwa entitas ini akan diarsipkan dan tidak muncul di daftar utama sampai dipulihkan" },
+	], submit: { label: "Konfirmasi & Arsipkan", action_id: "entities_archive_submit", style: "danger" } }] : []),
+	...(showRestoreConfirm ? [{ type: "banner", variant: "warning", title: "⚠️ Konfirmasi Pemulihan Entitas", description: "Entitas akan dipulihkan dari arsip dan kembali muncul di daftar utama. Aksi ini memerlukan alasan minimal 20 karakter dan tercatat di audit trail (entity.restore)." }, { type: "form", block_id: "restore_confirm", fields: [
+		{ type: "hidden", action_id: "entityId", initial_value: entityId },
+		{ type: "text_input", action_id: "reason", label: "Alasan pemulihan (wajib, min 20 karakter)", multiline: true, initial_value: "", placeholder: "Jelaskan alasan pemulihan entitas ini untuk keperluan audit..." },
+		{ type: "checkbox", action_id: "confirmRestore", label: "✅ Saya memahami bahwa entitas ini akan dipulihkan dan kembali aktif di daftar utama" },
+	], submit: { label: "Konfirmasi & Pulihkan", action_id: "entities_restore_submit", style: "primary" } }] : []),
 	{ type: "columns", columns: [[
 			{ type: "header", text: "Ringkasan Entitas" },
 			{ type: "fields", fields: [

@@ -44,6 +44,7 @@ import {
 import {
   entityDocumentsHandler,
   uploadUrlHandler,
+  completeUploadHandler,
   documentDownloadHandler,
   documentProxyHandler,
   documentVerifyHandler,
@@ -60,6 +61,13 @@ import {
   auditDetailHandler,
   auditExportHandler,
 } from "./audit-routes";
+
+import {
+  entityBenefitsHandler,
+  benefitCreateHandler,
+  benefitUpdateHandler,
+  benefitDeleteHandler,
+} from "./benefit-routes";
 
 import {
   importListHandler,
@@ -165,7 +173,12 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
 
   // Documents
   "v1/entities/documents": { handler: entityDocumentsHandler },
+  "v1/entities/benefits": { handler: entityBenefitsHandler },
+  "v1/entities/benefits/create": { handler: benefitCreateHandler },
+  "v1/entities/benefits/update": { handler: benefitUpdateHandler },
+  "v1/entities/benefits/delete": { handler: benefitDeleteHandler },
   "v1/documents/upload-url": { handler: uploadUrlHandler },
+  "v1/documents/complete-upload": { handler: completeUploadHandler },
   "v1/documents/download": { handler: documentDownloadHandler },
   "v1/documents/proxy": { handler: documentProxyHandler },
   "v1/documents/verify": { handler: documentVerifyHandler },

@@ -71,8 +71,8 @@ describe("SIKESRA Architecture Validation", () => {
       expect(maskR2Key("tenants/x/sites/y/documents/secret.pdf", {} as never)).toBeNull();
     });
 
-    it("should have all 37 permissions registered", () => {
-      expect(Object.keys(SIKESRA_PERMISSIONS).length).toBe(37);
+    it("should have all 38 permissions registered", () => {
+      expect(Object.keys(SIKESRA_PERMISSIONS).length).toBe(38);
     });
 
     it("should identify high-risk audit actions", () => {
@@ -244,7 +244,11 @@ describe("SIKESRA Architecture Validation", () => {
             }),
             input: {},
             site: { id: "s1", tenantId: "t1" },
-            env: { SIKESRA_DB: db, SIKESRA_DOCUMENTS: { put: async () => undefined, head: async () => null, delete: async () => undefined } },
+            env: { 
+              SIKESRA_DB: db, 
+              SIKESRA_DOCUMENTS: { put: async () => undefined, head: async () => null, delete: async () => undefined },
+              SESSION: { get: async () => null, put: async () => undefined, delete: async () => undefined } as unknown as KVNamespace,
+            },
           },
           { resourceType: "entity" },
           "read",

@@ -38,6 +38,11 @@ export const AUDIT_ACTIONS = {
   ENTITY_DETAIL_UPDATE: "entity.detail_updated",
   ENTITY_DETAIL_DELETE: "entity.detail_deleted",
 
+  // Benefit
+  BENEFIT_CREATE: "benefit.create",
+  BENEFIT_UPDATE: "benefit.update",
+  BENEFIT_DELETE: "benefit.delete",
+
   // Code
   CODE_GENERATE: "code.generate",
   CODE_CORRECT: "code.correct",
@@ -105,6 +110,10 @@ export const AUDIT_ACTIONS = {
 
   // Settings
   SETTINGS_UPDATE: "settings.update",
+
+  // Rate Limiting
+  RATE_LIMIT_EXCEEDED: "security.rate_limit_exceeded",
+  RATE_LIMIT_BYPASS: "security.rate_limit_bypass",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

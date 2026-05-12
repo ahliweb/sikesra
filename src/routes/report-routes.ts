@@ -2,7 +2,7 @@
 // Report metadata and export job listing/creation/generation/download
 // Source: docs/sikesra/04_api_contracts.md
 
-import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
+import { buildContextFromEmDash, withHandlerSequence, withRateLimitRequest, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
@@ -170,21 +170,23 @@ export const exportCreateHandler = async (routeCtx: EmDashRouteContext<ExportCre
 };
 
 // POST /exports/:id/generate — trigger export file generation
-export const exportGenerateHandler = async (routeCtx: EmDashRouteContext) => {
-  const db = routeCtx.env?.SIKESRA_DB;
-  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
-  
-  if (!db) throw new Error("DB_UNAVAILABLE");
-  if (!r2) throw new Error("R2_STORAGE_UNAVAILABLE");
+// Rate limited: max 10 exports per hour per user
+export const exportGenerateHandler = withRateLimitRequest(
+  async (routeCtx: EmDashRouteContext, db: D1Binding, ctx: SikesraRequestContext) => {
+    const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as R2Bucket | undefined;
+    
+    if (!db) throw new Error("DB_UNAVAILABLE");
+    if (!r2) throw new Error("R2_STORAGE_UNAVAILABLE");
 
-  const ctx = buildContextFromEmDash(routeCtx);
-  const url = new URL(routeCtx.request.url);
-  const parts = url.pathname.split("/");
-  const jobId = parts[parts.indexOf("exports") + 1];
+    const url = new URL(routeCtx.request.url);
+    const parts = url.pathname.split("/");
+    const jobId = parts[parts.indexOf("exports") + 1];
 
-  const result = await generateExportFile(db, r2, jobId, ctx);
-  return { jobId, status: "ready", ...result };
-};
+    const result = await generateExportFile(db, r2, jobId, ctx);
+    return { jobId, status: "ready", ...result };
+  },
+  "export_generate"
+);
 
 // GET /exports/:id/download — download export file
 export const exportDownloadHandler = async (routeCtx: EmDashRouteContext) => {

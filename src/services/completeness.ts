@@ -298,3 +298,143 @@ export async function updateCompletenessPercent(
 
   return validationResult.completenessPercent;
 }
+
+export interface SectionValidationResult {
+  sectionKey: string;
+  sectionLabel: string;
+  completenessPercent: number;
+  missingRequired: string[];
+  missingOptional: string[];
+  canSubmit: boolean;
+}
+
+export interface EntityValidationResult {
+  entityId: string;
+  sections: SectionValidationResult[];
+  overallCompleteness: number;
+  canSubmit: boolean;
+  duplicatePreview: {
+    hasDuplicates: boolean;
+    riskLevel: string;
+  };
+}
+
+export async function validateEntitySections(
+  db: D1Binding,
+  entityId: string,
+  ctx: SikesraRequestContext,
+): Promise<EntityValidationResult> {
+  const entity = await db.prepare(
+    `SELECT id, object_type_code, object_subtype_code, display_name, official_village_code, address_text, latitude, longitude
+     FROM awcms_sikesra_entities WHERE id = ? AND tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+  ).bind(entityId, ctx.tenantId, ctx.siteId).first<Record<string, unknown>>();
+
+  if (!entity) throw new Error("ENTITY_NOT_FOUND");
+
+  const objectTypeCode = String(entity.object_type_code ?? "");
+  const sections: SectionValidationResult[] = [];
+
+  // Core section
+  const coreResult = calculateCompleteness(CORE_FIELDS, {
+    display_name: entity.display_name,
+    official_village_code: entity.official_village_code,
+    address_text: entity.address_text,
+    latitude: entity.latitude,
+    longitude: entity.longitude,
+  }, {});
+
+  sections.push({
+    sectionKey: "core",
+    sectionLabel: "Data Inti",
+    completenessPercent: coreResult.completenessPercent,
+    missingRequired: coreResult.missingRequired,
+    missingOptional: coreResult.missingOptional,
+    canSubmit: coreResult.missingRequired.length === 0,
+  });
+
+  // Detail section
+  if (objectTypeCode && DETAIL_MODULE_FIELDS[objectTypeCode]) {
+    const detailFields = DETAIL_MODULE_FIELDS[objectTypeCode];
+    const detailTable = DETAIL_TABLE_MAP[objectTypeCode];
+    let detailData: Record<string, unknown> | undefined;
+
+    if (detailTable) {
+      detailData = await db.prepare(
+        `SELECT * FROM ${detailTable} WHERE tenant_id = ? AND site_id = ? AND entity_id = ? AND deleted_at IS NULL`,
+      ).bind(ctx.tenantId, ctx.siteId, entityId).first<Record<string, unknown>>();
+    }
+
+    const detailResult = calculateCompleteness(detailFields, {}, detailData ?? {});
+    sections.push({
+      sectionKey: "detail",
+      sectionLabel: "Data Detail",
+      completenessPercent: detailResult.completenessPercent,
+      missingRequired: detailResult.missingRequired,
+      missingOptional: detailResult.missingOptional,
+      canSubmit: detailResult.missingRequired.length === 0,
+    });
+  }
+
+  // People section
+  const peopleCount = await db.prepare(
+    `SELECT COUNT(*) as cnt FROM awcms_sikesra_entity_people WHERE tenant_id = ? AND site_id = ? AND entity_id = ? AND deleted_at IS NULL`,
+  ).bind(ctx.tenantId, ctx.siteId, entityId).first<{ cnt: number }>();
+
+  sections.push({
+    sectionKey: "people",
+    sectionLabel: "Pengurus / Relasi",
+    completenessPercent: (peopleCount?.cnt ?? 0) > 0 ? 100 : 0,
+    missingRequired: (peopleCount?.cnt ?? 0) === 0 ? ["Belum ada pengurus/relasi"] : [],
+    missingOptional: [],
+    canSubmit: true,
+  });
+
+  // Documents section
+  const docCount = await db.prepare(
+    `SELECT COUNT(*) as cnt FROM awcms_sikesra_supporting_documents WHERE tenant_id = ? AND site_id = ? AND entity_id = ? AND deleted_at IS NULL`,
+  ).bind(ctx.tenantId, ctx.siteId, entityId).first<{ cnt: number }>();
+
+  sections.push({
+    sectionKey: "documents",
+    sectionLabel: "Dokumen",
+    completenessPercent: (docCount?.cnt ?? 0) > 0 ? 100 : 0,
+    missingRequired: [],
+    missingOptional: (docCount?.cnt ?? 0) === 0 ? ["Belum ada dokumen"] : [],
+    canSubmit: true,
+  });
+
+  // Location section
+  const hasCoordinates = entity.latitude !== null && entity.longitude !== null;
+  sections.push({
+    sectionKey: "location",
+    sectionLabel: "Lokasi",
+    completenessPercent: hasCoordinates ? 100 : 50,
+    missingRequired: [],
+    missingOptional: hasCoordinates ? [] : ["Koordinat belum diisi"],
+    canSubmit: true,
+  });
+
+  const overallCompleteness = Math.round(
+    sections.reduce((sum, s) => sum + s.completenessPercent, 0) / sections.length
+  );
+
+  const canSubmit = sections.every((s) => s.canSubmit);
+
+  // Duplicate preview
+  const duplicateCount = await db.prepare(
+    `SELECT COUNT(*) as cnt FROM awcms_sikesra_duplicate_candidates WHERE tenant_id = ? AND site_id = ? AND (entity_id_a = ? OR entity_id_b = ?) AND deleted_at IS NULL`,
+  ).bind(ctx.tenantId, ctx.siteId, entityId, entityId).first<{ cnt: number }>();
+
+  const duplicatePreview = {
+    hasDuplicates: (duplicateCount?.cnt ?? 0) > 0,
+    riskLevel: (duplicateCount?.cnt ?? 0) > 0 ? "candidate" : "none",
+  };
+
+  return {
+    entityId,
+    sections,
+    overallCompleteness,
+    canSubmit,
+    duplicatePreview,
+  };
+}

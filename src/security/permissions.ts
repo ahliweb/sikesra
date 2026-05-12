@@ -69,6 +69,9 @@ export const SIKESRA_PERMISSIONS = {
   // Sensitive
   SENSITIVE_REVEAL: "awcms:sikesra:sensitive:reveal",
   SENSITIVE_HIGHLY_RESTRICTED_READ: "awcms:sikesra:sensitive:highly_restricted_read",
+
+  // Rate Limiting
+  RATE_LIMIT_BYPASS: "awcms:sikesra:rate_limit:bypass",
 } as const;
 
 export type SikesraPermission = (typeof SIKESRA_PERMISSIONS)[keyof typeof SIKESRA_PERMISSIONS];

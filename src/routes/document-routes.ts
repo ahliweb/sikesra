@@ -15,7 +15,7 @@ import {
 } from "../services/document";
 import { createStorageAdapter, type R2Bucket } from "../services/storage";
 import { writeAuditEvent, AUDIT_ACTIONS } from "../services/audit";
-import { withHandlerSequence, buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
+import { withHandlerSequence, buildContextFromEmDash, withRateLimitRequest, type EmDashRouteContext } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
 import { getRouteDb } from "./route-db";
 
@@ -63,29 +63,31 @@ export const completeUploadHandler = async (routeCtx: EmDashRouteContext) => {
 };
 
 // GET /documents/:id/download
-export const documentDownloadHandler = async (routeCtx: EmDashRouteContext) => {
-  const ctx = buildContextFromEmDash(routeCtx);
-  const db = await getRouteDb(routeCtx.request);
-  const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as unknown as R2Bucket | undefined;
-  
-  if (!db) throw new Error("Database not available");
-  if (!r2) throw new Error("R2 storage not available");
+// Rate limited: max 50 downloads per hour per user
+export const documentDownloadHandler = withRateLimitRequest(
+  async (routeCtx: EmDashRouteContext, db: D1Binding, ctx: SikesraRequestContext) => {
+    const r2 = routeCtx.env?.SIKESRA_DOCUMENTS as unknown as R2Bucket | undefined;
+    
+    if (!db) throw new Error("Database not available");
+    if (!r2) throw new Error("R2 storage not available");
 
-  const url = new URL(routeCtx.request.url);
-  const parts = url.pathname.split("/");
-  const documentId = parts[parts.indexOf("documents") + 1];
-  const reason = url.searchParams.get("reason") ?? undefined;
+    const url = new URL(routeCtx.request.url);
+    const parts = url.pathname.split("/");
+    const documentId = parts[parts.indexOf("documents") + 1];
+    const reason = url.searchParams.get("reason") ?? undefined;
 
-  const result = await getDocumentDownload(db, r2, documentId, reason, ctx);
-  
-  return new Response(result.content, {
-    headers: {
-      "Content-Type": result.mimeType,
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(result.filename)}"`,
-      "Content-Length": String(result.sizeBytes),
-    },
-  });
-};
+    const result = await getDocumentDownload(db, r2, documentId, reason, ctx);
+    
+    return new Response(result.content, {
+      headers: {
+        "Content-Type": result.mimeType,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(result.filename)}"`,
+        "Content-Length": String(result.sizeBytes),
+      },
+    });
+  },
+  "document_download"
+);
 
 // GET /documents/proxy/:encodedKey
 // Proxy endpoint for secure document access with permission validation
