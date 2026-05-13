@@ -126,19 +126,22 @@ export async function getAdminDashboard(ctx: SikesraRequestContext, db?: D1Bindi
 
   const regionRows = await db.prepare(
     `SELECT
-       substr(e.official_village_code, 1, 6) AS region_code,
-       COALESCE(r.name, substr(e.official_village_code, 1, 6)) AS region_name,
+       district.code AS region_code,
+       COALESCE(district.name, district.code) AS region_name,
        COUNT(*) AS total,
        ROUND(AVG(COALESCE(e.completeness_percent, 0)), 0) AS completion_percent,
        ROUND((SUM(CASE WHEN e.status_verification = 'verified' THEN 1 ELSE 0 END) * 100.0) / COUNT(*), 0) AS verification_percent
      FROM awcms_sikesra_entities e
-     LEFT JOIN awcms_sikesra_official_regions r
-       ON r.tenant_id = e.tenant_id
-      AND r.site_id = e.site_id
-      AND r.code = substr(e.official_village_code, 1, 6)
-      AND r.level = 'district'
+     LEFT JOIN awcms_sikesra_official_regions district
+       ON district.tenant_id = e.tenant_id
+      AND district.site_id = e.site_id
+      AND district.code = CASE
+        WHEN instr(e.official_village_code, '.') > 0 THEN substr(e.official_village_code, 1, 8)
+        ELSE substr(e.official_village_code, 1, 6)
+      END
+      AND district.level = 'district'
      WHERE e.tenant_id = ? AND e.site_id = ? AND e.deleted_at IS NULL
-     GROUP BY substr(e.official_village_code, 1, 6), r.name
+     GROUP BY district.code, district.name
      ORDER BY total DESC, region_name ASC
      LIMIT 8`
   ).bind(tid, sid).all<Record<string, unknown>>();

@@ -1,11 +1,11 @@
-import type { D1Binding } from "../repositories/db";
+import type { D1Binding, D1PreparedStatement, D1Result } from "../repositories/db";
 import { getDb } from "emdash/runtime";
 
 type RawKyselyDb = {
   executeQuery(query: { sql: string; parameters: unknown[]; query: { kind: "RawNode"; sqlFragments: string[]; parameters: unknown[] } }): Promise<{ rows?: Record<string, unknown>[] }>;
 };
 
-class KyselyPreparedStatement {
+class KyselyPreparedStatement implements D1PreparedStatement {
   private params: unknown[] = [];
 
   constructor(
@@ -13,12 +13,12 @@ class KyselyPreparedStatement {
     private readonly query: string,
   ) {}
 
-  bind(...values: unknown[]) {
+  bind(...values: unknown[]): D1PreparedStatement {
     if (values.length === 1 && typeof values[0] === "object" && values[0] !== null && !Array.isArray(values[0])) {
       this.params = Object.values(values[0] as Record<string, unknown>);
-      return this;
+    } else {
+      this.params = values;
     }
-    this.params = values;
     return this;
   }
 
@@ -31,17 +31,17 @@ class KyselyPreparedStatement {
     return result.rows ?? [];
   }
 
-  async first<T = Record<string, unknown>>(): Promise<T | null> {
+  async first<T = Record<string, unknown>>(_colName?: string): Promise<T | null> {
     const rows = await this.execute();
     return (rows[0] as T | undefined) ?? null;
   }
 
-  async all<T = Record<string, unknown>>(): Promise<{ results: T[]; success: boolean; meta?: { rows_read?: number; rows_written?: number } }> {
+  async all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
     const rows = await this.execute();
     return { results: rows as T[], success: true, meta: { rows_read: rows.length } };
   }
 
-  async run(): Promise<{ results: never[]; success: boolean; meta?: { rows_read?: number; rows_written?: number } }> {
+  async run(): Promise<D1Result> {
     await this.execute();
     return { results: [], success: true, meta: { rows_written: 1 } };
   }
@@ -55,19 +55,19 @@ class KyselyPreparedStatement {
 class KyselyD1Adapter implements D1Binding {
   constructor(private readonly db: RawKyselyDb) {}
 
-  prepare(query: string) {
+  prepare(query: string): D1PreparedStatement {
     return new KyselyPreparedStatement(this.db, query);
   }
 
-  async batch(statements: KyselyPreparedStatement[]) {
-    const results = [];
+  async batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
+    const results: D1Result[] = [];
     for (const statement of statements) {
       results.push(await statement.run());
     }
     return results;
   }
 
-  async exec(query: string) {
+  async exec(query: string): Promise<D1Result> {
     return this.prepare(query).run();
   }
 }
