@@ -22,7 +22,9 @@ This document maps the existing test suite to the validation checklist items in 
 | `export-job.test.ts` | 18 | Report metadata, job creation, file generation, download flow |
 | `cloudflare-access.test.ts` | 35 | JWT parsing, validation, claim extraction, group-to-role mapping |
 | `integration-gaps.test.ts` | 28 | Region CRUD, entity patch, document upload, settings, access flags |
-| **Total** | **322** | |
+| `permission-registry.test.ts` | 19 | Permission registry API, grouping, risk levels, namespace consistency |
+| `admin-integration.test.ts` | 5 | Admin Block Kit envelope, route bridge, dashboard/page smoke coverage |
+| **Total** | **344** | |
 
 ## Validation Checklist Coverage
 
@@ -62,7 +64,7 @@ This document maps the existing test suite to the validation checklist items in 
 | 1 | SIKESRA is plugin/module `sikesra` | `architecture.test.ts` | ✅ |
 | 2 | No unnecessary EmDash core changes | Manual review | ✅ |
 | 3 | Admin UI route pattern | `architecture.test.ts` | ✅ |
-| 4 | Admin Block Kit route returns `data.blocks` | Manual review | ⚠️ |
+| 4 | Admin Block Kit route returns `data.blocks` | `admin-integration.test.ts` | ✅ |
 | 5 | API route pattern | `architecture.test.ts` | ✅ |
 | 6 | Public API route aggregate-safe | `public-privacy.test.ts` | ✅ |
 | 7 | Public route `/sikesra` | `architecture.test.ts` | ✅ |
@@ -212,7 +214,7 @@ This document maps the existing test suite to the validation checklist items in 
 |---|---|---|---|
 | 1 | `node --check worker-wrapper-template.mjs` | Manual review | ✅ |
 | 2 | `node --check postbuild.mjs` | Manual review | ✅ |
-| 3 | `npm run typecheck` passes | CI/Manual | ✅ |
+| 3 | `npm run typecheck` passes | Manual review | ⚠️ |
 | 4 | `npm test` passes | CI/Manual | ✅ |
 | 5 | `npm run build` completes | CI/Manual | ✅ |
 | 6 | D1 backup procedure documented | `OPERATIONS.md` | ✅ |

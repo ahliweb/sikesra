@@ -162,6 +162,6 @@ These are not contradictions in the core docs; they are local implementation gap
 
 1. Shared AWCMS permission registry helper is not yet available; SIKESRA uses a local permission catalog.
 2. Shared ABAC/audit adapters are not yet available; SIKESRA uses local D1-backed fallbacks.
-3. Full React admin pages are not implemented yet; current admin pages use EmDash Block Kit payloads.
-4. Admin Block Kit integration must be rebuilt and verified with a real admin session after API security is implemented.
+3. Core admin routes now use a shared React bridge that fetches and renders EmDash Block Kit payloads from `/_emdash/api/plugins/sikesra/admin`; richer route-specific React screens remain optional follow-up work.
+4. Admin Block Kit integration now has automated smoke coverage for the `data.blocks` envelope and page routing, but still needs authenticated browser-session validation in staging.
 5. Trusted admin/API request context is now fail-closed in local route helpers. Public-safe routes use an explicit `public` context instead of inheriting any implicit admin fallback behavior.

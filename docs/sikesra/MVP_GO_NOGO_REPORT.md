@@ -31,7 +31,7 @@ The SIKESRA MVP scaffold and deployed hybrid worker provide a functional but min
 | Audit service | ✓ | 43 action catalog, high-risk tagging |
 | Backend architecture | ✓ | Services → Repositories → D1, with scope enforcement |
 | Worker deployment | ✓ | Cloudflare hybrid Worker with EmDash `DB`, SIKESRA `SIKESRA_DB`, KV, and R2 bindings |
-| EmDash admin plugin pages | ✓ | Block Kit pages under `/_emdash/admin/plugins/sikesra/*`, backed by `/_emdash/api/plugins/sikesra/admin` returning `data.blocks` |
+| EmDash admin plugin pages | ✓ | Core admin routes render through a shared React bridge backed by `/_emdash/api/plugins/sikesra/admin` returning `data.blocks` |
 | Root route ownership | ✓ | `/` is EmDash-owned; `/sikesra` is SIKESRA-owned |
 | Architecture tests | ✓ | 24 test cases across architecture and route boundaries |
 | Backup/restore docs | ✓ | `OPERATIONS.md` with procedures |
@@ -41,13 +41,13 @@ The SIKESRA MVP scaffold and deployed hybrid worker provide a functional but min
 
 | Area | Priority | Notes |
 |---|---|---|
-| Full React/Kumo admin UI | P1 | Current admin pages use EmDash Block Kit; build richer React pages only if Block Kit becomes insufficient |
+| Full route-specific React/Kumo admin UI | P1 | Current core admin routes are functional through the shared Block Kit bridge; build richer bespoke React pages only where operator workflows need more than the bridge renderer |
 | Auth/session integration for all admin APIs | P0 | Admin Block Kit endpoint delegates to EmDash auth first; remaining non-public API context must keep using trusted server-side session derivation |
 | Document upload (R2) | P0 | R2 bucket bound but no upload/download endpoints |
 | Excel import workflow | P0 | Import service stub exists but no parsing or promotion |
 | Export jobs | P1 | Export service stub exists but no file generation |
 | 20-digit ID generation | P1 | Code service stub exists but no sequence table integration |
-| Integration tests | P1 | Architecture/unit tests only; add D1 integration, authenticated admin, activation, and e2e checks |
+| Authenticated admin browser/e2e verification | P1 | Unit and smoke tests cover the Block Kit envelope and route bridge; add authenticated browser-session/e2e validation for real admin rendering |
 | Rate limiting | P2 | Not configured on worker |
 
 ## Go Conditions

@@ -172,6 +172,12 @@ interface ReportFieldPreset {
 
 type Block = Record<string, unknown>;
 
+function withBlocks(blocks: Block[]) {
+	return {
+		data: { blocks },
+	};
+}
+
 const PAGE_LABELS: Record<string, string> = {
 	overview: "Dashboard",
 	entities: "Data Utama",
@@ -5087,108 +5093,72 @@ export async function pluginAdminHandler(routeCtx: EmDashRouteContext<PluginAdmi
 	const page = resolvePage(input);
 
 	if (page === "entities/new") {
-		return {
-			blocks: await wizardBlocks(routeCtx, input),
-		};
+		return withBlocks(await wizardBlocks(routeCtx, input));
 	}
 
 	if (page === "reports") {
-		return {
-			blocks: await reportsBlocks(routeCtx, input),
-		};
+		return withBlocks(await reportsBlocks(routeCtx, input));
 	}
 
 	if (page === "regions") {
-		return {
-			blocks: await regionsBlocks(routeCtx, input),
-		};
+		return withBlocks(await regionsBlocks(routeCtx, input));
 	}
 
 	if (page === "access") {
-		return {
-			blocks: await accessBlocks(routeCtx, input),
-		};
+		return withBlocks(await accessBlocks(routeCtx, input));
 	}
 
 	if (page === "audit") {
-		return {
-			blocks: await auditBlocks(routeCtx, input),
-		};
+		return withBlocks(await auditBlocks(routeCtx, input));
 	}
 
 	if (page === "settings") {
-		return {
-			blocks: await settingsBlocks(routeCtx, input),
-		};
+		return withBlocks(await settingsBlocks(routeCtx, input));
 	}
 
 	if (page === "code") {
-		return {
-			blocks: await codeCorrectionBlocks(routeCtx, input),
-		};
+		return withBlocks(await codeCorrectionBlocks(routeCtx, input));
 	}
 
 	if (page.startsWith("audit/")) {
-		return {
-			blocks: await auditDetailBlocks(routeCtx, page),
-		};
+		return withBlocks(await auditDetailBlocks(routeCtx, page));
 	}
 
 	if (page.startsWith("reports/")) {
-		return {
-			blocks: await reportJobDetailBlocks(routeCtx, page),
-		};
+		return withBlocks(await reportJobDetailBlocks(routeCtx, page));
 	}
 
 	if (page === "documents") {
-		return {
-			blocks: await documentsBlocks(routeCtx, input),
-		};
+		return withBlocks(await documentsBlocks(routeCtx, input));
 	}
 
 	if (page.startsWith("documents/")) {
-		return {
-			blocks: await documentDetailBlocks(routeCtx, page, input),
-		};
+		return withBlocks(await documentDetailBlocks(routeCtx, page, input));
 	}
 
 	if (page === "imports") {
-		return {
-			blocks: await importsBlocks(routeCtx, input),
-		};
+		return withBlocks(await importsBlocks(routeCtx, input));
 		}
 
 	if (page.startsWith("imports/")) {
-		return {
-			blocks: await importBatchDetailBlocks(routeCtx, page, input),
-		};
+		return withBlocks(await importBatchDetailBlocks(routeCtx, page, input));
 	}
 
 	if (page === "verification") {
-		return {
-			blocks: await verificationQueueBlocks(routeCtx, input),
-		};
+		return withBlocks(await verificationQueueBlocks(routeCtx, input));
 	}
 
 	if (page.startsWith("verification/")) {
-		return {
-			blocks: await verificationReviewBlocks(routeCtx, page, input),
-		};
+		return withBlocks(await verificationReviewBlocks(routeCtx, page, input));
 	}
 
 	if (page.startsWith("entities/") && page !== "entities/new") {
-		return {
-			blocks: await entityDetailBlocks(routeCtx, page, input),
-		};
+		return withBlocks(await entityDetailBlocks(routeCtx, page, input));
 	}
 
 	if (page === "entities") {
-		return {
-			blocks: await registryBlocks(routeCtx, input),
-		};
+		return withBlocks(await registryBlocks(routeCtx, input));
 	}
 
-	return {
-		blocks: await getBlocksForPage(page, routeCtx),
-	};
+	return withBlocks(await getBlocksForPage(page, routeCtx));
 }
