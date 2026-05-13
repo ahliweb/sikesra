@@ -72,13 +72,28 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
   }
 
   async all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-    const { tableName, columns, whereClause, orderBy, limit, offset } = this.parseSelect();
-    
+    const parsed = this.parseSelect();
+    const { tableName, columns, whereClause, orderBy, limit, offset, isAggregate, aggregateAlias } = parsed;
+
     if (!tableName || !this._tables.has(tableName)) {
+      if (isAggregate) {
+        return { results: [{ [aggregateAlias!]: 0 }] as T[], success: true };
+      }
       return { results: [] as T[], success: true };
     }
 
     const table = this._tables.get(tableName)!;
+
+    // Handle aggregate queries
+    if (isAggregate) {
+      let rows = Array.from(table.values());
+      if (whereClause) {
+        rows = rows.filter((row) => this.evaluateWhere(whereClause, row, [...this._params]));
+      }
+      const count = rows.length;
+      return { results: [{ [aggregateAlias!]: count }] as T[], success: true };
+    }
+
     let rows = Array.from(table.values());
 
     // Apply WHERE clause
@@ -225,11 +240,19 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
       // Apply SET clauses
       for (let i = 0; i < setClauses.length; i++) {
         const [col] = setClauses[i];
-        row[col] = setParamValues[i];
+        const val = setParamValues[i];
+        // Handle datetime('now') SQL function
+        if (typeof val === "string" && val.toLowerCase().includes("datetime")) {
+          row[col] = new Date().toISOString().replace("T", " ").substring(0, 19);
+        } else {
+          row[col] = val;
+        }
       }
 
-      // Update timestamp
-      row["updated_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
+      // Update timestamp if not already set by SET clause
+      if (!setClauses.some(([c]) => c === "updated_at")) {
+        row["updated_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
+      }
 
       table.set(id, row);
       updatedCount++;
@@ -296,14 +319,26 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
     orderBy?: [string, string];
     limit?: number;
     offset?: number;
+    isAggregate?: boolean;
+    aggregateAlias?: string;
   } {
     const query = this._query.trim();
     const upper = query.toUpperCase();
-    
+
     // Extract table name
     const fromMatch = upper.match(/FROM\s+(\w+)/);
     const tableName = fromMatch ? fromMatch[1].toLowerCase() : undefined;
-    
+
+    // Check for aggregate functions like COUNT(*), COUNT(1), etc.
+    const countMatch = upper.match(/COUNT\s*\(\s*\*\s*\)\s+AS\s+(\w+)/i);
+    if (countMatch) {
+      return {
+        tableName,
+        isAggregate: true,
+        aggregateAlias: countMatch[1].toLowerCase(),
+      };
+    }
+
     // Extract columns
     const selectMatch = upper.match(/SELECT\s+(.+?)\s+FROM/);
     const columns = selectMatch 

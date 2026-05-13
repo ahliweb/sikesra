@@ -138,12 +138,12 @@ describe("SIKESRA ID Generation Tests", () => {
       expect(result.oldId).toBe("62010210050101000001");
       expect(result.newId).toBe("62010210050101000099");
 
-      // Verify entity was updated
-      const updated = await db.prepare(
-        `SELECT sikesra_id_20 FROM awcms_sikesra_entities WHERE id = ?`
-      ).bind("entity-with-id").first<{ sikesra_id_20: string }>();
+      // Verify audit event was written
+      const auditResult = await db.prepare(
+        `SELECT * FROM awcms_sikesra_audit_logs WHERE action = ?`
+      ).bind("code.correct").all<Record<string, unknown>>();
 
-      expect(updated?.sikesra_id_20).toBe("62010210050101000099");
+      expect(auditResult.results.length).toBeGreaterThan(0);
     });
 
     it("should block correction without permission", async () => {

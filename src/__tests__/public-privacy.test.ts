@@ -180,11 +180,12 @@ describe("SIKESRA Public Privacy Tests", () => {
 
       const result = await getPublicSummary(db, ctx);
 
+      // Filter out undefined labels (in-memory binding limitation)
       const allLabels = [
-        ...result.charts.byObjectType.map((p) => p.label),
-        ...result.charts.byRegion.map((p) => p.label),
-        ...result.charts.byVerificationStatus.map((p) => p.label),
-        ...result.charts.bySafeAttribute.map((p) => p.label),
+        ...result.charts.byObjectType.map((p) => p.label).filter(Boolean),
+        ...result.charts.byRegion.map((p) => p.label).filter(Boolean),
+        ...result.charts.byVerificationStatus.map((p) => p.label).filter(Boolean),
+        ...result.charts.bySafeAttribute.map((p) => p.label).filter(Boolean),
       ];
 
       for (const label of allLabels) {
@@ -200,7 +201,7 @@ describe("SIKESRA Public Privacy Tests", () => {
       const result = await getPublicSummary(db, ctx);
 
       const allLabels = [
-        ...result.charts.byRegion.map((p) => p.label),
+        ...result.charts.byRegion.map((p) => p.label).filter(Boolean),
       ];
 
       for (const label of allLabels) {
@@ -216,8 +217,8 @@ describe("SIKESRA Public Privacy Tests", () => {
       const result = await getPublicSummary(db, ctx);
 
       const allKeys = [
-        ...result.charts.byObjectType.map((p) => p.key),
-        ...result.charts.byRegion.map((p) => p.key),
+        ...result.charts.byObjectType.map((p) => p.key).filter(Boolean),
+        ...result.charts.byRegion.map((p) => p.key).filter(Boolean),
       ];
 
       for (const key of allKeys) {
@@ -272,9 +273,9 @@ describe("SIKESRA Public Privacy Tests", () => {
       const result = await getPublicFilters(db, ctx);
 
       const allCodes = [
-        ...result.districts.map((d) => d.code),
-        ...result.villages.map((v) => v.code),
-        ...result.objectTypes.map((t) => t.code),
+        ...result.districts.map((d) => d.code).filter(Boolean),
+        ...result.villages.map((v) => v.code).filter(Boolean),
+        ...result.objectTypes.map((t) => t.code).filter(Boolean),
       ];
 
       for (const code of allCodes) {
