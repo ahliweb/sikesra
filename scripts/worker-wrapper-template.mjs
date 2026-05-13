@@ -125,7 +125,7 @@ export default {
     if (pathname.startsWith("/_emdash/api/plugins/sikesra/public/")) {
       return handleEmDash(request, env, ctx, "sikesra-public-api");
     }
-    if (pathname.startsWith("/_emdash/api/plugins/sikesra/")) return handleSikesraApi();
+    if (pathname.startsWith("/_emdash/api/plugins/sikesra/")) return handleEmDash(request, env, ctx, "sikesra-api");
 
     try {
       return await handleEmDash(request, env, ctx, pathname === "/" ? "emdash-root" : "emdash");
