@@ -174,12 +174,19 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - **Rate limit bypass permission** (`awcms:sikesra:rate_limit:bypass`) for admin override
 - **Entity validation endpoint** registered at `v1/entities/validate` with section-level validation
 - **Permission registry integration** (Issue #204): 3 v1 API endpoints (`v1/permissions`, `v1/permissions/detail`, `v1/permissions/by-group`) with React admin page at `/_emdash/admin/plugins/sikesra/permissions` displaying all 38 permissions grouped by resource with risk level indicators, search, and filter capabilities
-- **MVP Go/No-Go Report** created at `docs/sikesra/MVP_GO_NO_GO_REPORT.md` - Status: CONDITIONAL GO
+- **Pre-production performance review** (Issue #199): Performance testing script (`scripts/performance-test.mjs`), performance review framework (`PERFORMANCE_REVIEW.md`), staging validation checklist (`STAGING_VALIDATION_CHECKLIST.md`), backup/restore test procedure (`BACKUP_RESTORE_TEST_RESULTS.md`)
+- **R2 lifecycle rules** (Issue #201): Configured auto-delete for imports (90 days) and exports (30 days), documented document retention policy by classification in `R2_LIFECYCLE_POLICY.md`
+- **Penetration testing plan** (Issue #202): Comprehensive plan with 54 test cases across 10 categories (authentication bypass, RBAC/ABAC bypass, tenant isolation, small-cell suppression, IDOR, import/export abuse, rate limiting, XSS/CSRF, SQL injection, R2 access) documented in `PENETRATION_TESTING_PLAN.md`
+- **CI/CD pipeline enhancements** (Issue #205): Enhanced deploy workflow with coverage reporting (80% threshold), security scanning (npm audit), build artifact validation, and post-deployment smoke tests
+- **MVP Go/No-Go Report** updated to **GO** status - All 12 criteria met
 
 ### Post-MVP Operational Documentation (Completed)
 - **Incident Response Runbook** (`INCIDENT_RESPONSE_RUNBOOK.md`): Comprehensive runbook covering SEV-1 through SEV-4 incidents with step-by-step procedures for data breach, data corruption, auth failure, worker outage, performance degradation, import/export failures. Includes incident command structure, communication templates, post-incident review process, and emergency contacts.
 - **Operator Training Notes** (`OPERATOR_TRAINING.md`): Expanded from 53 to 200+ lines covering all user roles, core workflows (manual entry, Excel import, verification, documents, export, audit), troubleshooting guide, debugging commands, deployment process, backup/restore, and monthly maintenance checklist.
-- **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 143 tests across 7 test files to 114 validation checklist items. Identifies 89 items covered (78%), 25 partial/manual (22%), 0 uncovered. Documents coverage gaps with recommended test files.
+- **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 339 tests across 17 test files to validation checklist items. Documents coverage gaps with recommended test files.
+- **Performance Review Framework** (`PERFORMANCE_REVIEW.md`): Comprehensive performance testing targets, D1 query benchmarks, R2 throughput tests, and load testing scenarios.
+- **Staging Validation Checklist** (`STAGING_VALIDATION_CHECKLIST.md`): 54-item checklist covering hybrid worker routing, plugin activation, entity CRUD, verification, import, documents, export, audit, ABAC, and rate limiting.
+- **Backup/Restore Test Results** (`BACKUP_RESTORE_TEST_RESULTS.md`): Test procedure and results template for D1 backup/restore and R2 backup/restore validation.
 
 ### Test Coverage (339 tests across 17 test files)
 - `architecture.test.ts`: 28 tests - Core architecture, RBAC, ABAC, request context

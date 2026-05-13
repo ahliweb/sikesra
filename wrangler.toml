@@ -20,6 +20,24 @@ bucket_name = "sikesra"
 binding = "MEDIA"
 bucket_name = "sikesra"
 
+# R2 Lifecycle Rules
+# Documents: retained based on classification (see docs/sikesra/R2_LIFECYCLE_POLICY.md)
+# Imports: auto-delete after 90 days
+# Exports: auto-delete after 30 days
+[[r2_lifecycle_rules]]
+bucket = "sikesra"
+enabled = true
+prefix = "imports/"
+actions = { delete = true }
+conditions = { age = 90 }
+
+[[r2_lifecycle_rules]]
+bucket = "sikesra"
+enabled = true
+prefix = "exports/"
+actions = { delete = true }
+conditions = { age = 30 }
+
 [[kv_namespaces]]
 binding = "SESSION"
 id = "29e3fd9bbf2f448fa3b36185b8be299a"
