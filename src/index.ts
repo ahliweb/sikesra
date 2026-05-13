@@ -85,6 +85,7 @@ export function createPlugin(_options: SikesraPluginOptions = {}) {
     id: "sikesra",
     version: "0.1.0",
     admin: {
+      entry: "@ahliweb/plugin-sikesra/admin",
       pages: [
         { path: "/", label: "Ikhtisar / Dashboard" },
         { path: "/entities", label: "Operasional / Data Utama" },
@@ -97,6 +98,7 @@ export function createPlugin(_options: SikesraPluginOptions = {}) {
         { path: "/access", label: "Governance / Atribut & Akses" },
         { path: "/audit", label: "Governance / Audit" },
         { path: "/settings", label: "Governance / Pengaturan" },
+        { path: "/permissions", label: "Governance / Permission Registry" },
       ],
     },
     routes,

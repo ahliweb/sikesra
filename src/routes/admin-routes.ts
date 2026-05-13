@@ -3358,6 +3358,70 @@ async function regionsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction
 	];
 }
 
+interface PolicyConflict {
+	policyA: string;
+	policyB: string;
+	resourceType: string;
+	conflictType: string;
+}
+
+function detectPolicyConflicts(policies: Array<Record<string, unknown>>): PolicyConflict[] {
+	const conflicts: PolicyConflict[] = [];
+	const activePolicies = policies.filter((p) => Number(p.is_active ?? 0) === 1);
+
+	for (let i = 0; i < activePolicies.length; i++) {
+		for (let j = i + 1; j < activePolicies.length; j++) {
+			const a = activePolicies[i];
+			const b = activePolicies[j];
+			const effectA = String(a.effect ?? "");
+			const effectB = String(b.effect ?? "");
+			const resourceA = String(a.resource_type ?? "*");
+			const resourceB = String(b.resource_type ?? "*");
+
+			if (effectA !== effectB && (resourceA === resourceB || resourceA === "*" || resourceB === "*")) {
+				const actionsA = typeof a.actions_json === "string" ? JSON.parse(a.actions_json) as string[] : [];
+				const actionsB = typeof b.actions_json === "string" ? JSON.parse(b.actions_json) as string[] : [];
+				const overlap = actionsA.length === 0 || actionsB.length === 0 || actionsA.some((action) => actionsB.includes(action));
+
+				if (overlap) {
+					conflicts.push({
+						policyA: String(a.name ?? "unknown"),
+						policyB: String(b.name ?? "unknown"),
+						resourceType: resourceA === "*" ? resourceB : resourceA,
+						conflictType: `${effectA.toUpperCase()} vs ${effectB.toUpperCase()}`,
+					});
+				}
+			}
+		}
+	}
+
+	return conflicts;
+}
+
+async function countAffectedEntities(
+	db: D1Binding,
+	tenantId: string,
+	siteId: string,
+	policy: Record<string, unknown>,
+): Promise<number> {
+	const resourceType = String(policy.resource_type ?? "");
+	if (!resourceType || resourceType === "*" || resourceType === "document" || resourceType === "export" || resourceType === "audit") {
+		return -1;
+	}
+
+	const conditions = typeof policy.actions_json === "string" ? JSON.parse(policy.actions_json) as string[] : [];
+
+	let whereClause = "WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL";
+	const params: unknown[] = [tenantId, siteId];
+
+	if (resourceType === "entity") {
+		const countResult = await db.prepare(`SELECT COUNT(*) as total FROM awcms_sikesra_entities ${whereClause}`).bind(...params).first<{ total: number }>();
+		return countResult?.total ?? 0;
+	}
+
+	return -1;
+}
+
 async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
@@ -3657,6 +3721,19 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 	};
 	const previewResult = evaluateAbac(previewInput, policies, ctx);
 
+	const policyConflicts = detectPolicyConflicts(policyRows.results);
+	const conflictPolicyNames = new Set<string>();
+	for (const conflict of policyConflicts) {
+		conflictPolicyNames.add(conflict.policyA);
+		conflictPolicyNames.add(conflict.policyB);
+	}
+
+	const policyAffectedCounts = new Map<string, number>();
+	for (const row of policyRows.results) {
+		const count = await countAffectedEntities(db, ctx.tenantId, ctx.siteId, row);
+		policyAffectedCounts.set(String(row.id), count);
+	}
+
 	return [
 		...pageIntro("access", ctx.permissions),
 		...mobileHint(routeCtx.requestMeta?.userAgent),
@@ -3673,6 +3750,12 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			{ label: "Scope assignment", value: String(options.attributeScopes.length), description: "Baris user_attribute_scopes terdeteksi" },
 			{ label: "Policy ABAC", value: String(policyRows.results.length), description: "Policy allow/deny tersedia" },
 		]),
+		...(policyConflicts.length > 0 ? [{
+			type: "banner",
+			variant: "alert",
+			title: `⚠️ ${policyConflicts.length} konflik policy terdeteksi`,
+			description: policyConflicts.map((c) => `"${c.policyA}" vs "${c.policyB}" pada resource ${c.resourceType} (${c.conflictType})`).join("; "),
+		}] : []),
 		{ type: "header", text: "Role Governance" },
 		{ type: "table", columns: [
 			{ key: "role", label: "Role" },
@@ -3723,25 +3806,37 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 		})), empty_text: "Belum ada contoh scope assignment untuk ditampilkan." },
 		{ type: "header", text: "Policy Matrix ABAC" },
 		{ type: "context", text: "Prinsip utama: explicit deny > explicit allow > inherited allow > default deny. Policy berikut dibaca dari tabel lokal ABAC dan dievaluasi bersama region scope backend." },
+		...(policyConflicts.length > 0 ? [{
+			type: "context",
+			text: `Konflik terdeteksi pada ${policyConflicts.length} policy. Policy dengan conflict badge memiliki efek yang bertentangan dengan policy lain pada resource yang sama.`,
+		}] : []),
 		{ type: "table", columns: [
 			{ key: "name", label: "Policy" },
 			{ key: "effect", label: "Effect" },
 			{ key: "priority", label: "Priority" },
 			{ key: "resourceType", label: "Resource" },
 			{ key: "actions", label: "Actions" },
+			{ key: "affectedEntities", label: "Est. Entitas Terpengaruh" },
 			{ key: "conditions", label: "Conditions" },
+			{ key: "conflict", label: "Konflik" },
 			{ key: "status", label: "Status" },
 			...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE) ? [{ key: "actions_col", label: "Aksi" }] : []),
 		], rows: policyRows.results.map((row) => {
 			const policy = policies.find((item) => item.id === String(row.id));
 			const actions = typeof row.actions_json === "string" ? JSON.parse(row.actions_json) as string[] : [];
+			const policyName = String(row.name ?? "-");
+			const hasConflict = conflictPolicyNames.has(policyName);
+			const affectedCount = policyAffectedCounts.get(String(row.id)) ?? -1;
+			const affectedDisplay = affectedCount < 0 ? "N/A" : String(affectedCount);
 			return {
-				name: String(row.name ?? "-"),
+				name: policyName,
 				effect: String(row.effect ?? "deny").toUpperCase(),
 				priority: Number(row.priority ?? 0),
 				resourceType: String(row.resource_type ?? "-"),
 				actions: Array.isArray(actions) && actions.length ? actions.join(", ") : "Semua aksi terkait",
+				affectedEntities: affectedDisplay,
 				conditions: policy?.conditions.length ? policy.conditions.map((condition) => `${condition.attributeCategory}.${condition.attributeName} ${condition.operator}`).join(" | ") : "Tanpa kondisi",
+				conflict: hasConflict ? "⚠️ Konflik" : "-",
 				status: Number(row.is_active ?? 0) === 1 ? "Aktif" : "Nonaktif",
 				...(hasPermission(ctx.permissions, SIKESRA_PERMISSIONS.POLICY_WRITE) ? {
 					actions_col: [

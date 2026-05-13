@@ -8,6 +8,9 @@
   "exports": {
     ".": {
       "import": "./src/plugin-entry.ts"
+    },
+    "./admin": {
+      "import": "./src/admin.tsx"
     }
   },
   "scripts": {

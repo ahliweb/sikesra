@@ -51,7 +51,7 @@ This log captures confirmed repository conventions and synchronization rules for
 | Missing Extension Point | Impact | Smallest Adapter Proposal | Approved? |
 |---|---|---|---|
 | Host repo exact plugin package path and workspace wiring | Resolved for this repository | Use local `src/` runtime source, `src/plugin-entry.ts`, and `astro.config.mjs` plugin registration | Generic `packages/plugins/sikesra/` is a reusable scaffold convention, not active here. |
-| Host permission registry location for custom namespaces | Cannot wire `awcms:sikesra:*` into central UI/role assignment yet | Add thin registration adapter that imports SIKESRA permission catalog | Pending |
+| Host permission registry location for custom namespaces | Resolved | Thin registration adapter at `src/security/permission-registry.ts` with 3 v1 API endpoints and React admin page | Resolved |
 | Host shared audit adapter compatibility | Cannot decide shared vs local audit persistence definitively | Start local `awcms_sikesra_audit_logs`; add optional adapter interface for shared writer | Pending |
 | Host shared ABAC engine compatibility | Cannot decide shared vs local ABAC evaluator definitively | Start local evaluator with pluggable policy provider; later bridge if shared engine exists | Pending |
 
@@ -168,11 +168,12 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Import validation rules added per object type (01-08) with field-specific validation
 - Duplicate detection enhanced during import promotion with blocking risk level for exact matches
 - Import rollback capability added for failed promotions with soft-delete and audit logging
-- Route count: 64 routes (added v1/imports/upload, v1/imports/rollback, v1/entities/validate)
+- Route count: 67 routes (added v1/imports/upload, v1/imports/rollback, v1/entities/validate, v1/permissions, v1/permissions/detail, v1/permissions/by-group)
 - Gap analysis completed: 24 new issues created for remaining gaps
 - **Rate limiting middleware** implemented with KV-based counters for import (5/hr), export (10/hr), documents (50/hr), ID corrections (10/hr), sensitive reveal (20/hr)
 - **Rate limit bypass permission** (`awcms:sikesra:rate_limit:bypass`) for admin override
 - **Entity validation endpoint** registered at `v1/entities/validate` with section-level validation
+- **Permission registry integration** (Issue #204): 3 v1 API endpoints (`v1/permissions`, `v1/permissions/detail`, `v1/permissions/by-group`) with React admin page at `/_emdash/admin/plugins/sikesra/permissions` displaying all 38 permissions grouped by resource with risk level indicators, search, and filter capabilities
 - **MVP Go/No-Go Report** created at `docs/sikesra/MVP_GO_NO_GO_REPORT.md` - Status: CONDITIONAL GO
 
 ### Post-MVP Operational Documentation (Completed)
@@ -180,7 +181,7 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - **Operator Training Notes** (`OPERATOR_TRAINING.md`): Expanded from 53 to 200+ lines covering all user roles, core workflows (manual entry, Excel import, verification, documents, export, audit), troubleshooting guide, debugging commands, deployment process, backup/restore, and monthly maintenance checklist.
 - **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 143 tests across 7 test files to 114 validation checklist items. Identifies 89 items covered (78%), 25 partial/manual (22%), 0 uncovered. Documents coverage gaps with recommended test files.
 
-### Test Coverage (143 tests across 7 test files)
+### Test Coverage (339 tests across 17 test files)
 - `architecture.test.ts`: 28 tests - Core architecture, RBAC, ABAC, request context
 - `security.test.ts`: 29 tests - RBAC enforcement, masking, region scope, storage, completeness, audit
 - `public-privacy.test.ts`: 15 tests - Aggregate-safe output, small-cell suppression, filter safety
@@ -188,6 +189,7 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - `import-workflow.test.ts`: 7 tests - Tenant isolation, promotion, rollback, audit
 - `verification-workflow.test.ts`: 9 tests - Permissions, state transitions, note requirements
 - `export-restriction.test.ts`: 13 tests - Field sensitivity, permissions, format support
+- `permission-registry.test.ts`: 19 tests - Permission registry API, resource grouping, risk levels, namespace consistency
 
 ### MVP Issues Closed
 | Issue | Title | Status |
@@ -234,15 +236,19 @@ All 28 tracked GitHub issues have been closed:
 - **Post-MVP**: #164, #165, #176, #187, #188, #189
 
 ### Post-MVP Improvement Issues (2026-05-13)
-8 new issues created from gap analysis:
+7 new issues created from gap analysis:
 - **#199** (P0): Pre-production performance review and staging validation
 - **#200** (P1): Cloudflare Access JWT validation
 - **#201** (P1): R2 lifecycle rules configuration
 - **#202** (P1): Penetration testing plan
 - **#203** (P1): ABAC UI refinements
-- **#204** (P1): Permission registry integration
 - **#205** (P1): CI/CD pipeline enhancements
 - **#206** (P1): Test coverage gaps
+
+### Completed Post-MVP Issues
+| Issue | Gap | Status |
+|---|---|---|
+| #204 | Permission registry integration | ✅ Implemented with 3 v1 API endpoints, React admin page, and 19 tests |
 
 ### Completed Issues
 | Issue | Gap | Status |

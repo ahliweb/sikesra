@@ -133,6 +133,12 @@ import {
   abacAttributeDeleteHandler,
 } from "./abac-routes";
 
+import {
+  permissionRegistryHandler,
+  permissionDetailHandler,
+  permissionByGroupHandler,
+} from "./permission-registry-routes";
+
 export interface RouteDefinition {
   handler: (...args: any[]) => Promise<unknown>;
   public?: boolean;
@@ -249,4 +255,9 @@ export const SIKESRA_ROUTES: Record<string, RouteDefinition> = {
   "v1/abac/attributes/activate": { handler: abacAttributeActivateHandler },
   "v1/abac/attributes/deactivate": { handler: abacAttributeDeactivateHandler },
   "v1/abac/attributes/delete": { handler: abacAttributeDeleteHandler },
+
+  // Permission Registry
+  "v1/permissions": { handler: permissionRegistryHandler },
+  "v1/permissions/detail": { handler: permissionDetailHandler },
+  "v1/permissions/by-group": { handler: permissionByGroupHandler },
 };
