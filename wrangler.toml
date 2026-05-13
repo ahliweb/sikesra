@@ -20,23 +20,11 @@ bucket_name = "sikesra"
 binding = "MEDIA"
 bucket_name = "sikesra"
 
-# R2 Lifecycle Rules
-# Documents: retained based on classification (see docs/sikesra/R2_LIFECYCLE_POLICY.md)
-# Imports: auto-delete after 90 days
-# Exports: auto-delete after 30 days
-[[r2_lifecycle_rules]]
-bucket = "sikesra"
-enabled = true
-prefix = "imports/"
-actions = { delete = true }
-conditions = { age = 90 }
-
-[[r2_lifecycle_rules]]
-bucket = "sikesra"
-enabled = true
-prefix = "exports/"
-actions = { delete = true }
-conditions = { age = 30 }
+# Note: R2 lifecycle rules must be configured via Cloudflare Dashboard or API
+# See docs/sikesra/R2_LIFECYCLE_POLICY.md for configuration details
+# - imports/: auto-delete after 90 days
+# - exports/: auto-delete after 30 days
+# - documents/: manual cleanup based on classification
 
 [[kv_namespaces]]
 binding = "SESSION"
