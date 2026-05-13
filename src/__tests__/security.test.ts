@@ -12,7 +12,7 @@ import { evaluateAbac } from "../security/abac";
 import { guardRoute, checkRegionScope } from "../security/route-guard";
 import { applySmallCellSuppression } from "../services/public";
 import { createStorageAdapter, sanitizeStorageMetadata, validateAccessMethod } from "../services/storage";
-import { validateCompleteness, type CompletenessCheckParams } from "../services/completeness";
+import { validateCompleteness } from "../services/completeness";
 
 function makeContext(overrides?: Partial<SikesraRequestContext>): SikesraRequestContext {
   return buildTrustedRequestContext({

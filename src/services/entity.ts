@@ -3,7 +3,7 @@
 // Source: docs/sikesra/04_api_contracts.md
 
 import type { SikesraRequestContext } from "../security/request-context";
-import type { PageMeta, OfficialRegionBreadcrumb, LocalRegionBreadcrumb, AuditHint } from "./types";
+import type { PageMeta, OfficialRegionBreadcrumb, LocalRegionBreadcrumb } from "./types";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 

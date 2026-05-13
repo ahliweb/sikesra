@@ -2,7 +2,7 @@
 // Covers manual-only gaps that can be automated at service/repository layer
 // Source: docs/sikesra/TEST_COVERAGE_MAPPING.md, Issue #206
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { InMemoryD1Binding } from "../repositories/db";
 import { buildTrustedRequestContext, type SikesraRequestContext } from "../security/request-context";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
@@ -19,9 +19,8 @@ import {
   type OfficialRegionCreateInput,
 } from "../services/region";
 import { getSettings, updateSettings } from "../services/settings";
-import { createEntity, patchEntity, getEntityDetail, type EntityCreateInput } from "../services/entity";
+import { patchEntity, getEntityDetail } from "../services/entity";
 import { generateUploadUrl, completeUpload, getEntityDocuments, type CompleteUploadInput } from "../services/document";
-import { createImportBatch, promoteImportRows, type ImportMapping } from "../services/import";
 import { findDuplicateCandidates, scoreDuplicateRisk, type DuplicateMatchSignal } from "../services/deduplication";
 
 function makeContext(overrides: Partial<SikesraRequestContext> = {}): SikesraRequestContext {

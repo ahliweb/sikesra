@@ -3,10 +3,8 @@
 
 import type { D1Binding } from "../repositories/db";
 import { getVerificationQueue, submitEntity, verifyEntity, getVerificationTimeline, type VerificationQueueFilters, type VerificationDecision, type VerificationLevel } from "../services/verification";
-import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext, type RouteHandlerInput } from "./handler-utils";
+import { withHandlerSequence, type RouteHandlerInput } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
-import { getRouteDb } from "./route-db";
-import { SIKESRA_PERMISSIONS } from "../security/permissions";
 
 // GET /v1/verification/queue
 export const verificationQueueHandler = withHandlerSequence(async (input: RouteHandlerInput, db: D1Binding, ctx: SikesraRequestContext) => {

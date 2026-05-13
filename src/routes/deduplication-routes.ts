@@ -3,9 +3,8 @@
 
 import type { D1Binding } from "../repositories/db";
 import { findDuplicateCandidates, recordDuplicateDecisionAction, detectBatchDuplicates, type DuplicateDecision } from "../services/deduplication";
-import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext, type RouteHandlerInput } from "./handler-utils";
+import { withHandlerSequence, type RouteHandlerInput } from "./handler-utils";
 import type { SikesraRequestContext } from "../security/request-context";
-import { getRouteDb } from "./route-db";
 
 // GET /v1/duplicates
 export const duplicatesListHandler = withHandlerSequence(async (input: RouteHandlerInput, db: D1Binding, ctx: SikesraRequestContext) => {

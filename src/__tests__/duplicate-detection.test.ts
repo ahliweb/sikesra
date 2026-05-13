@@ -3,7 +3,7 @@
 // Source: docs/sikesra/07_operations_sop.md, docs/sikesra/10_validation_checklist.md
 
 import { describe, it, expect } from "vitest";
-import { scoreDuplicateRisk, recordDuplicateDecisionAction, type DuplicateMatchSignal, type DuplicateDecision } from "../services/deduplication";
+import { scoreDuplicateRisk, recordDuplicateDecisionAction, type DuplicateMatchSignal } from "../services/deduplication";
 import { buildTrustedRequestContext, type SikesraRequestContext } from "../security/request-context";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { InMemoryD1Binding } from "../repositories/db";

@@ -12,7 +12,6 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { createHash } from "node:crypto";
 
 const TENANT_ID = process.argv[2] || "default";
 const SITE_ID = process.argv[3] || "default";

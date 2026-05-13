@@ -26,10 +26,9 @@ export interface D1PreparedStatement {
 // In-memory adapter for testing/development
 export class InMemoryD1Binding implements D1Binding {
   private _tables: Map<string, Map<string, Record<string, unknown>>> = new Map();
-  private _sequences: Map<string, number> = new Map();
 
   prepare(query: string): D1PreparedStatement {
-    return new InMemoryPreparedStatement(query, this._tables, this._sequences);
+    return new InMemoryPreparedStatement(query, this._tables);
   }
 
   async batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
@@ -48,17 +47,14 @@ export class InMemoryD1Binding implements D1Binding {
 class InMemoryPreparedStatement implements D1PreparedStatement {
   private _query: string;
   private _tables: Map<string, Map<string, Record<string, unknown>>>;
-  private _sequences: Map<string, number>;
   private _params: unknown[] = [];
 
   constructor(
     query: string,
     tables: Map<string, Map<string, Record<string, unknown>>>,
-    sequences: Map<string, number>,
   ) {
     this._query = query;
     this._tables = tables;
-    this._sequences = sequences;
   }
 
   bind(...values: unknown[]): D1PreparedStatement {

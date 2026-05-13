@@ -7,7 +7,6 @@ import type { SikesraRequestContext } from "../security/request-context";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
 import {
-  findDuplicateCandidatesByBatch,
   findDuplicateCandidatesForEntity,
   insertDuplicateCandidate,
   recordDuplicateDecision,

@@ -6,7 +6,7 @@ import { buildContextFromEmDash, withHandlerSequence, withRateLimitRequest, type
 import type { SikesraRequestContext } from "../security/request-context";
 import type { D1Binding } from "../repositories/db";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";
-import { getReports, createExportJob, getExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
+import { getReports, createExportJob, getExportJob, generateExportFile, downloadExportFile } from "../services/export";
 import { getRouteDb } from "./route-db";
 
 interface R2Bucket {

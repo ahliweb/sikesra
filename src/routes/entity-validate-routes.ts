@@ -1,9 +1,7 @@
 // SIKESRA Entity Validation Route Handler
 // v1/entities/validate
 
-import { buildContextFromEmDash, withHandlerSequence, type EmDashRouteContext } from "./handler-utils";
-import type { SikesraRequestContext } from "../security/request-context";
-import type { D1Binding } from "../repositories/db";
+import { buildContextFromEmDash, type EmDashRouteContext } from "./handler-utils";
 import { validateEntitySections } from "../services/completeness";
 import { getRouteDb } from "./route-db";
 

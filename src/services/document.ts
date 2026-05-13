@@ -12,7 +12,6 @@ import {
   verifyDocument as verifyDocumentRepo,
   rejectDocument as rejectDocumentRepo,
   replaceDocument as replaceDocumentRepo,
-  getDocumentByFileObjectId,
 } from "../repositories/document-repository";
 import { writeAuditEvent, AUDIT_ACTIONS } from "./audit";
 import type { R2Bucket, SikesraStorageAdapter } from "./storage";
@@ -94,7 +93,7 @@ function validateUploadInput(input: GenerateUploadUrlInput, settings?: { maxUplo
 export async function generateUploadUrl(
   input: GenerateUploadUrlInput,
   ctx: SikesraRequestContext,
-  r2?: R2Bucket,
+  _r2?: R2Bucket,
   db?: D1Binding,
   settings?: { maxUploadBytes?: number; allowedMimeTypes?: string[] },
   storage?: SikesraStorageAdapter,

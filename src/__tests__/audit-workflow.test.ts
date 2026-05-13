@@ -23,8 +23,6 @@ function makeContext(overrides: Partial<SikesraRequestContext> = {}): SikesraReq
 }
 
 async function seedAuditTestData(db: InMemoryD1Binding) {
-  const now = new Date().toISOString();
-
   // Seed multiple audit events with different actors, actions, and resources
   const auditEvents = [
     { action: AUDIT_ACTIONS.ENTITY_CREATE, resourceType: "entity", resourceId: "entity-1", actorId: "user-1", actorRole: "admin", success: true },

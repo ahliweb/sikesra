@@ -171,7 +171,7 @@ export async function replaceDocument(
   db: D1Binding,
   oldDocumentId: string,
   newDocumentId: string,
-  replacedBy: string,
+  _replacedBy: string,
   ctx: SikesraRequestContext,
 ): Promise<void> {
   await db.batch([

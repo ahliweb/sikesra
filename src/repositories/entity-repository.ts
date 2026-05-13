@@ -2,7 +2,7 @@
 // D1 SQL for entity CRUD with tenant/site/deleted/region scope enforcement
 // Source: docs/sikesra/03_data_model.md
 
-import type { D1Binding, D1Result } from "./db";
+import type { D1Binding } from "./db";
 import type { SikesraRequestContext } from "../security/request-context";
 import { maskProtectedName } from "../security/masking";
 import { SIKESRA_PERMISSIONS } from "../security/permissions";

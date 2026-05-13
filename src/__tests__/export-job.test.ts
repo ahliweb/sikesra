@@ -248,7 +248,7 @@ describe("SIKESRA Export Job Tests", () => {
 
       // Generate file
       const { generateExportFile } = await import("../services/export");
-      const result = await generateExportFile(db, r2, created.id, ctx);
+      await generateExportFile(db, r2, created.id, ctx);
 
       // Status should be ready
       const finalJob = await getExportJob(db, created.id, ctx);

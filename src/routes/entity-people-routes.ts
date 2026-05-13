@@ -8,7 +8,6 @@ import {
   addEntityPerson,
   updateEntityPerson,
   removeEntityPerson,
-  getEntityPerson,
   listEntityPeople,
   type EntityPersonInput,
 } from "../services/entity-people";

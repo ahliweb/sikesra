@@ -3,7 +3,6 @@
 // Source: Issue #204
 
 import type { EmDashRouteContext } from "./handler-utils";
-import { buildContextFromEmDash } from "./handler-utils";
 import { getPermissionRegistry, getPermissionsByResourceGroup, getHighRiskPermissions, getStandardPermissions } from "../security/permission-registry";
 import { getOrCreateRequestId } from "../api/request-id";
 import { ok, fail } from "../api/envelope";

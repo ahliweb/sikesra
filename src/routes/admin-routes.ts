@@ -5,7 +5,7 @@ import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permis
 import { getAdminDashboard } from "../services/dashboard";
 import { getRouteDb } from "./route-db";
 import { createEntity, getEntityDetail, patchEntity, deleteEntity, restoreEntity, type EntityCreateInput, type EntityPatchData } from "../services/entity";
-import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationDecision, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
+import { getVerificationQueue, getVerificationTimeline, submitEntity, verifyEntity, type VerificationLevel, type VerificationQueueFilters } from "../services/verification";
 import { getImportBatch, getStagingRows, updateStagingRow } from "../repositories/import-repository";
 import { generateUploadUrl, getEntityDocuments, completeUpload } from "../services/document";
 import { createLocalRegion, updateLocalRegion, deleteLocalRegion, createOfficialRegion, updateOfficialRegion, deleteOfficialRegion, type LocalRegionCreateInput, type LocalRegionUpdateInput, type OfficialRegionCreateInput, type OfficialRegionUpdateInput } from "../services/region";
@@ -21,7 +21,7 @@ import { generateSikesraId, correctSikesraId } from "../services/code";
 import { createExportJob, generateExportFile, downloadExportFile, type ExportCreateInput } from "../services/export";
 import { listEntityPeople, type EntityPersonSummary } from "../services/entity-people";
 import { getEntityDetailModule, DETAIL_MODULE_SCHEMAS, type DetailModuleSchema } from "../services/detail-modules";
-import { findDuplicateCandidates, type DuplicateCandidateResult } from "../services/deduplication";
+import { findDuplicateCandidates } from "../services/deduplication";
 import type { DuplicateCandidateSummary } from "../repositories/deduplication-repository";
 import { listEntityBenefits, createBenefit, deleteBenefit, type BenefitHistoryInput } from "../services/benefits";
 
@@ -995,15 +995,6 @@ function auditSuccessLabel(value: unknown): string {
 	return Number(value ?? 0) === 1 ? "✅ Sukses" : "❌ Gagal";
 }
 
-function redactAuditValue(
-	value: Record<string, unknown> | null,
-	canReveal: boolean,
-): string {
-	if (!value || Object.keys(value).length === 0) return "-";
-	if (canReveal) return JSON.stringify(value);
-	return `Teredaksi (${Object.keys(value).join(", ")})`;
-}
-
 function parseAuditRecordJson(value: unknown): Record<string, unknown> | null {
 	if (typeof value !== "string" || !value.trim()) return null;
 	try {
@@ -1921,33 +1912,6 @@ function isMobileUserAgent(userAgent?: string): boolean {
 	return mobileRegex.test(userAgent);
 }
 
-function responsiveTable(columns: Array<{ key: string; label: string }>, rows: Record<string, unknown>[], options?: { empty_text?: string; mobile_max_columns?: number }): Block {
-	const mobileMaxCols = options?.mobile_max_columns ?? 3;
-	const isMobile = columns.length > mobileMaxCols;
-
-	if (isMobile) {
-		return {
-			type: "table",
-			columns: columns.slice(0, mobileMaxCols),
-			rows: rows.map((row) => {
-				const mobileRow: Record<string, unknown> = {};
-				for (let i = 0; i < mobileMaxCols; i++) {
-					mobileRow[columns[i].key] = row[columns[i].key];
-				}
-				return mobileRow;
-			}),
-			empty_text: options?.empty_text,
-		};
-	}
-
-	return {
-		type: "table",
-		columns,
-		rows,
-		empty_text: options?.empty_text,
-	};
-}
-
 function responsiveStats(items: Array<{ label: string; value: string; description?: string }>): Block[] {
 	if (items.length <= 4) {
 		return [{ type: "stats", items }];
@@ -1958,7 +1922,7 @@ function responsiveStats(items: Array<{ label: string; value: string; descriptio
 		chunks.push(items.slice(i, i + 4));
 	}
 
-	return chunks.map((chunk, index) => ({
+	return chunks.map((chunk) => ({
 		type: "stats",
 		items: chunk,
 	}));
@@ -2599,7 +2563,7 @@ async function importBatchDetailBlocks(routeCtx: EmDashRouteContext<PluginAdminI
 	];
 }
 
-async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, input: PluginAdminInteraction): Promise<Block[]> {
+async function documentsBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>, _input: PluginAdminInteraction): Promise<Block[]> {
 	const ctx = buildContextFromEmDash(routeCtx);
 	const db = await getRouteDb(routeCtx.request);
 	const entities = await loadDocumentEntityOptions(db, ctx.tenantId, ctx.siteId);
@@ -3415,8 +3379,6 @@ async function countAffectedEntities(
 		return -1;
 	}
 
-	const conditions = typeof policy.actions_json === "string" ? JSON.parse(policy.actions_json) as string[] : [];
-
 	let whereClause = "WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL";
 	const params: unknown[] = [tenantId, siteId];
 
@@ -3449,7 +3411,7 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 			const { createAbacPolicy } = await import("../services/abac-policy-service");
 			const actions = policyForm.actions ? policyForm.actions.split(",").map((a) => a.trim()).filter(Boolean) : [];
 			try {
-				const result = await createAbacPolicy(db, {
+			await createAbacPolicy(db, {
 					name: policyForm.name,
 					description: policyForm.description || undefined,
 					effect: policyForm.effect as "allow" | "deny",
@@ -3554,7 +3516,7 @@ async function accessBlocks(routeCtx: EmDashRouteContext<PluginAdminInteraction>
 		} else {
 			const { createAttributeDefinition } = await import("../services/abac-attribute-service");
 			try {
-				const result = await createAttributeDefinition(db, {
+			await createAttributeDefinition(db, {
 					code: attributeForm.code,
 					name: attributeForm.name,
 					category: attributeForm.category as any,

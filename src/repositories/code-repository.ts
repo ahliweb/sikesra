@@ -3,7 +3,6 @@
 // Source: docs/sikesra/03_data_model.md
 
 import type { D1Binding } from "./db";
-import type { SikesraRequestContext } from "../security/request-context";
 
 const CODE_SEQUENCE_TABLE = "awcms_sikesra_code_sequences";
 const CODE_HISTORY_TABLE = "awcms_sikesra_code_history";

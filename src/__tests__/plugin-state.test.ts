@@ -5,7 +5,6 @@
 import { describe, it, expect } from "vitest";
 import { InMemoryD1Binding } from "../repositories/db";
 import { buildTrustedRequestContext, type SikesraRequestContext } from "../security/request-context";
-import { SIKESRA_PERMISSIONS } from "../security/permissions";
 import { getPublicMetadata, getPublicSummary } from "../services/public";
 
 function makePublicContext(overrides: Partial<SikesraRequestContext> = {}): SikesraRequestContext {

@@ -24,7 +24,7 @@ export const entityCreateHandler = async (routeCtx: EmDashRouteContext<EntityCre
 export const entityDetailHandler = async (routeCtx: EmDashRouteContext) => {
   const url = new URL(routeCtx.request.url);
   const entityId = url.pathname.split("/").pop()!;
-  return handleAdminRequest(routeCtx, { resourceType: "entity", entityId }, "read", async (input, db, ctx) => {
+  return handleAdminRequest(routeCtx, { resourceType: "entity", entityId }, "read", async (_input, db, ctx) => {
     return getEntityDetail(db, entityId, ctx);
   });
 };

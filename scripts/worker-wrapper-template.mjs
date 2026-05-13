@@ -1,6 +1,8 @@
 import emdashWorker from "./entry.mjs";
 
 const SIKESRA_PUBLIC_HTML = `__SIKESRA_PUBLIC_HTML__`;
+void SIKESRA_PUBLIC_HTML;
+
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
   "CDN-Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -68,17 +70,6 @@ async function handleEmDash(request, env, ctx, route = "emdash") {
   return cloneResponseWithHeaders(response, route, Object.fromEntries(headers.entries()));
 }
 
-async function isSikesraPluginActive(env) {
-  try {
-    const row = await env.DB.prepare("SELECT status FROM _plugin_state WHERE plugin_id = ? LIMIT 1")
-      .bind("sikesra")
-      .first();
-    return !row || row.status === "active";
-  } catch {
-    return true;
-  }
-}
-
 async function handleHealth(env) {
   const requestId = crypto.randomUUID();
   const db = env.SIKESRA_DB || env.DB;
@@ -89,28 +80,6 @@ async function handleHealth(env) {
   } catch (err) {
     return jsonResponse({ ok: false, requestId, error: { code: "HEALTH_CHECK_FAILED", message: errorMessage(err) } }, { status: 500 }, "sikesra-health");
   }
-}
-
-async function handleSikesraPublic(env) {
-  const active = await isSikesraPluginActive(env);
-  if (!active) {
-    return routeResponse("Not Found", { status: 404, headers: withNoStoreHeaders() }, "sikesra");
-  }
-
-  return routeResponse(SIKESRA_PUBLIC_HTML, {
-    headers: withNoStoreHeaders({ "Content-Type": "text/html; charset=utf-8" }),
-  }, "sikesra");
-}
-
-function handleSikesraApi() {
-  return jsonResponse({
-    ok: false,
-    requestId: crypto.randomUUID(),
-    error: {
-      code: "SIKESRA_REBUILD_REQUIRED",
-      message: "SIKESRA APIs are intentionally disabled until the from-scratch implementation plan rebuilds them.",
-    },
-  }, { status: 503 }, "sikesra-api");
 }
 
 export default {

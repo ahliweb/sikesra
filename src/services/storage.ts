@@ -3,7 +3,6 @@
 // Source: docs/sikesra/04_api_contracts.md, docs/sikesra/06_security_rbac_abac.md
 
 import type { SikesraRequestContext } from "../security/request-context";
-import { maskR2Key } from "../security/masking";
 
 // ---------- R2 Bucket Interface ----------
 
@@ -158,7 +157,6 @@ export interface StorageObjectInfo {
 // ---------- Constants ----------
 
 const MAX_KEY_LENGTH = 1024;
-const ALLOWED_FILENAME_CHARS = /^[a-zA-Z0-9._-]+$/;
 const DEFAULT_SIGNED_URL_EXPIRY = 3600; // 1 hour
 
 // ---------- Helper Functions ----------

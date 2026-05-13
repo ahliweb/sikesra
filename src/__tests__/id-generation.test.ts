@@ -2,7 +2,7 @@
 // Verify 20-digit ID format, sequence, validation, and correction
 // Source: docs/sikesra/07_operations_sop.md, docs/sikesra/10_validation_checklist.md
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { InMemoryD1Binding } from "../repositories/db";
 import { buildSikesraId20 } from "../repositories/code-repository";
 import { generateSikesraId, correctSikesraId } from "../services/code";

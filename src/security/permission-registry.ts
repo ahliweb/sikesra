@@ -2,7 +2,7 @@
 // Exports SIKESRA permission catalog in EmDash-compatible format
 // Source: docs/sikesra/06_security_rbac_abac.md, Issue #187
 
-import { SIKESRA_PERMISSIONS, SIKESRA_PERMISSION_LIST } from "../security/permissions";
+import { SIKESRA_PERMISSION_LIST } from "../security/permissions";
 
 export interface PermissionRegistryEntry {
   id: string;

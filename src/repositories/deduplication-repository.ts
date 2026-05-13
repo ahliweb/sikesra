@@ -3,7 +3,6 @@
 // Source: docs/sikesra/03_data_model.md
 
 import type { D1Binding } from "./db";
-import type { SikesraRequestContext } from "../security/request-context";
 
 const CANDIDATES_TABLE = "awcms_sikesra_duplicate_candidates";
 const DECISIONS_TABLE = "awcms_sikesra_duplicate_decisions";
