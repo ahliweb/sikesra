@@ -118,7 +118,9 @@ export default {
     const { pathname } = new URL(request.url);
 
     if (pathname === "/health") return handleHealth(env);
-    if (pathname === "/sikesra" || pathname === "/sikesra/") return handleSikesraPublic(env);
+    if (pathname === "/sikesra" || pathname === "/sikesra/") {
+      return handleEmDash(request, env, ctx, "sikesra-public");
+    }
     if (pathname === "/_emdash/api/plugins/sikesra/admin" || pathname === "/_emdash/api/plugins/sikesra/admin/") {
       return handleEmDash(request, env, ctx, "sikesra-admin");
     }

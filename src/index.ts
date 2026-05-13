@@ -59,16 +59,30 @@ export interface SikesraPluginOptions {
 
 import { SIKESRA_ROUTES } from "./routes/registry";
 
+const ADMIN_PAGES = [
+  { path: "/", label: "Ikhtisar / Dashboard" },
+  { path: "/entities", label: "Operasional / Data Utama" },
+  { path: "/entities/new", label: "Operasional / Buat Draft Baru" },
+  { path: "/verification", label: "Operasional / Verifikasi" },
+  { path: "/imports", label: "Operasional / Import Excel" },
+  { path: "/documents", label: "Operasional / Dokumen" },
+  { path: "/reports", label: "Analitik / Laporan" },
+  { path: "/regions", label: "Referensi / Wilayah" },
+  { path: "/access", label: "Governance / Atribut & Akses" },
+  { path: "/audit", label: "Governance / Audit" },
+  { path: "/settings", label: "Governance / Pengaturan" },
+  { path: "/permissions", label: "Governance / Permission Registry" },
+];
+
 export function sikesraPlugin(options: SikesraPluginOptions = {}): PluginDescriptor {
   return {
     id: "sikesra",
     version: "0.1.0",
     format: "native",
     entrypoint: "@ahliweb/plugin-sikesra",
+    adminEntry: "@ahliweb/plugin-sikesra/admin",
     options,
-    adminPages: [
-      { path: "/", label: "SIKESRA" },
-    ],
+    adminPages: ADMIN_PAGES,
   };
 }
 
@@ -86,20 +100,7 @@ export function createPlugin(_options: SikesraPluginOptions = {}) {
     version: "0.1.0",
     admin: {
       entry: "@ahliweb/plugin-sikesra/admin",
-      pages: [
-        { path: "/", label: "Ikhtisar / Dashboard" },
-        { path: "/entities", label: "Operasional / Data Utama" },
-        { path: "/entities/new", label: "Operasional / Buat Draft Baru" },
-        { path: "/verification", label: "Operasional / Verifikasi" },
-        { path: "/imports", label: "Operasional / Import Excel" },
-        { path: "/documents", label: "Operasional / Dokumen" },
-        { path: "/reports", label: "Analitik / Laporan" },
-        { path: "/regions", label: "Referensi / Wilayah" },
-        { path: "/access", label: "Governance / Atribut & Akses" },
-        { path: "/audit", label: "Governance / Audit" },
-        { path: "/settings", label: "Governance / Pengaturan" },
-        { path: "/permissions", label: "Governance / Permission Registry" },
-      ],
+      pages: ADMIN_PAGES,
     },
     routes,
     hooks: {},

@@ -1,123 +1,8 @@
 ---
 import Base from "../layouts/Base.astro";
-import { getPublicMetadata, getPublicFilters, getPublicSummary } from "../services/public";
-import { buildPublicContextFromEmDash } from "../routes/handler-utils";
-import type { PublicMetadataResponse, PublicFiltersResponse, PublicSummaryResponse, AggregatePoint } from "../services/public";
-import { getRouteDb } from "../routes/route-db";
-
-// Fetch public data server-side
-const publicCtx = buildPublicContextFromEmDash({ request: Astro.request, input: {} } as any);
-const db = await getRouteDb(Astro.request);
-const [meta, filters, summary] = await Promise.all([
-  getPublicMetadata(db, publicCtx),
-  getPublicFilters(db, publicCtx),
-  getPublicSummary(db, publicCtx),
-]);
-
-// If public is disabled, return 404
-if (!meta.enabled) {
-  return Astro.response.status(404);
-}
-
-// Serialize data for client-side hydration
-const metaJson = JSON.stringify(meta);
-const filtersJson = JSON.stringify(filters);
-const summaryJson = JSON.stringify(summary);
-
-function fmt(v: number | null | undefined): string {
-  if (v == null) return "—";
-  return Number(v).toLocaleString("id-ID");
-}
-
-function ago(t?: string): string {
-  if (!t) return "—";
-  const d = Math.floor((Date.now() - new Date(t).getTime()) / 864e5);
-  return d <= 0 ? "Hari ini" : d === 1 ? "Kemarin" : `${d} hari lalu`;
-}
-
-function renderBars(items: AggregatePoint[], threshold: number, emptyText: string): string {
-  if (!items || !items.length) return `<div class="loading">${emptyText}</div>`;
-  const mx = Math.max(...items.map(t => t.total || 0), 1);
-  return items.map(t => {
-    const pct = t.suppressed ? 10 : Math.max(3, Math.round((t.total / mx) * 100));
-    const cls = t.suppressed ? " suppressed" : "";
-    const val = t.suppressed ? `<${threshold}` : fmt(t.total);
-    return `<div class="bar-row"><span class="bar-name">${esc(t.label)}</span><div class="bar-track"><div class="bar-fill${cls}" style="width:${pct}%"></div></div><span class="bar-count${cls}">${esc(val)}</span></div>`;
-  }).join("");
-}
-
-function renderRegionList(items: AggregatePoint[], threshold: number): string {
-  if (!items || !items.length) return '<div class="loading">Belum ada data wilayah</div>';
-  return `<div class="region-list">${items.map(t => {
-    const val = t.suppressed ? `<${threshold}` : fmt(t.total);
-    return `<div class="region-item"><div><strong>${esc(t.label)}</strong><span>Agregat wilayah aman publik</span></div><strong>${esc(val)}</strong></div>`;
-  }).join("")}</div>`;
-}
-
-function renderStatus(items: AggregatePoint[], threshold: number): string {
-  if (!items || !items.length) return '<div class="loading">—</div>';
-  const labels: Record<string, string> = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu", submitted_village: "Submit Desa", submitted_subdistrict: "Submit Kecamatan", submitted_regency: "Submit Kabupaten" };
-  return items.map(v => {
-    const val = v.suppressed ? `<${threshold}` : fmt(v.total);
-    return `<div class="status-chip"><div class="sv">${esc(val)}</div><div class="sl">${esc(labels[v.key] || v.label || v.key)}</div></div>`;
-  }).join("");
-}
-
-function renderTable(items: AggregatePoint[], headers: Array<{label: string; render: (i: AggregatePoint) => string}>, threshold: number, emptyText: string): string {
-  if (!items || !items.length) return `<div class="loading">${emptyText}</div>`;
-  const head = headers.map(h => `<th style="text-align:left;padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.78rem;color:var(--color-muted)">${esc(h.label)}</th>`).join('');
-  const body = items.map(item => `<tr>${headers.map(h => `<td style="padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.84rem">${esc(h.render(item))}</td>`).join('')}</tr>`).join('');
-  return `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
-}
-
-function esc(v: unknown): string {
-  return String(v == null ? "" : v).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] || c));
-}
-
-// Pre-render initial HTML
-const kpiTotal = fmt(summary.kpis.totalEntities);
-const kpiVerified = fmt(summary.kpis.verifiedEntities);
-const kpiVillages = fmt(summary.kpis.activeVillages);
-const kpiUpdate = ago(summary.kpis.latestUpdateAt);
-const threshold = summary.suppression.threshold;
-const suppressionCount = fmt(summary.suppression.suppressedCells);
-
-const barsTypes = renderBars(summary.charts.byObjectType, threshold, "Belum ada data kategori");
-const barsRegion = renderRegionList(summary.charts.byRegion, threshold);
-const barsVerif = renderStatus(summary.charts.byVerificationStatus, threshold);
-const barsAttr = renderBars(summary.charts.bySafeAttribute, threshold, "Belum ada atribut aman untuk ditampilkan");
-
-const tableTypes = renderTable(summary.charts.byObjectType, [
-  { label: "Kategori", render: i => i.label },
-  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
-], threshold, "Belum ada tabel kategori");
-
-const tableRegion = renderTable(summary.charts.byRegion, [
-  { label: "Wilayah", render: i => i.label },
-  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
-], threshold, "Belum ada tabel wilayah");
-
-const tableVerif = renderTable(summary.charts.byVerificationStatus, [
-  { label: "Status", render: i => {
-    const labels: Record<string, string> = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu" };
-    return labels[i.key] || i.label || i.key;
-  }},
-  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
-], threshold, "Belum ada tabel status");
-
-const tableAttr = renderTable(summary.charts.bySafeAttribute, [
-  { label: "Atribut", render: i => i.label },
-  { label: "Total", render: i => i.suppressed ? `<${threshold}` : fmt(i.total) }
-], threshold, "Belum ada tabel atribut");
-
-const districtOptions = filters.districts.map(d => `<option value="${esc(d.code)}">${esc(d.name)}</option>`).join("");
-const villageOptions = filters.villages.map(v => `<option value="${esc(v.code)}">${esc(v.name)}</option>`).join("");
-const typeOptions = filters.objectTypes.map(t => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join("");
-const yearOptions = filters.years.map(y => `<option value="${esc(String(y))}">${esc(String(y))}</option>`).join("");
-const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">${esc(s.label)}</option>`).join("");
 ---
 
-<Base title="SIKESRA — Sistem Informasi Kesejahteraan Rakyat" description={meta.description}>
+<Base title="SIKESRA — Sistem Informasi Kesejahteraan Rakyat" description="Data agregat kesejahteraan rakyat Kabupaten Kotawaringin Barat">
   <style>
     .sikesra-hero {
       background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 50%, #0ea5e9 100%);
@@ -522,13 +407,11 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
   <div class="sikesra-hero" role="banner">
     <div class="sikesra-hero-inner">
       <div class="sikesra-eyebrow">Data Agregat Publik SIKESRA</div>
-      <h1>{meta.title}</h1>
-      <p class="sikesra-subtitle">{meta.description}</p>
+      <h1>Sistem Informasi Kesejahteraan Rakyat</h1>
+      <p class="sikesra-subtitle">Data agregat kesejahteraan rakyat Kabupaten Kotawaringin Barat yang telah diverifikasi dan disupresi untuk melindungi privasi.</p>
       <div class="sikesra-hero-meta">
-        <div class="sikesra-hero-badge" id="meta-update">
-          {meta.latestUpdateAt ? `Diperbarui ${ago(meta.latestUpdateAt)}` : "Belum ada pembaruan"}
-        </div>
-        <div class="sikesra-hero-badge" id="meta-scope">{meta.dataScopeNote}</div>
+        <div class="sikesra-hero-badge" id="meta-update">Memuat...</div>
+        <div class="sikesra-hero-badge" id="meta-scope">Data agregat aman publik</div>
       </div>
     </div>
   </div>
@@ -547,38 +430,23 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
       <div class="sikesra-filter-grid">
         <div class="sikesra-field">
           <label for="filter-district">Kecamatan</label>
-          <select id="filter-district">
-            <option value="">Semua kecamatan</option>
-            {districtOptions}
-          </select>
+          <select id="filter-district"><option value="">Memuat...</option></select>
         </div>
         <div class="sikesra-field">
           <label for="filter-village">Desa/Kelurahan</label>
-          <select id="filter-village">
-            <option value="">Semua desa/kelurahan</option>
-            {villageOptions}
-          </select>
+          <select id="filter-village"><option value="">Memuat...</option></select>
         </div>
         <div class="sikesra-field">
           <label for="filter-type">Jenis Data</label>
-          <select id="filter-type">
-            <option value="">Semua jenis data</option>
-            {typeOptions}
-          </select>
+          <select id="filter-type"><option value="">Memuat...</option></select>
         </div>
         <div class="sikesra-field">
           <label for="filter-year">Tahun</label>
-          <select id="filter-year">
-            <option value="">Semua tahun</option>
-            {yearOptions}
-          </select>
+          <select id="filter-year"><option value="">Memuat...</option></select>
         </div>
         <div class="sikesra-field">
           <label for="filter-status">Status Agregat</label>
-          <select id="filter-status">
-            <option value="">Semua status agregat</option>
-            {statusOptions}
-          </select>
+          <select id="filter-status"><option value="">Memuat...</option></select>
         </div>
       </div>
       <div class="sikesra-filter-actions">
@@ -587,31 +455,31 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
       </div>
       <div class="sikesra-meta-strip">
         <div class="sikesra-meta-item"><div class="mk">Filter Aktif</div><div class="mv" id="filter-count">0</div></div>
-        <div class="sikesra-meta-item"><div class="mk">Status Publik</div><div class="mv" id="meta-enabled">{meta.enabled ? "Publik aktif" : "Publik dibatasi"}</div></div>
-        <div class="sikesra-meta-item"><div class="mk">Ambang Suppression</div><div class="mv" id="suppression-threshold">{String(threshold)}</div></div>
-        <div class="sikesra-meta-item"><div class="mk">Cell Tersuppress</div><div class="mv" id="suppression-count">{suppressionCount}</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Status Publik</div><div class="mv" id="meta-enabled">Memuat...</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Ambang Suppression</div><div class="mv" id="suppression-threshold">—</div></div>
+        <div class="sikesra-meta-item"><div class="mk">Cell Tersuppress</div><div class="mv" id="suppression-count">—</div></div>
       </div>
     </section>
 
     <!-- KPI Cards -->
     <section class="sikesra-kpi-grid" aria-label="Indikator utama publik">
-      <div class="sikesra-kpi"><div class="val" id="kpi-total">{kpiTotal}</div><div class="lbl">Total Data</div></div>
-      <div class="sikesra-kpi"><div class="val" id="kpi-verified">{kpiVerified}</div><div class="lbl">Terverifikasi</div></div>
-      <div class="sikesra-kpi"><div class="val" id="kpi-villages">{kpiVillages}</div><div class="lbl">Desa Aktif</div></div>
-      <div class="sikesra-kpi"><div class="val" id="kpi-update">{kpiUpdate}</div><div class="lbl">Pembaruan</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-total">—</div><div class="lbl">Total Data</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-verified">—</div><div class="lbl">Terverifikasi</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-villages">—</div><div class="lbl">Desa Aktif</div></div>
+      <div class="sikesra-kpi"><div class="val" id="kpi-update">—</div><div class="lbl">Pembaruan</div></div>
     </section>
 
     <!-- Charts: Types and Region -->
     <section class="sikesra-two-col" aria-label="Grafik agregat utama">
       <section>
         <h2 class="sikesra-section-title">Kategori Data</h2>
-        <div class="sikesra-card" id="chart-types" set:html={barsTypes}></div>
-        <div class="sikesra-card" id="chart-types-table" set:html={tableTypes}></div>
+        <div class="sikesra-card" id="chart-types"><div class="sikesra-loading">Memuat data...</div></div>
+        <div class="sikesra-card" id="chart-types-table"><div class="sikesra-loading">Memuat data...</div></div>
       </section>
       <section>
         <h2 class="sikesra-section-title">Sebaran Wilayah</h2>
-        <div class="sikesra-card" id="chart-region" set:html={barsRegion}></div>
-        <div class="sikesra-card" id="chart-region-table" set:html={tableRegion}></div>
+        <div class="sikesra-card" id="chart-region"><div class="sikesra-loading">Memuat data...</div></div>
+        <div class="sikesra-card" id="chart-region-table"><div class="sikesra-loading">Memuat data...</div></div>
       </section>
     </section>
 
@@ -619,13 +487,13 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
     <section class="sikesra-two-col" aria-label="Grafik status dan atribut aman">
       <section>
         <h2 class="sikesra-section-title">Status Verifikasi</h2>
-        <div class="sikesra-card"><div class="sikesra-status-grid" id="chart-verif" set:html={barsVerif}></div></div>
-        <div class="sikesra-card" id="chart-verif-table" set:html={tableVerif}></div>
+        <div class="sikesra-card"><div class="sikesra-status-grid" id="chart-verif"><div class="sikesra-loading">Memuat data...</div></div></div>
+        <div class="sikesra-card" id="chart-verif-table"><div class="sikesra-loading">Memuat data...</div></div>
       </section>
       <section>
         <h2 class="sikesra-section-title">Atribut Aman</h2>
-        <div class="sikesra-card" id="chart-attributes" set:html={barsAttr}></div>
-        <div class="sikesra-card" id="chart-attributes-table" set:html={tableAttr}></div>
+        <div class="sikesra-card" id="chart-attributes"><div class="sikesra-loading">Memuat data...</div></div>
+        <div class="sikesra-card" id="chart-attributes-table"><div class="sikesra-loading">Memuat data...</div></div>
       </section>
     </section>
 
@@ -633,31 +501,31 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
     <section aria-labelledby="program-info-title">
       <h2 class="sikesra-section-title" id="program-info-title">Informasi Program</h2>
       <div class="sikesra-info-grid">
-        <div class="sikesra-info-card"><h3>Deskripsi Publik</h3><p id="program-description">{meta.description}</p></div>
-        <div class="sikesra-info-card"><h3>Kontak Resmi</h3><p id="program-contact">{meta.officialContact || "Kontak resmi belum tersedia"}</p></div>
-        <div class="sikesra-info-card"><h3>Cakupan Data</h3><p id="program-scope">{meta.dataScopeNote}</p></div>
+        <div class="sikesra-info-card"><h3>Deskripsi Publik</h3><p id="program-description">Memuat...</p></div>
+        <div class="sikesra-info-card"><h3>Kontak Resmi</h3><p id="program-contact">Memuat...</p></div>
+        <div class="sikesra-info-card"><h3>Cakupan Data</h3><p id="program-scope">Memuat...</p></div>
       </div>
     </section>
 
     <!-- Privacy Caveat -->
     <section class="sikesra-caveat" aria-labelledby="privacy-caveat-title">
       <h3 id="privacy-caveat-title">Catatan Privasi</h3>
-      <p id="caveat-text">{summary.caveat}</p>
+      <p id="caveat-text">Memuat...</p>
     </section>
   </main>
 
-  <!-- Client-side JavaScript for filter interactivity -->
+  <!-- Client-side JavaScript for data loading and filter interactivity -->
   <script is:inline>
     (function() {
       var API = "/_emdash/api/plugins/sikesra";
       var state = { districtCode: "", villageCode: "", objectTypeCode: "", year: "", status: "" };
-      var allFilters = JSON.parse(document.getElementById('filters-data').textContent);
-      var meta = JSON.parse(document.getElementById('meta-data').textContent);
+      var allFilters = { districts: [], villages: [], objectTypes: [], years: [], statuses: [] };
+      var meta = { enabled: false, title: "", description: "", dataScopeNote: "", latestUpdateAt: null, officialContact: "" };
 
       function ge(id) { return document.getElementById(id); }
       function fmt(v) { return v != null && v !== "" ? Number(v).toLocaleString("id-ID") : "—"; }
       function ago(t) { if (!t) return "—"; var d = Math.floor((Date.now() - new Date(t).getTime()) / 864e5); return d <= 0 ? "Hari ini" : d === 1 ? "Kemarin" : d + " hari lalu"; }
-      function esc(v) { return String(v == null ? "" : v).replace(/[&<>'"]/g, function(c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] || c; }); }
+      function esc(v) { return String(v == null ? "" : v).replace(/[&<>'"]/g, function(c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c] || c; }); }
       function filterCount() { var n = 0; Object.keys(state).forEach(function(k) { if (state[k]) n++; }); return n; }
       function queryString() { var q = new URLSearchParams(); Object.keys(state).forEach(function(k) { if (state[k]) q.set(k, state[k]); }); return q.toString(); }
       function syncUrl() { var q = queryString(); history.replaceState(null, "", q ? "/sikesra?" + q : "/sikesra"); }
@@ -670,12 +538,19 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
       function renderRegionList(items) { var el = ge("chart-region"); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">Belum ada data wilayah</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; el.innerHTML = '<div class="sikesra-region-list">' + items.map(function(t) { var val = t.suppressed ? "<" + threshold : fmt(t.total); return '<div class="sikesra-region-item"><div><strong>' + esc(t.label) + '</strong><span>Agregat wilayah aman publik</span></div><strong>' + esc(val) + '</strong></div>'; }).join("") + '</div>'; }
       function renderStatus(items) { var el = ge("chart-verif"); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">—</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; var labels = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu", submitted_village: "Submit Desa", submitted_subdistrict: "Submit Kecamatan", submitted_regency: "Submit Kabupaten" }; el.innerHTML = items.map(function(v) { var val = v.suppressed ? "<" + threshold : fmt(v.total); return '<div class="sikesra-status-chip"><div class="sv">' + esc(val) + '</div><div class="sl">' + esc(labels[v.key] || v.label || v.key) + '</div></div>'; }).join(""); }
       function renderTable(targetId, items, headers, emptyText) { var el = ge(targetId); if (!items || !items.length) { el.innerHTML = '<div class="sikesra-loading">' + emptyText + '</div>'; return; } var threshold = Number(ge("suppression-threshold").textContent) || 5; var head = headers.map(function(h) { return '<th style="text-align:left;padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.78rem;color:var(--color-muted)">' + esc(h.label) + '</th>'; }).join(''); var body = items.map(function(item) { return '<tr>' + headers.map(function(h) { return '<td style="padding:.55rem;border-bottom:1px solid var(--color-border);font-size:.84rem">' + esc(h.render(item)) + '</td>'; }).join('') + '</tr>'; }).join(''); el.innerHTML = '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>'; }
-      function renderSummary(meta, summary) { ge("kpi-total").textContent = fmt(summary.kpis.totalEntities); ge("kpi-verified").textContent = fmt(summary.kpis.verifiedEntities); ge("kpi-villages").textContent = fmt(summary.kpis.activeVillages); ge("kpi-update").textContent = ago(summary.kpis.latestUpdateAt); ge("suppression-threshold").textContent = String(summary.suppression.threshold || 5); ge("suppression-count").textContent = fmt(summary.suppression.suppressedCells || 0); ge("caveat-text").textContent = summary.caveat || ""; renderBarChart("chart-types", summary.charts && summary.charts.byObjectType, "Belum ada data kategori"); renderRegionList(summary.charts && summary.charts.byRegion); renderStatus(summary.charts && summary.charts.byVerificationStatus); renderBarChart("chart-attributes", summary.charts && summary.charts.bySafeAttribute, "Belum ada atribut aman untuk ditampilkan"); renderTable("chart-types-table", summary.charts && summary.charts.byObjectType, [{ label: "Kategori", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel kategori"); renderTable("chart-region-table", summary.charts && summary.charts.byRegion, [{ label: "Wilayah", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel wilayah"); renderTable("chart-verif-table", summary.charts && summary.charts.byVerificationStatus, [{ label: "Status", render: function(i) { var l = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu" }; return l[i.key] || i.label || i.key; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel status"); renderTable("chart-attributes-table", summary.charts && summary.charts.bySafeAttribute, [{ label: "Atribut", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel atribut"); }
+      function renderSummary(m, summary) { ge("kpi-total").textContent = fmt(summary.kpis.totalEntities); ge("kpi-verified").textContent = fmt(summary.kpis.verifiedEntities); ge("kpi-villages").textContent = fmt(summary.kpis.activeVillages); ge("kpi-update").textContent = ago(summary.kpis.latestUpdateAt); ge("suppression-threshold").textContent = String(summary.suppression.threshold || 5); ge("suppression-count").textContent = fmt(summary.suppression.suppressedCells || 0); ge("caveat-text").textContent = summary.caveat || ""; renderBarChart("chart-types", summary.charts && summary.charts.byObjectType, "Belum ada data kategori"); renderRegionList(summary.charts && summary.charts.byRegion); renderStatus(summary.charts && summary.charts.byVerificationStatus); renderBarChart("chart-attributes", summary.charts && summary.charts.bySafeAttribute, "Belum ada atribut aman untuk ditampilkan"); renderTable("chart-types-table", summary.charts && summary.charts.byObjectType, [{ label: "Kategori", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel kategori"); renderTable("chart-region-table", summary.charts && summary.charts.byRegion, [{ label: "Wilayah", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel wilayah"); renderTable("chart-verif-table", summary.charts && summary.charts.byVerificationStatus, [{ label: "Status", render: function(i) { var l = { verified: "Terverifikasi", active: "Aktif", pending: "Menunggu" }; return l[i.key] || i.label || i.key; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel status"); renderTable("chart-attributes-table", summary.charts && summary.charts.bySafeAttribute, [{ label: "Atribut", render: function(i) { return i.label; } }, { label: "Total", render: function(i) { return i.suppressed ? "<" + (Number(ge("suppression-threshold").textContent) || 5) : fmt(i.total); } }], "Belum ada tabel atribut"); }
+      function renderMeta(m) { ge("meta-enabled").textContent = m.enabled ? "Publik aktif" : "Publik dibatasi"; ge("meta-update").textContent = m.latestUpdateAt ? "Diperbarui " + ago(m.latestUpdateAt) : "Belum ada pembaruan"; ge("program-description").textContent = m.description || "—"; ge("program-contact").textContent = m.officialContact || "Kontak resmi belum tersedia"; ge("program-scope").textContent = m.dataScopeNote || "—"; }
       async function refreshSummary() { var qs = queryString(); var summary = await load(API + "/public/summary" + (qs ? "?" + qs : "")); renderSummary(meta, summary); syncUrl(); }
       function handleError(e) { ge("main-content").innerHTML = '<div class="sikesra-err">Gagal memuat data. Silakan coba lagi nanti.</div>'; console.error(e); }
 
       readUrl();
-      renderFilterControls();
+
+      // Load metadata, filters, and summary in parallel
+      Promise.all([
+        load(API + "/public/metadata").then(function(m) { meta = m; renderMeta(m); }).catch(handleError),
+        load(API + "/public/filters").then(function(f) { allFilters = f; renderFilterControls(); }).catch(handleError),
+        refreshSummary().catch(handleError)
+      ]);
 
       ge("filter-district").addEventListener("change", function() { state.districtCode = this.value || ""; if (state.villageCode && visibleVillages().every(function(v) { return v.code !== state.villageCode; })) state.villageCode = ""; renderFilterControls(); });
       ge("filter-village").addEventListener("change", function() { state.villageCode = this.value || ""; });
@@ -686,8 +561,4 @@ const statusOptions = filters.statuses.map(s => `<option value="${esc(s.code)}">
       ge("reset-filters").addEventListener("click", function() { state = { districtCode: "", villageCode: "", objectTypeCode: "", year: "", status: "" }; renderFilterControls(); refreshSummary().catch(handleError); });
     })();
   </script>
-
-  <!-- Hidden data elements for client-side hydration -->
-  <script id="meta-data" type="application/json">{metaJson}</script>
-  <script id="filters-data" type="application/json">{filtersJson}</script>
 </Base>
