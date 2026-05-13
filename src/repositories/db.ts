@@ -83,7 +83,7 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
 
     // Apply WHERE clause
     if (whereClause) {
-      rows = rows.filter((row) => this.evaluateWhere(whereClause, row));
+      rows = rows.filter((row) => this.evaluateWhere(whereClause, row, [...this._params]));
     }
 
     // Apply ORDER BY
@@ -141,7 +141,7 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
 
   private executeInsert(): D1Result {
     const { tableName, columns, values } = this.parseInsert();
-    
+
     if (!tableName || !values || values.length === 0) {
       return { results: [], success: false, meta: { rows_written: 0 } };
     }
@@ -152,7 +152,7 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
 
     const table = this._tables.get(tableName)!;
     const paramValues = this.resolveParams(values);
-    
+
     // Build the row
     const row: Record<string, unknown> = {};
     if (columns) {
@@ -164,7 +164,7 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
     // Use id column as key if available
     const id = row["id"] || `row_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     row["id"] = id;
-    
+
     // Add timestamps if not present
     if (!row["created_at"]) {
       row["created_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
@@ -173,36 +173,64 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
       row["updated_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
     }
 
+    // Add common SIKESRA defaults for columns not explicitly set
+    if (tableName.includes("sikesra_entities")) {
+      if (row["status_data"] === undefined || row["status_data"] === null) row["status_data"] = "draft";
+      if (row["status_verification"] === undefined || row["status_verification"] === null) row["status_verification"] = "pending";
+      if (row["sensitivity_level"] === undefined || row["sensitivity_level"] === null) row["sensitivity_level"] = "internal";
+      if (row["completeness_percent"] === undefined || row["completeness_percent"] === null) row["completeness_percent"] = 0;
+      if (row["duplicate_status"] === undefined || row["duplicate_status"] === null) row["duplicate_status"] = "unknown";
+      if (row["deleted_at"] === undefined) row["deleted_at"] = null;
+      if (row["sikesra_id_20"] === undefined) row["sikesra_id_20"] = null;
+      if (row["verification_level"] === undefined) row["verification_level"] = null;
+      if (row["module_fields_json"] === undefined) row["module_fields_json"] = "{}";
+    }
+    if (tableName.includes("sikesra_audit")) {
+      if (row["success"] === undefined || row["success"] === null) row["success"] = 1;
+      if (row["created_at"] === undefined || row["created_at"] === null) row["created_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
+    }
+    if (tableName.includes("sikesra_export")) {
+      if (row["status"] === undefined || row["status"] === null) row["status"] = "pending";
+      if (row["format"] === undefined || row["format"] === null) row["format"] = "csv";
+      if (row["total_rows"] === undefined || row["total_rows"] === null) row["total_rows"] = 0;
+    }
+
     table.set(String(id), row);
-    
+
     return { results: [], success: true, meta: { rows_written: 1 } };
   }
 
   private executeUpdate(): D1Result {
     const { tableName, setClauses, whereClause } = this.parseUpdate();
-    
+
     if (!tableName || !this._tables.has(tableName)) {
       return { results: [], success: false, meta: { rows_written: 0 } };
     }
 
     const table = this._tables.get(tableName)!;
+
+    // Resolve SET clause values first (consumes params in order)
+    const setParamValues = this.resolveParams(setClauses.map(([, v]) => v));
+
+    // Remaining params are for WHERE clause
+    const whereParams = [...this._params];
+
     let updatedCount = 0;
 
     for (const [id, row] of table.entries()) {
-      if (whereClause && !this.evaluateWhere(whereClause, row)) {
+      if (whereClause && !this.evaluateWhere(whereClause, row, whereParams)) {
         continue;
       }
 
       // Apply SET clauses
-      const paramValues = this.resolveParams(setClauses.map(([, v]) => v));
       for (let i = 0; i < setClauses.length; i++) {
         const [col] = setClauses[i];
-        row[col] = paramValues[i];
+        row[col] = setParamValues[i];
       }
 
       // Update timestamp
       row["updated_at"] = new Date().toISOString().replace("T", " ").substring(0, 19);
-      
+
       table.set(id, row);
       updatedCount++;
     }
@@ -212,7 +240,7 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
 
   private executeDelete(): D1Result {
     const { tableName, whereClause } = this.parseDelete();
-    
+
     if (!tableName || !this._tables.has(tableName)) {
       return { results: [], success: false, meta: { rows_written: 0 } };
     }
@@ -226,8 +254,10 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
       return this.executeUpdate();
     }
 
+    const whereParams = [...this._params];
+
     for (const [id, row] of table.entries()) {
-      if (whereClause && !this.evaluateWhere(whereClause, row)) {
+      if (whereClause && !this.evaluateWhere(whereClause, row, whereParams)) {
         continue;
       }
 
@@ -241,7 +271,19 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
   private resolveParams(values: unknown[]): unknown[] {
     return values.map((v) => {
       if (v === "?") {
+        // Preserve original type for bound parameters
         return this._params.shift() ?? null;
+      }
+      // Parse literal values from SQL
+      if (typeof v === "string") {
+        if (v.startsWith("'") && v.endsWith("'")) {
+          return v.slice(1, -1);
+        }
+        if (v === "NULL") return null;
+        // Only convert to number if it's a simple integer (not a large ID)
+        if (/^\d+$/.test(v) && v.length <= 15) {
+          return Number(v);
+        }
       }
       return v;
     });
@@ -351,34 +393,56 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
   } {
     const query = this._query.trim();
     const upper = query.toUpperCase();
-    
+
     // Extract table name
     const updateMatch = upper.match(/UPDATE\s+(\w+)/);
     const tableName = updateMatch ? updateMatch[1].toLowerCase() : undefined;
-    
-    // Extract SET clauses
-    const setMatch = upper.match(/SET\s+(.+?)(?:\s+WHERE|$)/);
+
+    // Extract SET clause portion from original query (preserves case)
+    const setStartIdx = upper.indexOf("SET");
+    const whereIdx = upper.indexOf("WHERE");
+    const setEndIdx = whereIdx !== -1 ? whereIdx : query.length;
+    const setStr = query.substring(setStartIdx + 3, setEndIdx).trim();
+
     const setClauses: [string, unknown][] = [];
-    if (setMatch) {
-      const setStr = setMatch[1];
-      const clauses = setStr.split(",");
-      for (const clause of clauses) {
-        const parts = clause.split("=");
-        if (parts.length === 2) {
-          const col = parts[0].trim().toLowerCase();
-          const val = parts[1].trim();
+    if (setStr) {
+      // Split by commas, but respect parentheses
+      let depth = 0;
+      let current = "";
+      for (const char of setStr) {
+        if (char === "(") depth++;
+        else if (char === ")") depth--;
+        if (char === "," && depth === 0) {
+          const trimmed = current.trim();
+          const eqIdx = trimmed.indexOf("=");
+          if (eqIdx > 0) {
+            const col = trimmed.substring(0, eqIdx).trim().toLowerCase();
+            const val = trimmed.substring(eqIdx + 1).trim();
+            setClauses.push([col, val === "?" ? "?" : val]);
+          }
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      // Handle last clause
+      const trimmed = current.trim();
+      if (trimmed) {
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx > 0) {
+          const col = trimmed.substring(0, eqIdx).trim().toLowerCase();
+          const val = trimmed.substring(eqIdx + 1).trim();
           setClauses.push([col, val === "?" ? "?" : val]);
         }
       }
     }
-    
+
     // Extract WHERE clause
-    const whereIndex = upper.indexOf("WHERE");
     let whereClause: string | undefined;
-    if (whereIndex !== -1) {
-      whereClause = query.substring(whereIndex + 5).trim();
+    if (whereIdx !== -1) {
+      whereClause = query.substring(whereIdx + 5).trim();
     }
-    
+
     return { tableName, setClauses, whereClause };
   }
 
@@ -403,87 +467,91 @@ class InMemoryPreparedStatement implements D1PreparedStatement {
     return { tableName, whereClause };
   }
 
-  private evaluateWhere(whereClause: string, row: Record<string, unknown>): boolean {
+  private evaluateWhere(whereClause: string, row: Record<string, unknown>, params: unknown[]): boolean {
     if (!whereClause) return true;
-    
+
+    // Handle AND conditions first - split and recursively evaluate
+    if (whereClause.includes(" AND ")) {
+      const conditions = whereClause.split(" AND ");
+      return conditions.every((cond) => this.evaluateWhere(cond.trim(), row, params));
+    }
+
     // Handle IN clause
     const inMatch = whereClause.match(/(\w+)\s+IN\s*\(([^)]+)\)/i);
     if (inMatch) {
       const col = inMatch[1].toLowerCase();
       const values = inMatch[2].split(",").map((v) => {
         const trimmed = v.trim();
+        if (trimmed === "?") return String(params.shift() ?? "");
         if (trimmed.startsWith("'") && trimmed.endsWith("'")) return trimmed.slice(1, -1);
         return trimmed;
       });
       const rowVal = String(row[col] ?? "");
       if (!values.includes(rowVal)) return false;
+      return true;
     }
-    
+
     // Handle IS NULL
     const isNullMatch = whereClause.match(/(\w+)\s+IS\s+NULL/i);
     if (isNullMatch) {
       const col = isNullMatch[1].toLowerCase();
-      if (row[col] !== null && row[col] !== undefined) return false;
+      return row[col] === null || row[col] === undefined;
     }
-    
+
     // Handle IS NOT NULL
     const isNotNullMatch = whereClause.match(/(\w+)\s+IS\s+NOT\s+NULL/i);
     if (isNotNullMatch) {
       const col = isNotNullMatch[1].toLowerCase();
-      if (row[col] === null || row[col] === undefined) return false;
+      return row[col] !== null && row[col] !== undefined;
     }
-    
+
     // Handle LIKE
     const likeMatch = whereClause.match(/(\w+)\s+LIKE\s+'([^']+)'/i);
     if (likeMatch) {
       const col = likeMatch[1].toLowerCase();
       const pattern = likeMatch[2].replace(/%/g, ".*").replace(/_/g, ".");
       const rowVal = String(row[col] ?? "");
-      if (!new RegExp(`^${pattern}$`, "i").test(rowVal)) return false;
+      return new RegExp(`^${pattern}$`, "i").test(rowVal);
     }
-    
-    // Handle = comparisons
-    const eqMatches = whereClause.matchAll(/(\w+)\s*=\s*([^AND\s]+)/g);
-    for (const match of eqMatches) {
-      const col = match[1].toLowerCase();
-      const expected = match[2].replace(/['"]/g, "").trim();
+
+    // Handle = comparisons (including ? placeholders)
+    const eqMatch = whereClause.match(/(\w+)\s*=\s*(.+)/);
+    if (eqMatch) {
+      const col = eqMatch[1].toLowerCase();
+      const rawVal = eqMatch[2].replace(/['"]/g, "").trim();
+      const expected = rawVal === "?" ? String(params.shift() ?? "") : rawVal;
       const rowVal = String(row[col] ?? "");
-      if (rowVal !== expected) return false;
+      return rowVal === expected;
     }
-    
-    // Handle != comparisons
-    const neqMatches = whereClause.matchAll(/(\w+)\s*!=\s*([^AND\s]+)/g);
-    for (const match of neqMatches) {
-      const col = match[1].toLowerCase();
-      const expected = match[2].replace(/['"]/g, "").trim();
+
+    // Handle != comparisons (including ? placeholders)
+    const neqMatch = whereClause.match(/(\w+)\s*!=\s*(.+)/);
+    if (neqMatch) {
+      const col = neqMatch[1].toLowerCase();
+      const rawVal = neqMatch[2].replace(/['"]/g, "").trim();
+      const expected = rawVal === "?" ? String(params.shift() ?? "") : rawVal;
       const rowVal = String(row[col] ?? "");
-      if (rowVal === expected) return false;
+      return rowVal !== expected;
     }
-    
+
     // Handle >= comparisons
-    const gteMatches = whereClause.matchAll(/(\w+)\s*>=\s*(\d+)/g);
-    for (const match of gteMatches) {
-      const col = match[1].toLowerCase();
-      const expected = Number(match[2]);
+    const gteMatch = whereClause.match(/(\w+)\s*>=\s*(\d+)/);
+    if (gteMatch) {
+      const col = gteMatch[1].toLowerCase();
+      const expected = Number(gteMatch[2]);
       const rowVal = Number(row[col] ?? 0);
-      if (rowVal < expected) return false;
+      return rowVal >= expected;
     }
-    
+
     // Handle <= comparisons
-    const lteMatches = whereClause.matchAll(/(\w+)\s*<=\s*(\d+)/g);
-    for (const match of lteMatches) {
-      const col = match[1].toLowerCase();
-      const expected = Number(match[2]);
+    const lteMatch = whereClause.match(/(\w+)\s*<=\s*(\d+)/);
+    if (lteMatch) {
+      const col = lteMatch[1].toLowerCase();
+      const expected = Number(lteMatch[2]);
       const rowVal = Number(row[col] ?? 0);
-      if (rowVal > expected) return false;
+      return rowVal <= expected;
     }
-    
-    // Handle AND conditions (basic)
-    if (whereClause.includes(" AND ")) {
-      const conditions = whereClause.split(" AND ");
-      return conditions.every((cond) => this.evaluateWhere(cond.trim(), row));
-    }
-    
+
     return true;
   }
 }
