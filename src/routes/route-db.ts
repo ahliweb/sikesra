@@ -72,12 +72,30 @@ class KyselyD1Adapter implements D1Binding {
   }
 }
 
-export async function getRouteDb(request: Request): Promise<D1Binding> {
-  const locals = (request as Request & { [key: symbol]: { runtime?: { env?: { SIKESRA_DB?: D1Binding; DB?: D1Binding } } } })[Symbol.for("astro.locals")];
-  const db = locals?.runtime?.env?.SIKESRA_DB ?? locals?.runtime?.env?.DB;
-  if (db) {
-    return db;
-  }
+// Module-level cached adapter instance
+let _cachedAdapter: D1Binding | null = null;
 
-  return new KyselyD1Adapter(await getDb() as unknown as RawKyselyDb);
+/**
+ * Set a test D1 binding to use instead of the production adapter.
+ * Call this in test setup to inject a mock or in-memory D1 binding.
+ */
+export function setTestDb(db: D1Binding | null): void {
+  _cachedAdapter = db;
+}
+
+/**
+ * Get the D1 binding adapter for route handlers.
+ *
+ * EmDash plugin routes receive the raw Request object without Astro locals,
+ * so we use getDb() from emdash/runtime which initializes a Kysely instance
+ * from virtual modules (configured at build time in astro.config.mjs).
+ *
+ * In tests, use setTestDb() to inject a mock or in-memory binding.
+ */
+export async function getRouteDb(_request?: Request): Promise<D1Binding> {
+  if (_cachedAdapter) return _cachedAdapter;
+
+  const kyselyDb = await getDb();
+  _cachedAdapter = new KyselyD1Adapter(kyselyDb as unknown as RawKyselyDb);
+  return _cachedAdapter;
 }
