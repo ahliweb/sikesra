@@ -233,6 +233,17 @@ All 28 tracked GitHub issues have been closed:
 - **Documentation**: #195, #196, #197, #198
 - **Post-MVP**: #164, #165, #176, #187, #188, #189
 
+### Post-MVP Improvement Issues (2026-05-13)
+8 new issues created from gap analysis:
+- **#199** (P0): Pre-production performance review and staging validation
+- **#200** (P1): Cloudflare Access JWT validation
+- **#201** (P1): R2 lifecycle rules configuration
+- **#202** (P1): Penetration testing plan
+- **#203** (P1): ABAC UI refinements
+- **#204** (P1): Permission registry integration
+- **#205** (P1): CI/CD pipeline enhancements
+- **#206** (P1): Test coverage gaps
+
 ### Completed Issues
 | Issue | Gap | Status |
 |---|---|---|
