@@ -352,9 +352,7 @@ describe("SIKESRA Integration and Service Gap Tests", () => {
 
       // Find duplicates
       const duplicates = await findDuplicateCandidates(db, {
-        tenantId: "test-tenant",
-        siteId: "test-site",
-        objectTypeCode: "01",
+        entityId: "entity-1",
       }, ctx);
 
       // Should detect potential duplicates based on name/village match

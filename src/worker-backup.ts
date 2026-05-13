@@ -2,8 +2,8 @@
 // Automated D1 backup and R2 lifecycle management
 // Source: docs/sikesra/07_operations_sop.md, Issue #189
 
-import type { D1Binding } from "../repositories/db";
-import { createBackupRecord, updateBackupStatus, DEFAULT_R2_LIFECYCLE_RULES } from "../services/backup";
+import type { D1Binding } from "./repositories/db";
+import { createBackupRecord, updateBackupStatus, DEFAULT_R2_LIFECYCLE_RULES } from "./services/backup";
 
 interface R2Bucket {
   put(key: string, value: ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string } }): Promise<void>;

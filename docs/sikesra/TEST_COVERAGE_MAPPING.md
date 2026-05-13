@@ -214,7 +214,7 @@ This document maps the existing test suite to the validation checklist items in 
 |---|---|---|---|
 | 1 | `node --check worker-wrapper-template.mjs` | Manual review | ✅ |
 | 2 | `node --check postbuild.mjs` | Manual review | ✅ |
-| 3 | `npm run typecheck` passes | Manual review | ⚠️ |
+| 3 | `npm run typecheck` passes | Manual review | ✅ |
 | 4 | `npm test` passes | CI/Manual | ✅ |
 | 5 | `npm run build` completes | CI/Manual | ✅ |
 | 6 | D1 backup procedure documented | `OPERATIONS.md` | ✅ |

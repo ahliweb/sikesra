@@ -25,13 +25,14 @@ interface R2Bucket {
 // EmDash PluginContext shape (matches EmDash v0.12 RouteContext)
 // RouteContext extends PluginContext: { plugin, storage, kv, content?, media?, http?, log, site, url, users?, cron?, email?, input, request, requestMeta }
 export interface EmDashPluginContext {
-  plugin: { id: string; version: string };
+  plugin?: { id: string; version: string };
   site?: { name?: string; url?: string; locale?: string };
   request?: Request;
   url?: (path: string) => string;
   log?: { info: (msg: string, data?: unknown) => void; error: (msg: string, data?: unknown) => void; debug: (msg: string, data?: unknown) => void; warn: (msg: string, data?: unknown) => void };
   kv?: { get: <T>(key: string) => Promise<T | null>; set: (key: string, value: unknown) => Promise<void>; delete: (key: string) => Promise<boolean>; list: (prefix?: string) => Promise<Array<{ key: string; value: unknown }>> };
   storage?: Record<string, unknown>;
+  env?: Partial<RouteEnv>;
 }
 
 // EmDash native plugin RouteContext (single-argument format)
@@ -151,10 +152,11 @@ const ACCESS_GROUP_ROLE_MAPPING: Record<string, string> = {
 
 export function buildPublicContextFromEmDash(routeCtx: EmDashRouteContext): SikesraRequestContext {
   const requestId = getOrCreateRequestId(routeCtx.request);
+  const { tenantId, siteId } = requireSiteContext(routeCtx);
   return buildTrustedRequestContext({
     requestId,
-    tenantId: routeCtx.site?.tenantId ?? "default",
-    siteId: routeCtx.site?.id ?? "default",
+    tenantId,
+    siteId,
     userId: "public",
     roles: ["public"],
     permissions: [],

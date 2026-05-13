@@ -51,12 +51,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const result = await createEntity(db, input, ctx);
@@ -88,12 +86,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "invalid", // Not 10 digits
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       await expect(createEntity(db, input, ctx)).rejects.toThrow();
@@ -124,12 +120,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const result = await createEntity(db, input, ctx);
@@ -156,12 +150,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const created = await createEntity(db, input, ctx);
@@ -177,7 +169,6 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
       };
@@ -194,12 +185,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const created = await createEntity(db, input, ctx);
@@ -266,12 +255,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const created = await createEntity(db, input, ctx);
@@ -292,12 +279,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const created = await createEntity(db, input, ctx);
@@ -326,12 +311,10 @@ describe("SIKESRA Entity Wizard Tests", () => {
       const input: EntityCreateInput = {
         objectTypeCode: "01",
         objectSubtypeCode: "01",
-        entityKind: "person",
         displayName: "Test Person",
         officialVillageCode: "6201021005",
         sensitivityLevel: "public_safe",
         sourceInput: "manual",
-        moduleFields: {},
       };
 
       const created = await createEntity(db, input, ctx);

@@ -162,7 +162,7 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - Document center UI enhanced with document verification workflow stats, pending document table, and verification action buttons
 - Core admin routes now use a shared React Block Kit bridge instead of title-only placeholders (`src/components/AdminBlocksPage.tsx`, `src/admin.tsx`)
 - Plugin admin route now returns the documented EmDash `data.blocks` envelope and has automated regression coverage
-- `npm run typecheck` is currently blocked by repository-wide pre-existing TypeScript issues outside the admin Block Kit bridge work; `npm test` and `npm run build` pass
+- `npm run typecheck`, `npm test`, and `npm run build` currently pass in this repository after the route-context and stale fixture typing cleanup
 - Settings UI enhanced with expanded stats summary (feature flags count, MIME types count)
 - Reports/Export UI enhanced with job status summary table and visual status indicators (✅ Ready, ⏳ Pending, ❌ Failed)
 - Import service enhanced with Excel/CSV file parsing using exceljs library
