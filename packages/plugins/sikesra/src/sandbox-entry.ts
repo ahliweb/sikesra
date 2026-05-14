@@ -149,6 +149,16 @@ export default definePlugin({
 				);
 			},
 		},
+		"v1/entities/draft/autosave": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return autosaveDraft(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeDraftAutosaveInput(routeCtx.input),
+				);
+			},
+		},
 		"v1/entities/validate": {
 			handler: async (routeCtx: { input: unknown; request: Request }) => {
 				const input = asRecord(routeCtx.input);
