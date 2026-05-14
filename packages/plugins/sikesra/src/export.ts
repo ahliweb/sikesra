@@ -52,6 +52,30 @@ export interface ExportJobSummary extends ExportJobRecord {
 	id: string;
 }
 
+export interface ExportJobPublicView {
+	id: string;
+	tenantId: string;
+	siteId: string;
+	reportType: string;
+	filters: Record<string, unknown>;
+	fields: string[];
+	format: ExportFormat;
+	reason?: string;
+	status: ExportJobStatus;
+	createdAt: string;
+	updatedAt: string;
+	createdBy: string;
+	totalRows?: number;
+	mimeType?: string;
+	downloadedAt?: string;
+	generatedAt?: string;
+}
+
+export function sanitizeExportJob(job: ExportJobSummary): ExportJobPublicView {
+	const { contentKey: _, ...rest } = job;
+	return rest as ExportJobPublicView;
+}
+
 export interface ExportAuditEntry {
 	action: string;
 	resourceType: string;

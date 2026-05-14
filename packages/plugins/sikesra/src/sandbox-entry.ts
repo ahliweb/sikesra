@@ -20,6 +20,7 @@ import {
 	getExportJob,
 	listAvailableReports,
 	listExportJobs,
+	sanitizeExportJob,
 	type ExportCreateInput,
 	type ExportStorageContext,
 } from "./export.js";
@@ -273,12 +274,13 @@ export default definePlugin({
 				const requestContext = buildRequestContextFromRoute(routeCtx);
 				const input = asRecord(routeCtx.input);
 				const status = typeof input.status === "string" ? input.status : undefined;
+				const jobs = await listExportJobs(
+					{ ...(ctx as ExportStorageContext), db },
+					requestContext,
+					status as never,
+				);
 				return {
-					items: await listExportJobs(
-						{ ...(ctx as ExportStorageContext), db },
-						requestContext,
-						status as never,
-					),
+					items: jobs.map(sanitizeExportJob),
 				};
 			},
 		},
@@ -297,7 +299,7 @@ export default definePlugin({
 					buildRequestContextFromRoute(routeCtx),
 				);
 				if (!job) throw new Error("EXPORT_JOB_NOT_FOUND");
-				return { job };
+				return { job: sanitizeExportJob(job) };
 			},
 		},
 		"v1/exports/jobs/create": {
@@ -649,6 +651,7 @@ function normalizeImportBatchInput(value: unknown): ImportBatchCreateInput {
 		typeof input.originalFilename === "string" ? input.originalFilename : "upload.csv";
 	return {
 		originalFilename,
+		sheetName: typeof input.sheetName === "string" ? input.sheetName : undefined,
 		objectTypeCode: typeof input.objectTypeCode === "string" ? input.objectTypeCode : undefined,
 	};
 }

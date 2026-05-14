@@ -25,6 +25,7 @@ export interface ImportBatch {
 	tenantId: string;
 	siteId: string;
 	originalFilename: string;
+	sheetName?: string;
 	objectTypeCode?: string;
 	rowCount: number;
 	validRowCount: number;
@@ -96,6 +97,7 @@ export interface ImportStorageContext {
 
 export interface ImportBatchCreateInput {
 	originalFilename: string;
+	sheetName?: string;
 	objectTypeCode?: string;
 }
 
@@ -137,6 +139,7 @@ export async function createImportBatch(
 		tenantId: ctx.tenantId,
 		siteId: ctx.siteId,
 		originalFilename: input.originalFilename.trim() || "upload.csv",
+		sheetName: input.sheetName?.trim(),
 		objectTypeCode: input.objectTypeCode,
 		rowCount: 0,
 		validRowCount: 0,
@@ -150,6 +153,7 @@ export async function createImportBatch(
 	await saveImportBatch(runtime, id, batch, ctx);
 	await writeImportAudit(runtime, ctx, AUDIT_ACTIONS.IMPORT_CREATE, id, {
 		originalFilename: input.originalFilename,
+		sheetName: input.sheetName,
 		objectTypeCode: input.objectTypeCode,
 	});
 	return { id, status: "created" };
@@ -541,7 +545,7 @@ async function saveImportBatchToDb(
 			status, object_type_code, created_at, updated_at, created_by, updated_by
 		) VALUES (
 			${batchId}, ${batch.tenantId}, ${batch.siteId}, '',
-			${batch.originalFilename}, null,
+			${batch.originalFilename}, ${batch.sheetName ?? null},
 			${batch.rowCount}, ${batch.validRowCount}, ${batch.invalidRowCount}, ${batch.promotedRowCount},
 			${batch.status}, ${batch.objectTypeCode ?? null}, ${batch.createdAt}, ${batch.updatedAt},
 			${batch.createdBy}, ${batch.createdBy}
@@ -552,6 +556,7 @@ async function saveImportBatchToDb(
 			invalid_row_count = excluded.invalid_row_count,
 			promoted_row_count = excluded.promoted_row_count,
 			status = excluded.status,
+			sheet_name = excluded.sheet_name,
 			updated_at = excluded.updated_at,
 			updated_by = excluded.updated_by
 	`.execute(db as never);
@@ -596,6 +601,7 @@ async function getImportBatchFromDb(
 		tenantId: row.tenant_id,
 		siteId: row.site_id,
 		originalFilename: row.original_filename,
+		sheetName: row.sheet_name ?? undefined,
 		objectTypeCode: row.object_type_code ?? undefined,
 		rowCount: row.row_count,
 		validRowCount: row.valid_row_count,
