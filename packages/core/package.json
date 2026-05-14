@@ -176,7 +176,7 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@oslojs/crypto": "catalog:",
     "@oslojs/encoding": "catalog:",
-    "@portabletext/toolkit": "^5.0.1",
+    "@portabletext/toolkit": "^5.0.2",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-focus": "catalog:",
     "@tiptap/extension-image": "catalog:",
