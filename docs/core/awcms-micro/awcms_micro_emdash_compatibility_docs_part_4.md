@@ -209,7 +209,7 @@ import emdash from "emdash/astro";
 import seoPlugin from "@emdash-cms/plugin-seo";
 
 emdash({
-  plugins: [seoPlugin({ maxTitleLength: 60 })],
+	plugins: [seoPlugin({ maxTitleLength: 60 })],
 });
 ```
 
@@ -264,12 +264,12 @@ AWCMS-Micro must not silently change the meaning of EmDash plugin behavior.
 
 AWCMS-Micro should support marketplace plugins, but with review:
 
-| Plugin Risk | Example | Policy |
-| --- | --- | --- |
-| Low | SEO metadata helper | Allow after capability review |
-| Medium | Webhook sender | Allow with network allowlist and audit |
-| High | Content writer/importer | Install first in staging, require approval |
-| Critical | Broad content/media/network access | Block or require security review |
+| Plugin Risk | Example                            | Policy                                     |
+| ----------- | ---------------------------------- | ------------------------------------------ |
+| Low         | SEO metadata helper                | Allow after capability review              |
+| Medium      | Webhook sender                     | Allow with network allowlist and audit     |
+| High        | Content writer/importer            | Install first in staging, require approval |
+| Critical    | Broad content/media/network access | Block or require security review           |
 
 ---
 
@@ -405,31 +405,31 @@ module.manifest.json
 
 ```json
 {
-  "id": "documents",
-  "name": "Documents",
-  "description": "Manage public, internal, and private documents.",
-  "version": "0.1.0",
-  "tenantReady": true,
-  "siteScoped": true,
-  "status": "experimental",
-  "category": "content",
-  "author": "AWCMS-Micro",
-  "permissions": [],
-  "capabilities": [],
-  "routes": [],
-  "adminPages": [],
-  "storageScopes": [],
-  "database": {
-    "migrations": []
-  },
-  "dependencies": [],
-  "validation": {
-    "requiredSettings": []
-  },
-  "rollback": {
-    "disableSafe": true,
-    "dataDestructive": false
-  }
+	"id": "documents",
+	"name": "Documents",
+	"description": "Manage public, internal, and private documents.",
+	"version": "0.1.0",
+	"tenantReady": true,
+	"siteScoped": true,
+	"status": "experimental",
+	"category": "content",
+	"author": "AWCMS-Micro",
+	"permissions": [],
+	"capabilities": [],
+	"routes": [],
+	"adminPages": [],
+	"storageScopes": [],
+	"database": {
+		"migrations": []
+	},
+	"dependencies": [],
+	"validation": {
+		"requiredSettings": []
+	},
+	"rollback": {
+		"disableSafe": true,
+		"dataDestructive": false
+	}
 }
 ```
 
@@ -437,81 +437,70 @@ module.manifest.json
 
 ```json
 {
-  "id": "documents",
-  "name": "Documents",
-  "description": "Manage public, internal, restricted, and private documents.",
-  "version": "0.1.0",
-  "tenantReady": true,
-  "siteScoped": true,
-  "status": "experimental",
-  "category": "content",
-  "author": "AWCMS-Micro",
-  "permissions": [
-    "awcms:document:read",
-    "awcms:document:create",
-    "awcms:document:update",
-    "awcms:document:delete",
-    "awcms:document:restore",
-    "awcms:document:publish",
-    "awcms:document:private_download"
-  ],
-  "capabilities": [
-    "content:read",
-    "media:read",
-    "media:write"
-  ],
-  "routes": [
-    {
-      "type": "api",
-      "method": "GET",
-      "path": "/_emdash/api/plugins/documents/v1/documents",
-      "permission": "awcms:document:read"
-    },
-    {
-      "type": "api",
-      "method": "POST",
-      "path": "/_emdash/api/plugins/documents/v1/documents",
-      "permission": "awcms:document:create"
-    }
-  ],
-  "adminPages": [
-    {
-      "label": "Documents",
-      "path": "/_emdash/admin/plugins/documents",
-      "permission": "awcms:document:read"
-    }
-  ],
-  "storageScopes": [
-    {
-      "id": "documents-public",
-      "prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/public/",
-      "visibility": "public"
-    },
-    {
-      "id": "documents-private",
-      "prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/private/",
-      "visibility": "private"
-    }
-  ],
-  "database": {
-    "migrations": [
-      "202605050930_create_documents.sql"
-    ]
-  },
-  "dependencies": [
-    "audit-log"
-  ],
-  "validation": {
-    "requiredSettings": [
-      "documents.maxFileSizeBytes",
-      "documents.allowedMimeTypes"
-    ]
-  },
-  "rollback": {
-    "disableSafe": true,
-    "dataDestructive": false,
-    "notes": "Disabling the module hides admin routes but keeps document metadata and media objects."
-  }
+	"id": "documents",
+	"name": "Documents",
+	"description": "Manage public, internal, restricted, and private documents.",
+	"version": "0.1.0",
+	"tenantReady": true,
+	"siteScoped": true,
+	"status": "experimental",
+	"category": "content",
+	"author": "AWCMS-Micro",
+	"permissions": [
+		"awcms:document:read",
+		"awcms:document:create",
+		"awcms:document:update",
+		"awcms:document:delete",
+		"awcms:document:restore",
+		"awcms:document:publish",
+		"awcms:document:private_download"
+	],
+	"capabilities": ["content:read", "media:read", "media:write"],
+	"routes": [
+		{
+			"type": "api",
+			"method": "GET",
+			"path": "/_emdash/api/plugins/documents/v1/documents",
+			"permission": "awcms:document:read"
+		},
+		{
+			"type": "api",
+			"method": "POST",
+			"path": "/_emdash/api/plugins/documents/v1/documents",
+			"permission": "awcms:document:create"
+		}
+	],
+	"adminPages": [
+		{
+			"label": "Documents",
+			"path": "/_emdash/admin/plugins/documents",
+			"permission": "awcms:document:read"
+		}
+	],
+	"storageScopes": [
+		{
+			"id": "documents-public",
+			"prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/public/",
+			"visibility": "public"
+		},
+		{
+			"id": "documents-private",
+			"prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/private/",
+			"visibility": "private"
+		}
+	],
+	"database": {
+		"migrations": ["202605050930_create_documents.sql"]
+	},
+	"dependencies": ["audit-log"],
+	"validation": {
+		"requiredSettings": ["documents.maxFileSizeBytes", "documents.allowedMimeTypes"]
+	},
+	"rollback": {
+		"disableSafe": true,
+		"dataDestructive": false,
+		"notes": "Disabling the module hides admin routes but keeps document metadata and media objects."
+	}
 }
 ```
 
@@ -765,14 +754,14 @@ When a module is installed:
 
 Optional default role mappings:
 
-| Role | Example Access |
-| --- | --- |
-| owner | full access |
-| admin | install, configure, manage |
-| editor | create/update/publish content |
-| author | create/update own content |
-| auditor | read-only logs/reports |
-| public | public read only |
+| Role    | Example Access                |
+| ------- | ----------------------------- |
+| owner   | full access                   |
+| admin   | install, configure, manage    |
+| editor  | create/update/publish content |
+| author  | create/update own content     |
+| auditor | read-only logs/reports        |
+| public  | public read only              |
 
 ---
 
@@ -815,16 +804,16 @@ storage:write
 
 ### 12.3 Capability Approval Matrix
 
-| Capability | Risk | Requirement |
-| --- | --- | --- |
-| content:read | Low/Medium | Review data exposure |
-| content:write | Medium/High | Audit and staging test |
-| media:read | Medium | Storage scope review |
-| media:write | High | File validation and quota |
-| settings:write | High | Admin approval |
-| network:request | Medium/High | Allowlist external hosts |
-| admin:page | Medium | UI and permission review |
-| storage:write | High | Prefix scope and audit |
+| Capability      | Risk        | Requirement               |
+| --------------- | ----------- | ------------------------- |
+| content:read    | Low/Medium  | Review data exposure      |
+| content:write   | Medium/High | Audit and staging test    |
+| media:read      | Medium      | Storage scope review      |
+| media:write     | High        | File validation and quota |
+| settings:write  | High        | Admin approval            |
+| network:request | Medium/High | Allowlist external hosts  |
+| admin:page      | Medium      | UI and permission review  |
+| storage:write   | High        | Prefix scope and audit    |
 
 ### 12.4 New Capability Rule
 
@@ -846,13 +835,11 @@ Each module must be restricted to a defined storage prefix to avoid uncontrolled
 
 ```json
 {
-  "id": "documents-private",
-  "prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/private/",
-  "visibility": "private",
-  "maxFileSizeBytes": 10485760,
-  "allowedMimeTypes": [
-    "application/pdf"
-  ]
+	"id": "documents-private",
+	"prefix": "tenants/{tenant_id}/sites/{site_id}/modules/documents/private/",
+	"visibility": "private",
+	"maxFileSizeBytes": 10485760,
+	"allowedMimeTypes": ["application/pdf"]
 }
 ```
 
@@ -946,12 +933,12 @@ Recommended success response:
 
 ```json
 {
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -959,16 +946,16 @@ Recommended error response:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "You do not have permission to perform this action.",
-    "details": null
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": false,
+	"error": {
+		"code": "FORBIDDEN",
+		"message": "You do not have permission to perform this action.",
+		"details": null
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -998,11 +985,11 @@ Each module admin page should declare:
 
 ```json
 {
-  "label": "Documents",
-  "path": "/_emdash/admin/plugins/documents",
-  "permission": "awcms:document:read",
-  "icon": "FileText",
-  "group": "Content"
+	"label": "Documents",
+	"path": "/_emdash/admin/plugins/documents",
+	"permission": "awcms:document:read",
+	"icon": "FileText",
+	"group": "Content"
 }
 ```
 
@@ -1051,10 +1038,10 @@ Documents module:
 
 ```json
 {
-  "maxFileSizeBytes": 10485760,
-  "allowedMimeTypes": ["application/pdf"],
-  "defaultVisibility": "private",
-  "signedUrlExpirationSeconds": 300
+	"maxFileSizeBytes": 10485760,
+	"allowedMimeTypes": ["application/pdf"],
+	"defaultVisibility": "private",
+	"signedUrlExpirationSeconds": 300
 }
 ```
 
@@ -1062,10 +1049,10 @@ Forms module:
 
 ```json
 {
-  "requireConsent": true,
-  "allowAnonymousSubmissions": true,
-  "maxAttachmentSizeBytes": 5242880,
-  "spamProtection": "turnstile"
+	"requireConsent": true,
+	"allowAnonymousSubmissions": true,
+	"maxAttachmentSizeBytes": 5242880,
+	"spamProtection": "turnstile"
 }
 ```
 
@@ -1073,10 +1060,10 @@ Mobile API module:
 
 ```json
 {
-  "enabled": true,
-  "apiVersion": "v1",
-  "minimumAppVersion": "1.0.0",
-  "maintenanceMode": false
+	"enabled": true,
+	"apiVersion": "v1",
+	"minimumAppVersion": "1.0.0",
+	"maintenanceMode": false
 }
 ```
 
@@ -1101,10 +1088,7 @@ Manifest example:
 
 ```json
 {
-  "dependencies": [
-    "audit-log",
-    "media"
-  ]
+	"dependencies": ["audit-log", "media"]
 }
 ```
 
@@ -1114,14 +1098,14 @@ A module cannot be enabled if required dependencies are missing or disabled.
 
 ### 17.3 Dependency Examples
 
-| Module | Depends On |
-| --- | --- |
-| Documents | Media, Audit Log |
-| Forms | Audit Log, optional Turnstile |
-| Kelulusan | Documents, Media, Audit Log |
-| ABAC Matrix | Permissions, Audit Log |
-| Mobile API | Content services, Documents optional |
-| Webhook Notifier | Audit Log, Integration Settings |
+| Module           | Depends On                           |
+| ---------------- | ------------------------------------ |
+| Documents        | Media, Audit Log                     |
+| Forms            | Audit Log, optional Turnstile        |
+| Kelulusan        | Documents, Media, Audit Log          |
+| ABAC Matrix      | Permissions, Audit Log               |
+| Mobile API       | Content services, Documents optional |
+| Webhook Notifier | Audit Log, Integration Settings      |
 
 ---
 
@@ -1145,18 +1129,18 @@ future-erp
 
 Examples:
 
-| Module | Category |
-| --- | --- |
-| Pages | core/content |
-| Blog/News | content |
-| Documents | content |
-| Forms | forms |
-| Audit Log | security |
-| ABAC Matrix | access-control |
-| Mobile API | mobile-api |
-| Webhook Notifier | integration |
-| Theme Manager | appearance |
-| Kelulusan | public-service |
+| Module           | Category       |
+| ---------------- | -------------- |
+| Pages            | core/content   |
+| Blog/News        | content        |
+| Documents        | content        |
+| Forms            | forms          |
+| Audit Log        | security       |
+| ABAC Matrix      | access-control |
+| Mobile API       | mobile-api     |
+| Webhook Notifier | integration    |
+| Theme Manager    | appearance     |
+| Kelulusan        | public-service |
 
 ---
 
@@ -1361,20 +1345,20 @@ Before install, show:
 
 ### 22.1 Module Risk Levels
 
-| Risk | Criteria | Example |
-| --- | --- | --- |
-| Low | Public read-only, no external network | SEO helper |
-| Medium | Writes content or sends webhooks | Forms, webhook notifier |
-| High | Handles private files or user data | Documents, secure lookup |
+| Risk     | Criteria                                      | Example                  |
+| -------- | --------------------------------------------- | ------------------------ |
+| Low      | Public read-only, no external network         | SEO helper               |
+| Medium   | Writes content or sends webhooks              | Forms, webhook notifier  |
+| High     | Handles private files or user data            | Documents, secure lookup |
 | Critical | Changes permissions/auth or broad data access | ABAC Matrix, auth plugin |
 
 ### 22.2 Required Review by Risk
 
-| Risk | Review Required |
-| --- | --- |
-| Low | Admin approval |
-| Medium | Admin approval + audit |
-| High | Security review + staging test |
+| Risk     | Review Required                                           |
+| -------- | --------------------------------------------------------- |
+| Low      | Admin approval                                            |
+| Medium   | Admin approval + audit                                    |
+| High     | Security review + staging test                            |
 | Critical | Security review + backup + rollback plan + owner approval |
 
 ---
@@ -1563,15 +1547,15 @@ Do not delete data.
 
 ### 27.2 Rollback Types
 
-| Problem | Rollback |
-| --- | --- |
-| Broken admin UI | Disable module admin page |
-| Broken API route | Disable module routes |
-| Bad migration | Restore backup or corrective migration |
-| Bad plugin update | Revert plugin version |
-| Data corruption | Restore affected records from backup |
-| Security issue | Disable module immediately, rotate secrets if needed |
-| Bad marketplace plugin | Disable/remove plugin, revoke capability, audit |
+| Problem                | Rollback                                             |
+| ---------------------- | ---------------------------------------------------- |
+| Broken admin UI        | Disable module admin page                            |
+| Broken API route       | Disable module routes                                |
+| Bad migration          | Restore backup or corrective migration               |
+| Bad plugin update      | Revert plugin version                                |
+| Data corruption        | Restore affected records from backup                 |
+| Security issue         | Disable module immediately, rotate secrets if needed |
+| Bad marketplace plugin | Disable/remove plugin, revoke capability, audit      |
 
 ### 27.3 Rollback Checklist
 
@@ -1900,9 +1884,11 @@ awcms:kelulusan:audit
 
 ```md
 ## Goal
+
 Create the standard manifest format for AWCMS-Micro modules.
 
 ## Tasks
+
 - Define required manifest fields
 - Define permissions section
 - Define capabilities section
@@ -1913,11 +1899,13 @@ Create the standard manifest format for AWCMS-Micro modules.
 - Define rollback section
 
 ## Validation
+
 - Example manifest validates
 - Documents module manifest can be represented
 - ABAC Matrix module manifest can be represented
 
 ## Rollback
+
 Revert manifest documentation and schema changes.
 ```
 
@@ -1925,9 +1913,11 @@ Revert manifest documentation and schema changes.
 
 ```md
 ## Goal
+
 Design and implement the baseline module registry.
 
 ## Tasks
+
 - Define modules table
 - Define module_installations table
 - Define module lifecycle states
@@ -1935,11 +1925,13 @@ Design and implement the baseline module registry.
 - Add registry documentation
 
 ## Validation
+
 - Module can be registered
 - Module can be installed/enabled/disabled conceptually
 - Module status is tracked
 
 ## Rollback
+
 Disable module registry feature flag or revert implementation.
 ```
 
@@ -1947,9 +1939,11 @@ Disable module registry feature flag or revert implementation.
 
 ```md
 ## Goal
+
 Define how permissions and capabilities are declared, reviewed, and enforced.
 
 ## Tasks
+
 - Define AWCMS permission namespace
 - Define capability review matrix
 - Define plugin risk levels
@@ -1957,11 +1951,13 @@ Define how permissions and capabilities are declared, reviewed, and enforced.
 - Add audit events for permission changes
 
 ## Validation
+
 - Permissions are namespaced
 - Capabilities are reviewed before activation
 - New capabilities require approval
 
 ## Rollback
+
 Revert policy changes or disable plugin installation UI.
 ```
 
@@ -1969,9 +1965,11 @@ Revert policy changes or disable plugin installation UI.
 
 ```md
 ## Goal
+
 Ensure every module uses tenant/site/module-aware storage paths.
 
 ## Tasks
+
 - Define storage scope format
 - Define path variables
 - Define visibility rules
@@ -1979,10 +1977,12 @@ Ensure every module uses tenant/site/module-aware storage paths.
 - Add examples for documents/forms/kelulusan
 
 ## Validation
+
 - No module writes to bare uploads path
 - Storage scope includes tenant and site context
 
 ## Rollback
+
 Revert storage scope implementation or disable affected module.
 ```
 
@@ -1990,9 +1990,11 @@ Revert storage scope implementation or disable affected module.
 
 ```md
 ## Goal
+
 Create the standard structure for native AWCMS-Micro plugins.
 
 ## Tasks
+
 - Define package structure
 - Define src/index.ts contract
 - Define routes folder
@@ -2003,11 +2005,13 @@ Create the standard structure for native AWCMS-Micro plugins.
 - Add README template
 
 ## Validation
+
 - New plugin can follow the skeleton
 - Documents plugin can use the skeleton
 - Audit Log plugin can use the skeleton
 
 ## Rollback
+
 Revert skeleton templates.
 ```
 
@@ -2015,9 +2019,11 @@ Revert skeleton templates.
 
 ```md
 ## Goal
+
 Create tests for module manifest, lifecycle, permissions, and storage scopes.
 
 ## Tasks
+
 - Test valid manifest
 - Reject invalid manifest
 - Test install flow
@@ -2027,11 +2033,13 @@ Create tests for module manifest, lifecycle, permissions, and storage scopes.
 - Test storage scope validation
 
 ## Validation
+
 - Tests pass
 - Invalid module is rejected
 - Audit events are expected for lifecycle changes
 
 ## Rollback
+
 Revert tests or mark pending if implementation not ready.
 ```
 

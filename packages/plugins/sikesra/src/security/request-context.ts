@@ -110,7 +110,11 @@ function readInjectedContext(request: Request): InjectedRequestContextPayload | 
 	}
 }
 
-function buildRoleNames(roleName: string | undefined, role: number | null, userId: string): string[] {
+function buildRoleNames(
+	roleName: string | undefined,
+	role: number | null,
+	userId: string,
+): string[] {
 	if (userId === "public") return ["public"];
 	if (roleName) return [roleName.toLowerCase()];
 	if (role !== null) return [`role:${role}`];

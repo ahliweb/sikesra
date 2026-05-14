@@ -314,20 +314,20 @@ Acceptance gate:
 
 ## 12-Week Execution Map
 
-| Week | Focus | Required Outcome |
-|---:|---|---|
-| 1 | Discovery and foundation | Decision log, module folder, plugin skeleton, manifest draft. |
-| 2 | Database and seeds | Migrations and repeatable seeds run locally. |
-| 3 | Security foundation | Permissions, route guard, ABAC, masking, audit baseline. |
-| 4 | Public/admin dashboards | `/sikesra` safe public page and scoped admin dashboard. |
-| 5 | Regions and registry | Region services, list/detail APIs, registry/detail UI. |
-| 6 | Progressive input | Draft, autosave, validation, completeness, wizard UI. |
-| 7 | ID and verification | 20-digit ID, submit, queue, decision flow. |
-| 8 | Documents and R2 | Upload, metadata, private download, document UI. |
-| 9 | Excel import | Workbook upload, mapping, staging, validation, correction UI. |
-| 10 | Dedup/promotion/reports | Duplicate decisions, promotion, basic export/settings. |
-| 11 | Audit/hardening | Audit UI, security tests, backup/restore, performance review. |
-| 12 | Release candidate | UAT, docs finalization, go/no-go report. |
+| Week | Focus                    | Required Outcome                                              |
+| ---: | ------------------------ | ------------------------------------------------------------- |
+|    1 | Discovery and foundation | Decision log, module folder, plugin skeleton, manifest draft. |
+|    2 | Database and seeds       | Migrations and repeatable seeds run locally.                  |
+|    3 | Security foundation      | Permissions, route guard, ABAC, masking, audit baseline.      |
+|    4 | Public/admin dashboards  | `/sikesra` safe public page and scoped admin dashboard.       |
+|    5 | Regions and registry     | Region services, list/detail APIs, registry/detail UI.        |
+|    6 | Progressive input        | Draft, autosave, validation, completeness, wizard UI.         |
+|    7 | ID and verification      | 20-digit ID, submit, queue, decision flow.                    |
+|    8 | Documents and R2         | Upload, metadata, private download, document UI.              |
+|    9 | Excel import             | Workbook upload, mapping, staging, validation, correction UI. |
+|   10 | Dedup/promotion/reports  | Duplicate decisions, promotion, basic export/settings.        |
+|   11 | Audit/hardening          | Audit UI, security tests, backup/restore, performance review. |
+|   12 | Release candidate        | UAT, docs finalization, go/no-go report.                      |
 
 ## Critical Path
 
@@ -352,17 +352,17 @@ After those are done, split later work into atomic tickets using `docs/sikesra/1
 
 ## Primary Risks
 
-| Risk | Control |
-|---|---|
-| Accidental EmDash fork | Decision log, adapter-first policy, compatibility tests. |
-| Sensitive data leakage | Central masking, negative tests, serializer discipline. |
-| Cross-region access | Repository guards, ABAC tests, backend-computed scope. |
-| Public re-identification | Aggregate-only service, small-cell suppression, conservative filters. |
-| Raw R2 key exposure | Signed/proxy download, DTO tests, no raw storage keys in API output. |
-| Import corruption | Staging, validation, duplicate review, explicit promotion. |
-| Export misuse | Field sensitivity resolver, reason requirement, restricted permission, audit. |
-| Audit leakage | Redacted audit serializers and permission-aware audit detail. |
-| Scope creep | MVP excludes integrations, offline app, full ERP, public detail pages, and advanced GIS. |
+| Risk                     | Control                                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| Accidental EmDash fork   | Decision log, adapter-first policy, compatibility tests.                                 |
+| Sensitive data leakage   | Central masking, negative tests, serializer discipline.                                  |
+| Cross-region access      | Repository guards, ABAC tests, backend-computed scope.                                   |
+| Public re-identification | Aggregate-only service, small-cell suppression, conservative filters.                    |
+| Raw R2 key exposure      | Signed/proxy download, DTO tests, no raw storage keys in API output.                     |
+| Import corruption        | Staging, validation, duplicate review, explicit promotion.                               |
+| Export misuse            | Field sensitivity resolver, reason requirement, restricted permission, audit.            |
+| Audit leakage            | Redacted audit serializers and permission-aware audit detail.                            |
+| Scope creep              | MVP excludes integrations, offline app, full ERP, public detail pages, and advanced GIS. |
 
 ## Definition of MVP Done
 

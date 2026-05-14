@@ -13,6 +13,7 @@ export const SIKESRA_ROUTE_NAMES = [
 	"v1/entities/get",
 	"v1/entities/draft",
 	"v1/entities/draft/update",
+	"v1/entities/draft/autosave",
 	"v1/entities/validate",
 	"v1/entities/code/generate",
 	"v1/entities/code/correct",

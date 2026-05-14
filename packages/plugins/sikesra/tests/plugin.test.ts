@@ -70,7 +70,10 @@ describe("sikesraPlugin descriptor", () => {
 		}
 
 		for (const seedPath of seedFiles) {
-			const seed = JSON.parse(readFileSync(seedPath, "utf8")) as { tenantId: string; siteId: string };
+			const seed = JSON.parse(readFileSync(seedPath, "utf8")) as {
+				tenantId: string;
+				siteId: string;
+			};
 			expect(seed.tenantId).toBe("00000000-0000-0000-0000-000000000001");
 			expect(seed.siteId).toBe("main");
 		}
@@ -80,27 +83,28 @@ describe("sikesraPlugin descriptor", () => {
 		expect(SIKESRA_PUBLIC_ROUTE).toBe("/sikesra");
 		expect(SIKESRA_ADMIN_BASE).toBe("/_emdash/admin/plugins/sikesra");
 		expect(SIKESRA_API_BASE).toBe("/_emdash/api/plugins/sikesra");
-			expect(SIKESRA_ROUTE_NAMES).toEqual([
-				"admin",
-				"public/metadata",
-				"public/filters",
-				"public/summary",
-				"v1/status",
-				"v1/security/manifest",
-				"v1/entities",
-				"v1/entities/get",
-				"v1/entities/draft",
-				"v1/entities/draft/update",
-				"v1/entities/validate",
-				"v1/entities/code/generate",
-				"v1/entities/code/correct",
-				"v1/regions/official",
-				"v1/regions/local",
-				"v1/verification/submit",
-				"v1/verification/queue",
-				"v1/verification/decision",
-				"v1/verification/timeline",
-				"v1/exports/reports",
+		expect(SIKESRA_ROUTE_NAMES).toEqual([
+			"admin",
+			"public/metadata",
+			"public/filters",
+			"public/summary",
+			"v1/status",
+			"v1/security/manifest",
+			"v1/entities",
+			"v1/entities/get",
+			"v1/entities/draft",
+			"v1/entities/draft/update",
+			"v1/entities/draft/autosave",
+			"v1/entities/validate",
+			"v1/entities/code/generate",
+			"v1/entities/code/correct",
+			"v1/regions/official",
+			"v1/regions/local",
+			"v1/verification/submit",
+			"v1/verification/queue",
+			"v1/verification/decision",
+			"v1/verification/timeline",
+			"v1/exports/reports",
 			"v1/exports/jobs",
 			"v1/exports/jobs/get",
 			"v1/exports/jobs/create",

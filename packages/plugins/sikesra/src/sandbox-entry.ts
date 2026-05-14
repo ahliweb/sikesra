@@ -23,35 +23,6 @@ import {
 	type ExportCreateInput,
 	type ExportStorageContext,
 } from "./export.js";
-import { getEntityDetail, listEntities } from "./services/entities.js";
-import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
-import {
-	createDraft,
-	updateDraft,
-	validateEntity,
-	generateSikesraId20,
-	correctSikesraId20,
-	type DraftCreateInput,
-	type DraftUpdateInput,
-	type CodeCorrectionInput,
-} from "./services/draft.js";
-import {
-	submitForVerification,
-	getVerificationQueue,
-	makeVerificationDecision,
-	getVerificationTimeline,
-	type VerificationSubmitInput,
-	type VerificationQueueFilters,
-	type VerificationDecisionInput,
-} from "./services/verification.js";
-import {
-	listAuditEntries,
-	getAuditDetail,
-	getSettings,
-	updateSettings,
-	type AuditListFilters,
-	type SettingsUpdateInput,
-} from "./services/settings.js";
 import {
 	createImportBatch,
 	listImportRows,
@@ -65,10 +36,41 @@ import {
 	type ImportStorageContext,
 	type StageRowsInput,
 } from "./import.js";
-import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
 import { getPublicFilters, getPublicMetadata, getPublicSummary } from "./public.js";
-import { buildRequestContextFromRoute } from "./security/request-context.js";
+import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
 import { SIKESRA_PERMISSION_LIST } from "./security/permissions.js";
+import { buildRequestContextFromRoute } from "./security/request-context.js";
+import {
+	createDraft,
+	updateDraft,
+	autosaveDraft,
+	validateEntity,
+	generateSikesraId20,
+	correctSikesraId20,
+	type DraftCreateInput,
+	type DraftUpdateInput,
+	type DraftAutosaveInput,
+	type CodeCorrectionInput,
+} from "./services/draft.js";
+import { getEntityDetail, listEntities } from "./services/entities.js";
+import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
+import {
+	listAuditEntries,
+	getAuditDetail,
+	getSettings,
+	updateSettings,
+	type AuditListFilters,
+	type SettingsUpdateInput,
+} from "./services/settings.js";
+import {
+	submitForVerification,
+	getVerificationQueue,
+	makeVerificationDecision,
+	getVerificationTimeline,
+	type VerificationSubmitInput,
+	type VerificationQueueFilters,
+	type VerificationDecisionInput,
+} from "./services/verification.js";
 import {
 	buildAdminBlocks,
 	buildAdminWidget,
@@ -113,7 +115,11 @@ export default definePlugin({
 		"v1/entities": {
 			handler: async (routeCtx: { input: unknown; request: Request }) => {
 				const db = await loadDb();
-				return listEntities(db, buildRequestContextFromRoute(routeCtx), normalizeEntityListInput(routeCtx.input));
+				return listEntities(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeEntityListInput(routeCtx.input),
+				);
 			},
 		},
 		"v1/entities/get": {
@@ -142,6 +148,16 @@ export default definePlugin({
 					db,
 					buildRequestContextFromRoute(routeCtx),
 					normalizeDraftUpdateInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/entities/draft/autosave": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return autosaveDraft(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeDraftAutosaveInput(routeCtx.input),
 				);
 			},
 		},
@@ -243,10 +259,10 @@ export default definePlugin({
 			},
 		},
 		"v1/exports/reports": {
-				handler: async (
-					routeCtx: { input: unknown; request: Request },
-					_ctx: ExportStorageContext & { plugin: { id: string } },
-				) => ({ reports: listAvailableReports(buildRequestContextFromRoute(routeCtx)) }),
+			handler: async (
+				routeCtx: { input: unknown; request: Request },
+				_ctx: ExportStorageContext & { plugin: { id: string } },
+			) => ({ reports: listAvailableReports(buildRequestContextFromRoute(routeCtx)) }),
 		},
 		"v1/exports/jobs": {
 			handler: async (
@@ -258,7 +274,11 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const status = typeof input.status === "string" ? input.status : undefined;
 				return {
-					items: await listExportJobs({ ...(ctx as ExportStorageContext), db }, requestContext, status as never),
+					items: await listExportJobs(
+						{ ...(ctx as ExportStorageContext), db },
+						requestContext,
+						status as never,
+					),
 				};
 			},
 		},
@@ -332,12 +352,10 @@ export default definePlugin({
 				ctx: DocumentStorageContext & { plugin: { id: string } },
 			) => {
 				const db = await loadDb();
-				return (
-				generateUploadUrl(
+				return generateUploadUrl(
 					normalizeUploadInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
 					{ ...(ctx as DocumentStorageContext), db },
-				)
 				);
 			},
 		},
@@ -347,12 +365,10 @@ export default definePlugin({
 				ctx: DocumentStorageContext & { plugin: { id: string } },
 			) => {
 				const db = await loadDb();
-				return (
-				completeUpload(
+				return completeUpload(
 					normalizeCompleteUploadInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
 					{ ...(ctx as DocumentStorageContext), db },
-				)
 				);
 			},
 		},
@@ -398,12 +414,10 @@ export default definePlugin({
 				ctx: DocumentStorageContext & { plugin: { id: string } },
 			) => {
 				const db = await loadDb();
-				return (
-				verifyDocument(
+				return verifyDocument(
 					{ ...(ctx as DocumentStorageContext), db },
 					normalizeVerificationInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-				)
 				);
 			},
 		},
@@ -413,12 +427,10 @@ export default definePlugin({
 				ctx: DocumentStorageContext & { plugin: { id: string } },
 			) => {
 				const db = await loadDb();
-				return (
-				replaceDocument(
+				return replaceDocument(
 					{ ...(ctx as DocumentStorageContext), db },
 					normalizeReplacementInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-				)
 				);
 			},
 		},
@@ -539,12 +551,7 @@ export default definePlugin({
 				if (!reason) throw new Error("SETTINGS_UPDATE_REASON_REQUIRED");
 				const db = await loadDb();
 				const { reason: _, ...settingsInput } = input;
-				return updateSettings(
-					db,
-					buildRequestContextFromRoute(routeCtx),
-					settingsInput,
-					reason,
-				);
+				return updateSettings(db, buildRequestContextFromRoute(routeCtx), settingsInput, reason);
 			},
 		},
 	},
@@ -735,8 +742,7 @@ function normalizeEntityListInput(value: unknown) {
 		sensitivityLevel:
 			typeof input.sensitivityLevel === "string" ? input.sensitivityLevel : undefined,
 		sourceInput: typeof input.sourceInput === "string" ? input.sourceInput : undefined,
-		duplicateStatus:
-			typeof input.duplicateStatus === "string" ? input.duplicateStatus : undefined,
+		duplicateStatus: typeof input.duplicateStatus === "string" ? input.duplicateStatus : undefined,
 		limit: typeof input.limit === "number" ? input.limit : undefined,
 	};
 }
@@ -771,11 +777,19 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 function normalizeDraftCreateInput(value: unknown): DraftCreateInput {
 	const input = asRecord(value);
 	const objectTypeCode = typeof input.objectTypeCode === "string" ? input.objectTypeCode : "";
-	const objectSubtypeCode = typeof input.objectSubtypeCode === "string" ? input.objectSubtypeCode : "";
+	const objectSubtypeCode =
+		typeof input.objectSubtypeCode === "string" ? input.objectSubtypeCode : "";
 	const entityKind = typeof input.entityKind === "string" ? input.entityKind : "";
 	const displayName = typeof input.displayName === "string" ? input.displayName : "";
-	const officialVillageCode = typeof input.officialVillageCode === "string" ? input.officialVillageCode : "";
-	if (!objectTypeCode || !objectSubtypeCode || !entityKind || !displayName || !officialVillageCode) {
+	const officialVillageCode =
+		typeof input.officialVillageCode === "string" ? input.officialVillageCode : "";
+	if (
+		!objectTypeCode ||
+		!objectSubtypeCode ||
+		!entityKind ||
+		!displayName ||
+		!officialVillageCode
+	) {
 		throw new Error("DRAFT_CREATE_INPUT_REQUIRED");
 	}
 	return {
@@ -799,6 +813,16 @@ function normalizeDraftUpdateInput(value: unknown): DraftUpdateInput {
 		entityId,
 		section,
 		patch: isPlainRecord(input.patch) ? input.patch : {},
+	};
+}
+
+function normalizeDraftAutosaveInput(value: unknown): DraftAutosaveInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	if (!entityId) throw new Error("DRAFT_AUTOSAVE_INPUT_REQUIRED");
+	return {
+		entityId,
+		data: isPlainRecord(input.data) ? input.data : {},
 	};
 }
 
@@ -826,7 +850,8 @@ function normalizeVerificationQueueFilters(value: unknown): VerificationQueueFil
 	return {
 		status: typeof input.status === "string" ? input.status : undefined,
 		districtCode: typeof input.districtCode === "string" ? input.districtCode : undefined,
-		officialVillageCode: typeof input.officialVillageCode === "string" ? input.officialVillageCode : undefined,
+		officialVillageCode:
+			typeof input.officialVillageCode === "string" ? input.officialVillageCode : undefined,
 		limit: typeof input.limit === "number" ? input.limit : undefined,
 		cursor: typeof input.cursor === "string" ? input.cursor : undefined,
 	};
@@ -861,10 +886,12 @@ function normalizeSettingsUpdateInput(value: unknown): SettingsUpdateInput & { r
 	return {
 		publicEnabled: typeof input.publicEnabled === "boolean" ? input.publicEnabled : undefined,
 		publicTitle: typeof input.publicTitle === "string" ? input.publicTitle : undefined,
-		publicDescription: typeof input.publicDescription === "string" ? input.publicDescription : undefined,
+		publicDescription:
+			typeof input.publicDescription === "string" ? input.publicDescription : undefined,
 		dataScopeNote: typeof input.dataScopeNote === "string" ? input.dataScopeNote : undefined,
 		officialContact: typeof input.officialContact === "string" ? input.officialContact : undefined,
-		smallCellThreshold: typeof input.smallCellThreshold === "number" ? input.smallCellThreshold : undefined,
+		smallCellThreshold:
+			typeof input.smallCellThreshold === "number" ? input.smallCellThreshold : undefined,
 		reason: typeof input.reason === "string" ? input.reason : "",
 	};
 }

@@ -172,7 +172,7 @@ export async function getPublicSummary(): Promise<SikesraPublicSummary> {
 			}>`
 				SELECT
 					COUNT(*) AS total_entities,
-					COUNT(*) AS verified_entities,
+					COUNT(CASE WHEN status_verification = 'verified' THEN 1 END) AS verified_entities,
 					COUNT(DISTINCT official_village_code) AS active_villages,
 					MAX(updated_at) AS latest_update_at
 				FROM awcms_sikesra_entities
@@ -323,7 +323,7 @@ function isSafePublicFallbackError(error: unknown): boolean {
 		message.includes("no such table") ||
 		((message.includes("does not exist") || message.includes("doesn't exist")) &&
 			(message.includes("relation") || message.includes("table"))) ||
-			message.includes("database not configured") ||
-			message.includes("cannot find package 'emdash/runtime'")
+		message.includes("database not configured") ||
+		message.includes("cannot find package 'emdash/runtime'")
 	);
 }

@@ -377,11 +377,11 @@ AWCMS-Micro provides the governed implementation layer.
 
 Use three conceptual repository roles:
 
-| Repository Type | Purpose | Example |
-| --- | --- | --- |
-| Upstream reference | Original EmDash source | `emdash-cms/emdash` |
-| AWCMS-Micro base | Reusable governed implementation | `awcms-micro-standard` |
-| Website implementation | Client/site-specific website | `awcms-micro-sman2pangkalanbun` |
+| Repository Type        | Purpose                          | Example                         |
+| ---------------------- | -------------------------------- | ------------------------------- |
+| Upstream reference     | Original EmDash source           | `emdash-cms/emdash`             |
+| AWCMS-Micro base       | Reusable governed implementation | `awcms-micro-standard`          |
+| Website implementation | Client/site-specific website     | `awcms-micro-sman2pangkalanbun` |
 
 ### 7.2 Reference Repository Rule
 
@@ -501,12 +501,12 @@ Every upstream sync must answer these questions:
 
 ### 8.3 Adopt / Adapt / Delay / Reject
 
-| Decision | Meaning | Example |
-| --- | --- | --- |
-| Adopt | Use upstream behavior as-is | Admin route improvement |
-| Adapt | Wrap upstream behavior with AWCMS layer | Storage path policy |
-| Delay | Wait until AWCMS layer is ready | Major plugin API change |
-| Reject | Do not use because it conflicts with governance | Unsafe incompatible pattern |
+| Decision | Meaning                                         | Example                     |
+| -------- | ----------------------------------------------- | --------------------------- |
+| Adopt    | Use upstream behavior as-is                     | Admin route improvement     |
+| Adapt    | Wrap upstream behavior with AWCMS layer         | Storage path policy         |
+| Delay    | Wait until AWCMS layer is ready                 | Major plugin API change     |
+| Reject   | Do not use because it conflicts with governance | Unsafe incompatible pattern |
 
 ### 8.4 Divergence Log
 
@@ -519,7 +519,7 @@ docs/divergence-log.md
 Required table:
 
 | Date | Area | Upstream Behavior | AWCMS-Micro Behavior | Reason | Risk | Rollback |
-| --- | --- | --- | --- | --- | --- | --- |
+| ---- | ---- | ----------------- | -------------------- | ------ | ---- | -------- |
 
 No core divergence should exist without documentation.
 
@@ -551,18 +551,18 @@ docs/compatibility-matrix.md
 
 Recommended matrix:
 
-| Area | Compatibility Target | Status | Risk | Test |
-| --- | --- | --- | --- | --- |
-| EmDash core | Latest upstream main/release | Pending | Medium | Build/test |
-| Admin UI | Manifest-driven admin remains working | Pending | High | Admin smoke test |
-| Plugins | Native plugins still load | Pending | High | Plugin load test |
-| Marketplace plugins | Sandbox/capabilities preserved | Pending | High | Marketplace install test |
-| Templates | Official templates still usable | Pending | Medium | Template seed test |
-| Storage | Local and R2/S3 storage work | Pending | High | Upload/download test |
-| Content schema | Collections and fields work | Pending | High | CRUD test |
-| Soft delete | Deleted records hidden/restorable as intended | Pending | Medium | Delete/restore test |
-| Auth | Admin login and permissions work | Pending | High | Auth flow test |
-| ABAC overlay | Does not break EmDash permissions | Pending | High | Effective access test |
+| Area                | Compatibility Target                          | Status  | Risk   | Test                     |
+| ------------------- | --------------------------------------------- | ------- | ------ | ------------------------ |
+| EmDash core         | Latest upstream main/release                  | Pending | Medium | Build/test               |
+| Admin UI            | Manifest-driven admin remains working         | Pending | High   | Admin smoke test         |
+| Plugins             | Native plugins still load                     | Pending | High   | Plugin load test         |
+| Marketplace plugins | Sandbox/capabilities preserved                | Pending | High   | Marketplace install test |
+| Templates           | Official templates still usable               | Pending | Medium | Template seed test       |
+| Storage             | Local and R2/S3 storage work                  | Pending | High   | Upload/download test     |
+| Content schema      | Collections and fields work                   | Pending | High   | CRUD test                |
+| Soft delete         | Deleted records hidden/restorable as intended | Pending | Medium | Delete/restore test      |
+| Auth                | Admin login and permissions work              | Pending | High   | Auth flow test           |
+| ABAC overlay        | Does not break EmDash permissions             | Pending | High   | Effective access test    |
 
 ---
 
@@ -600,13 +600,13 @@ Prefer using upstream EmDash first-party plugins (e.g., `@emdash-cms/plugin-seo`
 
 ### 10.2 AWCMS-Micro Plugin Categories
 
-| Category | Purpose | Example |
-| --- | --- | --- |
-| Core website plugins | Standard website needs | Documents, Forms, Announcements |
-| Governance plugins | Security and admin governance | Audit Log, ABAC Matrix |
-| Integration plugins | External systems | Webhook, CRM, WhatsApp, Email |
-| Public-service plugins | Domain-specific use cases | Kelulusan, Secure Document Lookup |
-| Future business plugins | ERP-like growth | CRM, Inventory, Procurement |
+| Category                | Purpose                       | Example                           |
+| ----------------------- | ----------------------------- | --------------------------------- |
+| Core website plugins    | Standard website needs        | Documents, Forms, Announcements   |
+| Governance plugins      | Security and admin governance | Audit Log, ABAC Matrix            |
+| Integration plugins     | External systems              | Webhook, CRM, WhatsApp, Email     |
+| Public-service plugins  | Domain-specific use cases     | Kelulusan, Secure Document Lookup |
+| Future business plugins | ERP-like growth               | CRM, Inventory, Procurement       |
 
 ### 10.3 Plugin Review Policy
 
@@ -769,15 +769,15 @@ deleted_at timestamptz null
 
 Recommended delete policy:
 
-| Data Type | Delete Strategy |
-| --- | --- |
-| EmDash content entries | Use EmDash behavior |
-| AWCMS module records | Soft delete with `deleted_at` |
-| Media metadata | Soft delete/hide metadata first |
-| R2/S3 object | Delete only through controlled cleanup |
-| Audit logs | Do not delete through normal admin UI |
-| Permission policies | Disable or soft delete with audit event |
-| ERP-like records | Void/reversal/soft delete depending on business rule |
+| Data Type              | Delete Strategy                                      |
+| ---------------------- | ---------------------------------------------------- |
+| EmDash content entries | Use EmDash behavior                                  |
+| AWCMS module records   | Soft delete with `deleted_at`                        |
+| Media metadata         | Soft delete/hide metadata first                      |
+| R2/S3 object           | Delete only through controlled cleanup               |
+| Audit logs             | Do not delete through normal admin UI                |
+| Permission policies    | Disable or soft delete with audit event              |
+| ERP-like records       | Void/reversal/soft delete depending on business rule |
 
 ---
 

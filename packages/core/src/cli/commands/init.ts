@@ -9,6 +9,7 @@ import { resolve } from "node:path";
 
 import { defineCommand } from "citty";
 import consola from "consola";
+import { sql } from "kysely";
 
 import { createDatabase } from "../../database/connection.js";
 import { runMigrations } from "../../database/migrations/runner.js";
@@ -44,10 +45,10 @@ async function readPackageJson(cwd: string): Promise<PackageJson | null> {
 }
 
 async function runSqlFile(db: ReturnType<typeof createDatabase>, filePath: string): Promise<void> {
-	const sql = await readFile(filePath, "utf-8");
+	const sqlContent = await readFile(filePath, "utf-8");
 
 	// Remove single-line comments
-	const withoutComments = sql
+	const withoutComments = sqlContent
 		.split("\n")
 		.filter((line) => !line.trim().startsWith("--"))
 		.join("\n");
@@ -59,11 +60,7 @@ async function runSqlFile(db: ReturnType<typeof createDatabase>, filePath: strin
 		.filter((s) => s.length > 0);
 
 	for (const statement of statements) {
-		await db.executeQuery({
-			sql: statement,
-			parameters: [],
-			query: { kind: "RawNode", sqlFragments: [statement], parameters: [] },
-		});
+		await sql.raw(statement).execute(db);
 	}
 }
 

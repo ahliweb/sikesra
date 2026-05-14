@@ -191,17 +191,17 @@ import { github } from "emdash/auth/providers/github";
 import { google } from "emdash/auth/providers/google";
 
 emdash({
-  auth: {
-    selfSignup: {
-      domains: ["example.com"],
-      defaultRole: 20, // Contributor
-    },
-    session: {
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      sliding: true,
-    },
-  },
-  authProviders: [github(), google()],
+	auth: {
+		selfSignup: {
+			domains: ["example.com"],
+			defaultRole: 20, // Contributor
+		},
+		session: {
+			maxAge: 30 * 24 * 60 * 60, // 30 days
+			sliding: true,
+		},
+	},
+	authProviders: [github(), google()],
 });
 ```
 
@@ -343,20 +343,20 @@ Examples:
 
 AWCMS-Micro should model these dimensions.
 
-| Dimension | Meaning | Example |
-| --- | --- | --- |
-| Subject | Who performs the action | user, role, group, service account |
-| Action | What is being done | read, create, update, delete, publish, export |
-| Resource | What is being accessed | post, document, media, form submission |
-| Tenant | Which tenant owns the data | default, future tenant A |
-| Site | Which site owns the data | main, school-site, landing-site |
-| Module | Which module controls the resource | documents, forms, mobile-api |
-| Ownership | Relation between subject and resource | own, assigned, any |
-| Status | Lifecycle state | draft, published, deleted |
-| Classification | Sensitivity | public, internal, restricted, private, sensitive |
-| Time | Temporal condition | office hours, deadline |
-| Environment | Runtime environment | local, staging, production |
-| Risk | Risk level | low, medium, high, critical |
+| Dimension      | Meaning                               | Example                                          |
+| -------------- | ------------------------------------- | ------------------------------------------------ |
+| Subject        | Who performs the action               | user, role, group, service account               |
+| Action         | What is being done                    | read, create, update, delete, publish, export    |
+| Resource       | What is being accessed                | post, document, media, form submission           |
+| Tenant         | Which tenant owns the data            | default, future tenant A                         |
+| Site           | Which site owns the data              | main, school-site, landing-site                  |
+| Module         | Which module controls the resource    | documents, forms, mobile-api                     |
+| Ownership      | Relation between subject and resource | own, assigned, any                               |
+| Status         | Lifecycle state                       | draft, published, deleted                        |
+| Classification | Sensitivity                           | public, internal, restricted, private, sensitive |
+| Time           | Temporal condition                    | office hours, deadline                           |
+| Environment    | Runtime environment                   | local, staging, production                       |
+| Risk           | Risk level                            | low, medium, high, critical                      |
 
 ---
 
@@ -503,20 +503,16 @@ is_plugin_runtime
 
 ```json
 {
-  "type": "user",
-  "id": "user_123",
-  "tenantId": "00000000-0000-0000-0000-000000000001",
-  "siteIds": ["main"],
-  "roles": ["editor"],
-  "permissions": [
-    "awcms:document:read",
-    "awcms:document:create",
-    "awcms:document:update"
-  ],
-  "attributes": {
-    "department": "content",
-    "clearanceLevel": "internal"
-  }
+	"type": "user",
+	"id": "user_123",
+	"tenantId": "00000000-0000-0000-0000-000000000001",
+	"siteIds": ["main"],
+	"roles": ["editor"],
+	"permissions": ["awcms:document:read", "awcms:document:create", "awcms:document:update"],
+	"attributes": {
+		"department": "content",
+		"clearanceLevel": "internal"
+	}
 }
 ```
 
@@ -569,16 +565,16 @@ metadata
 
 ```json
 {
-  "type": "document",
-  "id": "doc_123",
-  "tenantId": "00000000-0000-0000-0000-000000000001",
-  "siteId": "main",
-  "moduleId": "documents",
-  "ownerUserId": "user_456",
-  "classification": "private",
-  "publishStatus": "published",
-  "visibility": "private",
-  "deletedAt": null
+	"type": "document",
+	"id": "doc_123",
+	"tenantId": "00000000-0000-0000-0000-000000000001",
+	"siteId": "main",
+	"moduleId": "documents",
+	"ownerUserId": "user_456",
+	"classification": "private",
+	"publishStatus": "published",
+	"visibility": "private",
+	"deletedAt": null
 }
 ```
 
@@ -624,23 +620,23 @@ deny
 
 ```json
 {
-  "id": "policy_documents_editor_update_own",
-  "effect": "allow",
-  "subject": {
-    "roles": ["editor"]
-  },
-  "actions": ["awcms:document:update"],
-  "resource": {
-    "type": "document",
-    "classification": ["public", "internal"]
-  },
-  "conditions": {
-    "tenantMatch": true,
-    "siteMatch": true,
-    "ownership": "own_or_created_by"
-  },
-  "priority": 100,
-  "enabled": true
+	"id": "policy_documents_editor_update_own",
+	"effect": "allow",
+	"subject": {
+		"roles": ["editor"]
+	},
+	"actions": ["awcms:document:update"],
+	"resource": {
+		"type": "document",
+		"classification": ["public", "internal"]
+	},
+	"conditions": {
+		"tenantMatch": true,
+		"siteMatch": true,
+		"ownership": "own_or_created_by"
+	},
+	"priority": 100,
+	"enabled": true
 }
 ```
 
@@ -648,21 +644,21 @@ deny
 
 ```json
 {
-  "id": "deny_editor_private_document_download",
-  "effect": "deny",
-  "subject": {
-    "roles": ["editor"]
-  },
-  "actions": ["awcms:document:private_download"],
-  "resource": {
-    "type": "document",
-    "classification": ["private", "sensitive"]
-  },
-  "conditions": {
-    "environment": "production"
-  },
-  "priority": 10,
-  "enabled": true
+	"id": "deny_editor_private_document_download",
+	"effect": "deny",
+	"subject": {
+		"roles": ["editor"]
+	},
+	"actions": ["awcms:document:private_download"],
+	"resource": {
+		"type": "document",
+		"classification": ["private", "sensitive"]
+	},
+	"conditions": {
+		"environment": "production"
+	},
+	"priority": 10,
+	"enabled": true
 }
 ```
 
@@ -882,10 +878,10 @@ Can subject perform action on resource in context?
 
 ```ts
 type AccessCheckInput = {
-  subject: SubjectContext;
-  action: string;
-  resource: ResourceContext;
-  context: AWCMSRequestContext;
+	subject: SubjectContext;
+	action: string;
+	resource: ResourceContext;
+	context: AWCMSRequestContext;
 };
 ```
 
@@ -893,12 +889,12 @@ type AccessCheckInput = {
 
 ```ts
 type AccessDecision = {
-  allowed: boolean;
-  decision: "allow" | "deny";
-  reasonCode: string;
-  matchedPolicies: string[];
-  missingPermissions?: string[];
-  metadata?: Record<string, unknown>;
+	allowed: boolean;
+	decision: "allow" | "deny";
+	reasonCode: string;
+	matchedPolicies: string[];
+	missingPermissions?: string[];
+	metadata?: Record<string, unknown>;
 };
 ```
 
@@ -928,43 +924,46 @@ DENY_RISK_POLICY
 
 ```ts
 async function canAccess(input: AccessCheckInput): Promise<AccessDecision> {
-  const { subject, action, resource, context } = input;
+	const { subject, action, resource, context } = input;
 
-  if (!subject) {
-    return deny("DENY_MISSING_SUBJECT");
-  }
+	if (!subject) {
+		return deny("DENY_MISSING_SUBJECT");
+	}
 
-  if (resource.deletedAt && !action.endsWith(":restore")) {
-    return deny("DENY_RESOURCE_DELETED");
-  }
+	if (resource.deletedAt && !action.endsWith(":restore")) {
+		return deny("DENY_RESOURCE_DELETED");
+	}
 
-  if (resource.tenantId !== context.tenantId) {
-    return deny("DENY_TENANT_MISMATCH");
-  }
+	if (resource.tenantId !== context.tenantId) {
+		return deny("DENY_TENANT_MISMATCH");
+	}
 
-  if (resource.siteId && context.siteId && resource.siteId !== context.siteId) {
-    return deny("DENY_SITE_MISMATCH");
-  }
+	if (resource.siteId && context.siteId && resource.siteId !== context.siteId) {
+		return deny("DENY_SITE_MISMATCH");
+	}
 
-  const hasBasePermission = subject.permissions.includes(action);
-  if (!hasBasePermission) {
-    return deny("DENY_MISSING_PERMISSION");
-  }
+	const hasBasePermission = subject.permissions.includes(action);
+	if (!hasBasePermission) {
+		return deny("DENY_MISSING_PERMISSION");
+	}
 
-  const policies = await loadActivePolicies(context.tenantId, context.siteId);
-  const matched = matchPolicies(policies, subject, action, resource, context);
+	const policies = await loadActivePolicies(context.tenantId, context.siteId);
+	const matched = matchPolicies(policies, subject, action, resource, context);
 
-  const explicitDeny = matched.find((policy) => policy.effect === "deny");
-  if (explicitDeny) {
-    return deny("DENY_EXPLICIT_POLICY", [explicitDeny.id]);
-  }
+	const explicitDeny = matched.find((policy) => policy.effect === "deny");
+	if (explicitDeny) {
+		return deny("DENY_EXPLICIT_POLICY", [explicitDeny.id]);
+	}
 
-  const explicitAllow = matched.find((policy) => policy.effect === "allow");
-  if (explicitAllow) {
-    return allow("ALLOW_EXPLICIT_POLICY", matched.map((policy) => policy.id));
-  }
+	const explicitAllow = matched.find((policy) => policy.effect === "allow");
+	if (explicitAllow) {
+		return allow(
+			"ALLOW_EXPLICIT_POLICY",
+			matched.map((policy) => policy.id),
+		);
+	}
 
-  return deny("DENY_DEFAULT");
+	return deny("DENY_DEFAULT");
 }
 ```
 
@@ -1124,13 +1123,13 @@ Configure
 
 Example:
 
-| Resource | Read | Create | Update Own | Update Any | Delete | Restore | Publish | Export |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Pages | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Posts | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Media | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Documents | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Form Submissions | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Resource         | Read | Create | Update Own | Update Any | Delete | Restore | Publish | Export |
+| ---------------- | ---: | -----: | ---------: | ---------: | -----: | ------: | ------: | -----: |
+| Pages            |   ✅ |     ✅ |         ✅ |         ❌ |     ❌ |      ❌ |      ❌ |     ❌ |
+| Posts            |   ✅ |     ✅ |         ✅ |         ✅ |     ❌ |      ❌ |      ✅ |     ❌ |
+| Media            |   ✅ |     ✅ |         ❌ |         ✅ |     ❌ |      ❌ |      ❌ |     ❌ |
+| Documents        |   ✅ |     ✅ |         ✅ |         ❌ |     ❌ |      ❌ |      ✅ |     ❌ |
+| Form Submissions |   ❌ |     ❌ |         ❌ |         ❌ |     ❌ |      ❌ |      ❌ |     ❌ |
 
 ### 15.5 ABAC Rules Screen
 
@@ -1300,18 +1299,18 @@ GET    /_emdash/api/plugins/abac-matrix/v1/audit
 
 ### 17.1 Required Permissions for API Routes
 
-| Route | Required Permission |
-| --- | --- |
-| Read roles | `awcms:policy:read` |
-| Create/update roles | `awcms:policy:write` |
-| Read permissions | `awcms:permission:read` |
-| Change matrix | `awcms:permission:assign` |
-| Read policies | `awcms:policy:read` |
-| Write policies | `awcms:policy:write` |
-| Evaluate access | `awcms:policy:test` |
-| Export policies | `awcms:policy:export` |
-| Import policies | `awcms:policy:import` |
-| Read audit | `awcms:audit:read` |
+| Route               | Required Permission       |
+| ------------------- | ------------------------- |
+| Read roles          | `awcms:policy:read`       |
+| Create/update roles | `awcms:policy:write`      |
+| Read permissions    | `awcms:permission:read`   |
+| Change matrix       | `awcms:permission:assign` |
+| Read policies       | `awcms:policy:read`       |
+| Write policies      | `awcms:policy:write`      |
+| Evaluate access     | `awcms:policy:test`       |
+| Export policies     | `awcms:policy:export`     |
+| Import policies     | `awcms:policy:import`     |
+| Read audit          | `awcms:audit:read`        |
 
 ---
 
@@ -1343,15 +1342,15 @@ State-changing routes must not use GET.
 
 ```json
 {
-  "format": "awcms-abac-policy-set",
-  "version": "1.0",
-  "exportedAt": "2026-05-05T00:00:00Z",
-  "tenantCode": "default",
-  "siteCode": "main",
-  "policySets": [],
-  "roles": [],
-  "permissions": [],
-  "policies": []
+	"format": "awcms-abac-policy-set",
+	"version": "1.0",
+	"exportedAt": "2026-05-05T00:00:00Z",
+	"tenantCode": "default",
+	"siteCode": "main",
+	"policySets": [],
+	"roles": [],
+	"permissions": [],
+	"policies": []
 }
 ```
 
@@ -1433,18 +1432,18 @@ Policy and permission changes must always be audited.
 
 Recommended default roles:
 
-| Role | Scope | Description |
-| --- | --- | --- |
-| owner | tenant/platform | Full control, cannot be fully removed accidentally |
-| super_admin | platform/tenant | Broad administrative access |
-| admin | site/tenant | Manage site content and users |
-| editor | site/content | Manage content and documents |
-| author | content | Create and edit own content |
-| auditor | tenant/site | Read-only logs and reports |
-| member | authenticated | Limited authenticated access |
-| subscriber | public/authenticated | Read-only member content |
-| public | anonymous | Public published content only |
-| no_access | none | Explicitly blocked |
+| Role        | Scope                | Description                                        |
+| ----------- | -------------------- | -------------------------------------------------- |
+| owner       | tenant/platform      | Full control, cannot be fully removed accidentally |
+| super_admin | platform/tenant      | Broad administrative access                        |
+| admin       | site/tenant          | Manage site content and users                      |
+| editor      | site/content         | Manage content and documents                       |
+| author      | content              | Create and edit own content                        |
+| auditor     | tenant/site          | Read-only logs and reports                         |
+| member      | authenticated        | Limited authenticated access                       |
+| subscriber  | public/authenticated | Read-only member content                           |
+| public      | anonymous            | Public published content only                      |
+| no_access   | none                 | Explicitly blocked                                 |
 
 ### 21.1 Role Rule
 
@@ -2002,9 +2001,11 @@ allow owner awcms:module:install
 
 ```md
 ## Goal
+
 Create the AWCMS-Micro permission registry standard.
 
 ## Tasks
+
 - Define permission namespace
 - Define core permissions
 - Define module permission registration
@@ -2012,11 +2013,13 @@ Create the AWCMS-Micro permission registry standard.
 - Add documentation and type/interface placeholders
 
 ## Validation
+
 - Permissions are namespaced
 - No random route-level permission strings
 - Module manifests can declare permissions
 
 ## Rollback
+
 Revert registry documentation/code.
 ```
 
@@ -2024,9 +2027,11 @@ Revert registry documentation/code.
 
 ```md
 ## Goal
+
 Define the ABAC policy database model.
 
 ## Tasks
+
 - Define roles table
 - Define permissions table
 - Define role_permissions table
@@ -2036,11 +2041,13 @@ Define the ABAC policy database model.
 - Define access decision log option
 
 ## Validation
+
 - Tables are tenant-ready
 - Soft delete columns exist
 - Default deny model is documented
 
 ## Rollback
+
 Revert migration or disable ABAC module.
 ```
 
@@ -2048,9 +2055,11 @@ Revert migration or disable ABAC module.
 
 ```md
 ## Goal
+
 Create deterministic ABAC policy evaluator service.
 
 ## Tasks
+
 - Define evaluator input
 - Define evaluator output
 - Implement deny-by-default
@@ -2060,11 +2069,13 @@ Create deterministic ABAC policy evaluator service.
 - Add reason codes
 
 ## Validation
+
 - Unit tests cover allow/deny cases
 - Explicit deny overrides allow
 - Tenant mismatch is denied
 
 ## Rollback
+
 Disable ABAC evaluator feature flag and fall back to existing permission behavior.
 ```
 
@@ -2072,9 +2083,11 @@ Disable ABAC evaluator feature flag and fall back to existing permission behavio
 
 ```md
 ## Goal
+
 Create native EmDash plugin skeleton for ABAC Matrix GUI.
 
 ## Tasks
+
 - Create plugin package
 - Add module manifest
 - Add admin route placeholder
@@ -2083,11 +2096,13 @@ Create native EmDash plugin skeleton for ABAC Matrix GUI.
 - Add screen plan
 
 ## Validation
+
 - Plugin loads
 - Admin page placeholder opens
 - Permission checks protect route
 
 ## Rollback
+
 Disable plugin in module registry.
 ```
 
@@ -2095,9 +2110,11 @@ Disable plugin in module registry.
 
 ```md
 ## Goal
+
 Allow admins to simulate access decisions.
 
 ## Tasks
+
 - Add evaluate API endpoint
 - Add preview UI
 - Show allow/deny
@@ -2106,11 +2123,13 @@ Allow admins to simulate access decisions.
 - Show missing permissions
 
 ## Validation
+
 - Owner can test policy
 - Unauthorized user cannot test policy
 - Result is deterministic
 
 ## Rollback
+
 Disable preview endpoint/UI.
 ```
 
@@ -2118,9 +2137,11 @@ Disable preview endpoint/UI.
 
 ```md
 ## Goal
+
 Audit all permission and policy changes.
 
 ## Tasks
+
 - Define audit event names
 - Add audit writer integration
 - Audit role changes
@@ -2129,11 +2150,13 @@ Audit all permission and policy changes.
 - Audit imports/exports
 
 ## Validation
+
 - Policy update creates audit event
 - Permission assignment creates audit event
 - Import/export creates audit event
 
 ## Rollback
+
 Disable policy changes until audit integration is fixed.
 ```
 

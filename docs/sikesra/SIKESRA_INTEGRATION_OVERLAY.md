@@ -16,47 +16,47 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 
 ### Fully Implemented
 
-| Area | Details |
-|------|---------|
-| Plugin descriptor | `sikesraPlugin()` with admin pages (`/`, `/operations`), widget (`overview`), storage config |
-| Route handlers | 28 named routes defined in `sandbox-entry.ts` |
-| Region services | Official and local region list services with tenant/site filtering and region-scope enforcement |
-| Entity registry APIs | D1-backed entity list/detail services with masking, access flags, and region-safe exclusion |
-| Document workflow | Upload URL gen, upload complete, list, download w/ classification checks, verify, replace -- all with audit |
-| Import workflow | CSV parse, batch create, row staging, column mapping + validation, duplicate detection, promote to entities, rollback |
-| Export workflow | 3 report types (entity_summary, verification_status, audit_evidence), job lifecycle, CSV generation, permission filtering |
-| Security: Permissions | 36 permissions under `awcms:sikesra:*` namespace (`src/security/permissions.ts`) |
-| Security: ABAC engine | Full policy evaluation with 11 operators, deny precedence, region scoping (`src/security/abac.ts`) |
-| Security: Masking | NIK, phone, name, email, address, disability, guardian, document metadata, audit before/after (`src/security/masking.ts`) |
-| Security: Route guards | Permission checks + region scope enforcement (`src/security/route-guard.ts`) |
-| Security: Audit | 28 audit action types, D1 write helper, high-risk action tracking (`src/security/audit.ts`) |
-| Storage config | 6 namespaces (documents, exportJobs, importBatches, importRows, promotedEntities, auditEntries) |
-| D1 schema artifacts | 12 plugin-owned SQL migration files plus baseline seeds, sourced from the 34-table preserved backup in `update-backup/d1/` |
-| Infrastructure | Worker wrapper template, wrangler config, postbuild script |
-| Demo integration | Plugin registered in `demos/plugins-demo/astro.config.mjs`, public page at `/sikesra` |
-| Scripts | `sikesra-d1-overlay.mjs` (inventory/restore), `sikesra-smoke-admin-route.mjs`, `sikesra-postbuild.mjs` |
-| Tests | 5 test files covering plugin descriptor, document lifecycle, import, export, and security |
+| Area                   | Details                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Plugin descriptor      | `sikesraPlugin()` with admin pages (`/`, `/operations`), widget (`overview`), storage config                               |
+| Route handlers         | 28 named routes defined in `sandbox-entry.ts`                                                                              |
+| Region services        | Official and local region list services with tenant/site filtering and region-scope enforcement                            |
+| Entity registry APIs   | D1-backed entity list/detail services with masking, access flags, and region-safe exclusion                                |
+| Document workflow      | Upload URL gen, upload complete, list, download w/ classification checks, verify, replace -- all with audit                |
+| Import workflow        | CSV parse, batch create, row staging, column mapping + validation, duplicate detection, promote to entities, rollback      |
+| Export workflow        | 3 report types (entity_summary, verification_status, audit_evidence), job lifecycle, CSV generation, permission filtering  |
+| Security: Permissions  | 36 permissions under `awcms:sikesra:*` namespace (`src/security/permissions.ts`)                                           |
+| Security: ABAC engine  | Full policy evaluation with 11 operators, deny precedence, region scoping (`src/security/abac.ts`)                         |
+| Security: Masking      | NIK, phone, name, email, address, disability, guardian, document metadata, audit before/after (`src/security/masking.ts`)  |
+| Security: Route guards | Permission checks + region scope enforcement (`src/security/route-guard.ts`)                                               |
+| Security: Audit        | 28 audit action types, D1 write helper, high-risk action tracking (`src/security/audit.ts`)                                |
+| Storage config         | 6 namespaces (documents, exportJobs, importBatches, importRows, promotedEntities, auditEntries)                            |
+| D1 schema artifacts    | 12 plugin-owned SQL migration files plus baseline seeds, sourced from the 34-table preserved backup in `update-backup/d1/` |
+| Infrastructure         | Worker wrapper template, wrangler config, postbuild script                                                                 |
+| Demo integration       | Plugin registered in `demos/plugins-demo/astro.config.mjs`, public page at `/sikesra`                                      |
+| Scripts                | `sikesra-d1-overlay.mjs` (inventory/restore), `sikesra-smoke-admin-route.mjs`, `sikesra-postbuild.mjs`                     |
+| Tests                  | 5 test files covering plugin descriptor, document lifecycle, import, export, and security                                  |
 
 ### Placeholder / Needs Data Layer Connection
 
-| Area | Current State | Next Step |
-|------|---------------|-----------|
+| Area                  | Current State                                                                                                                                                                                                                                | Next Step                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Public data endpoints | `public/metadata`, `public/filters`, and `public/summary` now query ambient D1 data through `emdash/runtime` when the host runtime is available, and fall back to the safe placeholder envelope when the schema is missing or not configured | Extend the aggregate query layer as entity, region, and settings features land |
-| Admin UI content | `buildAdminBlocks()` and `buildAdminWidget()` return static "restoration in progress" text | Build data-driven admin pages with live KPIs |
-| `v1/status` | Returns `{ status: "rebuild-pending" }` | Update to reflect actual system health |
-| Request context | Trusted plugin request context is now injected from the host plugin API route, but region/tenant/site mapping still uses the current default AWCMS baseline | Bridge to richer host tenancy and scoped-role data when available |
+| Admin UI content      | `buildAdminBlocks()` and `buildAdminWidget()` return static "restoration in progress" text                                                                                                                                                   | Build data-driven admin pages with live KPIs                                   |
+| `v1/status`           | Returns `{ status: "rebuild-pending" }`                                                                                                                                                                                                      | Update to reflect actual system health                                         |
+| Request context       | Trusted plugin request context is now injected from the host plugin API route, but region/tenant/site mapping still uses the current default AWCMS baseline                                                                                  | Bridge to richer host tenancy and scoped-role data when available              |
 
 ### Not Started
 
-| Area | Description |
-|------|-------------|
+| Area                   | Description                                                               |
+| ---------------------- | ------------------------------------------------------------------------- |
 | React admin components | Zero `.tsx` files -- all admin UI is block-based via EmDash plugin system |
-| Entity CRUD interfaces | No management UI for entities, people, attributes, regions |
-| Import/Export admin UI | No upload forms, no job management UI, no duplicate review UI |
-| Settings admin page | Settings permission exists but no UI |
-| Dashboard/charts | No visualizations, all KPIs return 0 |
-| Verification UI | No verification workflow interface |
-| Document management UI | No document browsing/management interface |
+| Entity CRUD interfaces | No management UI for entities, people, attributes, regions                |
+| Import/Export admin UI | No upload forms, no job management UI, no duplicate review UI             |
+| Settings admin page    | Settings permission exists but no UI                                      |
+| Dashboard/charts       | No visualizations, all KPIs return 0                                      |
+| Verification UI        | No verification workflow interface                                        |
+| Document management UI | No document browsing/management interface                                 |
 
 ### Backend Available For UI
 
@@ -67,6 +67,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 ## D1 Schema
 
 34 tables with `awcms_sikesra_*` prefix, covering:
+
 - Core: `entities`, `entity_people`, `entity_attributes`, `person_profiles`
 - Taxonomy: `object_types`, `object_subtypes`, `official_regions`, `local_regions`
 - Schema: `attribute_definitions`, `user_attribute_scopes`

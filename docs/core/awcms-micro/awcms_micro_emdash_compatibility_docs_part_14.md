@@ -170,13 +170,13 @@ Do not confuse these.
 
 Recommended schedule:
 
-| Repository Stage | Sync Frequency |
-| --- | --- |
-| Early development | weekly or before major feature work |
-| Active production site | monthly or before release window |
-| Security-sensitive deployment | immediately after upstream security fix |
-| Stable low-change site | monthly/quarterly with staging validation |
-| Marketplace/plugin-heavy site | before installing/updating plugins |
+| Repository Stage              | Sync Frequency                            |
+| ----------------------------- | ----------------------------------------- |
+| Early development             | weekly or before major feature work       |
+| Active production site        | monthly or before release window          |
+| Security-sensitive deployment | immediately after upstream security fix   |
+| Stable low-change site        | monthly/quarterly with staging validation |
+| Marketplace/plugin-heavy site | before installing/updating plugins        |
 
 ### 5.1 Sync Trigger Events
 
@@ -939,14 +939,17 @@ post-incident cleanup is scheduled
 
 ```md
 ## Goal
+
 Sync AWCMS-Micro with latest EmDash upstream safely.
 
 ## Upstream Reference
+
 - Repository: https://github.com/emdash-cms/emdash
 - Branch/tag/commit:
 - Official docs reviewed:
 
 ## Scope
+
 - [ ] Fetch upstream
 - [ ] Merge/rebase on sync branch
 - [ ] Resolve conflicts
@@ -959,6 +962,7 @@ Sync AWCMS-Micro with latest EmDash upstream safely.
 - [ ] Review Cloudflare impact
 
 ## Validation
+
 - [ ] pnpm install
 - [ ] pnpm lint
 - [ ] pnpm typecheck
@@ -968,15 +972,18 @@ Sync AWCMS-Micro with latest EmDash upstream safely.
 - [ ] staging deploy if code/runtime changed
 
 ## Documentation Updates
+
 - [ ] compatibility matrix updated
 - [ ] divergence log updated if needed
 - [ ] release notes updated
 - [ ] rollback notes updated
 
 ## Risks
+
 List known risks.
 
 ## Rollback Plan
+
 Explain code, database, plugin, and deployment rollback.
 ```
 
@@ -986,19 +993,23 @@ Explain code, database, plugin, and deployment rollback.
 
 ```md
 ## Summary
+
 This PR syncs AWCMS-Micro with EmDash upstream.
 
 ## Upstream Commit/Tag
+
 - Upstream source:
 - Commit/tag:
 
 ## Change Classification
+
 - [ ] Adopt
 - [ ] Adapt
 - [ ] Delay
 - [ ] Reject
 
 ## Impact Areas
+
 - [ ] Admin
 - [ ] Plugin API
 - [ ] Templates
@@ -1010,9 +1021,11 @@ This PR syncs AWCMS-Micro with EmDash upstream.
 - [ ] Cloudflare deployment
 
 ## Conflict Resolutions
+
 List conflict files and resolutions.
 
 ## Validation Results
+
 - [ ] pnpm lint
 - [ ] pnpm typecheck
 - [ ] pnpm test
@@ -1020,10 +1033,12 @@ List conflict files and resolutions.
 - [ ] e2e/staging smoke test
 
 ## Documentation
+
 - [ ] compatibility matrix updated
 - [ ] divergence log updated if needed
 
 ## Rollback Plan
+
 Explain rollback steps.
 ```
 
@@ -1183,9 +1198,11 @@ update deployment docs
 
 ```md
 ## Goal
+
 Document and configure the upstream sync policy for original EmDash.
 
 ## Tasks
+
 - [ ] Document upstream remote strategy
 - [ ] Define origin/upstream/reference remote names
 - [ ] Define sync frequency
@@ -1193,11 +1210,13 @@ Document and configure the upstream sync policy for original EmDash.
 - [ ] Define merge/rebase policy
 
 ## Acceptance Criteria
+
 - [ ] docs/upstream-sync.md updated
 - [ ] remote strategy is clear
 - [ ] force-push rules are documented
 
 ## Rollback Plan
+
 Revert documentation changes.
 ```
 
@@ -1205,19 +1224,23 @@ Revert documentation changes.
 
 ```md
 ## Goal
+
 Define how compatibility matrix must be maintained during upstream sync.
 
 ## Tasks
+
 - [ ] Define compatibility areas
 - [ ] Define status values
 - [ ] Define required columns
 - [ ] Define update rule for sync PRs
 
 ## Acceptance Criteria
+
 - [ ] docs/compatibility-matrix.md updated
 - [ ] sync PR must update matrix or explain no update
 
 ## Rollback Plan
+
 Revert matrix process changes.
 ```
 
@@ -1225,19 +1248,23 @@ Revert matrix process changes.
 
 ```md
 ## Goal
+
 Define what must be recorded in divergence log.
 
 ## Tasks
+
 - [ ] Define divergence log columns
 - [ ] Define what must be logged
 - [ ] Define what does not need logging
 - [ ] Add undocumented divergence warning
 
 ## Acceptance Criteria
+
 - [ ] docs/divergence-log.md updated
 - [ ] divergence criteria are clear
 
 ## Rollback Plan
+
 Revert divergence log process changes.
 ```
 
@@ -1245,9 +1272,11 @@ Revert divergence log process changes.
 
 ```md
 ## Goal
+
 Create validation checklist for upstream sync.
 
 ## Tasks
+
 - [ ] Add database impact checklist
 - [ ] Add plugin impact checklist
 - [ ] Add admin impact checklist
@@ -1256,10 +1285,12 @@ Create validation checklist for upstream sync.
 - [ ] Add Cloudflare impact checklist
 
 ## Acceptance Criteria
+
 - [ ] docs/upstream-sync.md includes validation checklist
 - [ ] tests and staging requirements are documented
 
 ## Rollback Plan
+
 Revert checklist changes.
 ```
 
@@ -1267,19 +1298,23 @@ Revert checklist changes.
 
 ```md
 ## Goal
+
 Create GitHub templates for upstream sync issues and PRs.
 
 ## Tasks
+
 - [ ] Add upstream sync issue template
 - [ ] Add upstream sync PR template section
 - [ ] Include compatibility and rollback sections
 - [ ] Include validation checklist
 
 ## Acceptance Criteria
+
 - [ ] templates exist or are documented
 - [ ] sync workflow is repeatable
 
 ## Rollback Plan
+
 Remove template changes.
 ```
 
@@ -1287,9 +1322,11 @@ Remove template changes.
 
 ```md
 ## Goal
+
 Document rollback procedures for bad upstream sync.
 
 ## Tasks
+
 - [ ] Define code rollback
 - [ ] Define deployment rollback
 - [ ] Define database rollback
@@ -1297,10 +1334,12 @@ Document rollback procedures for bad upstream sync.
 - [ ] Define emergency patch criteria
 
 ## Acceptance Criteria
+
 - [ ] docs/rollback.md updated
 - [ ] sync rollback is actionable
 
 ## Rollback Plan
+
 Revert rollback documentation changes.
 ```
 

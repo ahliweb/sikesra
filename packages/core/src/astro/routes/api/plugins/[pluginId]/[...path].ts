@@ -9,9 +9,9 @@
  * Private routes (the default) require authentication and appropriate permissions.
  */
 
-import type { APIRoute } from "astro";
 import type { User } from "@emdash-cms/auth";
 import { roleFromLevel } from "@emdash-cms/auth";
+import type { APIRoute } from "astro";
 
 import { requirePerm } from "#api/authorize.js";
 import { apiError, apiSuccess } from "#api/error.js";

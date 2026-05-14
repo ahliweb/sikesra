@@ -212,20 +212,20 @@ import emdash from "emdash/astro";
 import { sqlite, postgres, libsql, d1 } from "emdash/db";
 
 // SQLite (local Node.js)
-database: sqlite({ url: "file:./data.db" })
+database: sqlite({ url: "file:./data.db" });
 
 // PostgreSQL
-database: postgres({ connectionString: process.env.DATABASE_URL })
+database: postgres({ connectionString: process.env.DATABASE_URL });
 
 // libSQL (Turso)
 database: libsql({
-  url: process.env.LIBSQL_DATABASE_URL,
-  authToken: process.env.LIBSQL_AUTH_TOKEN,
-})
+	url: process.env.LIBSQL_DATABASE_URL,
+	authToken: process.env.LIBSQL_AUTH_TOKEN,
+});
 
 // Cloudflare D1 (import from @emdash-cms/cloudflare)
 import { d1 } from "@emdash-cms/cloudflare";
-database: d1({ binding: "DB" })
+database: d1({ binding: "DB" });
 ```
 
 EmDash uses Kysely for type-safe SQL queries across all supported databases.
@@ -347,15 +347,15 @@ awcms_policy_conditions
 
 ### 6.3 Table Ownership Classification
 
-| Table / Data Area | Owner | Rule |
-| --- | --- | --- |
-| EmDash internal tables | EmDash | Do not modify without upstream study |
-| EmDash content collections | EmDash | Use EmDash schema system where possible |
-| AWCMS tenant tables | AWCMS-Micro | Tenant-ready from day one |
-| AWCMS ABAC tables | AWCMS-Micro | Isolated, namespaced, tested |
-| AWCMS audit events | AWCMS-Micro | Append-only or tightly controlled |
-| AWCMS mobile sessions | AWCMS-Micro | Expiring, revocable, tenant-aware |
-| ERP-like records | Future AWCMS modules | Separate module tables |
+| Table / Data Area          | Owner                | Rule                                    |
+| -------------------------- | -------------------- | --------------------------------------- |
+| EmDash internal tables     | EmDash               | Do not modify without upstream study    |
+| EmDash content collections | EmDash               | Use EmDash schema system where possible |
+| AWCMS tenant tables        | AWCMS-Micro          | Tenant-ready from day one               |
+| AWCMS ABAC tables          | AWCMS-Micro          | Isolated, namespaced, tested            |
+| AWCMS audit events         | AWCMS-Micro          | Append-only or tightly controlled       |
+| AWCMS mobile sessions      | AWCMS-Micro          | Expiring, revocable, tenant-aware       |
+| ERP-like records           | Future AWCMS modules | Separate module tables                  |
 
 ---
 
@@ -380,12 +380,12 @@ For portability, use logical types in documentation and implementation adapters.
 
 Example portable interpretation:
 
-| Logical Type | SQLite/D1 | PostgreSQL |
-| --- | --- | --- |
-| uuid | text | uuid |
-| timestamptz | text ISO-8601 or integer epoch | timestamptz |
-| json | text JSON | jsonb |
-| boolean | integer 0/1 | boolean |
+| Logical Type | SQLite/D1                      | PostgreSQL  |
+| ------------ | ------------------------------ | ----------- |
+| uuid         | text                           | uuid        |
+| timestamptz  | text ISO-8601 or integer epoch | timestamptz |
+| json         | text JSON                      | jsonb       |
+| boolean      | integer 0/1                    | boolean     |
 
 ### 7.2 Portable SQLite/D1 Style
 
@@ -524,14 +524,14 @@ Example:
 
 ```ts
 type AWCMSContext = {
-  tenantId: string;
-  tenantCode: string;
-  siteId: string;
-  siteCode: string;
-  userId?: string;
-  roles?: string[];
-  permissions?: string[];
-  requestId: string;
+	tenantId: string;
+	tenantCode: string;
+	siteId: string;
+	siteCode: string;
+	userId?: string;
+	roles?: string[];
+	permissions?: string[];
+	requestId: string;
 };
 ```
 
@@ -541,10 +541,10 @@ In single-tenant mode:
 
 ```ts
 const defaultContext = {
-  tenantId: "00000000-0000-0000-0000-000000000001",
-  tenantCode: "default",
-  siteId: "main",
-  siteCode: "main",
+	tenantId: "00000000-0000-0000-0000-000000000001",
+	tenantCode: "default",
+	siteId: "main",
+	siteCode: "main",
 };
 ```
 
@@ -630,16 +630,16 @@ Keep audit trail.
 
 ### 11.2 Delete Behavior by Data Type
 
-| Data Type | Delete Behavior | Restore? | Notes |
-| --- | --- | --- | --- |
-| EmDash content entries | Use EmDash soft delete behavior | If supported by EmDash UI/API | Do not duplicate logic |
-| AWCMS custom records | Set `deleted_at` | Yes | Add audit event |
-| Media metadata | Set `deleted_at` or `status=deleted` | Yes | Object may remain in storage |
-| R2/S3 object | Do not immediately delete by default | Sometimes | Use lifecycle cleanup |
-| Audit events | Append-only; no normal delete | No | Retention policy only |
-| Permission policies | Disable or soft delete | Yes | Audit every change |
-| Form submissions | Soft delete or anonymize | Depends | Respect privacy/retention |
-| ERP-like records | Void/reversal preferred | Depends | Do not lose financial history |
+| Data Type              | Delete Behavior                      | Restore?                      | Notes                         |
+| ---------------------- | ------------------------------------ | ----------------------------- | ----------------------------- |
+| EmDash content entries | Use EmDash soft delete behavior      | If supported by EmDash UI/API | Do not duplicate logic        |
+| AWCMS custom records   | Set `deleted_at`                     | Yes                           | Add audit event               |
+| Media metadata         | Set `deleted_at` or `status=deleted` | Yes                           | Object may remain in storage  |
+| R2/S3 object           | Do not immediately delete by default | Sometimes                     | Use lifecycle cleanup         |
+| Audit events           | Append-only; no normal delete        | No                            | Retention policy only         |
+| Permission policies    | Disable or soft delete               | Yes                           | Audit every change            |
+| Form submissions       | Soft delete or anonymize             | Depends                       | Respect privacy/retention     |
+| ERP-like records       | Void/reversal preferred              | Depends                       | Do not lose financial history |
 
 ### 11.3 Soft Delete Query Rule
 
@@ -991,13 +991,13 @@ Every upload must validate:
 
 For standard websites:
 
-| Type | Extensions | Notes |
-| --- | --- | --- |
-| Images | jpg, jpeg, png, webp, svg | SVG must be sanitized or restricted |
-| Documents | pdf, doc, docx, xls, xlsx, ppt, pptx | Prefer PDF for public documents |
-| Archives | zip | Restrict carefully |
-| Video | mp4, webm | Use size limits |
-| Audio | mp3, wav, m4a | Use size limits |
+| Type      | Extensions                           | Notes                               |
+| --------- | ------------------------------------ | ----------------------------------- |
+| Images    | jpg, jpeg, png, webp, svg            | SVG must be sanitized or restricted |
+| Documents | pdf, doc, docx, xls, xlsx, ppt, pptx | Prefer PDF for public documents     |
+| Archives  | zip                                  | Restrict carefully                  |
+| Video     | mp4, webm                            | Use size limits                     |
+| Audio     | mp3, wav, m4a                        | Use size limits                     |
 
 ### 17.3 Dangerous File Types
 
@@ -1152,13 +1152,13 @@ Must require stronger ABAC rule, audit log, and short signed URL expiry.
 
 Recommended defaults:
 
-| File Type | Expiration |
-| --- | ---: |
-| Public media preview | no signed URL or long cache |
-| Private document download | 1–5 minutes |
-| Sensitive document download | 30–120 seconds |
-| Temporary upload URL | 5–15 minutes |
-| Admin preview | 1–5 minutes |
+| File Type                   |                  Expiration |
+| --------------------------- | --------------------------: |
+| Public media preview        | no signed URL or long cache |
+| Private document download   |                 1–5 minutes |
+| Sensitive document download |              30–120 seconds |
+| Temporary upload URL        |                5–15 minutes |
+| Admin preview               |                 1–5 minutes |
 
 ---
 
@@ -1301,25 +1301,25 @@ Database migrations are often forward-only, but operational rollback should be p
 
 ### 23.1 Backup Types
 
-| Backup Type | Purpose |
-| --- | --- |
-| Database backup | Restore records, settings, submissions, metadata |
-| R2/S3 object backup | Restore uploaded files |
-| Config backup | Restore environment and deployment settings |
-| Seed backup | Recreate initial site structure |
-| Audit export | Preserve governance records |
+| Backup Type         | Purpose                                          |
+| ------------------- | ------------------------------------------------ |
+| Database backup     | Restore records, settings, submissions, metadata |
+| R2/S3 object backup | Restore uploaded files                           |
+| Config backup       | Restore environment and deployment settings      |
+| Seed backup         | Recreate initial site structure                  |
+| Audit export        | Preserve governance records                      |
 
 ### 23.2 Backup Frequency
 
 Recommended baseline:
 
-| Site Type | Database Backup | Media Backup | Notes |
-| --- | ---: | ---: | --- |
-| Landing page | weekly | weekly | Low data volume |
-| School website | daily | daily/weekly | Protect documents and posts |
-| Government portal | daily | daily | Strong retention needed |
-| Form-heavy site | daily or more | daily | Protect submissions |
-| Secure document site | daily | daily | Sensitive data control |
+| Site Type            | Database Backup | Media Backup | Notes                       |
+| -------------------- | --------------: | -----------: | --------------------------- |
+| Landing page         |          weekly |       weekly | Low data volume             |
+| School website       |           daily | daily/weekly | Protect documents and posts |
+| Government portal    |           daily |        daily | Strong retention needed     |
+| Form-heavy site      |   daily or more |        daily | Protect submissions         |
+| Secure document site |           daily |        daily | Sensitive data control      |
 
 ### 23.3 Backup Before Migration
 
@@ -1341,15 +1341,15 @@ Before production migration:
 
 ### 24.1 Restore Scenarios
 
-| Scenario | Restore Strategy |
-| --- | --- |
-| Bad deployment | Roll back code/deployment |
-| Bad migration | Restore DB backup or corrective migration |
-| Accidental soft delete | Restore by setting `deleted_at = null` |
-| Accidental hard delete | Restore from DB backup |
-| Missing media metadata | Rebuild from storage inventory if possible |
-| Missing object in R2/S3 | Restore object backup |
-| Plugin caused data issue | Disable plugin, restore affected records |
+| Scenario                 | Restore Strategy                           |
+| ------------------------ | ------------------------------------------ |
+| Bad deployment           | Roll back code/deployment                  |
+| Bad migration            | Restore DB backup or corrective migration  |
+| Accidental soft delete   | Restore by setting `deleted_at = null`     |
+| Accidental hard delete   | Restore from DB backup                     |
+| Missing media metadata   | Rebuild from storage inventory if possible |
+| Missing object in R2/S3  | Restore object backup                      |
+| Plugin caused data issue | Disable plugin, restore affected records   |
 
 ### 24.2 Restore Test Requirement
 
@@ -1372,17 +1372,17 @@ Verify document downloads.
 
 ### 25.1 Data Retention Categories
 
-| Data | Suggested Retention |
-| --- | --- |
-| Public posts/pages | indefinite or editorial policy |
-| Draft content | project/editorial policy |
-| Form submissions | defined period based on purpose |
-| Contact leads | business/legal policy |
-| Private documents | legal/document policy |
-| Audit logs | long-term retention |
-| Upload sessions | short retention, e.g. 7–30 days |
-| Temporary signed URL records | short retention, e.g. 1–7 days |
-| Authentication sessions | expire and rotate |
+| Data                         | Suggested Retention             |
+| ---------------------------- | ------------------------------- |
+| Public posts/pages           | indefinite or editorial policy  |
+| Draft content                | project/editorial policy        |
+| Form submissions             | defined period based on purpose |
+| Contact leads                | business/legal policy           |
+| Private documents            | legal/document policy           |
+| Audit logs                   | long-term retention             |
+| Upload sessions              | short retention, e.g. 7–30 days |
+| Temporary signed URL records | short retention, e.g. 1–7 days  |
+| Authentication sessions      | expire and rotate               |
 
 ### 25.2 Privacy Rule
 
@@ -1745,9 +1745,11 @@ Minimum flows:
 
 ```md
 ## Goal
+
 Document and implement the default tenant and default site model for AWCMS-Micro custom modules.
 
 ## Tasks
+
 - Define default tenant ID/code/name
 - Define default site ID/code/name
 - Add seed plan
@@ -1755,11 +1757,13 @@ Document and implement the default tenant and default site model for AWCMS-Micro
 - Document SQLite/D1/PostgreSQL type differences
 
 ## Validation
+
 - Default tenant is documented
 - Default site is documented
 - Custom services can derive tenant context
 
 ## Rollback
+
 Revert tenant seed/config changes.
 ```
 
@@ -1767,9 +1771,11 @@ Revert tenant seed/config changes.
 
 ```md
 ## Goal
+
 Define standard columns and naming for AWCMS custom tables.
 
 ## Tasks
+
 - Add standard columns
 - Add deleted_at soft delete rule
 - Add created_by/updated_by audit references
@@ -1777,10 +1783,12 @@ Define standard columns and naming for AWCMS custom tables.
 - Add RLS-readiness guidance
 
 ## Validation
+
 - Table standards are documented
 - Future migrations can follow the standard
 
 ## Rollback
+
 Revert documentation and migration changes.
 ```
 
@@ -1788,9 +1796,11 @@ Revert documentation and migration changes.
 
 ```md
 ## Goal
+
 Design governed media metadata and upload session tables.
 
 ## Tasks
+
 - Define media_objects schema
 - Define media_upload_sessions schema
 - Define visibility/status values
@@ -1798,10 +1808,12 @@ Design governed media metadata and upload session tables.
 - Define file validation policy
 
 ## Validation
+
 - Upload flow is documented
 - Media metadata supports access control and audit
 
 ## Rollback
+
 Revert media schema/migration changes.
 ```
 
@@ -1809,9 +1821,11 @@ Revert media schema/migration changes.
 
 ```md
 ## Goal
+
 Standardize tenant/site/module-aware storage paths.
 
 ## Tasks
+
 - Define local path
 - Define production path
 - Define future multi-tenant path
@@ -1819,10 +1833,12 @@ Standardize tenant/site/module-aware storage paths.
 - Define safe filename strategy
 
 ## Validation
+
 - No upload path uses bare uploads/{filename}
 - Path examples include tenant/site context
 
 ## Rollback
+
 Revert storage policy changes.
 ```
 
@@ -1830,9 +1846,11 @@ Revert storage policy changes.
 
 ```md
 ## Goal
+
 Create consistent soft delete and restore behavior for AWCMS custom modules.
 
 ## Tasks
+
 - Define deleted_at rule
 - Define normal query filter
 - Define trash query behavior
@@ -1841,11 +1859,13 @@ Create consistent soft delete and restore behavior for AWCMS custom modules.
 - Define audit events
 
 ## Validation
+
 - Normal queries exclude deleted rows
 - Restore clears deleted_at
 - Audit events are created
 
 ## Rollback
+
 Revert soft delete implementation or disable affected module.
 ```
 
@@ -1853,9 +1873,11 @@ Revert soft delete implementation or disable affected module.
 
 ```md
 ## Goal
+
 Create a practical backup and restore baseline.
 
 ## Tasks
+
 - Define backup types
 - Define backup frequency
 - Define pre-migration backup checklist
@@ -1863,11 +1885,13 @@ Create a practical backup and restore baseline.
 - Define quarterly restore test recommendation
 
 ## Validation
+
 - Backup plan exists
 - Restore plan exists
 - Migration checklist requires backup
 
 ## Rollback
+
 Use restore procedure documented in runbook.
 ```
 

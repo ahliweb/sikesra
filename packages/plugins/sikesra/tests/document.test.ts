@@ -1,6 +1,6 @@
-import Database from "better-sqlite3";
 import { readFileSync } from "node:fs";
 
+import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 import { describe, expect, it } from "vitest";
 
@@ -331,11 +331,11 @@ describe("SIKESRA document workflow", () => {
 				"SELECT f.id, d.entity_id, d.document_type, f.r2_key FROM awcms_sikesra_file_objects f JOIN awcms_sikesra_supporting_documents d ON d.file_object_id = f.id WHERE f.id = ?",
 			)
 			.all(upload.fileObjectId) as Array<{
-				id: string;
-				entity_id: string;
-				document_type: string;
-				r2_key: string;
-			}>;
+			id: string;
+			entity_id: string;
+			document_type: string;
+			r2_key: string;
+		}>;
 
 		expect(rows).toEqual([
 			expect.objectContaining({

@@ -86,15 +86,15 @@ Recommended official AWCMS-Micro templates:
 
 ### 3.1 Template Use Cases
 
-| Template | Primary Use Case |
-| --- | --- |
-| Standard | Generic reusable website base |
-| School | School, pesantren, campus, training center |
-| Company | Company profile, consultant, agency, service business |
-| Foundation | Nonprofit, social organization, community, mosque/yayasan |
-| Government Portal | Public agency, public information, public service portal |
-| Landing Page | Campaign, product/service page, lead capture |
-| Secure Document Publication | Graduation, certificates, private document lookup |
+| Template                    | Primary Use Case                                          |
+| --------------------------- | --------------------------------------------------------- |
+| Standard                    | Generic reusable website base                             |
+| School                      | School, pesantren, campus, training center                |
+| Company                     | Company profile, consultant, agency, service business     |
+| Foundation                  | Nonprofit, social organization, community, mosque/yayasan |
+| Government Portal           | Public agency, public information, public service portal  |
+| Landing Page                | Campaign, product/service page, lead capture              |
+| Secure Document Publication | Graduation, certificates, private document lookup         |
 
 ---
 
@@ -206,26 +206,26 @@ template.manifest.json
 
 ```json
 {
-  "id": "template-standard",
-  "name": "AWCMS-Micro Standard Website Template",
-  "version": "0.1.0",
-  "category": "standard",
-  "description": "Generic EmDash-compatible website template for AWCMS-Micro.",
-  "tenantReady": true,
-  "siteScoped": true,
-  "requiredModules": [],
-  "optionalModules": [],
-  "layouts": [],
-  "sections": [],
-  "seedFiles": [],
-  "securityNotes": [],
-  "accessibilityLevel": "baseline",
-  "locales": ["id-ID", "en-US"],
-  "deploymentTargets": ["local", "cloudflare"],
-  "rollback": {
-    "safeToDisable": true,
-    "dataDestructive": false
-  }
+	"id": "template-standard",
+	"name": "AWCMS-Micro Standard Website Template",
+	"version": "0.1.0",
+	"category": "standard",
+	"description": "Generic EmDash-compatible website template for AWCMS-Micro.",
+	"tenantReady": true,
+	"siteScoped": true,
+	"requiredModules": [],
+	"optionalModules": [],
+	"layouts": [],
+	"sections": [],
+	"seedFiles": [],
+	"securityNotes": [],
+	"accessibilityLevel": "baseline",
+	"locales": ["id-ID", "en-US"],
+	"deploymentTargets": ["local", "cloudflare"],
+	"rollback": {
+		"safeToDisable": true,
+		"dataDestructive": false
+	}
 }
 ```
 
@@ -233,70 +233,58 @@ template.manifest.json
 
 ```json
 {
-  "id": "template-standard",
-  "name": "AWCMS-Micro Standard Website Template",
-  "version": "0.1.0",
-  "category": "standard",
-  "description": "A generic standard website template for AWCMS-Micro based on EmDash-compatible architecture.",
-  "tenantReady": true,
-  "siteScoped": true,
-  "requiredModules": [
-    "core-settings",
-    "pages",
-    "blog-news",
-    "announcements",
-    "menus",
-    "media",
-    "seo",
-    "forms",
-    "documents"
-  ],
-  "optionalModules": [
-    "audit-log",
-    "module-registry",
-    "mobile-api",
-    "webhook-notifier"
-  ],
-  "layouts": [
-    "base",
-    "home",
-    "page",
-    "article",
-    "document-list",
-    "form"
-  ],
-  "sections": [
-    "hero",
-    "feature-grid",
-    "latest-posts",
-    "announcements",
-    "documents-preview",
-    "gallery-preview",
-    "contact-cta"
-  ],
-  "seedFiles": [
-    "site-settings.json",
-    "menus.json",
-    "pages.json",
-    "posts.json",
-    "announcements.json",
-    "documents.json",
-    "forms.json",
-    "theme-settings.json"
-  ],
-  "securityNotes": [
-    "Do not place private data in seed files.",
-    "Public routes must render only published public content.",
-    "Private documents require signed URLs and audit events."
-  ],
-  "accessibilityLevel": "baseline",
-  "locales": ["id-ID", "en-US"],
-  "deploymentTargets": ["local", "cloudflare"],
-  "rollback": {
-    "safeToDisable": true,
-    "dataDestructive": false,
-    "notes": "Switch to previous template or restore previous theme settings."
-  }
+	"id": "template-standard",
+	"name": "AWCMS-Micro Standard Website Template",
+	"version": "0.1.0",
+	"category": "standard",
+	"description": "A generic standard website template for AWCMS-Micro based on EmDash-compatible architecture.",
+	"tenantReady": true,
+	"siteScoped": true,
+	"requiredModules": [
+		"core-settings",
+		"pages",
+		"blog-news",
+		"announcements",
+		"menus",
+		"media",
+		"seo",
+		"forms",
+		"documents"
+	],
+	"optionalModules": ["audit-log", "module-registry", "mobile-api", "webhook-notifier"],
+	"layouts": ["base", "home", "page", "article", "document-list", "form"],
+	"sections": [
+		"hero",
+		"feature-grid",
+		"latest-posts",
+		"announcements",
+		"documents-preview",
+		"gallery-preview",
+		"contact-cta"
+	],
+	"seedFiles": [
+		"site-settings.json",
+		"menus.json",
+		"pages.json",
+		"posts.json",
+		"announcements.json",
+		"documents.json",
+		"forms.json",
+		"theme-settings.json"
+	],
+	"securityNotes": [
+		"Do not place private data in seed files.",
+		"Public routes must render only published public content.",
+		"Private documents require signed URLs and audit events."
+	],
+	"accessibilityLevel": "baseline",
+	"locales": ["id-ID", "en-US"],
+	"deploymentTargets": ["local", "cloudflare"],
+	"rollback": {
+		"safeToDisable": true,
+		"dataDestructive": false,
+		"notes": "Switch to previous template or restore previous theme settings."
+	}
 }
 ```
 
@@ -342,13 +330,13 @@ Recommended layout props:
 
 ```ts
 type LayoutProps = {
-  title: string;
-  description?: string;
-  canonicalUrl?: string;
-  ogImage?: string;
-  noindex?: boolean;
-  layout?: string;
-  locale?: string;
+	title: string;
+	description?: string;
+	canonicalUrl?: string;
+	ogImage?: string;
+	noindex?: boolean;
+	layout?: string;
+	locale?: string;
 };
 ```
 
@@ -455,21 +443,21 @@ layout widths
 
 ```css
 :root {
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-primary: #2563eb;
-  --color-primary-foreground: #ffffff;
-  --color-accent: #f59e0b;
+	--color-background: #ffffff;
+	--color-foreground: #0f172a;
+	--color-muted: #64748b;
+	--color-border: #e2e8f0;
+	--color-primary: #2563eb;
+	--color-primary-foreground: #ffffff;
+	--color-accent: #f59e0b;
 
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-serif: Georgia, serif;
+	--font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--font-serif: Georgia, serif;
 
-  --space-section: clamp(3rem, 7vw, 6rem);
-  --container-width: 1120px;
-  --radius-card: 1rem;
-  --shadow-card: 0 10px 30px rgb(15 23 42 / 0.08);
+	--space-section: clamp(3rem, 7vw, 6rem);
+	--container-width: 1120px;
+	--radius-card: 1rem;
+	--shadow-card: 0 10px 30px rgb(15 23 42 / 0.08);
 }
 ```
 
@@ -634,25 +622,25 @@ private URLs
 
 ```json
 {
-  "siteName": "AWCMS-Micro Standard",
-  "tagline": "EmDash-compatible website foundation",
-  "locale": "id-ID",
-  "timezone": "Asia/Jakarta",
-  "contact": {
-    "email": "info@example.com",
-    "phone": "+62-000-0000-0000",
-    "address": "Example address"
-  },
-  "defaultTenant": {
-    "id": "00000000-0000-0000-0000-000000000001",
-    "code": "default",
-    "name": "Default Tenant"
-  },
-  "defaultSite": {
-    "id": "main",
-    "code": "main",
-    "name": "Main Site"
-  }
+	"siteName": "AWCMS-Micro Standard",
+	"tagline": "EmDash-compatible website foundation",
+	"locale": "id-ID",
+	"timezone": "Asia/Jakarta",
+	"contact": {
+		"email": "info@example.com",
+		"phone": "+62-000-0000-0000",
+		"address": "Example address"
+	},
+	"defaultTenant": {
+		"id": "00000000-0000-0000-0000-000000000001",
+		"code": "default",
+		"name": "Default Tenant"
+	},
+	"defaultSite": {
+		"id": "main",
+		"code": "main",
+		"name": "Main Site"
+	}
 }
 ```
 
@@ -660,17 +648,17 @@ private URLs
 
 ```json
 {
-  "main": [
-    { "label": "Home", "href": "/" },
-    { "label": "About", "href": "/about" },
-    { "label": "News", "href": "/news" },
-    { "label": "Documents", "href": "/documents" },
-    { "label": "Contact", "href": "/contact" }
-  ],
-  "footer": [
-    { "label": "Privacy Policy", "href": "/privacy" },
-    { "label": "Contact", "href": "/contact" }
-  ]
+	"main": [
+		{ "label": "Home", "href": "/" },
+		{ "label": "About", "href": "/about" },
+		{ "label": "News", "href": "/news" },
+		{ "label": "Documents", "href": "/documents" },
+		{ "label": "Contact", "href": "/contact" }
+	],
+	"footer": [
+		{ "label": "Privacy Policy", "href": "/privacy" },
+		{ "label": "Contact", "href": "/contact" }
+	]
 }
 ```
 
@@ -678,18 +666,18 @@ private URLs
 
 ```json
 [
-  {
-    "name": "Contact Form",
-    "slug": "contact",
-    "description": "Standard contact form.",
-    "requireConsent": true,
-    "fields": [
-      { "name": "name", "type": "text", "label": "Name", "required": true },
-      { "name": "email", "type": "email", "label": "Email", "required": true },
-      { "name": "message", "type": "textarea", "label": "Message", "required": true }
-    ],
-    "successMessage": "Thank you. Your message has been submitted."
-  }
+	{
+		"name": "Contact Form",
+		"slug": "contact",
+		"description": "Standard contact form.",
+		"requireConsent": true,
+		"fields": [
+			{ "name": "name", "type": "text", "label": "Name", "required": true },
+			{ "name": "email", "type": "email", "label": "Email", "required": true },
+			{ "name": "message", "type": "textarea", "label": "Message", "required": true }
+		],
+		"successMessage": "Thank you. Your message has been submitted."
+	}
 ]
 ```
 
@@ -1538,9 +1526,11 @@ create incident report
 
 ```md
 ## Goal
+
 Create the standard manifest format for AWCMS-Micro website templates.
 
 ## Tasks
+
 - [ ] Define required manifest fields
 - [ ] Define requiredModules and optionalModules
 - [ ] Define layouts and sections
@@ -1549,10 +1539,12 @@ Create the standard manifest format for AWCMS-Micro website templates.
 - [ ] Define rollback metadata
 
 ## Acceptance Criteria
+
 - [ ] template.manifest.json standard exists
 - [ ] standard template example validates conceptually
 
 ## Rollback Plan
+
 Revert template manifest documentation.
 ```
 
@@ -1560,9 +1552,11 @@ Revert template manifest documentation.
 
 ```md
 ## Goal
+
 Create the folder structure for the standard website template.
 
 ## Tasks
+
 - [ ] Add templates/standard
 - [ ] Add src/pages
 - [ ] Add src/layouts
@@ -1573,10 +1567,12 @@ Create the folder structure for the standard website template.
 - [ ] Add tests folder
 
 ## Acceptance Criteria
+
 - [ ] Standard template structure exists
 - [ ] No client-specific data is included
 
 ## Rollback Plan
+
 Remove template folder.
 ```
 
@@ -1584,9 +1580,11 @@ Remove template folder.
 
 ```md
 ## Goal
+
 Define reusable layouts and sections for AWCMS-Micro templates.
 
 ## Tasks
+
 - [ ] Define BaseLayout
 - [ ] Define HomeLayout
 - [ ] Define PageLayout
@@ -1595,11 +1593,13 @@ Define reusable layouts and sections for AWCMS-Micro templates.
 - [ ] Define card components
 
 ## Acceptance Criteria
+
 - [ ] Layout list exists
 - [ ] Section list exists
 - [ ] Components are client-neutral
 
 ## Rollback Plan
+
 Revert layout/section docs or code.
 ```
 
@@ -1607,9 +1607,11 @@ Revert layout/section docs or code.
 
 ```md
 ## Goal
+
 Define safe seed data for templates.
 
 ## Tasks
+
 - [ ] Add site-settings seed
 - [ ] Add menus seed
 - [ ] Add pages seed
@@ -1619,11 +1621,13 @@ Define safe seed data for templates.
 - [ ] Add theme-settings seed
 
 ## Acceptance Criteria
+
 - [ ] Seed data is safe and non-sensitive
 - [ ] No real private data exists
 - [ ] Default tenant/site exists
 
 ## Rollback Plan
+
 Revert seed files.
 ```
 
@@ -1631,9 +1635,11 @@ Revert seed files.
 
 ```md
 ## Goal
+
 Document template variants for school, company, foundation, government, landing page, and secure document publication.
 
 ## Tasks
+
 - [ ] Define school template
 - [ ] Define company template
 - [ ] Define foundation template
@@ -1642,9 +1648,11 @@ Document template variants for school, company, foundation, government, landing 
 - [ ] Define secure document publication template
 
 ## Acceptance Criteria
+
 - [ ] Each variant has pages, sections, modules, and security notes
 
 ## Rollback Plan
+
 Revert variant documentation.
 ```
 
@@ -1652,19 +1660,23 @@ Revert variant documentation.
 
 ```md
 ## Goal
+
 Define smoke, security, accessibility, and compatibility tests for templates.
 
 ## Tasks
+
 - [ ] Add smoke test checklist
 - [ ] Add security test checklist
 - [ ] Add accessibility checklist
 - [ ] Add compatibility checklist
 
 ## Acceptance Criteria
+
 - [ ] Template tests are documented
 - [ ] Private content leak tests are included
 
 ## Rollback Plan
+
 Revert testing documentation.
 ```
 
