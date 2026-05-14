@@ -22,8 +22,10 @@ describe("sikesraPlugin descriptor", () => {
 		expect(descriptor.format).toBe("standard");
 		expect(descriptor.entrypoint).toBe("@ahliweb/plugin-sikesra/sandbox");
 		expect(descriptor.adminPages).toEqual([
-			{ path: "/", label: "SIKESRA", icon: "shield" },
-			{ path: "/operations", label: "Operations", icon: "gear" },
+			{ path: "/", label: "Dashboard", icon: "shield" },
+			{ path: "/audit", label: "Audit", icon: "lock" },
+			{ path: "/settings", label: "Pengaturan", icon: "gear" },
+			{ path: "/operations", label: "Operasional", icon: "gear" },
 		]);
 		expect(descriptor.adminWidgets).toEqual([{ id: "overview", title: "SIKESRA", size: "third" }]);
 	});

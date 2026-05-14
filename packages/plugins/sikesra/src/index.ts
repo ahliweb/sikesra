@@ -95,8 +95,10 @@ export function sikesraPlugin(): PluginDescriptor {
 		format: "standard",
 		entrypoint: "@ahliweb/plugin-sikesra/sandbox",
 		adminPages: [
-			{ path: "/", label: "SIKESRA", icon: "shield" },
-			{ path: "/operations", label: "Operations", icon: "gear" },
+			{ path: "/", label: "Dashboard", icon: "shield" },
+			{ path: "/audit", label: "Audit", icon: "lock" },
+			{ path: "/settings", label: "Pengaturan", icon: "gear" },
+			{ path: "/operations", label: "Operasional", icon: "gear" },
 		],
 		adminWidgets: [{ id: "overview", title: "SIKESRA", size: "third" }],
 		storage: SIKESRA_EXPORT_STORAGE_CONFIG,

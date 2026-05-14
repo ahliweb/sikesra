@@ -78,13 +78,29 @@ import {
 	getAdminPageTarget,
 	type AdminInteraction,
 } from "./shared.js";
+import { buildAdminPage } from "./admin-pages.js";
 
 export default definePlugin({
 	routes: {
 		admin: {
-			handler: async (routeCtx: { input: AdminInteraction }) => {
+			handler: async (routeCtx: { input: AdminInteraction; request: Request }) => {
 				const target = getAdminPageTarget(routeCtx.input);
-				return target === "widget:overview" ? buildAdminWidget() : buildAdminBlocks(target);
+				if (target === "widget:overview") return buildAdminWidget();
+
+				// Try to use the new admin page builder with real data
+				try {
+					const db = await loadDb();
+					const requestContext = buildRequestContextFromRoute(routeCtx);
+					const inputType = routeCtx.input?.type;
+					const isAction = inputType === "block_action" || inputType === "form_submit";
+					const action = isAction && inputType
+						? { type: inputType, values: routeCtx.input as Record<string, unknown> }
+						: undefined;
+					return await buildAdminPage(db, requestContext, target, action);
+				} catch {
+					// Fall back to static blocks if DB is not available
+					return buildAdminBlocks(target);
+				}
 			},
 		},
 		"public/metadata": {

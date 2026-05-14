@@ -14,7 +14,7 @@
 		"test:browser": "pnpm run --filter @emdash-cms/admin test",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
-		"build": "pnpm run --filter {./packages/**} build",
+		"build": "pnpm run --filter {./packages/**} build && pnpm run --filter @emdash-cms/demo-cloudflare build && node scripts/link-cloudflare-dist.mjs",
 		"postbuild": "node scripts/relink-bins-if-needed.mjs",
 		"format": "oxfmt --ignore-path .gitignore && prettier --write .",
 		"format:check": "oxfmt --ignore-path .gitignore --check && prettier --check .",
