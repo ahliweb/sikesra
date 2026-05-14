@@ -1,3 +1,5 @@
+import { sql } from "kysely";
+
 import { AUDIT_ACTIONS } from "./security/audit.js";
 import type { SikesraRequestContext } from "./security/request-context.js";
 
@@ -63,6 +65,7 @@ export interface ExportAuditEntry {
 }
 
 export interface ExportStorageContext {
+	db?: unknown;
 	storage: {
 		exportJobs: {
 			put(id: string, data: ExportJobRecord): Promise<void>;
@@ -182,7 +185,7 @@ export async function createExportJob(
 		createdBy: ctx.userId,
 	};
 
-	await runtime.storage.exportJobs.put(id, record);
+	await saveExportJobRecord(runtime, id, record, ctx);
 	await writeExportAudit(
 		runtime,
 		ctx,
@@ -203,6 +206,10 @@ export async function listExportJobs(
 	ctx: SikesraRequestContext,
 	status?: ExportJobStatus,
 ): Promise<ExportJobSummary[]> {
+	if (runtime.db) {
+		return listExportJobsFromDb(runtime.db, ctx, status);
+	}
+
 	const result = await runtime.storage.exportJobs.query({
 		where: status
 			? { tenantId: ctx.tenantId, siteId: ctx.siteId, status }
@@ -219,6 +226,12 @@ export async function getExportJob(
 	jobId: string,
 	ctx: SikesraRequestContext,
 ): Promise<ExportJobSummary | null> {
+	if (runtime.db) {
+		const record = await getExportJobRecordFromDb(runtime.db, jobId, ctx);
+		if (!record) return null;
+		return { id: jobId, ...record };
+	}
+
 	const record = await runtime.storage.exportJobs.get(jobId);
 	if (!record || record.tenantId !== ctx.tenantId || record.siteId !== ctx.siteId) return null;
 	return { id: jobId, ...record };
@@ -241,7 +254,7 @@ export async function generateExportFile(
 		status: "generating",
 		updatedAt: new Date().toISOString(),
 	};
-	await runtime.storage.exportJobs.put(jobId, generating);
+	await saveExportJobRecord(runtime, jobId, generating, ctx);
 
 	const csvContent = buildCsvContent(report, current, ctx);
 	const contentKey = `exports:file:${jobId}`;
@@ -257,7 +270,7 @@ export async function generateExportFile(
 		updatedAt: new Date().toISOString(),
 		totalRows,
 	};
-	await runtime.storage.exportJobs.put(jobId, completed);
+	await saveExportJobRecord(runtime, jobId, completed, ctx);
 	await writeExportAudit(runtime, ctx, AUDIT_ACTIONS.EXPORT_CREATE, jobId, current.reason, {
 		reportType: current.reportType,
 		status: "ready",
@@ -285,11 +298,12 @@ export async function downloadExportFile(
 	if (!content) throw new Error("EXPORT_FILE_NOT_FOUND");
 
 	const downloadedAt = new Date().toISOString();
-	await runtime.storage.exportJobs.put(jobId, {
+	const updated: ExportJobRecord = {
 		...current,
 		downloadedAt,
 		updatedAt: downloadedAt,
-	});
+	};
+	await saveExportJobRecord(runtime, jobId, updated, ctx);
 	await writeExportAudit(runtime, ctx, AUDIT_ACTIONS.EXPORT_DOWNLOAD, jobId, current.reason, {
 		reportType: current.reportType,
 		filename: `${current.reportType}_${jobId}.csv`,
@@ -351,6 +365,11 @@ async function writeExportAudit(
 	reason?: string,
 	metadata?: Record<string, unknown>,
 ): Promise<void> {
+	if (runtime.db) {
+		await writeExportAuditToDb(runtime.db, ctx, action, resourceId, reason, metadata);
+		return;
+	}
+
 	const createdAt = new Date().toISOString();
 	await runtime.storage.auditEntries.put(
 		`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -366,4 +385,178 @@ async function writeExportAudit(
 			metadata,
 		},
 	);
+}
+
+async function saveExportJobRecord(
+	runtime: ExportStorageContext,
+	jobId: string,
+	record: ExportJobRecord,
+	_ctx: SikesraRequestContext,
+): Promise<void> {
+	if (runtime.db) {
+		await saveExportJobRecordToDb(runtime.db, jobId, record);
+		return;
+	}
+
+	await runtime.storage.exportJobs.put(jobId, record);
+}
+
+async function saveExportJobRecordToDb(
+	db: unknown,
+	jobId: string,
+	record: ExportJobRecord,
+): Promise<void> {
+	const now = new Date().toISOString();
+	await sql`
+		INSERT INTO awcms_sikesra_export_jobs (
+			id, tenant_id, site_id, report_type, filters_json, fields_json,
+			format, reason, total_rows, r2_key, status, created_at, updated_at,
+			created_by, updated_by
+		) VALUES (
+			${jobId}, ${record.tenantId}, ${record.siteId}, ${record.reportType},
+			${JSON.stringify(record.filters)}, ${JSON.stringify(record.fields)},
+			${record.format}, ${record.reason ?? null}, ${record.totalRows ?? null},
+			${record.contentKey ?? null}, ${record.status}, ${record.createdAt}, ${now},
+			${record.createdBy}, ${record.createdBy}
+		)
+		ON CONFLICT(id) DO UPDATE SET
+			status = excluded.status,
+			updated_at = excluded.updated_at,
+			filters_json = excluded.filters_json,
+			fields_json = excluded.fields_json,
+			total_rows = excluded.total_rows,
+			r2_key = excluded.r2_key,
+			updated_by = excluded.updated_by
+	`.execute(db as never);
+}
+
+async function getExportJobRecordFromDb(
+	db: unknown,
+	jobId: string,
+	ctx: SikesraRequestContext,
+): Promise<ExportJobRecord | null> {
+	const result = await sql<{
+		id: string;
+		tenant_id: string;
+		site_id: string;
+		report_type: string | null;
+		filters_json: string | null;
+		fields_json: string | null;
+		format: string;
+		reason: string | null;
+		total_rows: number | null;
+		r2_key: string | null;
+		status: string;
+		created_at: string;
+		updated_at: string;
+		created_by: string | null;
+	}>`
+		SELECT id, tenant_id, site_id, report_type, filters_json, fields_json,
+			format, reason, total_rows, r2_key, status, created_at, updated_at, created_by
+		FROM awcms_sikesra_export_jobs
+		WHERE id = ${jobId}
+			AND tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	const row = result.rows[0];
+	if (!row) return null;
+
+	return {
+		tenantId: row.tenant_id,
+		siteId: row.site_id,
+		reportType: row.report_type ?? "",
+		filters: row.filters_json ? JSON.parse(row.filters_json) : {},
+		fields: row.fields_json ? JSON.parse(row.fields_json) : [],
+		format: row.format as ExportFormat,
+		reason: row.reason ?? undefined,
+		status: row.status as ExportJobStatus,
+		createdAt: row.created_at,
+		updatedAt: row.updated_at,
+		createdBy: row.created_by ?? "",
+		totalRows: row.total_rows ?? undefined,
+		contentKey: row.r2_key ?? undefined,
+		mimeType: row.r2_key ? "text/csv" : undefined,
+	};
+}
+
+async function listExportJobsFromDb(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	status?: ExportJobStatus,
+): Promise<ExportJobSummary[]> {
+	const whereConditions = [
+		sql`tenant_id = ${ctx.tenantId}`,
+		sql`site_id = ${ctx.siteId}`,
+		sql`deleted_at IS NULL`,
+	];
+	if (status) {
+		whereConditions.push(sql`status = ${status}`);
+	}
+
+	const result = await sql<{
+		id: string;
+		tenant_id: string;
+		site_id: string;
+		report_type: string | null;
+		filters_json: string | null;
+		fields_json: string | null;
+		format: string;
+		reason: string | null;
+		total_rows: number | null;
+		r2_key: string | null;
+		status: string;
+		created_at: string;
+		updated_at: string;
+		created_by: string | null;
+	}>`
+		SELECT id, tenant_id, site_id, report_type, filters_json, fields_json,
+			format, reason, total_rows, r2_key, status, created_at, updated_at, created_by
+		FROM awcms_sikesra_export_jobs
+		WHERE ${sql.join(whereConditions, sql` AND `)}
+		ORDER BY created_at DESC
+		LIMIT 50
+	`.execute(db as never);
+
+	return result.rows.map((row) => ({
+		id: row.id,
+		tenantId: row.tenant_id,
+		siteId: row.site_id,
+		reportType: row.report_type ?? "",
+		filters: row.filters_json ? JSON.parse(row.filters_json) : {},
+		fields: row.fields_json ? JSON.parse(row.fields_json) : [],
+		format: row.format as ExportFormat,
+		reason: row.reason ?? undefined,
+		status: row.status as ExportJobStatus,
+		createdAt: row.created_at,
+		updatedAt: row.updated_at,
+		createdBy: row.created_by ?? "",
+		totalRows: row.total_rows ?? undefined,
+		contentKey: row.r2_key ?? undefined,
+		mimeType: row.r2_key ? "text/csv" : undefined,
+	}));
+}
+
+async function writeExportAuditToDb(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	action: string,
+	resourceId: string,
+	reason?: string,
+	metadata?: Record<string, unknown>,
+): Promise<void> {
+	const id = `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+	await sql`
+		INSERT INTO awcms_sikesra_audit_logs (
+			id, tenant_id, site_id, actor_id, action, resource_type, resource_id,
+			reason, after_json, created_at
+		) VALUES (
+			${id}, ${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId}, ${action},
+			'export_job', ${resourceId}, ${reason ?? null},
+			${metadata ? JSON.stringify(metadata) : null},
+			${new Date().toISOString()}
+		)
+	`.execute(db as never);
 }

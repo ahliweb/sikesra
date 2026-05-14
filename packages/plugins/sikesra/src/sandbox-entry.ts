@@ -253,11 +253,12 @@ export default definePlugin({
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
+				const db = await loadDb();
 				const requestContext = buildRequestContextFromRoute(routeCtx);
 				const input = asRecord(routeCtx.input);
 				const status = typeof input.status === "string" ? input.status : undefined;
 				return {
-					items: await listExportJobs(ctx as ExportStorageContext, requestContext, status as never),
+					items: await listExportJobs({ ...(ctx as ExportStorageContext), db }, requestContext, status as never),
 				};
 			},
 		},
@@ -266,11 +267,12 @@ export default definePlugin({
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
+				const db = await loadDb();
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
 				const job = await getExportJob(
-					ctx as ExportStorageContext,
+					{ ...(ctx as ExportStorageContext), db },
 					jobId,
 					buildRequestContextFromRoute(routeCtx),
 				);
@@ -283,9 +285,10 @@ export default definePlugin({
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
+				const db = await loadDb();
 				const input = normalizeExportCreateInput(routeCtx.input);
 				return createExportJob(
-					ctx as ExportStorageContext,
+					{ ...(ctx as ExportStorageContext), db },
 					input,
 					buildRequestContextFromRoute(routeCtx),
 				);
@@ -296,11 +299,12 @@ export default definePlugin({
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
+				const db = await loadDb();
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
 				return generateExportFile(
-					ctx as ExportStorageContext,
+					{ ...(ctx as ExportStorageContext), db },
 					jobId,
 					buildRequestContextFromRoute(routeCtx),
 				);
@@ -311,11 +315,12 @@ export default definePlugin({
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
+				const db = await loadDb();
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
 				return downloadExportFile(
-					ctx as ExportStorageContext,
+					{ ...(ctx as ExportStorageContext), db },
 					jobId,
 					buildRequestContextFromRoute(routeCtx),
 				);
