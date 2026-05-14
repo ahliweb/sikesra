@@ -1,5 +1,6 @@
 import node from "@astrojs/node";
 import react from "@astrojs/react";
+import { sikesraPlugin } from "@ahliweb/plugin-sikesra";
 import { apiTestPlugin } from "@emdash-cms/plugin-api-test";
 import { auditLogPlugin } from "@emdash-cms/plugin-audit-log";
 import { embedsPlugin } from "@emdash-cms/plugin-embeds";
@@ -21,6 +22,8 @@ export default defineConfig({
 
 			// Register plugins - order matters for hook execution!
 			plugins: [
+				sikesraPlugin(),
+
 				// 1. Audit log runs last (priority 200) to capture final state
 				// Settings (retention, data changes, excluded collections) are
 				// configured at runtime via the admin UI, not constructor options.

@@ -10,10 +10,11 @@
     "start": "node ./dist/server/entry.mjs",
     "typecheck": "astro check"
   },
-  "dependencies": {
-    "@astrojs/node": "catalog:",
-    "@astrojs/react": "catalog:",
-    "@emdash-cms/plugin-audit-log": "workspace:*",
+	"dependencies": {
+		"@ahliweb/plugin-sikesra": "workspace:*",
+		"@astrojs/node": "catalog:",
+		"@astrojs/react": "catalog:",
+		"@emdash-cms/plugin-audit-log": "workspace:*",
     "@emdash-cms/plugin-api-test": "workspace:*",
     "@emdash-cms/plugin-webhook-notifier": "workspace:*",
     "@emdash-cms/plugin-embeds": "workspace:*",

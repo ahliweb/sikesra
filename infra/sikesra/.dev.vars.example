@@ -1,0 +1,4 @@
+SIKESRA_BASE_URL=http://127.0.0.1:4321
+SIKESRA_ADMIN_PAGE=overview
+# Optional cookie for authenticated smoke checks
+SIKESRA_ADMIN_COOKIE=

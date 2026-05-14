@@ -1,0 +1,39 @@
+{
+	"name": "@ahliweb/plugin-sikesra",
+	"version": "0.1.0",
+	"description": "SIKESRA overlay shell for EmDash",
+	"type": "module",
+	"main": "dist/index.mjs",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.mts"
+		},
+		"./sandbox": "./dist/sandbox-entry.mjs"
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md"
+	],
+	"keywords": [
+		"emdash",
+		"plugin",
+		"sikesra",
+		"welfare",
+		"overlay"
+	],
+	"license": "MIT",
+	"peerDependencies": {
+		"emdash": "workspace:*"
+	},
+	"devDependencies": {
+		"tsdown": "catalog:",
+		"vitest": "catalog:"
+	},
+	"scripts": {
+		"build": "tsdown src/index.ts src/sandbox-entry.ts --format esm --dts --clean",
+		"test": "vitest run",
+		"typecheck": "tsgo --noEmit"
+	}
+}

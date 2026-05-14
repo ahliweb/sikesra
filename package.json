@@ -29,6 +29,10 @@
 		"query-counts": "node scripts/query-counts.mjs",
 		"locale:extract": "pnpm --filter @emdash-cms/admin locale:extract",
 		"locale:compile": "pnpm --filter @emdash-cms/admin locale:compile",
+		"sikesra:d1:inventory": "node scripts/sikesra-d1-overlay.mjs inventory",
+		"sikesra:d1:restore": "node scripts/sikesra-d1-overlay.mjs restore",
+		"sikesra:postbuild": "node scripts/sikesra-postbuild.mjs",
+		"sikesra:smoke-admin": "node scripts/sikesra-smoke-admin-route.mjs",
 		"changeset:version": "pnpm changeset version && pnpm install --no-frozen-lockfile"
 	},
 	"keywords": [],
