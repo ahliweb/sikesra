@@ -33,6 +33,8 @@ This is a monorepo using pnpm workspaces.
 
 **Localize everything user-facing.** All admin UI strings, aria labels, and toast messages go through Lingui. All admin layout uses RTL-safe logical Tailwind classes. See the Localization and RTL sections below.
 
+**Canonical docs are immutable references.** `docs-awcms-micro/` (AWCMS-Micro architecture and governance) and `docs-sikesra-awal/` (SIKESRA concept specification) are readonly concept references. They must not be removed or modified in a way that changes their core principles. Working copies live under `docs/core/` and `docs/sikesra/` respectively.
+
 ## Contribution Rules (for AI agents and human contributors)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Key rules:
