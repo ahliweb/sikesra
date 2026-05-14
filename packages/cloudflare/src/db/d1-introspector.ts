@@ -7,7 +7,7 @@
  * This introspector queries tables individually instead.
  */
 
-import type { DatabaseIntrospector, DatabaseMetadata, SchemaMetadata, TableMetadata } from "kysely";
+import type { DatabaseIntrospector, SchemaMetadata, TableMetadata } from "kysely";
 import { sql } from "kysely";
 
 // Kysely's default migration table names
@@ -95,24 +95,25 @@ export class D1Introspector implements DatabaseIntrospector {
 				}
 			}
 
-			result.push({
-				name: tableName,
-				isView: tableType === "view",
-				columns: columns.rows.map((col) => ({
-					name: col.name,
-					dataType: col.type,
-					isNullable: !col.notnull,
-					isAutoIncrementing: col.name === autoIncrementCol,
-					hasDefaultValue: col.dflt_value != null,
-					comment: undefined,
-				})),
-			});
+		result.push({
+			name: tableName,
+			isView: tableType === "view",
+			isForeign: false,
+			columns: columns.rows.map((col) => ({
+				name: col.name,
+				dataType: col.type,
+				isNullable: !col.notnull,
+				isAutoIncrementing: col.name === autoIncrementCol,
+				hasDefaultValue: col.dflt_value != null,
+				comment: undefined,
+			})),
+		});
 		}
 
 		return result;
 	}
 
-	async getMetadata(options?: { withInternalKyselyTables?: boolean }): Promise<DatabaseMetadata> {
+	async getMetadata(options?: { withInternalKyselyTables?: boolean }): Promise<{ tables: TableMetadata[] }> {
 		return {
 			tables: await this.getTables(options),
 		};
