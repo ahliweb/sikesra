@@ -165,14 +165,19 @@ export async function stageImportRows(
 	const now = new Date().toISOString();
 	for (const [index, row] of input.rows.entries()) {
 		const rowId = `row_${batchId}_${index + 1}`;
-		await saveStagingRow(runtime, rowId, {
-			batchId,
-			tenantId: ctx.tenantId,
-			siteId: ctx.siteId,
-			rowNumber: index + 1,
-			rawData: row,
-			rowStatus: "pending",
-		}, ctx);
+		await saveStagingRow(
+			runtime,
+			rowId,
+			{
+				batchId,
+				tenantId: ctx.tenantId,
+				siteId: ctx.siteId,
+				rowNumber: index + 1,
+				rawData: row,
+				rowStatus: "pending",
+			},
+			ctx,
+		);
 	}
 	const updated: ImportBatch = {
 		...batch,
@@ -218,13 +223,18 @@ export async function mapAndValidateImportRows(
 		}
 		if (rowStatus === "valid") validRowCount++;
 		if (rowStatus !== "valid") invalidRowCount++;
-		await saveStagingRow(runtime, row.id, {
-			...row.data,
-			mappedData,
-			validationErrors,
-			duplicateRisk,
-			rowStatus,
-		}, ctx);
+		await saveStagingRow(
+			runtime,
+			row.id,
+			{
+				...row.data,
+				mappedData,
+				validationErrors,
+				duplicateRisk,
+				rowStatus,
+			},
+			ctx,
+		);
 	}
 
 	const updated: ImportBatch = {
@@ -291,11 +301,19 @@ export async function promoteImportRows(
 			siteId: ctx.siteId,
 			sourceInput: "import",
 		});
-		await saveStagingRow(runtime, row.id, {
-			...row.data,
-			rowStatus: "promoted",
-			promotedEntityId: entityId,
-		}, ctx);
+		if (runtime.db) {
+			await promoteRowToD1Entity(runtime.db, entityId, batchId, row.data.mappedData, ctx);
+		}
+		await saveStagingRow(
+			runtime,
+			row.id,
+			{
+				...row.data,
+				rowStatus: "promoted",
+				promotedEntityId: entityId,
+			},
+			ctx,
+		);
 		promoted++;
 	}
 
@@ -331,11 +349,16 @@ export async function rollbackImportPromotion(
 			await runtime.storage.promotedEntities.delete(row.data.promotedEntityId);
 			deletedEntityIds.push(row.data.promotedEntityId);
 		}
-		await saveStagingRow(runtime, row.id, {
-			...row.data,
-			rowStatus: "valid",
-			promotedEntityId: undefined,
-		}, ctx);
+		await saveStagingRow(
+			runtime,
+			row.id,
+			{
+				...row.data,
+				rowStatus: "valid",
+				promotedEntityId: undefined,
+			},
+			ctx,
+		);
 		rolledBack++;
 	}
 
@@ -648,7 +671,9 @@ async function listStagingRowsFromDb(
 			rowNumber: row.row_number,
 			rawData: row.raw_data_json ? JSON.parse(row.raw_data_json) : {},
 			mappedData: row.mapped_data_json ? JSON.parse(row.mapped_data_json) : undefined,
-			validationErrors: row.validation_errors_json ? JSON.parse(row.validation_errors_json) : undefined,
+			validationErrors: row.validation_errors_json
+				? JSON.parse(row.validation_errors_json)
+				: undefined,
 			rowStatus: row.row_status as StagingRowStatus,
 			duplicateRisk: (row.duplicate_risk as "low" | "medium" | "high" | "blocking") ?? undefined,
 		},
@@ -671,6 +696,50 @@ async function writeImportAuditToDb(
 			${id}, ${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId}, ${action},
 			'import_batch', ${resourceId},
 			${metadata ? JSON.stringify(metadata) : null},
+			datetime('now')
+		)
+	`.execute(db as never);
+}
+
+async function promoteRowToD1Entity(
+	db: unknown,
+	entityId: string,
+	batchId: string,
+	mappedData: Record<string, unknown>,
+	ctx: SikesraRequestContext,
+): Promise<void> {
+	const displayName = String(mappedData.displayName ?? "").trim() || "Imported Entity";
+	const officialVillageCode = String(mappedData.officialVillageCode ?? "").trim();
+	const objectTypeCode = String(mappedData.objectTypeCode ?? "").trim() || "unknown";
+	const objectSubtypeCode = String(mappedData.objectSubtypeCode ?? "").trim() || "unknown";
+	const entityKind = String(mappedData.entityKind ?? "").trim() || "imported";
+
+	await sql`
+		INSERT INTO awcms_sikesra_entities (
+			id, tenant_id, site_id, object_type_code, object_subtype_code,
+			entity_kind, display_name, official_village_code,
+			status_data, status_verification, sensitivity_level,
+			completeness_percent, source_input, created_by, updated_by,
+			created_at, updated_at
+		) VALUES (
+			${entityId}, ${ctx.tenantId}, ${ctx.siteId}, ${objectTypeCode},
+			${objectSubtypeCode}, ${entityKind}, ${displayName},
+			${officialVillageCode || null},
+			'active', 'draft', 'internal',
+			50, 'import', ${ctx.userId}, ${ctx.userId},
+			datetime('now'), datetime('now')
+		)
+	`.execute(db as never);
+
+	await sql`
+		INSERT INTO awcms_sikesra_audit_logs (
+			id, tenant_id, site_id, actor_id, action, resource_type, resource_id,
+			after_json, created_at
+		) VALUES (
+			${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
+			${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId}, 'import.promote',
+			'entity', ${entityId},
+			${JSON.stringify({ batchId, displayName, objectTypeCode })},
 			datetime('now')
 		)
 	`.execute(db as never);

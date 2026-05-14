@@ -256,7 +256,7 @@ export async function makeVerificationDecision(
 			? AUDIT_ACTIONS.VERIFICATION_VERIFY
 			: input.decision === "reject"
 				? AUDIT_ACTIONS.VERIFICATION_REJECT
-				: AUDIT_ACTIONS.VERIFICATION_SUBMIT;
+				: AUDIT_ACTIONS.VERIFICATION_NEED_REVISION;
 
 	const timelineId = await writeVerificationTimelineEntry(db, ctx, {
 		entityId: input.entityId,

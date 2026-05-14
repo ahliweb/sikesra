@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = {
 	CODE_CORRECT: "code.correct",
 	VERIFICATION_SUBMIT: "verification.submit",
 	VERIFICATION_VERIFY: "verification.verify",
+	VERIFICATION_NEED_REVISION: "verification.need_revision",
 	VERIFICATION_REJECT: "verification.reject",
 	DOCUMENT_UPLOAD: "document.upload",
 	DOCUMENT_COMPLETE: "document.complete",

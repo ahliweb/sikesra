@@ -64,6 +64,18 @@ export interface DraftUpdateResult {
 	validationErrors: ValidationError[];
 }
 
+export interface DraftAutosaveInput {
+	entityId: string;
+	data: Record<string, unknown>;
+}
+
+export interface DraftAutosaveResult {
+	entityId: string;
+	status: string;
+	completenessPercent: number;
+	savedFields: string[];
+}
+
 const SECTION_DEFINITIONS = [
 	{
 		key: "identity",
@@ -74,6 +86,32 @@ const SECTION_DEFINITIONS = [
 ] as const;
 
 const SIKESRA_ID_20_RE = /^\d{20}$/;
+
+const ALLOWED_ENTITY_COLUMNS = new Set([
+	"display_name",
+	"object_type_code",
+	"object_subtype_code",
+	"entity_kind",
+	"official_village_code",
+	"local_region_id",
+	"address_text",
+	"sikesra_id_20",
+	"status_data",
+	"status_verification",
+	"sensitivity_level",
+	"completeness_percent",
+	"source_input",
+]);
+
+function validateEntityColumn(name: string): string {
+	if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+		throw new Error(`INVALID_COLUMN_NAME: ${name}`);
+	}
+	if (!ALLOWED_ENTITY_COLUMNS.has(name)) {
+		throw new Error(`DISALLOWED_COLUMN: ${name}`);
+	}
+	return name;
+}
 
 export async function createDraft(
 	db: unknown,
@@ -154,7 +192,8 @@ export async function updateDraft(
 
 		for (const [key, value] of Object.entries(input.patch)) {
 			if (value !== undefined) {
-				setClauses.push(`${key} = ?`);
+				const safeKey = validateEntityColumn(key);
+				setClauses.push(`${safeKey} = ?`);
 				values.push(value);
 			}
 		}
@@ -191,6 +230,63 @@ export async function updateDraft(
 		status: entity.status_data,
 		completenessPercent: completeness,
 		validationErrors: sectionErrors,
+	};
+}
+
+export async function autosaveDraft(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	input: DraftAutosaveInput,
+): Promise<DraftAutosaveResult> {
+	const denied = guardRoute(ctx, "entity:update");
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+
+	const entity = await getDraftEntity(db, ctx, input.entityId);
+	if (!entity) return throwRouteError("NOT_FOUND", "Draft not found", 404);
+	if (entity.status_data !== "draft") {
+		return throwRouteError("VALIDATION_ERROR", "Only draft entities can be autosaved", 400);
+	}
+
+	const savedFields: string[] = [];
+	const setClauses: string[] = [];
+	const values: unknown[] = [];
+
+	for (const [key, value] of Object.entries(input.data)) {
+		if (value !== undefined && (ALLOWED_ENTITY_COLUMNS as ReadonlySet<string>).has(key)) {
+			const safeKey = validateEntityColumn(key);
+			setClauses.push(`${safeKey} = ?`);
+			values.push(value);
+			savedFields.push(key);
+		}
+	}
+
+	if (setClauses.length > 0) {
+		setClauses.push("updated_at = datetime('now')", "updated_by = ?");
+		values.push(ctx.userId);
+		values.push(ctx.tenantId);
+		values.push(ctx.siteId);
+		values.push(input.entityId);
+
+		await sql
+			.raw(
+				`UPDATE awcms_sikesra_entities SET ${setClauses.join(", ")} WHERE tenant_id = ? AND site_id = ? AND id = ? AND deleted_at IS NULL`,
+			)
+			.execute(db as never);
+	}
+
+	const completeness = await calculateCompleteness(db, ctx, input.entityId);
+
+	await writeEntityAudit(db, ctx, AUDIT_ACTIONS.ENTITY_UPDATE, input.entityId, {
+		action: "autosave",
+		savedFields,
+	});
+
+	return {
+		entityId: input.entityId,
+		status: entity.status_data,
+		completenessPercent: completeness,
+		savedFields,
 	};
 }
 
@@ -465,19 +561,34 @@ async function getNextSequence(
 	objectTypeCode: string,
 	objectSubtypeCode: string,
 ): Promise<number> {
-	const result = await sql<{ max_seq: number | null }>`
-		SELECT CAST(SUBSTR(sikesra_id_20, 15, 6) AS INTEGER) AS max_seq
-		FROM awcms_sikesra_entities
+	const sequenceId = `seq_${villageCode}_${objectTypeCode}_${objectSubtypeCode}`;
+
+	await sql`
+		INSERT INTO awcms_sikesra_code_sequences (
+			id, tenant_id, site_id, official_village_code, object_type_code,
+			object_subtype_code, last_sequence, created_by, updated_by
+		) VALUES (
+			${sequenceId}, ${ctx.tenantId}, ${ctx.siteId}, ${villageCode},
+			${objectTypeCode}, ${objectSubtypeCode}, 0,
+			${ctx.userId}, ${ctx.userId}
+		)
+		ON CONFLICT(tenant_id, site_id, official_village_code, object_type_code, object_subtype_code)
+		DO UPDATE SET last_sequence = last_sequence + 1, updated_at = datetime('now')
+	`.execute(db as never);
+
+	const result = await sql<{ last_sequence: number }>`
+		SELECT last_sequence
+		FROM awcms_sikesra_code_sequences
 		WHERE tenant_id = ${ctx.tenantId}
 			AND site_id = ${ctx.siteId}
-			AND sikesra_id_20 LIKE ${`${villageCode}${objectTypeCode}${objectSubtypeCode}%`}
+			AND official_village_code = ${villageCode}
+			AND object_type_code = ${objectTypeCode}
+			AND object_subtype_code = ${objectSubtypeCode}
 			AND deleted_at IS NULL
-		ORDER BY max_seq DESC
 		LIMIT 1
 	`.execute(db as never);
 
-	const maxSeq = result.rows[0]?.max_seq ?? 0;
-	return maxSeq + 1;
+	return (result.rows[0]?.last_sequence ?? 0) + 1;
 }
 
 async function getDraftEntity(db: unknown, ctx: SikesraRequestContext, entityId: string) {

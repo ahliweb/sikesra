@@ -43,11 +43,13 @@ import { buildRequestContextFromRoute } from "./security/request-context.js";
 import {
 	createDraft,
 	updateDraft,
+	autosaveDraft,
 	validateEntity,
 	generateSikesraId20,
 	correctSikesraId20,
 	type DraftCreateInput,
 	type DraftUpdateInput,
+	type DraftAutosaveInput,
 	type CodeCorrectionInput,
 } from "./services/draft.js";
 import { getEntityDetail, listEntities } from "./services/entities.js";
@@ -811,6 +813,16 @@ function normalizeDraftUpdateInput(value: unknown): DraftUpdateInput {
 		entityId,
 		section,
 		patch: isPlainRecord(input.patch) ? input.patch : {},
+	};
+}
+
+function normalizeDraftAutosaveInput(value: unknown): DraftAutosaveInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	if (!entityId) throw new Error("DRAFT_AUTOSAVE_INPUT_REQUIRED");
+	return {
+		entityId,
+		data: isPlainRecord(input.data) ? input.data : {},
 	};
 }
 
