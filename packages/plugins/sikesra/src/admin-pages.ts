@@ -32,6 +32,10 @@ export async function buildAdminPage(
 			return action ? handleSettingsAction(db, ctx, action) : buildSettings(db, ctx);
 		case "/operations":
 			return buildOperations(db, ctx);
+		case "/entities":
+			return action ? handleEntityAction(db, ctx, action) : buildEntityList(db, ctx);
+		case "/verification":
+			return action ? handleVerificationAction(db, ctx, action) : buildVerificationQueue(db, ctx);
 		default:
 			return buildNotFound(page);
 	}
@@ -573,6 +577,366 @@ async function buildOperations(db: unknown, ctx: SikesraRequestContext): Promise
 	}
 
 	return { blocks };
+}
+
+// ── Entity Registry ──────────────────────────────────────────────────────────
+
+async function buildEntityList(db: unknown, ctx: SikesraRequestContext): Promise<BlockResponse> {
+	const denied = guardRoute(ctx, "entity:read");
+	if (!denied.allowed) {
+		return {
+			blocks: [
+				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+			],
+		};
+	}
+
+	const result = await sql<{
+		id: string;
+		sikesra_id_20: string | null;
+		object_type_code: string;
+		object_subtype_code: string;
+		display_name: string;
+		status_data: string;
+		status_verification: string;
+		sensitivity_level: string;
+		completeness_score: number;
+		created_at: string;
+	}>`
+		SELECT id, sikesra_id_20, object_type_code, object_subtype_code, display_name,
+			status_data, status_verification, sensitivity_level, completeness_score, created_at
+		FROM awcms_sikesra_entities
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND deleted_at IS NULL
+		ORDER BY created_at DESC
+		LIMIT 50
+	`.execute(db as never);
+
+	const blocks: Block[] = [
+		{ type: "header", text: "Registry Entitas" },
+		{ type: "context", text: "Daftar semua entitas terdaftar" },
+		{ type: "divider" },
+	];
+
+	// Filter form
+	blocks.push({
+		type: "form",
+		fields: [
+			{ type: "text_input", action_id: "keyword", label: "Kata Kunci", placeholder: "Cari nama atau ID" },
+			{ type: "select", action_id: "statusVerification", label: "Status Verifikasi", options: [
+				{ label: "Semua", value: "" },
+				{ label: "Draft", value: "draft" },
+				{ label: "Submitted", value: "submitted" },
+				{ label: "Verified", value: "verified" },
+				{ label: "Need Revision", value: "need_revision" },
+				{ label: "Rejected", value: "rejected" },
+			]},
+			{ type: "select", action_id: "sensitivityLevel", label: "Sensitivitas", options: [
+				{ label: "Semua", value: "" },
+				{ label: "Normal", value: "normal" },
+				{ label: "Sensitive", value: "sensitive" },
+				{ label: "Highly Restricted", value: "highly_restricted" },
+			]},
+		],
+		submit: { label: "Filter", action_id: "entities:filter" },
+	});
+
+	blocks.push({ type: "divider" });
+
+	if (result.rows.length === 0) {
+		blocks.push({
+			type: "empty",
+			title: "Tidak Ada Entitas",
+			description: "Belum ada entitas yang terdaftar",
+			actions: [
+				{ type: "button", action_id: "navigate:entities/new", label: "Tambah Entitas Baru", style: "primary" },
+			],
+		});
+	} else {
+		blocks.push({
+			type: "table",
+			columns: [
+				{ key: "id", label: "ID SIKESRA", format: "code" },
+				{ key: "type", label: "Tipe", format: "badge" },
+				{ key: "displayName", label: "Nama", format: "text" },
+				{ key: "statusVerification", label: "Verifikasi", format: "badge" },
+				{ key: "sensitivity", label: "Sensitivitas", format: "badge" },
+				{ key: "completeness", label: "Kelengkapan", format: "number" },
+				{ key: "actions", label: "Aksi", format: "text" },
+			],
+			rows: result.rows.map((row) => ({
+				id: row.sikesra_id_20 ?? row.id.slice(0, 12),
+				type: `${row.object_type_code}/${row.object_subtype_code}`,
+				displayName: row.display_name,
+				statusVerification: row.status_verification,
+				sensitivity: row.sensitivity_level,
+				completeness: row.completeness_score,
+				actions: "Lihat",
+			})),
+			page_action_id: "entities:view",
+			empty_text: "Tidak ada entitas",
+		});
+	}
+
+	return { blocks };
+}
+
+async function handleEntityAction(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	action: { type: string; values?: Record<string, unknown> },
+): Promise<BlockResponse> {
+	if (action.values?.action_id === "entities:filter") {
+		return buildEntityList(db, ctx);
+	}
+	if (action.values?.action_id === "entities:view") {
+		const entityId = action.values?.id as string | undefined;
+		if (entityId) {
+			return buildEntityDetail(db, ctx, entityId);
+		}
+	}
+	return { blocks: [] };
+}
+
+async function buildEntityDetail(db: unknown, ctx: SikesraRequestContext, entityId: string): Promise<BlockResponse> {
+	const result = await sql<{
+		id: string;
+		sikesra_id_20: string | null;
+		object_type_code: string;
+		object_subtype_code: string;
+		display_name: string;
+		status_data: string;
+		status_verification: string;
+		sensitivity_level: string;
+		completeness_score: number;
+		source_input: string;
+		created_at: string;
+		updated_at: string;
+	}>`
+		SELECT id, sikesra_id_20, object_type_code, object_subtype_code, display_name,
+			status_data, status_verification, sensitivity_level, completeness_score,
+			source_input, created_at, updated_at
+		FROM awcms_sikesra_entities
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND id = ${entityId}
+			AND deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	const row = result.rows[0];
+	if (!row) {
+		return {
+			blocks: [{ type: "banner", variant: "error", title: "Tidak Ditemukan", description: "Entitas tidak ditemukan" }],
+		};
+	}
+
+	return {
+		blocks: [
+			{ type: "header", text: row.display_name },
+			{ type: "context", text: `ID: ${row.sikesra_id_20 ?? row.id}` },
+			{ type: "divider" },
+			{
+				type: "fields",
+				fields: [
+					{ label: "Tipe Objek", value: row.object_type_code },
+					{ label: "Subtipe", value: row.object_subtype_code },
+					{ label: "Status Data", value: row.status_data },
+					{ label: "Status Verifikasi", value: row.status_verification },
+					{ label: "Sensitivitas", value: row.sensitivity_level },
+					{ label: "Kelengkapan", value: `${row.completeness_score}%` },
+					{ label: "Sumber Input", value: row.source_input },
+					{ label: "Dibuat", value: row.created_at },
+					{ label: "Diperbarui", value: row.updated_at },
+				],
+			},
+			{ type: "divider" },
+			{
+				type: "actions",
+				elements: [
+					{ type: "button", action_id: "entities:back_to_list", label: "Kembali ke Daftar", style: "secondary" },
+					{ type: "button", action_id: "entities:submit_verification", label: "Ajukan Verifikasi", style: "primary" },
+				],
+			},
+		],
+	};
+}
+
+// ── Verification Queue ───────────────────────────────────────────────────────
+
+async function buildVerificationQueue(db: unknown, ctx: SikesraRequestContext): Promise<BlockResponse> {
+	const denied = guardRoute(ctx, "verification:verify");
+	if (!denied.allowed) {
+		return {
+			blocks: [
+				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+			],
+		};
+	}
+
+	const result = await sql<{
+		id: string;
+		sikesra_id_20: string | null;
+		display_name: string;
+		object_type_code: string;
+		status_verification: string;
+		submitted_at: string | null;
+		completeness_score: number;
+	}>`
+		SELECT id, sikesra_id_20, display_name, object_type_code, status_verification,
+			submitted_at, completeness_score
+		FROM awcms_sikesra_entities
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND deleted_at IS NULL
+			AND status_verification LIKE 'submitted%'
+		ORDER BY submitted_at ASC
+		LIMIT 50
+	`.execute(db as never);
+
+	const blocks: Block[] = [
+		{ type: "header", text: "Antrian Verifikasi" },
+		{ type: "context", text: "Entri yang menunggu verifikasi" },
+		{ type: "divider" },
+	];
+
+	// Queue stats
+	const statsResult = await sql<{
+		total_submitted: number;
+		avg_completeness: number;
+	}>`
+		SELECT
+			COUNT(*) as total_submitted,
+			AVG(completeness_score) as avg_completeness
+		FROM awcms_sikesra_entities
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND deleted_at IS NULL
+			AND status_verification LIKE 'submitted%'
+	`.execute(db as never);
+
+	const stats = statsResult.rows[0];
+	if (stats) {
+		blocks.push({
+			type: "stats",
+			items: [
+				{ label: "Menunggu Verifikasi", value: stats.total_submitted },
+				{ label: "Rata-rata Kelengkapan", value: `${Math.round(stats.avg_completeness ?? 0)}%` },
+			],
+		});
+		blocks.push({ type: "divider" });
+	}
+
+	if (result.rows.length === 0) {
+		blocks.push({
+			type: "empty",
+			title: "Antrian Kosong",
+			description: "Tidak ada entri yang menunggu verifikasi",
+		});
+	} else {
+		blocks.push({
+			type: "table",
+			columns: [
+				{ key: "id", label: "ID SIKESRA", format: "code" },
+				{ key: "displayName", label: "Nama", format: "text" },
+				{ key: "type", label: "Tipe", format: "badge" },
+				{ key: "completeness", label: "Kelengkapan", format: "number" },
+				{ key: "submittedAt", label: "Diajukan", format: "relative_time" },
+				{ key: "actions", label: "Aksi", format: "text" },
+			],
+			rows: result.rows.map((row) => ({
+				id: row.sikesra_id_20 ?? row.id.slice(0, 12),
+				displayName: row.display_name,
+				type: row.object_type_code,
+				completeness: row.completeness_score,
+				submittedAt: row.submitted_at ?? "-",
+				actions: "Review",
+			})),
+			page_action_id: "verification:review",
+			empty_text: "Tidak ada entri dalam antrian",
+		});
+	}
+
+	return { blocks };
+}
+
+async function handleVerificationAction(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	action: { type: string; values?: Record<string, unknown> },
+): Promise<BlockResponse> {
+	if (action.values?.action_id === "verification:review") {
+		const entityId = action.values?.id as string | undefined;
+		if (entityId) {
+			return buildVerificationReview(db, ctx, entityId);
+		}
+	}
+	return { blocks: [] };
+}
+
+async function buildVerificationReview(db: unknown, ctx: SikesraRequestContext, entityId: string): Promise<BlockResponse> {
+	const result = await sql<{
+		id: string;
+		sikesra_id_20: string | null;
+		display_name: string;
+		object_type_code: string;
+		object_subtype_code: string;
+		status_verification: string;
+		completeness_score: number;
+	}>`
+		SELECT id, sikesra_id_20, display_name, object_type_code, object_subtype_code,
+			status_verification, completeness_score
+		FROM awcms_sikesra_entities
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND id = ${entityId}
+			AND deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	const row = result.rows[0];
+	if (!row) {
+		return {
+			blocks: [{ type: "banner", variant: "error", title: "Tidak Ditemukan", description: "Entitas tidak ditemukan" }],
+		};
+	}
+
+	return {
+		blocks: [
+			{ type: "header", text: `Review: ${row.display_name}` },
+			{ type: "context", text: `ID: ${row.sikesra_id_20 ?? row.id}` },
+			{ type: "divider" },
+			{
+				type: "fields",
+				fields: [
+					{ label: "Tipe", value: `${row.object_type_code}/${row.object_subtype_code}` },
+					{ label: "Status", value: row.status_verification },
+					{ label: "Kelengkapan", value: `${row.completeness_score}%` },
+				],
+			},
+			{ type: "divider" },
+			{
+				type: "form",
+				fields: [
+					{ type: "text_input", action_id: "note", label: "Catatan Verifikasi", multiline: true, placeholder: "Tambahkan catatan..." },
+					{ type: "select", action_id: "decision", label: "Keputusan", options: [
+						{ label: "Verifikasi", value: "verify" },
+						{ label: "Perlu Revisi", value: "need_revision" },
+						{ label: "Tolak", value: "reject" },
+					]},
+				],
+				submit: { label: "Submit Keputusan", action_id: "verification:submit_decision" },
+			},
+			{ type: "divider" },
+			{
+				type: "actions",
+				elements: [
+					{ type: "button", action_id: "verification:back_to_queue", label: "Kembali ke Antrian", style: "secondary" },
+				],
+			},
+		],
+	};
 }
 
 // ── Not Found ────────────────────────────────────────────────────────────────

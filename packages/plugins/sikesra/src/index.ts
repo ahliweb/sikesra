@@ -96,6 +96,8 @@ export function sikesraPlugin(): PluginDescriptor {
 		entrypoint: "@ahliweb/plugin-sikesra/sandbox",
 		adminPages: [
 			{ path: "/", label: "Dashboard", icon: "shield" },
+			{ path: "/entities", label: "Registry", icon: "list" },
+			{ path: "/verification", label: "Verifikasi", icon: "check" },
 			{ path: "/audit", label: "Audit", icon: "lock" },
 			{ path: "/settings", label: "Pengaturan", icon: "gear" },
 			{ path: "/operations", label: "Operasional", icon: "gear" },
