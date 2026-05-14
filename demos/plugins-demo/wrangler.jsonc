@@ -1,0 +1,24 @@
+{
+	"name": "emdash-plugins-demo",
+	"compatibility_date": "2026-04-22",
+	"compatibility_flags": ["nodejs_compat"],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sikesra",
+			"database_id": "e2902bf9-1648-4a46-8971-e4acadfa09ec"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "sikesra"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "29e3fd9bbf2f448fa3b36185b8be299a"
+		}
+	]
+}

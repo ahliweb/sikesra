@@ -12,8 +12,9 @@
   },
 	"dependencies": {
 		"@ahliweb/plugin-sikesra": "workspace:*",
-		"@astrojs/node": "catalog:",
+		"@astrojs/cloudflare": "catalog:",
 		"@astrojs/react": "catalog:",
+		"@emdash-cms/cloudflare": "workspace:*",
 		"@emdash-cms/plugin-audit-log": "workspace:*",
     "@emdash-cms/plugin-api-test": "workspace:*",
     "@emdash-cms/plugin-webhook-notifier": "workspace:*",
@@ -21,7 +22,6 @@
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "astro": "catalog:",
-    "better-sqlite3": "catalog:",
     "emdash": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"

@@ -1,4 +1,9 @@
-import { type Kysely, type Migration, type MigrationProvider, Migrator, sql } from "kysely";
+import { type Kysely, sql } from "kysely";
+import {
+	type Migration,
+	type MigrationProvider,
+	Migrator,
+} from "kysely/migration";
 
 import type { Database } from "../types.js";
 // Import migrations statically for bundling
