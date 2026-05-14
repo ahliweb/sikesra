@@ -23,8 +23,8 @@ This document maps the existing test suite to the validation checklist items in 
 | `cloudflare-access.test.ts` | 35 | JWT parsing, validation, claim extraction, group-to-role mapping |
 | `integration-gaps.test.ts` | 28 | Region CRUD, entity patch, document upload, settings, access flags |
 | `permission-registry.test.ts` | 19 | Permission registry API, grouping, risk levels, namespace consistency |
-| `admin-integration.test.ts` | 5 | Admin Block Kit envelope, route bridge, dashboard/page smoke coverage |
-| **Total** | **344** | |
+| `admin-integration.test.ts` | 8 | Admin Block Kit envelope, route bridge, runtime wrapper shape, dashboard/page smoke coverage |
+| **Total** | **347** | |
 
 ## Validation Checklist Coverage
 
@@ -266,11 +266,19 @@ The following items have partial coverage or rely on manual review only:
 | Official Region Update/Delete | InMemoryD1Binding limitations | Manual testing with real D1 |
 | Document JOIN queries | InMemoryD1Binding JOIN limitations | Manual testing with real D1 |
 
+#### Runtime Verification Paths
+
+| Area | Current Verification Path | Status |
+|---|---|---|
+| Live plugin admin route envelope | `src/__tests__/admin-integration.test.ts` + `scripts/smoke-admin-route.mjs` | ✅ direct handler + real route-stack smoke path documented |
+| Authenticated admin browser rendering | `scripts/smoke-admin-route.mjs` with copied EmDash session cookie + staging manual browser check | ⚠️ manual execution still required |
+| Backup/restore linkage | `docs/sikesra/BACKUP_RESTORE_TEST_RESULTS.md` with explicit evidence checklist | ⚠️ manual execution still required |
+
 ## MVP Go/No-Go Test Status
 
 | # | Criterion | Test File | Status |
 |---|---|---|---|
-| 1 | All P0 tests pass | All test files | ✅ 320 passing |
+| 1 | All P0 tests pass | All test files | ✅ 347 passing |
 | 2 | Public privacy tests pass | `public-privacy.test.ts` | ✅ 15 passing |
 | 3 | Cross-region tests pass | `security.test.ts` + `integration-gaps.test.ts` | ✅ |
 | 4 | Sensitive masking tests pass | `masking.test.ts` | ✅ 42 passing |

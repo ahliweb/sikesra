@@ -106,7 +106,7 @@ Admin v1 paths below are relative to `/_emdash/api/plugins/sikesra/v1`.
 
 Public paths are not under `v1`; they are mounted at `/_emdash/api/plugins/sikesra/public/*` and are activation-gated by the hybrid wrapper.
 
-The EmDash admin Block Kit route is a special compatibility endpoint at `/_emdash/api/plugins/sikesra/admin`. It must return EmDash's plugin API envelope:
+The EmDash admin Block Kit route is a special compatibility endpoint at `/_emdash/api/plugins/sikesra/admin`. Its final HTTP response must return EmDash's plugin API envelope:
 
 ```json
 {
@@ -116,7 +116,9 @@ The EmDash admin Block Kit route is a special compatibility endpoint at `/_emdas
 }
 ```
 
-Do not return raw `{ "blocks": [] }` from this route; the EmDash admin client reads `(await response.json()).data.blocks`.
+Do not return raw `{ "blocks": [] }` as the HTTP response from this route; the EmDash admin client reads `(await response.json()).data.blocks`.
+
+Implementation detail: the plugin route handler itself should return raw `{ blocks }`, because EmDash wraps the handler result into the final `{ data: { blocks } }` HTTP envelope.
 
 | Group | Method and Path | Permission | Purpose |
 |---|---|---|---|

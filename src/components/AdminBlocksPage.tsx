@@ -9,6 +9,13 @@ interface AdminBlocksPageProps {
 interface AdminBlocksResponse {
   data?: {
     blocks?: Block[];
+    data?: {
+      blocks?: Block[];
+    };
+  };
+  error?: {
+    code?: string;
+    message?: string;
   };
 }
 
@@ -67,7 +74,12 @@ export function parseAdminBlocksResponse(response: unknown): Block[] {
     throw new Error("Invalid admin response");
   }
 
-  const blocks = (response as AdminBlocksResponse).data?.blocks;
+  const typedResponse = response as AdminBlocksResponse;
+  if (typedResponse.error?.message) {
+    throw new Error(typedResponse.error.message);
+  }
+
+  const blocks = typedResponse.data?.blocks ?? typedResponse.data?.data?.blocks;
   if (!Array.isArray(blocks)) {
     throw new Error("Admin response missing data.blocks");
   }
@@ -122,6 +134,31 @@ export function resolveAdminInteractionPage(currentPage: string, input: AdminInt
   }
 
   return normalizedPage || currentPage || "overview";
+}
+
+function parseJsonResponse(text: string): unknown {
+  if (!text.trim()) {
+    throw new Error("Empty admin response");
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error("Admin route returned a non-JSON response");
+  }
+}
+
+function parseAdminErrorResponse(status: number, payload: unknown): never {
+  if (payload && typeof payload === "object") {
+    const error = (payload as AdminBlocksResponse).error;
+    if (error?.message) {
+      throw new Error(error.message);
+    }
+  }
+
+  if (status === 401) throw new Error("Authentication required");
+  if (status === 403) throw new Error("Admin access denied");
+  throw new Error(`Admin route request failed (${status})`);
 }
 
 function blockText(value: unknown): string {
@@ -304,7 +341,13 @@ export function AdminBlocksPage({ page }: AdminBlocksPageProps) {
         body: JSON.stringify({ ...input, page: nextPage }),
       });
 
-      const json = await response.json();
+      const text = await response.text();
+      const json = parseJsonResponse(text);
+
+      if (!response.ok) {
+        parseAdminErrorResponse(response.status, json);
+      }
+
       setBlocks(parseAdminBlocksResponse(json));
       setCurrentPage(nextPage);
     } catch (err) {

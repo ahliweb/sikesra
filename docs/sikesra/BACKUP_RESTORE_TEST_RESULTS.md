@@ -28,6 +28,16 @@ This document records the results of backup and restore testing for SIKESRA D1 d
   - 20 audit log entries
   - 5 ABAC policies
 
+## Required Evidence
+
+Before marking this checklist PASS, capture and attach the following:
+
+1. D1 backup ID and timestamp.
+2. Row counts before backup and after restore for entities, verification events, import batches, audit logs, and ABAC policies.
+3. R2 object listing before backup and after restore.
+4. At least one successful proxy/download check for a restored document.
+5. Notes for any mismatch between D1 metadata and restored R2 objects.
+
 ## Test 1: D1 Backup
 
 ### Procedure
@@ -166,6 +176,14 @@ wrangler r2 object put sikesra <key> --file ./backup/<key>
 | # | Issue | Severity | Resolution |
 |---|-------|----------|------------|
 | 1 | _pending_ | _pending_ | _pending_ |
+
+## Priority Follow-Up When Still Pending
+
+If this document remains incomplete, treat the remaining work in this order:
+
+1. Verify D1 restore row counts against the expected fixture totals.
+2. Verify restored R2 objects match D1 document metadata and are downloadable through the backend path.
+3. Record any object-key, metadata, or count mismatch before approving production restore readiness.
 
 ## Conclusion
 

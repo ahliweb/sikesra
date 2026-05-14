@@ -19,6 +19,25 @@ This checklist validates all MVP workflows in the staging environment before pro
 - [x] Plugin activated in EmDash admin - ✅ Plugin state active
 - [x] Test user accounts created (admin, verifier, operator) - ⚠️ Manual setup required via EmDash admin
 
+## Admin Route Smoke Command
+
+Use this script to verify the real EmDash plugin route stack instead of testing the route handler directly:
+
+```bash
+# Unauthorized path should return structured auth error
+SIKESRA_EXPECT_UNAUTHORIZED=1 node scripts/smoke-admin-route.mjs
+
+# Authenticated path requires a valid EmDash session cookie copied from a real admin browser session
+SIKESRA_ADMIN_COOKIE='emdash_session=<value>' SIKESRA_ADMIN_PAGE=overview node scripts/smoke-admin-route.mjs
+SIKESRA_ADMIN_COOKIE='emdash_session=<value>' SIKESRA_ADMIN_PAGE=entities node scripts/smoke-admin-route.mjs
+```
+
+Expected results:
+
+1. Unauthorized run exits successfully only when the route returns `401` with `Authentication required`.
+2. Authenticated runs exit successfully only when the final HTTP payload contains `data.blocks`.
+3. This validates the actual EmDash wrapper/envelope path, not just `pluginAdminHandler()` in isolation.
+
 ## 1. Hybrid Worker Routing
 
 | # | Test | Expected | Status | Notes |
@@ -26,7 +45,7 @@ This checklist validates all MVP workflows in the staging environment before pro
 | 1.1 | GET `/` | EmDash host output, `x-route: emdash-root` | ✅ PASS | Returns 200, x-route: emdash-root |
 | 1.2 | GET `/sikesra` | Public SIKESRA page (aggregate data) | ✅ PASS | Returns 200, x-route: sikesra, no-store headers |
 | 1.3 | GET `/_emdash/admin` | EmDash admin login/shell | ✅ PASS | Returns 302 redirect to /_emdash/admin/login |
-| 1.4 | GET `/_emdash/api/plugins/sikesra/admin` | Block Kit admin response | ✅ PASS | Returns 401 UNAUTHORIZED (auth required) |
+| 1.4 | POST `/_emdash/api/plugins/sikesra/admin` | Block Kit admin response or structured auth error | ✅ PASS | Unauthorized smoke path returns 401 JSON error; authenticated path should be verified with `scripts/smoke-admin-route.mjs` |
 | 1.5 | GET `/_emdash/api/plugins/sikesra/public/summary` | Public aggregate summary | ✅ PASS | Returns 200 with KPIs, suppression threshold: 5 |
 | 1.6 | GET `/_emdash/api/plugins/sikesra/v1/entities` | Auth required or entity list | ✅ PASS | Returns 401 UNAUTHORIZED, x-route: sikesra-api |
 
@@ -39,6 +58,15 @@ This checklist validates all MVP workflows in the staging environment before pro
 | 2.3 | `/sikesra` accessible after activation | Returns public page | ✅ PASS | Returns 200 with HTML |
 | 2.4 | Deactivate plugin | Status changes to inactive | ⚠️ MANUAL | Requires EmDash admin UI access |
 | 2.5 | `/sikesra` returns 404 after deactivation | 404 response | ⚠️ MANUAL | Code path verified in worker-wrapper |
+
+## 2A. Authenticated Admin Plugin Rendering
+
+| # | Test | Expected | Status | Notes |
+|---|------|----------|--------|-------|
+| 2A.1 | `scripts/smoke-admin-route.mjs` with valid admin cookie and `page=overview` | `data.blocks` array returned | ⚠️ MANUAL | Requires copying a live EmDash session cookie |
+| 2A.2 | `scripts/smoke-admin-route.mjs` with valid admin cookie and `page=entities` | `data.blocks` array returned | ⚠️ MANUAL | Verifies a secondary plugin page through the real route stack |
+| 2A.3 | Browser load `/_emdash/admin/plugins/sikesra/` after login | Dashboard renders, no `Admin response missing data.blocks` | ⚠️ MANUAL | Confirms React bridge + real route wrapper + auth/session behavior |
+| 2A.4 | Browser load `/_emdash/admin/plugins/sikesra/entities` after login | Entity page renders, no parser error | ⚠️ MANUAL | Confirms non-dashboard plugin page path |
 
 ## 3. Entity CRUD Workflow
 

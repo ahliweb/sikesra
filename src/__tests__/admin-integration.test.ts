@@ -9,6 +9,16 @@ describe("SIKESRA admin integration", () => {
     expect(blocks[0].type).toBe("header");
   });
 
+  it("parses nested EmDash runtime envelopes", () => {
+    const blocks = parseAdminBlocksResponse({ data: { data: { blocks: [{ type: "header", text: "Dashboard" }] } } });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].text).toBe("Dashboard");
+  });
+
+  it("surfaces structured admin error payloads", () => {
+    expect(() => parseAdminBlocksResponse({ error: { code: "UNAUTHORIZED", message: "Authentication required" } })).toThrow("Authentication required");
+  });
+
   it("rejects raw blocks payloads without data wrapper", () => {
     expect(() => parseAdminBlocksResponse({ blocks: [] })).toThrow("data.blocks");
   });
@@ -36,7 +46,7 @@ describe("SIKESRA admin integration", () => {
     });
   });
 
-  it("returns data.blocks from the plugin admin route", async () => {
+  it("returns raw blocks from the direct plugin admin handler", async () => {
     const response = await pluginAdminHandler({
       plugin: { id: "sikesra", version: "0.1.0" },
       request: new Request("https://example.com/_emdash/api/plugins/sikesra/admin", {
@@ -51,8 +61,26 @@ describe("SIKESRA admin integration", () => {
       site: { url: "https://site-1.example.com", name: "site-1" },
     });
 
-    expect(response).toHaveProperty("data.blocks");
-    expect(Array.isArray((response as { data: { blocks: unknown[] } }).data.blocks)).toBe(true);
-    expect(response).not.toHaveProperty("blocks");
+    expect(response).toHaveProperty("blocks");
+    expect(Array.isArray((response as { blocks: unknown[] }).blocks)).toBe(true);
+  });
+
+  it("accepts the wrapped HTTP success shape produced by EmDash", async () => {
+    const handlerResult = await pluginAdminHandler({
+      plugin: { id: "sikesra", version: "0.1.0" },
+      request: new Request("https://example.com/_emdash/api/plugins/sikesra/admin", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-emdash-user-id": "user-1",
+          "x-emdash-user-roles": "admin",
+        },
+      }),
+      input: { page: "unknown-page" },
+      site: { url: "https://site-1.example.com", name: "site-1" },
+    });
+
+    const blocks = parseAdminBlocksResponse({ data: handlerResult });
+    expect(blocks.length).toBeGreaterThan(0);
   });
 });

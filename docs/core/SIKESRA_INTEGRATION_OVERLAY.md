@@ -96,13 +96,13 @@ The postbuild script is part of this repository's integration contract and must 
 
 ## Admin Integration Contract
 
-Target contract for the future rebuilt SIKESRA admin API: the EmDash admin client reads plugin Block Kit responses as:
+Target HTTP contract for the rebuilt SIKESRA admin API: the EmDash admin client reads plugin Block Kit responses as:
 
 ```txt
 (await response.json()).data.blocks
 ```
 
-Therefore `/_emdash/api/plugins/sikesra/admin` must return:
+Therefore the HTTP response from `/_emdash/api/plugins/sikesra/admin` must be:
 
 ```json
 {
@@ -112,7 +112,13 @@ Therefore `/_emdash/api/plugins/sikesra/admin` must return:
 }
 ```
 
-Returning a raw `{ "blocks": [] }` payload breaks the admin page with `Cannot read properties of undefined (reading 'blocks')`.
+Returning a raw `{ "blocks": [] }` HTTP payload breaks the admin page with `Cannot read properties of undefined (reading 'blocks')`.
+
+Implementation note:
+
+1. The SIKESRA plugin route handler itself should return raw `{ blocks }`.
+2. EmDash wraps the handler result through its plugin route stack.
+3. The final HTTP response must still be `{ data: { blocks: [] } }` for the browser client.
 
 During the scratch rebuild, unfinished SIKESRA APIs remain disabled with `503`, but the admin Block Kit route `/_emdash/api/plugins/sikesra/admin` and public-safe route group `/_emdash/api/plugins/sikesra/public/*` are allowed through to EmDash so the plugin shell and `/sikesra` public page can render. If future implementation requires wrapper-owned admin rendering because the native EmDash plugin route context does not expose raw Cloudflare bindings such as `env.SIKESRA_DB`, create a separate adapter decision before implementing it.
 

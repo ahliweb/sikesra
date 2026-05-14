@@ -185,12 +185,12 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 ### Post-MVP Operational Documentation (Completed)
 - **Incident Response Runbook** (`INCIDENT_RESPONSE_RUNBOOK.md`): Comprehensive runbook covering SEV-1 through SEV-4 incidents with step-by-step procedures for data breach, data corruption, auth failure, worker outage, performance degradation, import/export failures. Includes incident command structure, communication templates, post-incident review process, and emergency contacts.
 - **Operator Training Notes** (`OPERATOR_TRAINING.md`): Expanded from 53 to 200+ lines covering all user roles, core workflows (manual entry, Excel import, verification, documents, export, audit), troubleshooting guide, debugging commands, deployment process, backup/restore, and monthly maintenance checklist.
-- **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 344 tests across 18 test files to validation checklist items. Documents coverage gaps with recommended test files.
+- **Test Coverage Mapping** (`TEST_COVERAGE_MAPPING.md`): Maps 347 tests across 18 test files to validation checklist items. Documents coverage gaps with recommended test files.
 - **Performance Review Framework** (`PERFORMANCE_REVIEW.md`): Comprehensive performance testing targets, D1 query benchmarks, R2 throughput tests, and load testing scenarios.
 - **Staging Validation Checklist** (`STAGING_VALIDATION_CHECKLIST.md`): 54-item checklist covering hybrid worker routing, plugin activation, entity CRUD, verification, import, documents, export, audit, ABAC, and rate limiting.
 - **Backup/Restore Test Results** (`BACKUP_RESTORE_TEST_RESULTS.md`): Test procedure and results template for D1 backup/restore and R2 backup/restore validation.
 
-### Test Coverage (344 tests across 18 test files)
+### Test Coverage (347 tests across 18 test files)
 - `architecture.test.ts`: 28 tests - Core architecture, RBAC, ABAC, request context
 - `security.test.ts`: 29 tests - RBAC enforcement, masking, region scope, storage, completeness, audit
 - `public-privacy.test.ts`: 15 tests - Aggregate-safe output, small-cell suppression, filter safety
@@ -199,7 +199,7 @@ Do not treat previous implementation layers as complete. Rebuild them in this or
 - `verification-workflow.test.ts`: 9 tests - Permissions, state transitions, note requirements
 - `export-restriction.test.ts`: 13 tests - Field sensitivity, permissions, format support
 - `permission-registry.test.ts`: 19 tests - Permission registry API, resource grouping, risk levels, namespace consistency
-- `admin-integration.test.ts`: 5 tests - `data.blocks` contract, admin page bridge routing, dashboard regression coverage
+- `admin-integration.test.ts`: 8 tests - `data.blocks` contract, wrapped runtime envelope, auth/error parsing, admin page bridge routing, dashboard regression coverage
 
 ### MVP Issues Closed
 | Issue | Title | Status |
