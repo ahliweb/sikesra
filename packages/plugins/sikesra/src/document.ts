@@ -92,6 +92,10 @@ export interface DocumentDownloadResult {
 
 export interface DocumentStorageContext {
 	db?: unknown;
+	r2?: {
+		put(key: string, content: ArrayBuffer | Blob | string, options?: { contentType?: string }): Promise<void>;
+		get(key: string): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; body: ReadableStream | null } | null>;
+	};
 	storage: {
 		documents: {
 			put(id: string, data: DocumentRecord): Promise<void>;
@@ -195,7 +199,12 @@ export async function completeUpload(
 
 	const contentKey = buildDocumentObjectKey(input.fileObjectId);
 	if (input.contentBase64) {
-		await runtime.kv.set(contentKey, input.contentBase64);
+		if (runtime.r2) {
+			const binary = Uint8Array.from(atob(input.contentBase64), (c) => c.charCodeAt(0));
+			await runtime.r2.put(contentKey, binary.buffer as ArrayBuffer, { contentType: input.mimeType ?? existing.mimeType });
+		} else {
+			await runtime.kv.set(contentKey, input.contentBase64);
+		}
 	}
 
 	const updated: DocumentRecord = {
@@ -254,8 +263,17 @@ export async function getDocumentDownload(
 	}
 	if (!document.contentKey) throw new Error("DOCUMENT_FILE_NOT_FOUND_IN_STORAGE");
 
-	const contentBase64 = await runtime.kv.get<string>(document.contentKey);
-	if (!contentBase64) throw new Error("DOCUMENT_FILE_NOT_FOUND_IN_STORAGE");
+	let contentBase64: string;
+	if (runtime.r2) {
+		const obj = await runtime.r2.get(document.contentKey);
+		if (!obj) throw new Error("DOCUMENT_FILE_NOT_FOUND_IN_STORAGE");
+		const buffer = await obj.arrayBuffer();
+		contentBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+	} else {
+		const kvContent = await runtime.kv.get<string>(document.contentKey);
+		if (!kvContent) throw new Error("DOCUMENT_FILE_NOT_FOUND_IN_STORAGE");
+		contentBase64 = kvContent;
+	}
 
 	await writeDocumentAudit(runtime, ctx, AUDIT_ACTIONS.DOCUMENT_DOWNLOAD, documentId, {
 		reason,
