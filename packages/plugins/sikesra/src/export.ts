@@ -104,9 +104,16 @@ const REPORTS: ReportMetadata[] = [
 		name: "Ringkasan Entitas",
 		description: "Rekapitulasi jumlah entitas per jenis, subjenis, dan wilayah.",
 		availableFields: [
-			{ key: "report_type", label: "Jenis laporan", sensitivity: "internal" },
-			{ key: "created_by", label: "Dibuat oleh", sensitivity: "internal" },
-			{ key: "filter_summary", label: "Ringkasan filter", sensitivity: "internal" },
+			{ key: "id", label: "ID", sensitivity: "internal" },
+			{ key: "display_name", label: "Nama", sensitivity: "internal" },
+			{ key: "object_type_code", label: "Jenis entitas", sensitivity: "internal" },
+			{ key: "object_subtype_code", label: "Subjenis", sensitivity: "internal" },
+			{ key: "official_village_code", label: "Kode desa", sensitivity: "internal" },
+			{ key: "village_name", label: "Nama desa", sensitivity: "internal" },
+			{ key: "status_verification", label: "Status verifikasi", sensitivity: "internal" },
+			{ key: "sikesra_id_20", label: "Kode SIKESRA", sensitivity: "internal" },
+			{ key: "created_at", label: "Dibuat", sensitivity: "internal" },
+			{ key: "completeness_percent", label: "Kelengkapan", sensitivity: "internal" },
 		],
 		requiredPermission: "awcms:sikesra:export:create",
 		reasonRequired: false,
@@ -116,7 +123,10 @@ const REPORTS: ReportMetadata[] = [
 		name: "Status Verifikasi",
 		description: "Laporan status verifikasi dengan catatan terbatas.",
 		availableFields: [
-			{ key: "report_type", label: "Jenis laporan", sensitivity: "internal" },
+			{ key: "id", label: "ID", sensitivity: "internal" },
+			{ key: "display_name", label: "Nama", sensitivity: "restricted" },
+			{ key: "sikesra_id_20", label: "Kode SIKESRA", sensitivity: "restricted" },
+			{ key: "status_verification", label: "Status verifikasi", sensitivity: "internal" },
 			{ key: "verification_scope", label: "Cakupan verifikasi", sensitivity: "restricted" },
 			{ key: "reason", label: "Alasan akses", sensitivity: "restricted" },
 		],
@@ -256,11 +266,13 @@ export async function generateExportFile(
 	};
 	await saveExportJobRecord(runtime, jobId, generating, ctx);
 
-	const csvContent = buildCsvContent(report, current, ctx);
+	const csvContent = runtime.db
+		? await buildCsvContentFromDb(runtime.db, report, current, ctx)
+		: buildCsvContent(report, current, ctx);
 	const contentKey = `exports:file:${jobId}`;
 	await runtime.kv.set(contentKey, csvContent);
 
-	const totalRows = 1;
+	const totalRows = countCsvRows(csvContent);
 	const completed: ExportJobRecord = {
 		...generating,
 		status: "ready",
@@ -348,6 +360,155 @@ function buildCsvContent(
 	});
 
 	return `${headers}\n${values.join(",")}\n`;
+}
+
+async function buildCsvContentFromDb(
+	db: unknown,
+	report: ReportMetadata,
+	job: ExportJobSummary,
+	ctx: SikesraRequestContext,
+): Promise<string> {
+	const selectedFields = report.availableFields.filter((field) => job.fields.includes(field.key));
+	const headers = selectedFields.map((field) => field.key).join(",");
+
+	const entities = await queryEntitiesForExport(db, ctx, job.filters);
+	if (entities.length === 0) {
+		return `${headers}\n`;
+	}
+
+	const rows = entities.map((entity) => {
+		return selectedFields
+			.map((field) => {
+				const value = getEntityFieldValue(field.key, entity, ctx, job);
+				return escapeCsv(String(value ?? ""));
+			})
+			.join(",");
+	});
+
+	return `${headers}\n${rows.join("\n")}\n`;
+}
+
+interface ExportEntityRow {
+	id: string;
+	display_name: string;
+	object_type_code: string;
+	object_subtype_code: string;
+	entity_kind: string;
+	official_village_code: string;
+	status_verification: string;
+	sensitivity_level: string;
+	sikesra_id_20: string | null;
+	created_at: string;
+	updated_at: string;
+	created_by: string;
+	completeness_percent: number;
+	village_name: string | null;
+}
+
+async function queryEntitiesForExport(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: Record<string, unknown>,
+): Promise<ExportEntityRow[]> {
+	const conditions = [
+		sql`tenant_id = ${ctx.tenantId}`,
+		sql`site_id = ${ctx.siteId}`,
+		sql`deleted_at IS NULL`,
+	];
+
+	if (filters.statusVerification) {
+		conditions.push(sql`status_verification = ${filters.statusVerification}`);
+	}
+	if (filters.objectTypeCode) {
+		conditions.push(sql`object_type_code = ${filters.objectTypeCode}`);
+	}
+	if (filters.sensitivityLevel) {
+		conditions.push(sql`sensitivity_level = ${filters.sensitivityLevel}`);
+	}
+	if (filters.officialVillageCode) {
+		conditions.push(sql`official_village_code = ${filters.officialVillageCode}`);
+	}
+	if (ctx.regionScope.villageCodes?.length) {
+		conditions.push(
+			sql`official_village_code IN (${sql.join(ctx.regionScope.villageCodes.map((c) => sql`${c}`))})`,
+		);
+	}
+
+	const result = await sql<ExportEntityRow>`
+		SELECT
+			entity.id, entity.display_name, entity.object_type_code,
+			entity.object_subtype_code, entity.entity_kind, entity.official_village_code,
+			entity.status_verification, entity.sensitivity_level, entity.sikesra_id_20,
+			entity.created_at, entity.updated_at, entity.created_by,
+			entity.completeness_percent, village.name AS village_name
+		FROM awcms_sikesra_entities entity
+		LEFT JOIN awcms_sikesra_official_regions village
+			ON village.tenant_id = entity.tenant_id
+			AND village.site_id = entity.site_id
+			AND village.code = entity.official_village_code
+		WHERE ${sql.join(conditions, sql` AND `)}
+		ORDER BY entity.created_at DESC
+		LIMIT 1000
+	`.execute(db as never);
+
+	return result.rows;
+}
+
+function getEntityFieldValue(
+	fieldKey: string,
+	entity: ExportEntityRow,
+	ctx: SikesraRequestContext,
+	job: ExportJobSummary,
+): string | number | null {
+	switch (fieldKey) {
+		case "id":
+			return entity.id;
+		case "display_name":
+			return entity.display_name;
+		case "object_type_code":
+			return entity.object_type_code;
+		case "object_subtype_code":
+			return entity.object_subtype_code;
+		case "entity_kind":
+			return entity.entity_kind;
+		case "official_village_code":
+			return entity.official_village_code;
+		case "village_name":
+			return entity.village_name;
+		case "status_verification":
+			return entity.status_verification;
+		case "sensitivity_level":
+			return entity.sensitivity_level;
+		case "sikesra_id_20":
+			return entity.sikesra_id_20;
+		case "created_at":
+			return entity.created_at;
+		case "updated_at":
+			return entity.updated_at;
+		case "created_by":
+			return entity.created_by;
+		case "completeness_percent":
+			return entity.completeness_percent;
+		case "report_type":
+			return job.reportType;
+		case "verification_scope":
+			return ctx.regionScope.villageCodes?.join("|") || ctx.siteId;
+		case "reason":
+			return job.reason ?? "";
+		case "request_id":
+			return ctx.requestId;
+		case "actor_id":
+			return ctx.userId;
+		case "filter_summary":
+			return JSON.stringify(job.filters);
+		default:
+			return "";
+	}
+}
+
+function countCsvRows(csvContent: string): number {
+	const lines = csvContent.trim().split("\n");
+	return lines.length > 1 ? lines.length - 1 : 0;
 }
 
 function escapeCsv(value: string): string {

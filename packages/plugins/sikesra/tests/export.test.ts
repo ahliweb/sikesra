@@ -143,7 +143,7 @@ describe("SIKESRA export workflow", () => {
 		expect(generated.filename).toContain("entity_summary");
 		expect(downloaded.filename).toContain("entity_summary");
 		expect(downloaded.mimeType).toBe("text/csv");
-		expect(downloaded.content).toContain("report_type");
+		expect(downloaded.content).toContain("id");
 		expect(downloaded).not.toHaveProperty("contentKey");
 	});
 
