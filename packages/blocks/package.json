@@ -30,7 +30,7 @@
     "@phosphor-icons/react": "catalog:",
     "clsx": "^2.1.1",
     "echarts": "^6.0.0",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
