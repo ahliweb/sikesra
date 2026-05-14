@@ -175,8 +175,8 @@ catalogs:
       specifier: ^3.20.0
       version: 3.20.0
     '@tiptap/extension-underline':
-      specifier: ^3.20.0
-      version: 3.20.0
+      specifier: ^3.23.4
+      version: 3.23.4
     '@tiptap/pm':
       specifier: ^3.20.0
       version: 3.20.0
@@ -948,7 +948,7 @@ importers:
         version: 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/extension-underline':
         specifier: 'catalog:'
-        version: 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
+        version: 3.23.4(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/pm':
         specifier: 'catalog:'
         version: 3.20.0
@@ -1397,7 +1397,7 @@ importers:
         version: 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/extension-underline':
         specifier: 'catalog:'
-        version: 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
+        version: 3.23.4(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/react':
         specifier: 'catalog:'
         version: 3.20.0(@floating-ui/dom@1.7.6)(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))(@tiptap/pm@3.20.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2398,7 +2398,7 @@ packages:
       wrangler: ^4.61.1
 
   '@astrojs/cloudflare@https://pkg.pr.new/@astrojs/cloudflare@94d342d':
-    resolution: {integrity: sha512-Bt+G512Dr1SqYdsza6HOLP2azfHg0m5UE0s6SBGX77g+ThFV95Nai5boyM8HO3jVpqwVPPh+5ycMptjrtzv7Yg==, tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
+    resolution: {tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
     version: 13.1.10
     peerDependencies:
       astro: '>=6.1.10'
@@ -3042,7 +3042,7 @@ packages:
   '@cloudflare/vite-plugin@1.32.3':
     resolution: {integrity: sha512-a8ZkCA/SOiJ36jT3LlBLkUb7ZzGInhYJoTY4BMRBGdk+nsh44HavbNvtu/RdaqS5VJEMLM4+LqVIJ+V0ahGeFg==}
     peerDependencies:
-      vite: '>=7.3.2'
+      vite: '>=6.4.2'
       wrangler: ^4.83.0
 
   '@cloudflare/vite-plugin@1.36.3':
@@ -3980,7 +3980,7 @@ packages:
     resolution: {integrity: sha512-yTCCjuQapvRz6S30B8DyqHu1WYsbYRCww6uNsmbQU4GQVf5gJzJSB60qUHj+qBSxReLtRL/mhmhYhrIc9jVFTw==}
 
   '@lunariajs/core@https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc':
-    resolution: {integrity: sha512-k8sHBM7S10HBa39fxsJcOGYMGrbru5UZ9vMS4kmCa9o6dJTUP6rt3zKVEs7uEsHAYasoXyiC6wre2Jiqs3X+zQ==, tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
+    resolution: {tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
     version: 0.1.1
     engines: {node: '>=18.17.0'}
 
@@ -5974,10 +5974,10 @@ packages:
     peerDependencies:
       '@tiptap/core': ^3.20.0
 
-  '@tiptap/extension-underline@3.20.0':
-    resolution: {integrity: sha512-LzNXuy2jwR/y+ymoUqC72TiGzbOCjioIjsDu0MNYpHuHqTWPK5aV9Mh0nbZcYFy/7fPlV1q0W139EbJeYBZEAQ==}
+  '@tiptap/extension-underline@3.23.4':
+    resolution: {integrity: sha512-F1ocPT10LV+seky25R1TMCRdc/Iof99jLcDSYDGr6mNEDY4ct2RvOeSM8aDdYq6CkH+vXt3i3JDeRwV23KzswQ==}
     peerDependencies:
-      '@tiptap/core': ^3.20.0
+      '@tiptap/core': 3.23.4
 
   '@tiptap/extensions@3.20.0':
     resolution: {integrity: sha512-HIsXX942w3nbxEQBlMAAR/aa6qiMBEP7CsSMxaxmTIVAmW35p6yUASw6GdV1u0o3lCZjXq2OSRMTskzIqi5uLg==}
@@ -6502,7 +6502,7 @@ packages:
     hasBin: true
 
   astro@https://pkg.pr.new/astro@94d342d:
-    resolution: {integrity: sha512-1XlhRGRCQP4L5KPZUgSRCKOD28aKiGYQ8TBAxBIJvFV/HUuct3eHvc7sY/krhhCAju81JMlvbWU+1XVzltgZTQ==, tarball: https://pkg.pr.new/astro@94d342d}
+    resolution: {tarball: https://pkg.pr.new/astro@94d342d}
     version: 6.1.7
     engines: {node: '>=22.12.0', npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
@@ -14443,7 +14443,7 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.20.0(@tiptap/pm@3.20.0)
 
-  '@tiptap/extension-underline@3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))':
+  '@tiptap/extension-underline@3.23.4(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))':
     dependencies:
       '@tiptap/core': 3.20.0(@tiptap/pm@3.20.0)
 
@@ -14513,7 +14513,7 @@ snapshots:
       '@tiptap/extension-paragraph': 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/extension-strike': 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/extension-text': 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
-      '@tiptap/extension-underline': 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
+      '@tiptap/extension-underline': 3.23.4(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))
       '@tiptap/extensions': 3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))(@tiptap/pm@3.20.0)
       '@tiptap/pm': 3.20.0
 

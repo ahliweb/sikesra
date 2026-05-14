@@ -72,7 +72,7 @@ catalog:
   "@tiptap/extension-table-row": ^3.20.0
   "@tiptap/extension-text-align": ^3.20.0
   "@tiptap/extension-typography": ^3.20.0
-  "@tiptap/extension-underline": ^3.20.0
+  "@tiptap/extension-underline": ^3.23.4
   "@tiptap/pm": ^3.20.0
   "@tiptap/react": ^3.20.0
   "@tiptap/starter-kit": ^3.20.0
