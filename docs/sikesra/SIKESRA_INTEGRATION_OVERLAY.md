@@ -20,6 +20,8 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 |------|---------|
 | Plugin descriptor | `sikesraPlugin()` with admin pages (`/`, `/operations`), widget (`overview`), storage config |
 | Route handlers | 28 named routes defined in `sandbox-entry.ts` |
+| Region services | Official and local region list services with tenant/site filtering and region-scope enforcement |
+| Entity registry APIs | D1-backed entity list/detail services with masking, access flags, and region-safe exclusion |
 | Document workflow | Upload URL gen, upload complete, list, download w/ classification checks, verify, replace -- all with audit |
 | Import workflow | CSV parse, batch create, row staging, column mapping + validation, duplicate detection, promote to entities, rollback |
 | Export workflow | 3 report types (entity_summary, verification_status, audit_evidence), job lifecycle, CSV generation, permission filtering |
@@ -55,6 +57,12 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Dashboard/charts | No visualizations, all KPIs return 0 |
 | Verification UI | No verification workflow interface |
 | Document management UI | No document browsing/management interface |
+
+### Backend Available For UI
+
+- `v1/entities` now returns real registry data with filtering, masking, and region-safe exclusion.
+- `v1/entities/get` now returns entity detail, summary, verification metadata, and backend access flags.
+- `v1/regions/official` and `v1/regions/local` now return real region data with tenant/site filtering and scope enforcement.
 
 ## D1 Schema
 

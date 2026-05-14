@@ -1820,6 +1820,9 @@ importers:
         specifier: '>=0.28.17'
         version: 0.29.0
     devDependencies:
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 12.8.0
       tsdown:
         specifier: 'catalog:'
         version: 0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260213.1)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@5.9.3)

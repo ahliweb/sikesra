@@ -23,6 +23,8 @@ import {
 	type ExportCreateInput,
 	type ExportStorageContext,
 } from "./export.js";
+import { getEntityDetail, listEntities } from "./services/entities.js";
+import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
 import {
 	createImportBatch,
 	listImportRows,
@@ -80,6 +82,45 @@ export default definePlugin({
 				highRiskAuditActions: [...HIGH_RISK_AUDIT_REQUIRED],
 				auditActions: AUDIT_ACTIONS,
 			}),
+		},
+		"v1/entities": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return listEntities(db, buildRequestContextFromRoute(routeCtx), normalizeEntityListInput(routeCtx.input));
+			},
+		},
+		"v1/entities/get": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = asRecord(routeCtx.input);
+				const entityId = typeof input.entityId === "string" ? input.entityId : "";
+				if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+				const db = await loadDb();
+				return getEntityDetail(db, buildRequestContextFromRoute(routeCtx), entityId);
+			},
+		},
+		"v1/regions/official": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return {
+					items: await listOfficialRegions(
+						db,
+						buildRequestContextFromRoute(routeCtx),
+						normalizeOfficialRegionInput(routeCtx.input),
+					),
+				};
+			},
+		},
+		"v1/regions/local": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return {
+					items: await listLocalRegions(
+						db,
+						buildRequestContextFromRoute(routeCtx),
+						normalizeLocalRegionInput(routeCtx.input),
+					),
+				};
+			},
 		},
 		"v1/exports/reports": {
 				handler: async (
@@ -492,6 +533,52 @@ function normalizeRollbackInput(value: unknown): { batchId: string; rowIds?: str
 			? input.rowIds.filter((rowId): rowId is string => typeof rowId === "string")
 			: undefined,
 	};
+}
+
+function normalizeEntityListInput(value: unknown) {
+	const input = asRecord(value);
+	return {
+		keyword: typeof input.keyword === "string" ? input.keyword : undefined,
+		objectTypeCode: typeof input.objectTypeCode === "string" ? input.objectTypeCode : undefined,
+		objectSubtypeCode:
+			typeof input.objectSubtypeCode === "string" ? input.objectSubtypeCode : undefined,
+		districtCode: typeof input.districtCode === "string" ? input.districtCode : undefined,
+		officialVillageCode:
+			typeof input.officialVillageCode === "string" ? input.officialVillageCode : undefined,
+		localRegionId: typeof input.localRegionId === "string" ? input.localRegionId : undefined,
+		statusData: typeof input.statusData === "string" ? input.statusData : undefined,
+		statusVerification:
+			typeof input.statusVerification === "string" ? input.statusVerification : undefined,
+		sensitivityLevel:
+			typeof input.sensitivityLevel === "string" ? input.sensitivityLevel : undefined,
+		sourceInput: typeof input.sourceInput === "string" ? input.sourceInput : undefined,
+		duplicateStatus:
+			typeof input.duplicateStatus === "string" ? input.duplicateStatus : undefined,
+		limit: typeof input.limit === "number" ? input.limit : undefined,
+	};
+}
+
+function normalizeOfficialRegionInput(value: unknown) {
+	const input = asRecord(value);
+	return {
+		level: typeof input.level === "string" ? input.level : undefined,
+		parentCode: typeof input.parentCode === "string" ? input.parentCode : undefined,
+	};
+}
+
+function normalizeLocalRegionInput(value: unknown) {
+	const input = asRecord(value);
+	return {
+		officialVillageCode:
+			typeof input.officialVillageCode === "string" ? input.officialVillageCode : undefined,
+		parentId: typeof input.parentId === "string" ? input.parentId : undefined,
+		level: typeof input.level === "string" ? input.level : undefined,
+	};
+}
+
+async function loadDb() {
+	const runtime = await import("emdash/runtime");
+	return runtime.getDb();
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

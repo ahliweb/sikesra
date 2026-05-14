@@ -32,6 +32,7 @@
 		"emdash": "workspace:*"
 	},
 	"devDependencies": {
+		"better-sqlite3": "catalog:",
 		"tsdown": "catalog:",
 		"vitest": "catalog:"
 	},

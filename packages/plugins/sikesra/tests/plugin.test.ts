@@ -80,14 +80,18 @@ describe("sikesraPlugin descriptor", () => {
 		expect(SIKESRA_PUBLIC_ROUTE).toBe("/sikesra");
 		expect(SIKESRA_ADMIN_BASE).toBe("/_emdash/admin/plugins/sikesra");
 		expect(SIKESRA_API_BASE).toBe("/_emdash/api/plugins/sikesra");
-		expect(SIKESRA_ROUTE_NAMES).toEqual([
-			"admin",
-			"public/metadata",
-			"public/filters",
-			"public/summary",
-			"v1/status",
-			"v1/security/manifest",
-			"v1/exports/reports",
+			expect(SIKESRA_ROUTE_NAMES).toEqual([
+				"admin",
+				"public/metadata",
+				"public/filters",
+				"public/summary",
+				"v1/status",
+				"v1/security/manifest",
+				"v1/entities",
+				"v1/entities/get",
+				"v1/regions/official",
+				"v1/regions/local",
+				"v1/exports/reports",
 			"v1/exports/jobs",
 			"v1/exports/jobs/get",
 			"v1/exports/jobs/create",
