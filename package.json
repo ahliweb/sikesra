@@ -1,58 +1,66 @@
 {
-  "name": "@ahliweb/plugin-sikesra",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "SIKESRA — Sistem Informasi Kesejahteraan Rakyat as an EmDash-native plugin (self-contained host)",
-  "main": "src/plugin-entry.ts",
-  "exports": {
-    ".": {
-      "import": "./src/plugin-entry.ts"
-    },
-    "./admin": {
-      "import": "./src/admin.tsx"
-    }
-  },
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "postbuild": "node scripts/postbuild.mjs",
-    "preview": "astro preview",
-    "deploy": "npm run build && wrangler deploy",
-    "typecheck": "astro check && tsc --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
-  },
-  "dependencies": {
-    "@astrojs/cloudflare": "^13.5.0",
-    "@astrojs/react": "^5.0.4",
-    "@emdash-cms/cloudflare": "^0.12.0",
-    "@tiptap/extension-collaboration": "^3.23.2",
-    "@tiptap/y-tiptap": "^3.0.3",
-    "astro": "^6.3.1",
-    "emdash": "^0.12.0",
-    "exceljs": "^4.4.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "y-protocols": "^1.0.7",
-    "yjs": "^13.6.30"
-  },
-  "devDependencies": {
-    "@astrojs/check": "^0.9.4",
-    "@cloudflare/workers-types": "^4.20260508.0",
-    "@vitest/coverage-v8": "^3.1.1",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.1",
-    "wrangler": "^4.90.0"
-  },
-  "keywords": [
-    "sikesra",
-    "welfare",
-    "emdash",
-    "awcms"
-  ],
-  "license": "SEE LICENSE IN LICENSE",
-  "overrides": {
-    "kysely": "^0.28.17"
-  }
+	"name": "emdash-workspace",
+	"private": true,
+	"type": "module",
+	"version": "1.0.0",
+	"description": "Agent-portable reimplementation of WordPress on Astro",
+	"scripts": {
+		"typecheck": "pnpm run --filter {./packages/**} typecheck",
+		"typecheck:demos": "pnpm run --workspace-concurrency=1 --filter {./demos/*} --filter !@emdash-cms/demo-cloudflare typecheck",
+		"typecheck:templates": "pnpm run --workspace-concurrency=1 --filter {./templates/*} typecheck",
+		"check": "pnpm run typecheck && pnpm run --filter {./packages/*} check",
+		"test": "pnpm run --filter {./packages/*} test",
+		"test:unit": "pnpm run --filter emdash --filter @emdash-cms/auth --filter @emdash-cms/blocks --filter @emdash-cms/gutenberg-to-portable-text --filter @emdash-cms/marketplace --filter @emdash-cms/plugin-forms --filter @emdash-cms/plugin-types --filter @emdash-cms/registry-cli --filter @emdash-cms/registry-client --filter @emdash-cms/registry-lexicons test",
+		"test:browser": "pnpm run --filter @emdash-cms/admin test",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"build": "pnpm run --filter {./packages/**} build",
+		"postbuild": "node scripts/relink-bins-if-needed.mjs",
+		"format": "oxfmt --ignore-path .gitignore && prettier --write .",
+		"format:check": "oxfmt --ignore-path .gitignore --check && prettier --check .",
+		"format:astro": "prettier --write .",
+		"lint": "oxlint --type-aware",
+		"lint:quick": "oxlint -f json",
+		"lint:json": "oxlint --type-aware -f json",
+		"lint:fix": "oxlint --type-aware --fix",
+		"knip": "knip --no-exit-code --exclude unlisted,unresolved,exports,types,duplicates",
+		"new": "create-emdash",
+		"screenshots": "node scripts/screenshot-all-templates.mjs",
+		"query-counts": "node scripts/query-counts.mjs",
+		"locale:extract": "pnpm --filter @emdash-cms/admin locale:extract",
+		"locale:compile": "pnpm --filter @emdash-cms/admin locale:compile",
+		"changeset:version": "pnpm changeset version && pnpm install --no-frozen-lockfile"
+	},
+	"keywords": [],
+	"author": "Matt Kane",
+	"license": "MIT",
+	"devDependencies": {
+		"@axe-core/playwright": "^4.11.1",
+		"@changesets/changelog-github": "^0.5.2",
+		"@changesets/cli": "^2.29.8",
+		"@e18e/eslint-plugin": "^0.2.0",
+		"@lunariajs/core": "https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc",
+		"@playwright/test": "^1.58.0",
+		"@types/node": "catalog:",
+		"@typescript/native-preview": "^7.0.0-dev",
+		"emdash": "workspace:*",
+		"knip": "^5.84.1",
+		"oxfmt": "^0.34.0",
+		"oxlint": "^1.49.0",
+		"oxlint-tsgolint": "^0.15.0",
+		"prettier": "^3.8.1",
+		"prettier-plugin-astro": "^0.14.1",
+		"typescript": "6.0.0-beta"
+	},
+	"packageManager": "pnpm@10.28.0",
+	"engines": {
+		"node": ">=22"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"better-sqlite3",
+			"esbuild",
+			"workerd"
+		]
+	}
 }

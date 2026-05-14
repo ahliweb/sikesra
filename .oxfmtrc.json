@@ -1,0 +1,12 @@
+{
+	"useTabs": true,
+	"experimentalSortImports": {},
+	"ignorePatterns": [
+		"**/dist/**",
+		"**/node_modules/**",
+		"**/*.mdx",
+		"**/package.json",
+		"**/emdash-env.d.ts",
+		"packages/registry-lexicons/src/generated/**"
+	]
+}

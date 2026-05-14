@@ -1,0 +1,236 @@
+---
+title: Deploy to Cloudflare
+description: Deploy EmDash to Cloudflare Workers with D1 and R2.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Cloudflare Workers provides a fast, globally distributed runtime for EmDash. This guide covers deploying with D1 for the database and R2 for media storage.
+
+## Prerequisites
+
+- A Cloudflare account
+- Wrangler CLI installed (`npm install -g wrangler`)
+- Authenticated with Cloudflare (`wrangler login`)
+
+## Configure Bindings
+
+Create `wrangler.jsonc` in your project root with D1 and R2 bindings. Wrangler provisions both resources on the first deploy if they don't already exist.
+
+```jsonc title="wrangler.jsonc"
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "my-emdash-site",
+	"compatibility_date": "2025-01-15",
+	"compatibility_flags": ["nodejs_compat"],
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "emdash-db",
+		},
+	],
+
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "emdash-media",
+		},
+	],
+}
+```
+
+## Configure EmDash
+
+Update your Astro configuration to use D1 and R2:
+
+```js title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import cloudflare from "@astrojs/cloudflare";
+import emdash from "emdash/astro";
+import { d1, r2 } from "@emdash-cms/cloudflare";
+
+export default defineConfig({
+	output: "server",
+	adapter: cloudflare(),
+	integrations: [
+		emdash({
+			database: d1({ binding: "DB" }),
+			storage: r2({ binding: "MEDIA" }),
+		}),
+	],
+});
+```
+
+## First Boot
+
+Database migrations run automatically on the first request after deployment, and on every subsequent boot if there's anything new to apply.
+
+If the database is empty (no collections) and the setup wizard hasn't been completed, EmDash also applies a seed file on first boot. The seed is read at build time from `.emdash/seed.json`, the path in `package.json#emdash.seed`, or `seed/seed.json` — whichever is found first — and inlined into the bundle. If none is present, a built-in default seed is used. Subsequent deploys against an existing database leave its content alone.
+
+## Deploy
+
+Deploy to Cloudflare Workers:
+
+```bash
+wrangler deploy
+```
+
+Your site is now live at `https://my-emdash-site.<your-subdomain>.workers.dev`.
+
+## Read Replicas
+
+For globally distributed sites, enable D1 read replication to route read queries to nearby replicas instead of always hitting the primary database. This significantly reduces latency for visitors far from the primary region.
+
+```js title="astro.config.mjs"
+emdash({
+	database: d1({
+		binding: "DB",
+		session: "auto",
+	}),
+	storage: r2({ binding: "MEDIA" }),
+}),
+```
+
+You also need to enable read replication on the D1 database itself in the Cloudflare dashboard or via the REST API.
+
+See [Database Options — Read Replicas](/deployment/database/#read-replicas) for session modes and how bookmark-based consistency works.
+
+## Custom Domain
+
+Add a custom domain in the Cloudflare dashboard:
+
+1. Go to **Workers & Pages** > your worker
+2. Click **Custom Domains** > **Add Custom Domain**
+3. Enter your domain and follow the DNS setup instructions
+
+## Public R2 Access
+
+To serve media directly from R2 (recommended for performance):
+
+1. In the Cloudflare dashboard, go to **R2** > your bucket
+2. Click **Settings** > **Public access**
+3. Enable public access and note the public URL
+4. Update your storage config:
+
+```js title="astro.config.mjs"
+storage: r2({
+  binding: "MEDIA",
+  publicUrl: "https://pub-xxx.r2.dev"
+}),
+```
+
+<Aside type="tip">
+	For production, connect a custom domain to your R2 bucket for better URLs and caching control.
+</Aside>
+
+## Cloudflare Access Authentication
+
+If your organization uses Cloudflare Access, you can use it as your authentication provider instead of passkeys. This provides SSO with your existing identity provider.
+
+```js title="astro.config.mjs"
+emdash({
+  database: d1({ binding: "DB" }),
+  storage: r2({ binding: "MEDIA" }),
+  auth: access({
+    teamDomain: "myteam.cloudflareaccess.com",
+    audience: "your-app-audience-tag",
+    roleMapping: {
+      "Admins": 50,
+      "Editors": 40,
+    },
+  }),
+}),
+```
+
+See the [Authentication guide](/guides/authentication#cloudflare-access) for full configuration options.
+
+## Environment Variables
+
+### Recommended: encryption key
+
+`EMDASH_ENCRYPTION_KEY` is used to encrypt plugin secrets at rest
+(webhook tokens, Turnstile keys, etc.). The current release validates
+the key but does not yet use it — plugin secret encryption is rolling
+out and will start using this value automatically when available. Set
+it now so your deployment is ready.
+
+The key is provided by you and never stored in the database; only
+encrypted ciphertext is. Losing it means losing every secret encrypted
+with it.
+
+```bash
+npx emdash secrets generate
+wrangler secret put EMDASH_ENCRYPTION_KEY
+```
+
+<Aside type="caution">
+Never commit the encryption key to your repository, and back it up
+somewhere durable (a password manager, KMS, or your team's secret
+store). The plain text value lives only in your environment.
+</Aside>
+
+### Optional: stable-value overrides
+
+EmDash auto-generates the preview HMAC secret and commenter-IP hash
+salt and persists them in the database on first use. The env vars
+below are overrides for cases where you need to pin the value
+yourself — for example, when a preview Worker in a separate process
+needs to share the secret with your main site.
+
+| Variable | Purpose |
+| -------- | ------- |
+| `EMDASH_PREVIEW_SECRET` | Override for the auto-generated preview HMAC secret. |
+| `EMDASH_IP_SALT` | Override for the auto-generated commenter-IP hash salt. |
+| `EMDASH_AUTH_SECRET` | Legacy. No longer required. If set, it's used as the IP-salt source (unless `EMDASH_IP_SALT` is also set, which wins) so existing installs keep stable commenter-IP hashes across the upgrade. New installs should ignore this. |
+
+Access environment variables in your configuration using `import.meta.env` or the Cloudflare `env` binding.
+
+## Preview Deployments
+
+Deploy a preview branch:
+
+```bash
+wrangler deploy --env preview
+```
+
+Add an environment section to `wrangler.jsonc`:
+
+```jsonc
+{
+	"env": {
+		"preview": {
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "emdash-db-preview",
+				},
+			],
+		},
+	},
+}
+```
+
+## Troubleshooting
+
+### "D1 binding not found"
+
+Verify the binding name in `wrangler.jsonc` matches your database configuration:
+
+```js
+// Must match: d1({ binding: "DB" })
+"binding": "DB"
+```
+
+### "R2 binding not found"
+
+Check that the R2 bucket is correctly bound:
+
+```js
+// Must match: r2({ binding: "MEDIA" })
+"binding": "MEDIA"
+```
+
+### Migration errors
+
+If you see schema errors, tail the Worker logs (`wrangler tail`) and reproduce the error to capture the underlying message — then file an issue with that output.
