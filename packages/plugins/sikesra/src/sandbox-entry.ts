@@ -37,6 +37,7 @@ import {
 	type StageRowsInput,
 } from "./import.js";
 import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
+import { buildRequestContextFromRoute } from "./security/request-context.js";
 import { SIKESRA_PERMISSION_LIST } from "./security/permissions.js";
 import {
 	buildAdminBlocks,
@@ -83,17 +84,17 @@ export default definePlugin({
 			}),
 		},
 		"v1/exports/reports": {
-			handler: async (
-				_routeCtx: { input: unknown; request: Request },
-				ctx: ExportStorageContext & { plugin: { id: string } },
-			) => ({ reports: listAvailableReports(buildPluginRequestContext(ctx)) }),
+				handler: async (
+					routeCtx: { input: unknown; request: Request },
+					_ctx: ExportStorageContext & { plugin: { id: string } },
+				) => ({ reports: listAvailableReports(buildRequestContextFromRoute(routeCtx)) }),
 		},
 		"v1/exports/jobs": {
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
-				const requestContext = buildPluginRequestContext(ctx);
+				const requestContext = buildRequestContextFromRoute(routeCtx);
 				const input = asRecord(routeCtx.input);
 				const status = typeof input.status === "string" ? input.status : undefined;
 				return {
@@ -112,7 +113,7 @@ export default definePlugin({
 				const job = await getExportJob(
 					ctx as ExportStorageContext,
 					jobId,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 				if (!job) throw new Error("EXPORT_JOB_NOT_FOUND");
 				return { job };
@@ -124,7 +125,11 @@ export default definePlugin({
 				ctx: ExportStorageContext & { plugin: { id: string } },
 			) => {
 				const input = normalizeExportCreateInput(routeCtx.input);
-				return createExportJob(ctx as ExportStorageContext, input, buildPluginRequestContext(ctx));
+				return createExportJob(
+					ctx as ExportStorageContext,
+					input,
+					buildRequestContextFromRoute(routeCtx),
+				);
 			},
 		},
 		"v1/exports/jobs/generate": {
@@ -138,7 +143,7 @@ export default definePlugin({
 				return generateExportFile(
 					ctx as ExportStorageContext,
 					jobId,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -153,7 +158,7 @@ export default definePlugin({
 				return downloadExportFile(
 					ctx as ExportStorageContext,
 					jobId,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -164,7 +169,7 @@ export default definePlugin({
 			) =>
 				generateUploadUrl(
 					normalizeUploadInput(routeCtx.input),
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 					ctx as DocumentStorageContext,
 				),
 		},
@@ -175,7 +180,7 @@ export default definePlugin({
 			) =>
 				completeUpload(
 					normalizeCompleteUploadInput(routeCtx.input),
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 					ctx as DocumentStorageContext,
 				),
 		},
@@ -191,7 +196,7 @@ export default definePlugin({
 					items: await getEntityDocuments(
 						ctx as DocumentStorageContext,
 						entityId,
-						buildPluginRequestContext(ctx),
+						buildRequestContextFromRoute(routeCtx),
 					),
 				};
 			},
@@ -209,7 +214,7 @@ export default definePlugin({
 					ctx as DocumentStorageContext,
 					documentId,
 					reason,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -221,7 +226,7 @@ export default definePlugin({
 				verifyDocument(
 					ctx as DocumentStorageContext,
 					normalizeVerificationInput(routeCtx.input),
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				),
 		},
 		"v1/documents/replace": {
@@ -232,7 +237,7 @@ export default definePlugin({
 				replaceDocument(
 					ctx as DocumentStorageContext,
 					normalizeReplacementInput(routeCtx.input),
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				),
 		},
 		"v1/imports/create": {
@@ -243,7 +248,7 @@ export default definePlugin({
 				createImportBatch(
 					ctx as ImportStorageContext,
 					normalizeImportBatchInput(routeCtx.input),
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				),
 		},
 		"v1/imports/stage": {
@@ -256,7 +261,7 @@ export default definePlugin({
 					ctx as ImportStorageContext,
 					input.batchId,
 					{ rows: input.rows },
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -270,7 +275,7 @@ export default definePlugin({
 					ctx as ImportStorageContext,
 					input.batchId,
 					input.mapping,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -286,7 +291,7 @@ export default definePlugin({
 					items: await listImportRows(
 						ctx as ImportStorageContext,
 						batchId,
-						buildPluginRequestContext(ctx),
+						buildRequestContextFromRoute(routeCtx),
 					),
 				};
 			},
@@ -302,7 +307,7 @@ export default definePlugin({
 					input.batchId,
 					input.rowIds,
 					input.duplicateDecisions,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 				);
 			},
 		},
@@ -315,7 +320,7 @@ export default definePlugin({
 				return rollbackImportPromotion(
 					ctx as ImportStorageContext,
 					input.batchId,
-					buildPluginRequestContext(ctx),
+					buildRequestContextFromRoute(routeCtx),
 					input.rowIds,
 				);
 			},
@@ -488,24 +493,6 @@ function normalizeRollbackInput(value: unknown): { batchId: string; rowIds?: str
 		rowIds: Array.isArray(input.rowIds)
 			? input.rowIds.filter((rowId): rowId is string => typeof rowId === "string")
 			: undefined,
-	};
-}
-
-function buildPluginRequestContext(ctx: {
-	plugin: { id: string };
-	kv: { get<T>(key: string): Promise<T | null> };
-}): import("./security/request-context.js").SikesraRequestContext {
-	void ctx.plugin.id;
-	return {
-		requestId: `plugin_${Date.now()}`,
-		tenantId: "plugin-tenant",
-		siteId: "plugin-site",
-		userId: "plugin-user",
-		roles: ["admin"],
-		permissions: [...SIKESRA_PERMISSION_LIST],
-		subjectAttributes: {},
-		regionScope: {},
-		nowIso: new Date().toISOString(),
 	};
 }
 

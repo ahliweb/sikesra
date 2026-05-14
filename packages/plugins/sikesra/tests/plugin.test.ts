@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { version } from "../package.json";
@@ -24,6 +26,20 @@ describe("sikesraPlugin descriptor", () => {
 			{ path: "/operations", label: "Operations", icon: "gear" },
 		]);
 		expect(descriptor.adminWidgets).toEqual([{ id: "overview", title: "SIKESRA", size: "third" }]);
+	});
+
+	it("ships the governance manifest required by the canonical docs", () => {
+		const manifestPath = new URL("../module.manifest.json", import.meta.url);
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+			id: string;
+			routes: { public: string[]; apiNamespace: string };
+			permissions: string[];
+		};
+
+		expect(manifest.id).toBe(SIKESRA_PLUGIN_ID);
+		expect(manifest.routes.public).toContain(SIKESRA_PUBLIC_ROUTE);
+		expect(manifest.routes.apiNamespace).toBe("/_emdash/api/plugins/sikesra/v1/*");
+		expect(manifest.permissions).toContain("awcms:sikesra:entity:read");
 	});
 
 	it("exports the restored route boundaries", () => {
@@ -158,6 +174,59 @@ describe("sikesra sandbox shell", () => {
 			expect.objectContaining({
 				permissions: expect.arrayContaining(["awcms:sikesra:entity:read"]),
 				highRiskAuditActions: expect.arrayContaining(["code.correct", "security.sensitive_reveal"]),
+			}),
+		);
+	});
+
+	it("derives private route permissions from the trusted injected request context", async () => {
+		const editorRequest = new Request("http://localhost", {
+			headers: {
+				"x-emdash-plugin-context": encodeURIComponent(
+					JSON.stringify({
+						requestId: "req-editor",
+						tenantId: "tenant-1",
+						siteId: "main",
+						userId: "editor-1",
+						role: 40,
+						roleName: "EDITOR",
+					}),
+				),
+			},
+		});
+		const adminRequest = new Request("http://localhost", {
+			headers: {
+				"x-emdash-plugin-context": encodeURIComponent(
+					JSON.stringify({
+						requestId: "req-admin",
+						tenantId: "tenant-1",
+						siteId: "main",
+						userId: "admin-1",
+						role: 50,
+						roleName: "ADMIN",
+					}),
+				),
+			},
+		});
+
+		const editorResponse = await defaultPlugin.routes["v1/exports/reports"].handler(
+			{ input: {}, request: editorRequest, requestMeta: { ip: "127.0.0.1", userAgent: "vitest" } },
+			{ plugin: { id: "sikesra" } } as never,
+		);
+		const adminResponse = await defaultPlugin.routes["v1/exports/reports"].handler(
+			{ input: {}, request: adminRequest, requestMeta: { ip: "127.0.0.1", userAgent: "vitest" } },
+			{ plugin: { id: "sikesra" } } as never,
+		);
+
+		expect(editorResponse).toEqual({
+			reports: [expect.objectContaining({ id: "entity_summary" })],
+		});
+		expect(adminResponse).toEqual(
+			expect.objectContaining({
+				reports: expect.arrayContaining([
+					expect.objectContaining({ id: "entity_summary" }),
+					expect.objectContaining({ id: "verification_status" }),
+					expect.objectContaining({ id: "audit_evidence" }),
+				]),
 			}),
 		);
 	});
