@@ -8,13 +8,43 @@
 		<title>SIKESRA</title>
 		<style>
 			:root {
-				color-scheme: light;
+				color-scheme: light dark;
 				font-family: system-ui, -apple-system, sans-serif;
+				--bg: #f4f8fb;
+				--text: #10263b;
+				--text-muted: #4b647c;
+				--card-bg: #ffffff;
+				--card-border: #d8e4ef;
+				--card-shadow: rgba(15, 61, 102, 0.06);
+				--hero-from: #0f3d66;
+				--hero-to: #0e7490;
+				--hero-text: #ffffff;
+				--notice-bg: #fff8e8;
+				--notice-border: #f7d89d;
+				--notice-text: #5a3e0a;
+				--link: #0a5a6e;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--bg: #0f1724;
+					--text: #e8edf2;
+					--text-muted: #94a3b8;
+					--card-bg: #1a2636;
+					--card-border: #2d3f52;
+					--card-shadow: rgba(0, 0, 0, 0.3);
+					--hero-from: #0c2d4d;
+					--hero-to: #0a5a6e;
+					--hero-text: #e8edf2;
+					--notice-bg: #2a2110;
+					--notice-border: #6b5418;
+					--notice-text: #f0d98a;
+					--link: #22d3ee;
+				}
 			}
 			body {
 				margin: 0;
-				background: #f4f8fb;
-				color: #10263b;
+				background: var(--bg);
+				color: var(--text);
 			}
 			main {
 				max-width: 960px;
@@ -22,8 +52,8 @@
 				padding: 2rem 1rem 3rem;
 			}
 			.hero {
-				background: linear-gradient(135deg, #0f3d66, #0e7490);
-				color: #fff;
+				background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
+				color: var(--hero-text);
 				padding: 2rem 1.25rem;
 				border-radius: 20px;
 			}
@@ -37,17 +67,17 @@
 				margin-top: 1.5rem;
 			}
 			.card {
-				background: #fff;
-				border: 1px solid #d8e4ef;
+				background: var(--card-bg);
+				border: 1px solid var(--card-border);
 				border-radius: 16px;
 				padding: 1rem;
-				box-shadow: 0 8px 30px rgba(15, 61, 102, 0.06);
+				box-shadow: 0 8px 30px var(--card-shadow);
 			}
 			.label {
 				font-size: 0.8rem;
 				text-transform: uppercase;
 				letter-spacing: 0.04em;
-				color: #4b647c;
+				color: var(--text-muted);
 			}
 			.value {
 				font-size: 1.8rem;
@@ -62,11 +92,11 @@
 				margin: 0 0 0.75rem;
 			}
 			.notice {
-				background: #fff8e8;
-				border: 1px solid #f7d89d;
+				background: var(--notice-bg);
+				border: 1px solid var(--notice-border);
 				border-radius: 14px;
 				padding: 1rem;
-				color: #7a5514;
+				color: var(--notice-text);
 				margin-top: 1rem;
 			}
 			.route-list {
@@ -74,7 +104,7 @@
 				padding-left: 1.2rem;
 			}
 			a {
-				color: #0e7490;
+				color: var(--link);
 			}
 		</style>
 	</head>
