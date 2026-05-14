@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.7",
-    "@astrojs/starlight": "^0.38.2",
+    "@astrojs/starlight": "^0.39.2",
     "@astrojs/starlight-tailwind": "^5.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "agents": "^0.12.0",
