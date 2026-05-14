@@ -22,3 +22,5 @@ Schema and seed replay now use the repo-local helper documented in `docs/sikesra
 Deployment bindings, wrapper, and smoke verification are documented in `docs/sikesra/DEPLOYMENT.md`.
 
 Current repo-local operating procedures and remaining workflow gaps are documented in `docs/sikesra/OPERATIONS.md`.
+
+The restored permission, ABAC, masking, and audit overlay is documented in `docs/sikesra/SECURITY_OVERLAY.md`.

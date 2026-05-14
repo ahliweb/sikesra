@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
 const distDir = resolve(repoRoot, process.env.SIKESRA_DIST_DIR ?? "dist/server");
+const CLOUDFLARE_IMPORT_PATTERN = /import "cloudflare:workers";\n?/g;
 const wrapperTemplatePath = resolve(
 	repoRoot,
 	process.env.SIKESRA_WRAPPER_TEMPLATE ?? "infra/sikesra/worker-wrapper-template.mjs",
@@ -34,7 +35,7 @@ function patchEntryImport() {
 	if (!existsSync(entryPath)) return false;
 
 	const current = readFileSync(entryPath, "utf8");
-	const next = current.replace(/import "cloudflare:workers";\n?/g, "");
+	const next = current.replace(CLOUDFLARE_IMPORT_PATTERN, "");
 	if (next === current) return false;
 	writeFileSync(entryPath, next);
 	return true;

@@ -146,12 +146,14 @@
 					document.getElementById("verified-entities").textContent = String(summary.kpis.verifiedEntities);
 					document.getElementById("active-villages").textContent = String(summary.kpis.activeVillages);
 					document.getElementById("caveat").textContent = summary.caveat;
+					return null;
 				})
 				.catch((error) => {
 					document.getElementById("enabled").textContent = "Gagal";
 					document.getElementById("description").textContent =
 						"Gagal memuat data SIKESRA dari plugin shell.";
 					console.error(error);
+					return null;
 				});
 		</script>
 	</body>

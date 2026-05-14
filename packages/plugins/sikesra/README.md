@@ -9,6 +9,7 @@ Included in this shell:
 - Plugin API mount under `/_emdash/api/plugins/sikesra/*`
 - Public-safe route group under `/_emdash/api/plugins/sikesra/public/*`
 - Versioned rebuild placeholder under `/_emdash/api/plugins/sikesra/v1/*`
+- Package-local security overlay utilities for permissions, ABAC, masking, route guards, and audit helpers
 
 This package does not automatically create the site route at `/sikesra`. The host Astro app owns public pages, so mount that path in the app and call the plugin's public endpoints from there.
 

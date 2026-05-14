@@ -1,5 +1,7 @@
 import { definePlugin } from "emdash";
 
+import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
+import { SIKESRA_PERMISSION_LIST } from "./security/permissions.js";
 import {
 	buildAdminBlocks,
 	buildAdminWidget,
@@ -35,6 +37,13 @@ export default definePlugin({
 				status: "rebuild-pending",
 				message:
 					"The SIKESRA shell is mounted. Data, policy, and operational endpoints will be restored in follow-up issues.",
+			}),
+		},
+		"v1/security/manifest": {
+			handler: async () => ({
+				permissions: SIKESRA_PERMISSION_LIST,
+				highRiskAuditActions: [...HIGH_RISK_AUDIT_REQUIRED],
+				auditActions: AUDIT_ACTIONS,
 			}),
 		},
 	},

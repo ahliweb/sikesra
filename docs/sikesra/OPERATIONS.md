@@ -38,6 +38,16 @@ These workflows are not restored by the current patch and remain follow-up imple
 4. Audit-backed operational dashboards
 5. End-to-end browser validation of the rebuilt admin operations surface
 
+## Issue Split
+
+The original operational recovery umbrella is intentionally split into smaller follow-up issues so each workflow can be rebuilt atomically outside EmDash core:
+
+1. Document workflow recovery
+2. Import staging and promotion recovery
+3. Export/report job recovery
+
+That keeps the current repo honest about what is restored now versus what still needs implementation.
+
 ## Current Safe Operating Model
 
 Until the remaining workflows land, operate SIKESRA with these constraints:

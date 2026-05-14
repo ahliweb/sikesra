@@ -16,6 +16,7 @@ export {
 	SIKESRA_API_BASE,
 	SIKESRA_ADMIN_BASE,
 } from "./shared.js";
+export * from "./security/index.js";
 export type { SikesraPublicFilters, SikesraPublicMetadata, SikesraPublicSummary } from "./shared.js";
 
 export function sikesraPlugin(): PluginDescriptor {

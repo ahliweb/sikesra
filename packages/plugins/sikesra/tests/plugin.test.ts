@@ -36,6 +36,7 @@ describe("sikesraPlugin descriptor", () => {
 			"public/filters",
 			"public/summary",
 			"v1/status",
+			"v1/security/manifest",
 		]);
 	});
 });
@@ -127,5 +128,19 @@ describe("sikesra sandbox shell", () => {
 			message:
 				"The SIKESRA shell is mounted. Data, policy, and operational endpoints will be restored in follow-up issues.",
 		});
+	});
+
+	it("exposes the security manifest through a non-public versioned route", async () => {
+		const response = await defaultPlugin.routes["v1/security/manifest"].handler(
+			{ input: {}, request: new Request("http://localhost") },
+			{} as never,
+		);
+
+		expect(response).toEqual(
+			expect.objectContaining({
+				permissions: expect.arrayContaining(["awcms:sikesra:entity:read"]),
+				highRiskAuditActions: expect.arrayContaining(["code.correct", "security.sensitive_reveal"]),
+			}),
+		);
 	});
 });

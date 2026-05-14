@@ -18,6 +18,7 @@ const FILES = {
 	tables: "schema_objects_20260514T014316Z_tables.txt",
 	objects: "schema_objects_20260514T014316Z.json",
 };
+const NEWLINE_PATTERN = /\r?\n/;
 
 const args = process.argv.slice(2);
 const command = args[0] ?? "help";
@@ -120,7 +121,7 @@ function buildPlan({ split }) {
 
 function readTables() {
 	return readFileSync(resolve(backupDir, FILES.tables), "utf8")
-		.split(/\r?\n/)
+		.split(NEWLINE_PATTERN)
 		.map((line) => line.trim())
 		.filter(Boolean);
 }

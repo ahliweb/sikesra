@@ -8,6 +8,7 @@ export const SIKESRA_ROUTE_NAMES = [
 	"public/filters",
 	"public/summary",
 	"v1/status",
+	"v1/security/manifest",
 ] as const;
 
 export interface SikesraPublicMetadata {
