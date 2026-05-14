@@ -86,5 +86,8 @@ scripts/query-dumps/sqlite/
 scripts/query-dumps/d1/
 scripts/query-dumps/classification.*.md
 
+# debug files
+temp/
+
 # Local upgrade safety snapshots
 update-backup/
