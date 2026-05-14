@@ -11,8 +11,17 @@ export const SIKESRA_ROUTE_NAMES = [
 	"v1/security/manifest",
 	"v1/entities",
 	"v1/entities/get",
+	"v1/entities/draft",
+	"v1/entities/draft/update",
+	"v1/entities/validate",
+	"v1/entities/code/generate",
+	"v1/entities/code/correct",
 	"v1/regions/official",
 	"v1/regions/local",
+	"v1/verification/submit",
+	"v1/verification/queue",
+	"v1/verification/decision",
+	"v1/verification/timeline",
 	"v1/exports/reports",
 	"v1/exports/jobs",
 	"v1/exports/jobs/get",
@@ -31,6 +40,10 @@ export const SIKESRA_ROUTE_NAMES = [
 	"v1/imports/rows",
 	"v1/imports/promote",
 	"v1/imports/rollback",
+	"v1/audit",
+	"v1/audit/get",
+	"v1/settings",
+	"v1/settings/update",
 ] as const;
 
 export interface SikesraPublicMetadata {

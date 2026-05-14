@@ -17,9 +17,12 @@ export type GuardAction =
 	| "export:create"
 	| "export:restricted"
 	| "region:manage"
+	| "settings:read"
 	| "settings:update"
 	| "audit:read"
-	| "sensitive:reveal";
+	| "sensitive:reveal"
+	| "code:generate"
+	| "code:correct";
 
 export interface GuardResult {
 	allowed: boolean;
@@ -43,9 +46,12 @@ const GUARD_PERMISSION_MAP: Record<GuardAction, string> = {
 	"export:create": SIKESRA_PERMISSIONS.EXPORT_CREATE,
 	"export:restricted": SIKESRA_PERMISSIONS.EXPORT_RESTRICTED,
 	"region:manage": SIKESRA_PERMISSIONS.REGION_MANAGE,
+	"settings:read": SIKESRA_PERMISSIONS.SETTINGS_READ,
 	"settings:update": SIKESRA_PERMISSIONS.SETTINGS_UPDATE,
 	"audit:read": SIKESRA_PERMISSIONS.AUDIT_READ,
 	"sensitive:reveal": SIKESRA_PERMISSIONS.SENSITIVE_REVEAL,
+	"code:generate": SIKESRA_PERMISSIONS.CODE_GENERATE,
+	"code:correct": SIKESRA_PERMISSIONS.CODE_CORRECT,
 };
 
 export function guardRoute(

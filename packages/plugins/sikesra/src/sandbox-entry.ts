@@ -26,6 +26,33 @@ import {
 import { getEntityDetail, listEntities } from "./services/entities.js";
 import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
 import {
+	createDraft,
+	updateDraft,
+	validateEntity,
+	generateSikesraId20,
+	correctSikesraId20,
+	type DraftCreateInput,
+	type DraftUpdateInput,
+	type CodeCorrectionInput,
+} from "./services/draft.js";
+import {
+	submitForVerification,
+	getVerificationQueue,
+	makeVerificationDecision,
+	getVerificationTimeline,
+	type VerificationSubmitInput,
+	type VerificationQueueFilters,
+	type VerificationDecisionInput,
+} from "./services/verification.js";
+import {
+	listAuditEntries,
+	getAuditDetail,
+	getSettings,
+	updateSettings,
+	type AuditListFilters,
+	type SettingsUpdateInput,
+} from "./services/settings.js";
+import {
 	createImportBatch,
 	listImportRows,
 	mapAndValidateImportRows,
@@ -98,6 +125,54 @@ export default definePlugin({
 				return getEntityDetail(db, buildRequestContextFromRoute(routeCtx), entityId);
 			},
 		},
+		"v1/entities/draft": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return createDraft(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeDraftCreateInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/entities/draft/update": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return updateDraft(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeDraftUpdateInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/entities/validate": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = asRecord(routeCtx.input);
+				const entityId = typeof input.entityId === "string" ? input.entityId : "";
+				if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+				const db = await loadDb();
+				return validateEntity(db, buildRequestContextFromRoute(routeCtx), entityId);
+			},
+		},
+		"v1/entities/code/generate": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = asRecord(routeCtx.input);
+				const entityId = typeof input.entityId === "string" ? input.entityId : "";
+				if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+				const db = await loadDb();
+				return generateSikesraId20(db, buildRequestContextFromRoute(routeCtx), entityId);
+			},
+		},
+		"v1/entities/code/correct": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return correctSikesraId20(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeCodeCorrectionInput(routeCtx.input),
+				);
+			},
+		},
 		"v1/regions/official": {
 			handler: async (routeCtx: { input: unknown; request: Request }) => {
 				const db = await loadDb();
@@ -118,6 +193,51 @@ export default definePlugin({
 						db,
 						buildRequestContextFromRoute(routeCtx),
 						normalizeLocalRegionInput(routeCtx.input),
+					),
+				};
+			},
+		},
+		"v1/verification/submit": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return submitForVerification(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeVerificationSubmitInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/verification/queue": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return getVerificationQueue(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeVerificationQueueFilters(routeCtx.input),
+				);
+			},
+		},
+		"v1/verification/decision": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return makeVerificationDecision(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeVerificationDecisionInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/verification/timeline": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = asRecord(routeCtx.input);
+				const entityId = typeof input.entityId === "string" ? input.entityId : "";
+				if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+				const db = await loadDb();
+				return {
+					items: await getVerificationTimeline(
+						db,
+						buildRequestContextFromRoute(routeCtx),
+						entityId,
 					),
 				};
 			},
@@ -364,6 +484,46 @@ export default definePlugin({
 				);
 			},
 		},
+		"v1/audit": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return listAuditEntries(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeAuditFilters(routeCtx.input),
+				);
+			},
+		},
+		"v1/audit/get": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = asRecord(routeCtx.input);
+				const auditId = typeof input.auditId === "string" ? input.auditId : "";
+				if (!auditId) throw new Error("AUDIT_ID_REQUIRED");
+				const db = await loadDb();
+				return getAuditDetail(db, buildRequestContextFromRoute(routeCtx), auditId);
+			},
+		},
+		"v1/settings": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return getSettings(db, buildRequestContextFromRoute(routeCtx));
+			},
+		},
+		"v1/settings/update": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const input = normalizeSettingsUpdateInput(routeCtx.input);
+				const reason = typeof input.reason === "string" ? input.reason : "";
+				if (!reason) throw new Error("SETTINGS_UPDATE_REASON_REQUIRED");
+				const db = await loadDb();
+				const { reason: _, ...settingsInput } = input;
+				return updateSettings(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					settingsInput,
+					reason,
+				);
+			},
+		},
 	},
 });
 
@@ -583,4 +743,105 @@ async function loadDb() {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeDraftCreateInput(value: unknown): DraftCreateInput {
+	const input = asRecord(value);
+	const objectTypeCode = typeof input.objectTypeCode === "string" ? input.objectTypeCode : "";
+	const objectSubtypeCode = typeof input.objectSubtypeCode === "string" ? input.objectSubtypeCode : "";
+	const entityKind = typeof input.entityKind === "string" ? input.entityKind : "";
+	const displayName = typeof input.displayName === "string" ? input.displayName : "";
+	const officialVillageCode = typeof input.officialVillageCode === "string" ? input.officialVillageCode : "";
+	if (!objectTypeCode || !objectSubtypeCode || !entityKind || !displayName || !officialVillageCode) {
+		throw new Error("DRAFT_CREATE_INPUT_REQUIRED");
+	}
+	return {
+		objectTypeCode,
+		objectSubtypeCode,
+		entityKind,
+		displayName,
+		officialVillageCode,
+		localRegionId: typeof input.localRegionId === "string" ? input.localRegionId : undefined,
+		addressText: typeof input.addressText === "string" ? input.addressText : undefined,
+		initialData: isPlainRecord(input.initialData) ? input.initialData : undefined,
+	};
+}
+
+function normalizeDraftUpdateInput(value: unknown): DraftUpdateInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	const section = typeof input.section === "string" ? input.section : "";
+	if (!entityId || !section) throw new Error("DRAFT_UPDATE_INPUT_REQUIRED");
+	return {
+		entityId,
+		section,
+		patch: isPlainRecord(input.patch) ? input.patch : {},
+	};
+}
+
+function normalizeCodeCorrectionInput(value: unknown): CodeCorrectionInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	const newCode = typeof input.newCode === "string" ? input.newCode : "";
+	const reason = typeof input.reason === "string" ? input.reason : "";
+	if (!entityId || !newCode || !reason) throw new Error("CODE_CORRECTION_INPUT_REQUIRED");
+	return { entityId, newCode, reason };
+}
+
+function normalizeVerificationSubmitInput(value: unknown): VerificationSubmitInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+	return {
+		entityId,
+		note: typeof input.note === "string" ? input.note : undefined,
+	};
+}
+
+function normalizeVerificationQueueFilters(value: unknown): VerificationQueueFilters {
+	const input = asRecord(value);
+	return {
+		status: typeof input.status === "string" ? input.status : undefined,
+		districtCode: typeof input.districtCode === "string" ? input.districtCode : undefined,
+		officialVillageCode: typeof input.officialVillageCode === "string" ? input.officialVillageCode : undefined,
+		limit: typeof input.limit === "number" ? input.limit : undefined,
+		cursor: typeof input.cursor === "string" ? input.cursor : undefined,
+	};
+}
+
+function normalizeVerificationDecisionInput(value: unknown): VerificationDecisionInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	const decision = ["verify", "need_revision", "reject"].includes(input.decision as string)
+		? (input.decision as "verify" | "need_revision" | "reject")
+		: "verify";
+	const note = typeof input.note === "string" ? input.note : "";
+	if (!entityId || !note) throw new Error("VERIFICATION_DECISION_INPUT_REQUIRED");
+	return { entityId, decision, note };
+}
+
+function normalizeAuditFilters(value: unknown): AuditListFilters {
+	const input = asRecord(value);
+	return {
+		action: typeof input.action === "string" ? input.action : undefined,
+		resourceType: typeof input.resourceType === "string" ? input.resourceType : undefined,
+		resourceId: typeof input.resourceId === "string" ? input.resourceId : undefined,
+		actorId: typeof input.actorId === "string" ? input.actorId : undefined,
+		success: typeof input.success === "boolean" ? input.success : undefined,
+		limit: typeof input.limit === "number" ? input.limit : undefined,
+		cursor: typeof input.cursor === "string" ? input.cursor : undefined,
+	};
+}
+
+function normalizeSettingsUpdateInput(value: unknown): SettingsUpdateInput & { reason: string } {
+	const input = asRecord(value);
+	return {
+		publicEnabled: typeof input.publicEnabled === "boolean" ? input.publicEnabled : undefined,
+		publicTitle: typeof input.publicTitle === "string" ? input.publicTitle : undefined,
+		publicDescription: typeof input.publicDescription === "string" ? input.publicDescription : undefined,
+		dataScopeNote: typeof input.dataScopeNote === "string" ? input.dataScopeNote : undefined,
+		officialContact: typeof input.officialContact === "string" ? input.officialContact : undefined,
+		smallCellThreshold: typeof input.smallCellThreshold === "number" ? input.smallCellThreshold : undefined,
+		reason: typeof input.reason === "string" ? input.reason : "",
+	};
 }
