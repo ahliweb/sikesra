@@ -325,23 +325,31 @@ export default definePlugin({
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: DocumentStorageContext & { plugin: { id: string } },
-			) =>
+			) => {
+				const db = await loadDb();
+				return (
 				generateUploadUrl(
 					normalizeUploadInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-					ctx as DocumentStorageContext,
-				),
+					{ ...(ctx as DocumentStorageContext), db },
+				)
+				);
+			},
 		},
 		"v1/documents/complete": {
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: DocumentStorageContext & { plugin: { id: string } },
-			) =>
+			) => {
+				const db = await loadDb();
+				return (
 				completeUpload(
 					normalizeCompleteUploadInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-					ctx as DocumentStorageContext,
-				),
+					{ ...(ctx as DocumentStorageContext), db },
+				)
+				);
+			},
 		},
 		"v1/entities/documents": {
 			handler: async (
@@ -351,9 +359,10 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const entityId = typeof input.entityId === "string" ? input.entityId : "";
 				if (!entityId) throw new Error("ENTITY_ID_REQUIRED");
+				const db = await loadDb();
 				return {
 					items: await getEntityDocuments(
-						ctx as DocumentStorageContext,
+						{ ...(ctx as DocumentStorageContext), db },
 						entityId,
 						buildRequestContextFromRoute(routeCtx),
 					),
@@ -369,8 +378,9 @@ export default definePlugin({
 				const documentId = typeof input.documentId === "string" ? input.documentId : "";
 				if (!documentId) throw new Error("DOCUMENT_ID_REQUIRED");
 				const reason = typeof input.reason === "string" ? input.reason : undefined;
+				const db = await loadDb();
 				return getDocumentDownload(
-					ctx as DocumentStorageContext,
+					{ ...(ctx as DocumentStorageContext), db },
 					documentId,
 					reason,
 					buildRequestContextFromRoute(routeCtx),
@@ -381,23 +391,31 @@ export default definePlugin({
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: DocumentStorageContext & { plugin: { id: string } },
-			) =>
+			) => {
+				const db = await loadDb();
+				return (
 				verifyDocument(
-					ctx as DocumentStorageContext,
+					{ ...(ctx as DocumentStorageContext), db },
 					normalizeVerificationInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-				),
+				)
+				);
+			},
 		},
 		"v1/documents/replace": {
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: DocumentStorageContext & { plugin: { id: string } },
-			) =>
+			) => {
+				const db = await loadDb();
+				return (
 				replaceDocument(
-					ctx as DocumentStorageContext,
+					{ ...(ctx as DocumentStorageContext), db },
 					normalizeReplacementInput(routeCtx.input),
 					buildRequestContextFromRoute(routeCtx),
-				),
+				)
+				);
+			},
 		},
 		"v1/imports/create": {
 			handler: async (

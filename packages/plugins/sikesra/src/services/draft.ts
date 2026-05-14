@@ -70,6 +70,8 @@ const SECTION_DEFINITIONS = [
 	{ key: "details", fields: [] },
 ] as const;
 
+const SIKESRA_ID_20_RE = /^\d{20}$/;
+
 export async function createDraft(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -281,7 +283,7 @@ export async function correctSikesraId20(
 	const denied = guardRoute(ctx, "code:correct");
 	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
-	if (!/^\d{20}$/.test(input.newCode)) {
+	if (!SIKESRA_ID_20_RE.test(input.newCode)) {
 		return throwRouteError("VALIDATION_ERROR", "Code must be exactly 20 digits", 400);
 	}
 

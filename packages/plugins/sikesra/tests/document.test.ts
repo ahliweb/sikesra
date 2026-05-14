@@ -1,3 +1,7 @@
+import Database from "better-sqlite3";
+import { readFileSync } from "node:fs";
+
+import { Kysely, SqliteDialect } from "kysely";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -55,6 +59,59 @@ function createRuntime(): DocumentStorageContext & {
 			},
 		},
 		documents,
+		audit,
+	};
+}
+
+function createDbRuntime(): DocumentStorageContext & {
+	audit: Map<string, Record<string, unknown>>;
+	db: Kysely<unknown>;
+	database: Database.Database;
+} {
+	const database = new Database(":memory:");
+	database.exec(`
+		CREATE TABLE awcms_sikesra_entities (
+			id TEXT PRIMARY KEY
+		);
+	`);
+	const migration = readFileSync(
+		new URL("../migrations/0008_sikesra_documents.sql", import.meta.url),
+		"utf8",
+	);
+	database.exec(migration);
+	const audit = new Map<string, Record<string, unknown>>();
+	const kv = new Map<string, unknown>();
+	const db = new Kysely<unknown>({
+		dialect: new SqliteDialect({ database }),
+	});
+
+	return {
+		db,
+		database,
+		storage: {
+			documents: {
+				async put() {},
+				async get() {
+					return null;
+				},
+				async query() {
+					return { items: [] };
+				},
+			},
+			auditEntries: {
+				async put(id, data) {
+					audit.set(id, data);
+				},
+			},
+		},
+		kv: {
+			async get(key) {
+				return (kv.get(key) as never) ?? null;
+			},
+			async set(key, value) {
+				kv.set(key, value);
+			},
+		},
 		audit,
 	};
 }
@@ -239,5 +296,57 @@ describe("SIKESRA document workflow", () => {
 
 		expect(verified.isVerified).toBe(true);
 		expect(replaced.newDocumentId).toBe(second.fileObjectId);
+	});
+
+	it("persists document metadata to D1 tables when db is available", async () => {
+		const runtime = createDbRuntime();
+		const ctx = makeContext();
+		runtime.database.prepare("INSERT INTO awcms_sikesra_entities (id) VALUES (?)").run("entity-1");
+		const upload = await generateUploadUrl(
+			{
+				fileName: "kk.pdf",
+				mimeType: "application/pdf",
+				sizeBytes: 2048,
+				classification: "restricted",
+			},
+			ctx,
+			runtime,
+		);
+
+		await completeUpload(
+			{
+				fileObjectId: upload.fileObjectId,
+				entityId: "entity-1",
+				documentType: "kk",
+				classification: "restricted",
+				contentBase64: Buffer.from("pdf-data", "utf8").toString("base64"),
+			},
+			ctx,
+			runtime,
+		);
+
+		const listed = await getEntityDocuments(runtime, "entity-1", ctx);
+		const rows = runtime.database
+			.prepare(
+				"SELECT f.id, d.entity_id, d.document_type, f.r2_key FROM awcms_sikesra_file_objects f JOIN awcms_sikesra_supporting_documents d ON d.file_object_id = f.id WHERE f.id = ?",
+			)
+			.all(upload.fileObjectId) as Array<{
+				id: string;
+				entity_id: string;
+				document_type: string;
+				r2_key: string;
+			}>;
+
+		expect(rows).toEqual([
+			expect.objectContaining({
+				id: upload.fileObjectId,
+				entity_id: "entity-1",
+				document_type: "kk",
+				r2_key: `documents:file:${upload.fileObjectId}`,
+			}),
+		]);
+		expect(listed).toHaveLength(1);
+		await runtime.db.destroy();
+		runtime.database.close();
 	});
 });
