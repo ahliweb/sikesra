@@ -44,39 +44,39 @@ For scoped users, intersect requested filters with backend-computed allowed vill
 
 ## Table Groups
 
-| Group | Tables |
-|---|---|
-| Settings | `awcms_sikesra_settings` |
-| Master object data | `awcms_sikesra_object_types`, `awcms_sikesra_object_subtypes` |
-| Regions | `awcms_sikesra_official_regions`, `awcms_sikesra_local_regions` |
-| Code generation | `awcms_sikesra_code_sequences`, `awcms_sikesra_code_history` |
-| Registry | `awcms_sikesra_entities`, detail tables, `awcms_sikesra_person_profiles` |
-| Relationships | `awcms_sikesra_entity_people` |
-| Attributes/ABAC | `awcms_sikesra_attribute_definitions`, `awcms_sikesra_entity_attributes`, `awcms_sikesra_user_attribute_scopes`, `awcms_sikesra_abac_policies`, `awcms_sikesra_abac_policy_conditions` |
-| Verification | `awcms_sikesra_verification_events` |
-| Documents | `awcms_sikesra_file_objects`, `awcms_sikesra_supporting_documents` unless shared media is used |
-| Import | `awcms_sikesra_import_batches`, `awcms_sikesra_import_staging_rows`, `awcms_sikesra_import_mapping_templates` |
-| Deduplication | `awcms_sikesra_duplicate_candidates`, `awcms_sikesra_duplicate_decisions` |
-| Services/benefits | `awcms_sikesra_benefit_service_history` |
-| Reports/exports | `awcms_sikesra_export_jobs` |
-| Audit | `awcms_sikesra_audit_logs` unless shared audit is used |
+| Group              | Tables                                                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings           | `awcms_sikesra_settings`                                                                                                                                                               |
+| Master object data | `awcms_sikesra_object_types`, `awcms_sikesra_object_subtypes`                                                                                                                          |
+| Regions            | `awcms_sikesra_official_regions`, `awcms_sikesra_local_regions`                                                                                                                        |
+| Code generation    | `awcms_sikesra_code_sequences`, `awcms_sikesra_code_history`                                                                                                                           |
+| Registry           | `awcms_sikesra_entities`, detail tables, `awcms_sikesra_person_profiles`                                                                                                               |
+| Relationships      | `awcms_sikesra_entity_people`                                                                                                                                                          |
+| Attributes/ABAC    | `awcms_sikesra_attribute_definitions`, `awcms_sikesra_entity_attributes`, `awcms_sikesra_user_attribute_scopes`, `awcms_sikesra_abac_policies`, `awcms_sikesra_abac_policy_conditions` |
+| Verification       | `awcms_sikesra_verification_events`                                                                                                                                                    |
+| Documents          | `awcms_sikesra_file_objects`, `awcms_sikesra_supporting_documents` unless shared media is used                                                                                         |
+| Import             | `awcms_sikesra_import_batches`, `awcms_sikesra_import_staging_rows`, `awcms_sikesra_import_mapping_templates`                                                                          |
+| Deduplication      | `awcms_sikesra_duplicate_candidates`, `awcms_sikesra_duplicate_decisions`                                                                                                              |
+| Services/benefits  | `awcms_sikesra_benefit_service_history`                                                                                                                                                |
+| Reports/exports    | `awcms_sikesra_export_jobs`                                                                                                                                                            |
+| Audit              | `awcms_sikesra_audit_logs` unless shared audit is used                                                                                                                                 |
 
 ## Migration Order
 
-| Order | File | Tables |
-|---:|---|---|
-| 0001 | `0001_sikesra_settings_and_master.sql` | Settings, object types, object subtypes. |
-| 0002 | `0002_sikesra_regions.sql` | Official and local regions. |
-| 0003 | `0003_sikesra_entities_core.sql` | Code sequences, code history, entities, person profiles. |
-| 0004 | `0004_sikesra_detail_modules.sql` | MVP module detail tables. |
-| 0005 | `0005_sikesra_relationships_and_attributes.sql` | Entity people, attributes, user scopes. |
-| 0006 | `0006_sikesra_abac.sql` | ABAC policies and conditions. |
-| 0007 | `0007_sikesra_verification.sql` | Verification events. |
-| 0008 | `0008_sikesra_documents.sql` | File objects and supporting documents. |
-| 0009 | `0009_sikesra_imports.sql` | Import batches, rows, mapping templates. |
-| 0010 | `0010_sikesra_deduplication.sql` | Duplicate candidates and decisions. |
-| 0011 | `0011_sikesra_benefits_exports_audit.sql` | Benefits, export jobs, audit logs. |
-| 0012 | `0012_sikesra_public_summary.sql` | Optional views or summary tables. |
+| Order | File                                            | Tables                                                   |
+| ----: | ----------------------------------------------- | -------------------------------------------------------- |
+|  0001 | `0001_sikesra_settings_and_master.sql`          | Settings, object types, object subtypes.                 |
+|  0002 | `0002_sikesra_regions.sql`                      | Official and local regions.                              |
+|  0003 | `0003_sikesra_entities_core.sql`                | Code sequences, code history, entities, person profiles. |
+|  0004 | `0004_sikesra_detail_modules.sql`               | MVP module detail tables.                                |
+|  0005 | `0005_sikesra_relationships_and_attributes.sql` | Entity people, attributes, user scopes.                  |
+|  0006 | `0006_sikesra_abac.sql`                         | ABAC policies and conditions.                            |
+|  0007 | `0007_sikesra_verification.sql`                 | Verification events.                                     |
+|  0008 | `0008_sikesra_documents.sql`                    | File objects and supporting documents.                   |
+|  0009 | `0009_sikesra_imports.sql`                      | Import batches, rows, mapping templates.                 |
+|  0010 | `0010_sikesra_deduplication.sql`                | Duplicate candidates and decisions.                      |
+|  0011 | `0011_sikesra_benefits_exports_audit.sql`       | Benefits, export jobs, audit logs.                       |
+|  0012 | `0012_sikesra_public_summary.sql`               | Optional views or summary tables.                        |
 
 ## Essential Table Definitions
 
@@ -321,26 +321,26 @@ CREATE TABLE awcms_sikesra_person_profiles (
 
 Create one detail table per MVP module:
 
-| Table | Required Key Fields |
-|---|---|
-| `awcms_sikesra_rumah_ibadah_details` | `entity_id`, `jenis_rumah_ibadah`, status pembangunan, area/capacity, grant fields. |
-| `awcms_sikesra_lembaga_keagamaan_details` | `entity_id`, `agama`, SK/legal and activity fields. |
-| `awcms_sikesra_pendidikan_keagamaan_details` | `entity_id`, `jenis_pendidikan`, teacher/student counts, legal/activity fields. |
-| `awcms_sikesra_lks_details` | `entity_id`, `jenis_lks`, caregivers, beneficiaries, legal/activity fields. |
-| `awcms_sikesra_guru_agama_details` | `entity_id`, `person_profile_id`, `agama`, `status_guru`, teaching institution. |
-| `awcms_sikesra_anak_yatim_details` | `entity_id`, `person_profile_id`, `kategori_anak`, school, guardian relation. |
-| `awcms_sikesra_disabilitas_details` | `entity_id`, `person_profile_id`, disability type, severity, assistive device need. |
-| `awcms_sikesra_lansia_terlantar_details` | `entity_id`, `person_profile_id`, neglect status, living condition, priority needs. |
+| Table                                        | Required Key Fields                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `awcms_sikesra_rumah_ibadah_details`         | `entity_id`, `jenis_rumah_ibadah`, status pembangunan, area/capacity, grant fields. |
+| `awcms_sikesra_lembaga_keagamaan_details`    | `entity_id`, `agama`, SK/legal and activity fields.                                 |
+| `awcms_sikesra_pendidikan_keagamaan_details` | `entity_id`, `jenis_pendidikan`, teacher/student counts, legal/activity fields.     |
+| `awcms_sikesra_lks_details`                  | `entity_id`, `jenis_lks`, caregivers, beneficiaries, legal/activity fields.         |
+| `awcms_sikesra_guru_agama_details`           | `entity_id`, `person_profile_id`, `agama`, `status_guru`, teaching institution.     |
+| `awcms_sikesra_anak_yatim_details`           | `entity_id`, `person_profile_id`, `kategori_anak`, school, guardian relation.       |
+| `awcms_sikesra_disabilitas_details`          | `entity_id`, `person_profile_id`, disability type, severity, assistive device need. |
+| `awcms_sikesra_lansia_terlantar_details`     | `entity_id`, `person_profile_id`, neglect status, living condition, priority needs. |
 
 Every detail table must include `tenant_id`, `site_id`, `created_at`, `updated_at`, `deleted_at`, `created_by`, and `updated_by`.
 
 ## Data Classification
 
-| Classification | Meaning | Default Behavior |
-|---|---|---|
-| `public_safe` | Safe aggregate or public-friendly metadata. | May be shown publicly if threshold passes. |
-| `internal` | Internal operational data. | Authenticated authorized users only. |
-| `restricted` | Personal, institutional, financial, or sensitive operational data. | Mask unless permission and ABAC allow. |
+| Classification      | Meaning                                                                              | Default Behavior                                                        |
+| ------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `public_safe`       | Safe aggregate or public-friendly metadata.                                          | May be shown publicly if threshold passes.                              |
+| `internal`          | Internal operational data.                                                           | Authenticated authorized users only.                                    |
+| `restricted`        | Personal, institutional, financial, or sensitive operational data.                   | Mask unless permission and ABAC allow.                                  |
 | `highly_restricted` | NIK/KIA, child identity, disability detail, individual desil, ODGJ, vulnerable data. | Omit or mask by default; reveal requires explicit permission and audit. |
 
 ## Data Dictionary Rules

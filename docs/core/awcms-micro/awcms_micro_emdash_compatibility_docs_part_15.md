@@ -88,13 +88,13 @@ Do not modify EmDash core unless:
 
 All AWCMS-Micro development must reference these canonical upstream sources:
 
-| Resource | URL |
-| --- | --- |
-| EmDash Repository | `https://github.com/emdash-cms/emdash` |
-| EmDash Docs | `https://docs.emdashcms.com/` |
-| EmDash AI Index | `https://docs.emdashcms.com/llms.txt` |
-| EmDash Docs MCP | `https://docs.emdashcms.com/docs-mcp/` |
-| EmDash AGENTS.md | `https://github.com/emdash-cms/emdash/blob/main/AGENTS.md` |
+| Resource          | URL                                                        |
+| ----------------- | ---------------------------------------------------------- |
+| EmDash Repository | `https://github.com/emdash-cms/emdash`                     |
+| EmDash Docs       | `https://docs.emdashcms.com/`                              |
+| EmDash AI Index   | `https://docs.emdashcms.com/llms.txt`                      |
+| EmDash Docs MCP   | `https://docs.emdashcms.com/docs-mcp/`                     |
+| EmDash AGENTS.md  | `https://github.com/emdash-cms/emdash/blob/main/AGENTS.md` |
 
 ### Table Naming Convention Summary
 
@@ -917,22 +917,22 @@ docs/student-data-protection.md
 
 Use the prompt from the corresponding part based on implementation need.
 
-| Need | Use Prompt From |
-| --- | --- |
-| Overall architecture | Part 1 |
-| Initial repo setup | Part 2 |
-| Database/storage/tenant baseline | Part 3 |
-| Plugin/module system | Part 4 |
-| ABAC and permission matrix | Part 5 |
-| Admin/public/mobile/theme | Part 6 |
-| Security/compliance/testing | Part 7 |
-| Cloudflare deployment | Part 8 |
-| Sprint planning/backlog | Part 9 |
-| Standard website template | Part 10 |
-| School template/Kelulusan | Part 11 |
-| Mobile API/Flutter | Part 12 |
-| ERP-ready roadmap | Part 13 |
-| Upstream sync | Part 14 |
+| Need                             | Use Prompt From |
+| -------------------------------- | --------------- |
+| Overall architecture             | Part 1          |
+| Initial repo setup               | Part 2          |
+| Database/storage/tenant baseline | Part 3          |
+| Plugin/module system             | Part 4          |
+| ABAC and permission matrix       | Part 5          |
+| Admin/public/mobile/theme        | Part 6          |
+| Security/compliance/testing      | Part 7          |
+| Cloudflare deployment            | Part 8          |
+| Sprint planning/backlog          | Part 9          |
+| Standard website template        | Part 10         |
+| School template/Kelulusan        | Part 11         |
+| Mobile API/Flutter               | Part 12         |
+| ERP-ready roadmap                | Part 13         |
+| Upstream sync                    | Part 14         |
 
 ### 12.1 Universal AI-Agent Rules
 
@@ -1304,19 +1304,19 @@ pnpm build
 
 ## 19. Final Risk Register
 
-| Risk | Impact | Mitigation |
-| --- | ---: | --- |
-| AWCMS-Micro becomes fragile EmDash fork | Critical | isolate custom logic, update divergence log |
-| MVP becomes too large | High | follow MVP non-goals |
-| Private student data exposed | Critical | signed URLs, safe errors, rate limit, audit |
-| Secrets committed | Critical | .gitignore, secret scanning, review |
-| Production Cloudflare misconfigured | High | staging/prod separation, checklist |
-| Database migration breaks data | High | staging migration, backup, rollback |
-| Plugin breaks admin | Medium/High | module registry, disable plugin, tests |
-| Template leaks private content | High | public content filters, tests |
-| Mobile API exposes admin data | Critical | separate mobile API layer |
-| ERP scope creep | High | ERP-ready boundary, Odoo integration strategy |
-| Upstream sync breaks custom modules | High | compatibility matrix, tests, adapters |
+| Risk                                    |      Impact | Mitigation                                    |
+| --------------------------------------- | ----------: | --------------------------------------------- |
+| AWCMS-Micro becomes fragile EmDash fork |    Critical | isolate custom logic, update divergence log   |
+| MVP becomes too large                   |        High | follow MVP non-goals                          |
+| Private student data exposed            |    Critical | signed URLs, safe errors, rate limit, audit   |
+| Secrets committed                       |    Critical | .gitignore, secret scanning, review           |
+| Production Cloudflare misconfigured     |        High | staging/prod separation, checklist            |
+| Database migration breaks data          |        High | staging migration, backup, rollback           |
+| Plugin breaks admin                     | Medium/High | module registry, disable plugin, tests        |
+| Template leaks private content          |        High | public content filters, tests                 |
+| Mobile API exposes admin data           |    Critical | separate mobile API layer                     |
+| ERP scope creep                         |        High | ERP-ready boundary, Odoo integration strategy |
+| Upstream sync breaks custom modules     |        High | compatibility matrix, tests, adapters         |
 
 ---
 

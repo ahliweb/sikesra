@@ -196,10 +196,10 @@ Every response should include:
 
 ```json
 {
-  "meta": {
-    "apiVersion": "v1",
-    "requestId": "req_..."
-  }
+	"meta": {
+		"apiVersion": "v1",
+		"requestId": "req_..."
+	}
 }
 ```
 
@@ -211,12 +211,12 @@ Every response should include:
 
 ```json
 {
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -224,16 +224,16 @@ Every response should include:
 
 ```json
 {
-  "success": true,
-  "data": [],
-  "pagination": {
-    "nextCursor": null,
-    "hasMore": false
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": [],
+	"pagination": {
+		"nextCursor": null,
+		"hasMore": false
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -241,16 +241,16 @@ Every response should include:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "The submitted data is invalid.",
-    "details": null
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": false,
+	"error": {
+		"code": "VALIDATION_ERROR",
+		"message": "The submitted data is invalid.",
+		"details": null
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -363,38 +363,38 @@ POST /api/mobile/v1/kelulusan/download-url
 
 ```json
 {
-  "success": true,
-  "data": {
-    "site": {
-      "name": "AWCMS-Micro School",
-      "tagline": "Official school website",
-      "locale": "id-ID",
-      "timezone": "Asia/Jakarta",
-      "logoUrl": "https://example.com/logo.png"
-    },
-    "features": {
-      "news": true,
-      "announcements": true,
-      "documents": true,
-      "forms": true,
-      "kelulusan": true,
-      "secureDocumentLookup": true
-    },
-    "api": {
-      "version": "v1",
-      "minimumAppVersion": "1.0.0",
-      "maintenanceMode": false,
-      "maintenanceMessage": null
-    },
-    "links": {
-      "privacyPolicy": "https://example.com/privacy",
-      "contact": "https://example.com/contact"
-    }
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {
+		"site": {
+			"name": "AWCMS-Micro School",
+			"tagline": "Official school website",
+			"locale": "id-ID",
+			"timezone": "Asia/Jakarta",
+			"logoUrl": "https://example.com/logo.png"
+		},
+		"features": {
+			"news": true,
+			"announcements": true,
+			"documents": true,
+			"forms": true,
+			"kelulusan": true,
+			"secureDocumentLookup": true
+		},
+		"api": {
+			"version": "v1",
+			"minimumAppVersion": "1.0.0",
+			"maintenanceMode": false,
+			"maintenanceMessage": null
+		},
+		"links": {
+			"privacyPolicy": "https://example.com/privacy",
+			"contact": "https://example.com/contact"
+		}
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -463,16 +463,16 @@ Example response:
 
 ```json
 {
-  "success": true,
-  "data": [],
-  "pagination": {
-    "nextCursor": "cursor_123",
-    "hasMore": true
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": [],
+	"pagination": {
+		"nextCursor": "cursor_123",
+		"hasMore": true
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1119,15 +1119,15 @@ secure storage
 
 Recommended:
 
-| Data | Cache Duration |
-| --- | ---: |
-| bootstrap | 5–30 minutes |
-| menus | 30 minutes–24 hours |
-| posts list | 5–30 minutes |
-| announcements | 5–15 minutes |
-| public documents metadata | 10–60 minutes |
-| Kelulusan result | no persistent cache by default |
-| signed URL | no persistent cache |
+| Data                      |                 Cache Duration |
+| ------------------------- | -----------------------------: |
+| bootstrap                 |                   5–30 minutes |
+| menus                     |            30 minutes–24 hours |
+| posts list                |                   5–30 minutes |
+| announcements             |                   5–15 minutes |
+| public documents metadata |                  10–60 minutes |
+| Kelulusan result          | no persistent cache by default |
+| signed URL                |            no persistent cache |
 
 ### 20.4 Offline Behavior
 
@@ -1161,16 +1161,16 @@ POST /api/mobile/v1/forms/contact/submissions
 
 ```json
 {
-  "fields": {
-    "name": "Example User",
-    "email": "user@example.com",
-    "message": "Hello"
-  },
-  "consent": true,
-  "client": {
-    "platform": "android",
-    "appVersion": "1.0.0"
-  }
+	"fields": {
+		"name": "Example User",
+		"email": "user@example.com",
+		"message": "Hello"
+	},
+	"consent": true,
+	"client": {
+		"platform": "android",
+		"appVersion": "1.0.0"
+	}
 }
 ```
 
@@ -1228,12 +1228,12 @@ clear result on app close if required
 
 Map errors:
 
-| API Code | UI Message |
-| --- | --- |
-| VALIDATION_ERROR | Check the entered data. |
-| RATE_LIMITED | Too many attempts. Please try again later. |
-| NOT_FOUND | Data not found or not yet available. |
-| MAINTENANCE_MODE | Service is temporarily unavailable. |
+| API Code           | UI Message                                     |
+| ------------------ | ---------------------------------------------- |
+| VALIDATION_ERROR   | Check the entered data.                        |
+| RATE_LIMITED       | Too many attempts. Please try again later.     |
+| NOT_FOUND          | Data not found or not yet available.           |
+| MAINTENANCE_MODE   | Service is temporarily unavailable.            |
 | SERVER_UNAVAILABLE | Server is unavailable. Please try again later. |
 
 ---
@@ -1573,9 +1573,11 @@ Requires token/session strategy and ABAC.
 
 ```md
 ## Goal
+
 Define stable Mobile API v1 contract for AWCMS-Micro.
 
 ## Tasks
+
 - [ ] Define response shape
 - [ ] Define error shape
 - [ ] Define pagination shape
@@ -1584,11 +1586,13 @@ Define stable Mobile API v1 contract for AWCMS-Micro.
 - [ ] Define versioning rule
 
 ## Acceptance Criteria
+
 - [ ] docs/mobile-api.md updated
 - [ ] response contract is consistent
 - [ ] error codes are documented
 
 ## Rollback Plan
+
 Revert API contract documentation or keep previous v1 contract.
 ```
 
@@ -1596,9 +1600,11 @@ Revert API contract documentation or keep previous v1 contract.
 
 ```md
 ## Goal
+
 Create or update the Mobile API plugin skeleton.
 
 ## Tasks
+
 - [ ] Add packages/plugins/mobile-api
 - [ ] Add module.manifest.json
 - [ ] Add route placeholders
@@ -1607,11 +1613,13 @@ Create or update the Mobile API plugin skeleton.
 - [ ] Add tests placeholder
 
 ## Acceptance Criteria
+
 - [ ] Plugin skeleton exists
 - [ ] It does not expose EmDash admin APIs
 - [ ] Public content filtering rules are documented
 
 ## Rollback Plan
+
 Disable mobile-api module.
 ```
 
@@ -1619,9 +1627,11 @@ Disable mobile-api module.
 
 ```md
 ## Goal
+
 Create Flutter SDK package skeleton for AWCMS-Micro Mobile API.
 
 ## Tasks
+
 - [ ] Add packages/flutter/awcms_micro_client
 - [ ] Add pubspec.yaml
 - [ ] Add API client
@@ -1630,11 +1640,13 @@ Create Flutter SDK package skeleton for AWCMS-Micro Mobile API.
 - [ ] Add tests folder
 
 ## Acceptance Criteria
+
 - [ ] SDK structure exists
 - [ ] SDK is domain-neutral
 - [ ] No secrets are included
 
 ## Rollback Plan
+
 Remove SDK package skeleton.
 ```
 
@@ -1642,9 +1654,11 @@ Remove SDK package skeleton.
 
 ```md
 ## Goal
+
 Create optional Flutter school app skeleton.
 
 ## Tasks
+
 - [ ] Add apps/flutter/school_app
 - [ ] Add feature-first folder structure
 - [ ] Add app config strategy
@@ -1652,11 +1666,13 @@ Create optional Flutter school app skeleton.
 - [ ] Add news/documents/forms/Kelulusan feature placeholders
 
 ## Acceptance Criteria
+
 - [ ] App skeleton exists
 - [ ] API base URL is configurable
 - [ ] No production secrets are included
 
 ## Rollback Plan
+
 Remove app skeleton.
 ```
 
@@ -1664,9 +1680,11 @@ Remove app skeleton.
 
 ```md
 ## Goal
+
 Define Kelulusan integration for mobile app.
 
 ## Tasks
+
 - [ ] Define status endpoint
 - [ ] Define verify endpoint
 - [ ] Define download-url endpoint
@@ -1675,11 +1693,13 @@ Define Kelulusan integration for mobile app.
 - [ ] Define tests
 
 ## Acceptance Criteria
+
 - [ ] Mobile Kelulusan flow is documented
 - [ ] No raw NISN or signed URL is logged/stored
 - [ ] Rate limit and maintenance behavior are handled
 
 ## Rollback Plan
+
 Disable Kelulusan mobile feature flag.
 ```
 
@@ -1687,9 +1707,11 @@ Disable Kelulusan mobile feature flag.
 
 ```md
 ## Goal
+
 Define tests for backend Mobile API and Flutter SDK/app.
 
 ## Tasks
+
 - [ ] Add backend API tests
 - [ ] Add SDK unit tests
 - [ ] Add repository tests
@@ -1698,11 +1720,13 @@ Define tests for backend Mobile API and Flutter SDK/app.
 - [ ] Add contract tests
 
 ## Acceptance Criteria
+
 - [ ] Testing plan exists
 - [ ] API contract tests are defined
 - [ ] Private content leak tests are included
 
 ## Rollback Plan
+
 Mark tests pending or block release until tests are implemented.
 ```
 

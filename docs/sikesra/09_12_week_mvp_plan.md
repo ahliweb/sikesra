@@ -11,20 +11,20 @@
 
 ## Milestones
 
-| Week | Theme | Outcome |
-|---:|---|---|
-| 1 | Discovery and Plugin Foundation | Repository conventions, decision log, module skeleton, manifest. |
-| 2 | Database Foundation | D1 migrations and seeds for settings, regions, entities, details. |
-| 3 | Security Foundation | RBAC, ABAC, masking, request context, audit baseline. |
-| 4 | Public and Admin Dashboards | Public `/sikesra`, scoped admin dashboard, public privacy tests. |
-| 5 | Regions and Registry | Region services, entity list/detail, filters, masking. |
-| 6 | Progressive Input | Draft, autosave, validation, completeness, wizard UI. |
-| 7 | ID and Verification | 20-digit ID generation, submit, verification queue/decision flow. |
-| 8 | Documents and R2 | Upload, metadata, private download, document UI. |
-| 9 | Excel Import | Workbook upload, mapping, staging, validation, correction UI. |
-| 10 | Dedup, Promotion, Reports | Duplicate service, promotion, basic export/settings. |
-| 11 | Audit and Hardening | Audit UI, security tests, backup/restore, performance review. |
-| 12 | Acceptance and Release Candidate | UAT, documentation finalization, go/no-go decision. |
+| Week | Theme                            | Outcome                                                           |
+| ---: | -------------------------------- | ----------------------------------------------------------------- |
+|    1 | Discovery and Plugin Foundation  | Repository conventions, decision log, module skeleton, manifest.  |
+|    2 | Database Foundation              | D1 migrations and seeds for settings, regions, entities, details. |
+|    3 | Security Foundation              | RBAC, ABAC, masking, request context, audit baseline.             |
+|    4 | Public and Admin Dashboards      | Public `/sikesra`, scoped admin dashboard, public privacy tests.  |
+|    5 | Regions and Registry             | Region services, entity list/detail, filters, masking.            |
+|    6 | Progressive Input                | Draft, autosave, validation, completeness, wizard UI.             |
+|    7 | ID and Verification              | 20-digit ID generation, submit, verification queue/decision flow. |
+|    8 | Documents and R2                 | Upload, metadata, private download, document UI.                  |
+|    9 | Excel Import                     | Workbook upload, mapping, staging, validation, correction UI.     |
+|   10 | Dedup, Promotion, Reports        | Duplicate service, promotion, basic export/settings.              |
+|   11 | Audit and Hardening              | Audit UI, security tests, backup/restore, performance review.     |
+|   12 | Acceptance and Release Candidate | UAT, documentation finalization, go/no-go decision.               |
 
 ## Week 1 Gate
 

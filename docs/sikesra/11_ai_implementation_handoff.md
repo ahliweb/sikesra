@@ -123,42 +123,42 @@ Too large for a limited-context implementer:
 
 Split these broad backlog items before assigning them to a junior programmer or AI agent.
 
-| Backlog Item | Split Into |
-|---|---|
-| `SIKESRA-011` detail module migrations | One migration ticket per two detail tables, or one per table if fields are complex. |
-| `SIKESRA-012` relationships, attributes, ABAC migrations | Entity people, attribute definitions, entity attributes, user scopes, ABAC policies, ABAC conditions. |
-| `SIKESRA-013` remaining infrastructure migrations | Verification events, file objects, supporting documents, import batches, staging rows, mapping templates, duplicate candidates, duplicate decisions, benefit history, export jobs, audit logs. |
-| `SIKESRA-014` baseline seeds | Attribute vocabulary seeds, verification seeds, ABAC baseline policies, settings defaults. |
-| `SIKESRA-017` ABAC evaluator | Input types, policy loader, condition evaluator, deny precedence, region scope checks, sensitivity checks, tests. |
-| `SIKESRA-018` masking utility | Person masking, contact/address masking, document metadata masking, audit redaction, negative tests. |
-| `SIKESRA-024` admin dashboard API | KPI query, work queue query, regional summary query, activity feed query, response serializer. |
-| `SIKESRA-036` wizard UI | Step shell, autosave wiring, validation display, duplicate warning panel, review/submit step. |
-| `SIKESRA-043` verification UI | Queue list, review detail, decision form, notes/history panel. |
-| `SIKESRA-047` document verification and replacement | Verify/reject document endpoint, replace document endpoint, supersede metadata update, audit tests. |
-| `SIKESRA-050` sheet reading and mapping | Workbook parser, sheet detector, column mapper, mapping template persistence. |
-| `SIKESRA-056` import promotion | Promotion eligibility, entity creation, detail/person/attribute creation, ID generation integration, duplicate override audit. |
-| `SIKESRA-058` export job creation | Field sensitivity resolver, export request validator, job record creation, file generation, private download. |
-| `SIKESRA-064` security tests | RBAC route tests, ABAC object tests, masking tests, cross-region tests. |
-| `SIKESRA-069` backup/restore linkage | D1 backup check, R2 inventory check, restore dry run, metadata/object linkage validation. |
+| Backlog Item                                             | Split Into                                                                                                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SIKESRA-011` detail module migrations                   | One migration ticket per two detail tables, or one per table if fields are complex.                                                                                                            |
+| `SIKESRA-012` relationships, attributes, ABAC migrations | Entity people, attribute definitions, entity attributes, user scopes, ABAC policies, ABAC conditions.                                                                                          |
+| `SIKESRA-013` remaining infrastructure migrations        | Verification events, file objects, supporting documents, import batches, staging rows, mapping templates, duplicate candidates, duplicate decisions, benefit history, export jobs, audit logs. |
+| `SIKESRA-014` baseline seeds                             | Attribute vocabulary seeds, verification seeds, ABAC baseline policies, settings defaults.                                                                                                     |
+| `SIKESRA-017` ABAC evaluator                             | Input types, policy loader, condition evaluator, deny precedence, region scope checks, sensitivity checks, tests.                                                                              |
+| `SIKESRA-018` masking utility                            | Person masking, contact/address masking, document metadata masking, audit redaction, negative tests.                                                                                           |
+| `SIKESRA-024` admin dashboard API                        | KPI query, work queue query, regional summary query, activity feed query, response serializer.                                                                                                 |
+| `SIKESRA-036` wizard UI                                  | Step shell, autosave wiring, validation display, duplicate warning panel, review/submit step.                                                                                                  |
+| `SIKESRA-043` verification UI                            | Queue list, review detail, decision form, notes/history panel.                                                                                                                                 |
+| `SIKESRA-047` document verification and replacement      | Verify/reject document endpoint, replace document endpoint, supersede metadata update, audit tests.                                                                                            |
+| `SIKESRA-050` sheet reading and mapping                  | Workbook parser, sheet detector, column mapper, mapping template persistence.                                                                                                                  |
+| `SIKESRA-056` import promotion                           | Promotion eligibility, entity creation, detail/person/attribute creation, ID generation integration, duplicate override audit.                                                                 |
+| `SIKESRA-058` export job creation                        | Field sensitivity resolver, export request validator, job record creation, file generation, private download.                                                                                  |
+| `SIKESRA-064` security tests                             | RBAC route tests, ABAC object tests, masking tests, cross-region tests.                                                                                                                        |
+| `SIKESRA-069` backup/restore linkage                     | D1 backup check, R2 inventory check, restore dry run, metadata/object linkage validation.                                                                                                      |
 
 ## Minimal Doc Context Map
 
 Use this map to keep prompts small.
 
-| Work Area | Required Docs |
-|---|---|
-| Discovery and skeleton | `02_architecture.md`, `08_implementation_backlog.md`, this handoff. |
-| Product seeds | `01_product_requirements.md`, `03_data_model.md`. |
-| Database migrations | `03_data_model.md`, relevant backlog ticket, this handoff. |
-| API endpoint | `04_api_contracts.md`, `06_security_rbac_abac.md`, this handoff. |
-| Public page | `01_product_requirements.md`, `05_ui_ux.md`, `06_security_rbac_abac.md`. |
-| Admin UI | `05_ui_ux.md`, `04_api_contracts.md`, this handoff. |
-| Security and ABAC | `06_security_rbac_abac.md`, `02_architecture.md`, `10_validation_checklist.md`. |
-| Import workflow | `07_operations_sop.md`, `03_data_model.md`, `04_api_contracts.md`. |
-| Documents and R2 | `02_architecture.md`, `03_data_model.md`, `06_security_rbac_abac.md`. |
-| Verification workflow | `07_operations_sop.md`, `04_api_contracts.md`, `06_security_rbac_abac.md`. |
-| Reports and exports | `04_api_contracts.md`, `06_security_rbac_abac.md`, `10_validation_checklist.md`. |
-| Release validation | `09_12_week_mvp_plan.md`, `10_validation_checklist.md`. |
+| Work Area              | Required Docs                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| Discovery and skeleton | `02_architecture.md`, `08_implementation_backlog.md`, this handoff.              |
+| Product seeds          | `01_product_requirements.md`, `03_data_model.md`.                                |
+| Database migrations    | `03_data_model.md`, relevant backlog ticket, this handoff.                       |
+| API endpoint           | `04_api_contracts.md`, `06_security_rbac_abac.md`, this handoff.                 |
+| Public page            | `01_product_requirements.md`, `05_ui_ux.md`, `06_security_rbac_abac.md`.         |
+| Admin UI               | `05_ui_ux.md`, `04_api_contracts.md`, this handoff.                              |
+| Security and ABAC      | `06_security_rbac_abac.md`, `02_architecture.md`, `10_validation_checklist.md`.  |
+| Import workflow        | `07_operations_sop.md`, `03_data_model.md`, `04_api_contracts.md`.               |
+| Documents and R2       | `02_architecture.md`, `03_data_model.md`, `06_security_rbac_abac.md`.            |
+| Verification workflow  | `07_operations_sop.md`, `04_api_contracts.md`, `06_security_rbac_abac.md`.       |
+| Reports and exports    | `04_api_contracts.md`, `06_security_rbac_abac.md`, `10_validation_checklist.md`. |
+| Release validation     | `09_12_week_mvp_plan.md`, `10_validation_checklist.md`.                          |
 
 ## Phase 0 Prompt Pack
 

@@ -52,12 +52,12 @@ Use this development sequence:
 
 ### 2.2 Repository Roles
 
-| Repository | Role | Rule |
-| --- | --- | --- |
-| `emdash-cms/emdash` | Canonical upstream | Follow architecture, standards, package boundaries |
-| `awcms-micro-sman2pangkalanbun` | Reference implementation | Study and copy safe patterns only |
-| `awcms-micro-standard` | New reusable base | Build clean, documented, reusable foundation |
-| client-specific repo | Website implementation | Add branding, content, deployment, site-specific plugins |
+| Repository                      | Role                     | Rule                                                     |
+| ------------------------------- | ------------------------ | -------------------------------------------------------- |
+| `emdash-cms/emdash`             | Canonical upstream       | Follow architecture, standards, package boundaries       |
+| `awcms-micro-sman2pangkalanbun` | Reference implementation | Study and copy safe patterns only                        |
+| `awcms-micro-standard`          | New reusable base        | Build clean, documented, reusable foundation             |
+| client-specific repo            | Website implementation   | Add branding, content, deployment, site-specific plugins |
 
 ### 2.3 Do Not Start by Editing the SMAN 2 Repo
 
@@ -365,7 +365,7 @@ Create a root `AGENTS.md` to guide coding agents.
 
 Recommended content:
 
-```md
+````md
 # AWCMS-Micro Agent Instructions
 
 ## Mission
@@ -414,6 +414,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 ```
+````
 
 If a script does not exist, inspect `package.json` and add or document the equivalent.
 
@@ -426,7 +427,7 @@ If a script does not exist, inspect `package.json` and add or document the equiv
 - Never run destructive database migrations without backup and rollback notes.
 - Never expose admin APIs directly to public mobile applications.
 
-```text
+````text
 
 ## Upstream Toolchain
 
@@ -460,7 +461,7 @@ AWCMS-Micro Standard is a clean EmDash-compatible implementation base for buildi
 ```txt
 EmDash upstream is the architectural authority.
 AWCMS-Micro is the governed implementation layer.
-```
+````
 
 ## Repository Structure
 
@@ -504,22 +505,22 @@ Use this only as a starter and adjust after inspecting EmDash upstream package c
 
 ```json
 {
-  "name": "awcms-micro-standard",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@10.28.0",
-  "scripts": {
-    "dev": "pnpm --filter @awcms-micro/site-main dev",
-    "build": "pnpm --filter @awcms-micro/site-main build",
-    "preview": "pnpm --filter @awcms-micro/site-main preview",
-    "lint": "echo \"TODO: configure lint\"",
-    "typecheck": "echo \"TODO: configure typecheck\"",
-    "test": "echo \"TODO: configure tests\"",
-    "test:e2e": "echo \"TODO: configure Playwright\"",
-    "validate": "./scripts/validate.sh"
-  },
-  "devDependencies": {}
+	"name": "awcms-micro-standard",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@10.28.0",
+	"scripts": {
+		"dev": "pnpm --filter @awcms-micro/site-main dev",
+		"build": "pnpm --filter @awcms-micro/site-main build",
+		"preview": "pnpm --filter @awcms-micro/site-main preview",
+		"lint": "echo \"TODO: configure lint\"",
+		"typecheck": "echo \"TODO: configure typecheck\"",
+		"test": "echo \"TODO: configure tests\"",
+		"test:e2e": "echo \"TODO: configure Playwright\"",
+		"validate": "./scripts/validate.sh"
+	},
+	"devDependencies": {}
 }
 ```
 
@@ -636,25 +637,25 @@ Recommended initial shape:
 
 ```json
 {
-  "name": "@awcms-micro/site-main",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "astro dev --host 127.0.0.1 --port 4321",
-    "build": "astro build",
-    "preview": "astro preview --host 127.0.0.1 --port 4321",
-    "typecheck": "astro check"
-  },
-  "dependencies": {
-    "@astrojs/node": "^10.0.0",
-    "@astrojs/react": "^5.0.0",
-    "astro": "^6.0.1",
-    "emdash": "latest",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {}
+	"name": "@awcms-micro/site-main",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev --host 127.0.0.1 --port 4321",
+		"build": "astro build",
+		"preview": "astro preview --host 127.0.0.1 --port 4321",
+		"typecheck": "astro check"
+	},
+	"dependencies": {
+		"@astrojs/node": "^10.0.0",
+		"@astrojs/react": "^5.0.0",
+		"astro": "^6.0.1",
+		"emdash": "latest",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
+	},
+	"devDependencies": {}
 }
 ```
 
@@ -674,24 +675,24 @@ import emdash, { local } from "emdash/astro";
 import { sqlite } from "emdash/db";
 
 export default defineConfig({
-  output: "server",
-  adapter: node({
-    mode: "standalone",
-  }),
-  integrations: [
-    react(),
-    emdash({
-      database: sqlite({ url: "file:./data.db" }),
-      storage: local({
-        directory: "./uploads",
-        baseUrl: "/_emdash/api/media/file",
-      }),
-      plugins: [],
-    }),
-  ],
-  devToolbar: {
-    enabled: false,
-  },
+	output: "server",
+	adapter: node({
+		mode: "standalone",
+	}),
+	integrations: [
+		react(),
+		emdash({
+			database: sqlite({ url: "file:./data.db" }),
+			storage: local({
+				directory: "./uploads",
+				baseUrl: "/_emdash/api/media/file",
+			}),
+			plugins: [],
+		}),
+	],
+	devToolbar: {
+		enabled: false,
+	},
 });
 ```
 
@@ -704,9 +705,9 @@ import { defineLiveCollection } from "astro:content";
 import { emdashLoader } from "emdash/runtime";
 
 export const collections = {
-  _emdash: defineLiveCollection({
-    loader: emdashLoader(),
-  }),
+	_emdash: defineLiveCollection({
+		loader: emdashLoader(),
+	}),
 };
 ```
 
@@ -820,123 +821,128 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 ```css
 :root {
-  --color-bg: #ffffff;
-  --color-text: #111827;
-  --color-muted: #6b7280;
-  --color-border: #e5e7eb;
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --container: 1120px;
+	--color-bg: #ffffff;
+	--color-text: #111827;
+	--color-muted: #6b7280;
+	--color-border: #e5e7eb;
+	--color-primary: #2563eb;
+	--color-primary-dark: #1d4ed8;
+	--container: 1120px;
 }
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
-  line-height: 1.6;
+	margin: 0;
+	font-family:
+		system-ui,
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		sans-serif;
+	background: var(--color-bg);
+	color: var(--color-text);
+	line-height: 1.6;
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+	color: inherit;
+	text-decoration: none;
 }
 
 .container {
-  width: min(100% - 2rem, var(--container));
-  margin-inline: auto;
+	width: min(100% - 2rem, var(--container));
+	margin-inline: auto;
 }
 
 .site-header,
 .site-footer {
-  border-bottom: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border);
 }
 
 .site-footer {
-  border-top: 1px solid var(--color-border);
-  border-bottom: 0;
-  padding: 2rem 0;
-  color: var(--color-muted);
+	border-top: 1px solid var(--color-border);
+	border-bottom: 0;
+	padding: 2rem 0;
+	color: var(--color-muted);
 }
 
 .header-inner {
-  min-height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+	min-height: 72px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.5rem;
 }
 
 .brand {
-  font-weight: 700;
+	font-weight: 700;
 }
 
 nav {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  color: var(--color-muted);
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	color: var(--color-muted);
 }
 
 .hero {
-  padding: 6rem 0;
+	padding: 6rem 0;
 }
 
 .hero h1 {
-  max-width: 760px;
-  font-size: clamp(2.25rem, 6vw, 4.75rem);
-  line-height: 1;
-  letter-spacing: -0.05em;
-  margin: 0 0 1.5rem;
+	max-width: 760px;
+	font-size: clamp(2.25rem, 6vw, 4.75rem);
+	line-height: 1;
+	letter-spacing: -0.05em;
+	margin: 0 0 1.5rem;
 }
 
 .hero p {
-  max-width: 680px;
-  color: var(--color-muted);
-  font-size: 1.125rem;
+	max-width: 680px;
+	color: var(--color-muted);
+	font-size: 1.125rem;
 }
 
 .eyebrow {
-  color: var(--color-primary);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.875rem;
+	color: var(--color-primary);
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-size: 0.875rem;
 }
 
 .hero-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+	display: flex;
+	gap: 1rem;
+	margin-top: 2rem;
+	flex-wrap: wrap;
 }
 
 .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 0.875rem 1.25rem;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-weight: 700;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	padding: 0.875rem 1.25rem;
+	background: var(--color-primary);
+	color: #ffffff;
+	font-weight: 700;
 }
 
 .button:hover {
-  background: var(--color-primary-dark);
+	background: var(--color-primary-dark);
 }
 
 .button-secondary {
-  background: #f3f4f6;
-  color: var(--color-text);
+	background: #f3f4f6;
+	color: var(--color-text);
 }
 
 .button-secondary:hover {
-  background: #e5e7eb;
+	background: #e5e7eb;
 }
 ```
 
@@ -975,7 +981,7 @@ EmDash upstream is the architectural authority. AWCMS-Micro adds governance, tem
 
 ### 17.2 `docs/upstream-sync.md`
 
-```md
+````md
 # EmDash Upstream Sync Policy
 
 ## Upstream
@@ -1007,15 +1013,16 @@ pnpm test
 pnpm build
 pnpm test:e2e
 ```
+````
 
 ### 17.3 `docs/divergence-log.md`
 
 ```md
 # Divergence Log
 
-| Date | Area | Upstream Behavior | AWCMS-Micro Behavior | Reason | Risk | Rollback |
-|---|---|---|---|---|---|---|
-| 2026-05-05 | Initial | Follow EmDash | No divergence yet | New standard base | Low | N/A |
+| Date       | Area    | Upstream Behavior | AWCMS-Micro Behavior | Reason            | Risk | Rollback |
+| ---------- | ------- | ----------------- | -------------------- | ----------------- | ---- | -------- |
+| 2026-05-05 | Initial | Follow EmDash     | No divergence yet    | New standard base | Low  | N/A      |
 ```
 
 ### 17.4 `docs/compatibility-matrix.md`
@@ -1023,17 +1030,17 @@ pnpm test:e2e
 ```md
 # Compatibility Matrix
 
-| Area | Compatibility Target | Status | Risk | Test |
-|---|---|---|---|---|
-| EmDash core | Latest upstream | Pending | Medium | Build/test |
-| Admin UI | Manifest-driven admin works | Pending | High | Admin smoke test |
-| Native plugins | Plugins load | Pending | High | Plugin load test |
-| Marketplace plugins | Sandbox/capability model preserved | Pending | High | Marketplace test |
-| Templates | Official templates usable | Pending | Medium | Template seed test |
-| Storage | Local and R2/S3 work | Pending | High | Upload/download test |
-| Content schema | Collections and fields work | Pending | High | CRUD test |
-| Soft delete | Soft delete works as expected | Pending | Medium | Delete/restore test |
-| ABAC overlay | Does not break EmDash permissions | Pending | High | Effective access test |
+| Area                | Compatibility Target               | Status  | Risk   | Test                  |
+| ------------------- | ---------------------------------- | ------- | ------ | --------------------- |
+| EmDash core         | Latest upstream                    | Pending | Medium | Build/test            |
+| Admin UI            | Manifest-driven admin works        | Pending | High   | Admin smoke test      |
+| Native plugins      | Plugins load                       | Pending | High   | Plugin load test      |
+| Marketplace plugins | Sandbox/capability model preserved | Pending | High   | Marketplace test      |
+| Templates           | Official templates usable          | Pending | Medium | Template seed test    |
+| Storage             | Local and R2/S3 work               | Pending | High   | Upload/download test  |
+| Content schema      | Collections and fields work        | Pending | High   | CRUD test             |
+| Soft delete         | Soft delete works as expected      | Pending | Medium | Delete/restore test   |
+| ABAC overlay        | Does not break EmDash permissions  | Pending | High   | Effective access test |
 ```
 
 ---
@@ -1132,15 +1139,15 @@ sites/main/seed/
 
 ```json
 {
-  "siteName": "AWCMS-Micro Standard",
-  "tagline": "EmDash-compatible website foundation",
-  "locale": "en-US",
-  "timezone": "Asia/Jakarta",
-  "defaultTenant": {
-    "id": "00000000-0000-0000-0000-000000000001",
-    "code": "default",
-    "name": "Default Tenant"
-  }
+	"siteName": "AWCMS-Micro Standard",
+	"tagline": "EmDash-compatible website foundation",
+	"locale": "en-US",
+	"timezone": "Asia/Jakarta",
+	"defaultTenant": {
+		"id": "00000000-0000-0000-0000-000000000001",
+		"code": "default",
+		"name": "Default Tenant"
+	}
 }
 ```
 
@@ -1148,17 +1155,17 @@ sites/main/seed/
 
 ```json
 {
-  "main": [
-    { "label": "Home", "href": "/" },
-    { "label": "About", "href": "/about" },
-    { "label": "News", "href": "/news" },
-    { "label": "Documents", "href": "/documents" },
-    { "label": "Contact", "href": "/contact" }
-  ],
-  "footer": [
-    { "label": "Privacy Policy", "href": "/privacy" },
-    { "label": "Contact", "href": "/contact" }
-  ]
+	"main": [
+		{ "label": "Home", "href": "/" },
+		{ "label": "About", "href": "/about" },
+		{ "label": "News", "href": "/news" },
+		{ "label": "Documents", "href": "/documents" },
+		{ "label": "Contact", "href": "/contact" }
+	],
+	"footer": [
+		{ "label": "Privacy Policy", "href": "/privacy" },
+		{ "label": "Contact", "href": "/contact" }
+	]
 }
 ```
 
@@ -1180,12 +1187,15 @@ Seed data must be:
 
 ```md
 ## Goal
+
 Create a clean EmDash-compatible AWCMS-Micro standard repository structure.
 
 ## Scope
+
 Repository skeleton only. No advanced features.
 
 ## Tasks
+
 - Add root AGENTS.md
 - Add README.md
 - Add package.json
@@ -1200,12 +1210,14 @@ Repository skeleton only. No advanced features.
 - Add scripts folder
 
 ## Validation
+
 - Repository structure exists
 - No private data committed
 - No production secrets committed
 - Initial commit created
 
 ## Rollback
+
 Revert the initialization commit.
 ```
 
@@ -1213,9 +1225,11 @@ Revert the initialization commit.
 
 ```md
 ## Goal
+
 Document how this repository preserves compatibility with original EmDash.
 
 ## Tasks
+
 - Add docs/architecture.md
 - Add docs/upstream-sync.md
 - Add docs/compatibility-matrix.md
@@ -1223,11 +1237,13 @@ Document how this repository preserves compatibility with original EmDash.
 - Add docs/rollback.md
 
 ## Validation
+
 - Upstream sync policy is clear
 - Divergence log format exists
 - Compatibility matrix exists
 
 ## Rollback
+
 Revert documentation commit.
 ```
 
@@ -1235,9 +1251,11 @@ Revert documentation commit.
 
 ```md
 ## Goal
+
 Prepare a local EmDash-compatible website baseline.
 
 ## Tasks
+
 - Add sites/main/package.json
 - Add sites/main/astro.config.mjs
 - Add BaseLayout
@@ -1247,12 +1265,14 @@ Prepare a local EmDash-compatible website baseline.
 - Confirm local development command
 
 ## Validation
+
 - pnpm install works
 - pnpm dev starts local site
 - homepage loads
 - no EmDash core modifications
 
 ## Rollback
+
 Revert local baseline branch.
 ```
 
@@ -1260,9 +1280,11 @@ Revert local baseline branch.
 
 ```md
 ## Goal
+
 Create safe, reusable starter seed files.
 
 ## Tasks
+
 - Add site-settings.json
 - Add menus.json
 - Add pages.json
@@ -1271,11 +1293,13 @@ Create safe, reusable starter seed files.
 - Document seed policy
 
 ## Validation
+
 - Seed data contains no private data
 - Seed structure is reusable
 - Tenant default is documented
 
 ## Rollback
+
 Revert seed files.
 ```
 
@@ -1283,19 +1307,23 @@ Revert seed files.
 
 ```md
 ## Goal
+
 Add repeatable validation process.
 
 ## Tasks
+
 - Add scripts/validate.sh
 - Add validate script to package.json
 - Document required validation commands
 
 ## Validation
+
 - ./scripts/validate.sh runs
 - Missing scripts are handled clearly
 - Future real scripts can replace placeholders
 
 ## Rollback
+
 Revert validation script commit.
 ```
 
@@ -1303,9 +1331,11 @@ Revert validation script commit.
 
 ```md
 ## Goal
+
 Define e2e smoke tests for standard website behavior.
 
 ## Tasks
+
 - Add tests/e2e/README.md
 - Define homepage test
 - Define admin route test
@@ -1314,10 +1344,12 @@ Define e2e smoke tests for standard website behavior.
 - Define form submission test placeholder
 
 ## Validation
+
 - Test plan exists
 - Future Playwright implementation can follow it
 
 ## Rollback
+
 Revert e2e docs commit.
 ```
 
@@ -1325,9 +1357,11 @@ Revert e2e docs commit.
 
 ```md
 ## Goal
+
 Prepare deployment documentation without touching production resources.
 
 ## Tasks
+
 - Add docs/deployment.md
 - Add Cloudflare Workers notes
 - Add D1 notes
@@ -1337,11 +1371,13 @@ Prepare deployment documentation without touching production resources.
 - Add rollback checklist
 
 ## Validation
+
 - No production resource is modified
 - No secrets committed
 - Deployment plan is clear
 
 ## Rollback
+
 Revert deployment docs commit.
 ```
 

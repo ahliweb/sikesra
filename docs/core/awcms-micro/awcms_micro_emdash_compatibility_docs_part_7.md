@@ -133,34 +133,34 @@ incident response procedure
 
 ### 5.1 Main Threat Actors
 
-| Threat Actor | Example |
-| --- | --- |
-| Anonymous public user | tries to access private document |
-| Authenticated low-privilege user | tries to call admin API directly |
-| Compromised editor account | attempts to export submissions |
-| Malicious uploader | uploads executable/malware file |
-| Bot/spammer | floods public forms |
-| Misconfigured admin | exposes private file publicly |
-| Malicious/unsafe plugin | requests broad capabilities |
-| Insider | abuses permission to access sensitive data |
-| External attacker | attempts injection/XSS/session abuse |
-| Infrastructure attacker | targets Cloudflare/DNS/storage/API routes |
+| Threat Actor                     | Example                                    |
+| -------------------------------- | ------------------------------------------ |
+| Anonymous public user            | tries to access private document           |
+| Authenticated low-privilege user | tries to call admin API directly           |
+| Compromised editor account       | attempts to export submissions             |
+| Malicious uploader               | uploads executable/malware file            |
+| Bot/spammer                      | floods public forms                        |
+| Misconfigured admin              | exposes private file publicly              |
+| Malicious/unsafe plugin          | requests broad capabilities                |
+| Insider                          | abuses permission to access sensitive data |
+| External attacker                | attempts injection/XSS/session abuse       |
+| Infrastructure attacker          | targets Cloudflare/DNS/storage/API routes  |
 
 ### 5.2 Main Assets
 
-| Asset | Sensitivity |
-| --- | --- |
-| Public pages/posts | Low |
-| Draft content | Medium |
-| Form submissions | High |
+| Asset                     | Sensitivity   |
+| ------------------------- | ------------- |
+| Public pages/posts        | Low           |
+| Draft content             | Medium        |
+| Form submissions          | High          |
 | Student/private documents | High/Critical |
-| Admin accounts | Critical |
-| ABAC policies | Critical |
-| Audit logs | High |
-| Storage credentials | Critical |
-| Cloudflare tokens | Critical |
-| Mobile sessions | High |
-| Future ERP records | High/Critical |
+| Admin accounts            | Critical      |
+| ABAC policies             | Critical      |
+| Audit logs                | High          |
+| Storage credentials       | Critical      |
+| Cloudflare tokens         | Critical      |
+| Mobile sessions           | High          |
+| Future ERP records        | High/Critical |
 
 ### 5.3 Main Attack Scenarios
 
@@ -791,18 +791,18 @@ follow local document retention rules
 
 AWCMS-Micro is not automatically ISO-certified by following this document. However, this document provides a control alignment foundation.
 
-| Standard | Relevance to AWCMS-Micro |
-| --- | --- |
-| ISO/IEC 27001 | Information Security Management System controls |
-| ISO/IEC 27002 | Information security control guidance |
-| ISO/IEC 27005 | Information security risk management |
-| ISO/IEC 27017 | Cloud security controls |
-| ISO/IEC 27018 | Personal data protection in cloud services |
-| ISO/IEC 27701 | Privacy Information Management System |
-| ISO/IEC 27034 | Application security lifecycle |
-| ISO/IEC 20000-1 | IT service management |
-| ISO 22301 | Business continuity management |
-| ISO/IEC 15408 | Security assurance thinking |
+| Standard        | Relevance to AWCMS-Micro                        |
+| --------------- | ----------------------------------------------- |
+| ISO/IEC 27001   | Information Security Management System controls |
+| ISO/IEC 27002   | Information security control guidance           |
+| ISO/IEC 27005   | Information security risk management            |
+| ISO/IEC 27017   | Cloud security controls                         |
+| ISO/IEC 27018   | Personal data protection in cloud services      |
+| ISO/IEC 27701   | Privacy Information Management System           |
+| ISO/IEC 27034   | Application security lifecycle                  |
+| ISO/IEC 20000-1 | IT service management                           |
+| ISO 22301       | Business continuity management                  |
+| ISO/IEC 15408   | Security assurance thinking                     |
 
 ---
 
@@ -1042,13 +1042,13 @@ post-incident review
 
 Recommended baseline:
 
-| Site Type | RTO | RPO |
-| --- | ---: | ---: |
-| Landing page | 24 hours | 7 days |
-| Company profile | 8–24 hours | 1 day |
-| School website | 4–12 hours | 1 day |
-| Government portal | 2–8 hours | 1 day or less |
-| Secure document service | 1–4 hours | 1 day or less |
+| Site Type               |        RTO |           RPO |
+| ----------------------- | ---------: | ------------: |
+| Landing page            |   24 hours |        7 days |
+| Company profile         | 8–24 hours |         1 day |
+| School website          | 4–12 hours |         1 day |
+| Government portal       |  2–8 hours | 1 day or less |
+| Secure document service |  1–4 hours | 1 day or less |
 
 ---
 
@@ -1750,9 +1750,11 @@ policy import dry-run works
 
 ```md
 ## Goal
+
 Document the AWCMS-Micro secure-by-default baseline.
 
 ## Tasks
+
 - Add threat model
 - Add security controls by layer
 - Add authentication and authorization controls
@@ -1760,11 +1762,13 @@ Document the AWCMS-Micro secure-by-default baseline.
 - Add audit logging baseline
 
 ## Validation
+
 - docs/security.md exists
 - high-risk actions are listed
 - required controls are documented
 
 ## Rollback
+
 Revert documentation changes.
 ```
 
@@ -1772,9 +1776,11 @@ Revert documentation changes.
 
 ```md
 ## Goal
+
 Document Indonesian privacy and electronic system compliance baseline.
 
 ## Tasks
+
 - Add UU PDP alignment
 - Add PP 71/2019 alignment
 - Add PSE Lingkup Privat considerations
@@ -1782,11 +1788,13 @@ Document Indonesian privacy and electronic system compliance baseline.
 - Add consent and retention controls
 
 ## Validation
+
 - docs/privacy.md exists
 - docs/compliance.md exists
 - form privacy requirements are clear
 
 ## Rollback
+
 Revert compliance documentation changes.
 ```
 
@@ -1794,9 +1802,11 @@ Revert compliance documentation changes.
 
 ```md
 ## Goal
+
 Define secure upload controls for media/documents/modules.
 
 ## Tasks
+
 - Define allowed file types
 - Define blocked file types
 - Define safe filename strategy
@@ -1805,11 +1815,13 @@ Define secure upload controls for media/documents/modules.
 - Define suspicious upload audit events
 
 ## Validation
+
 - docs/secure-upload.md exists
 - upload policy includes extension/MIME/size checks
 - private files require signed URLs
 
 ## Rollback
+
 Revert upload policy implementation or disable upload feature.
 ```
 
@@ -1817,9 +1829,11 @@ Revert upload policy implementation or disable upload feature.
 
 ```md
 ## Goal
+
 Create complete testing and release validation checklist.
 
 ## Tasks
+
 - Add static check requirements
 - Add unit test requirements
 - Add API test requirements
@@ -1828,11 +1842,13 @@ Create complete testing and release validation checklist.
 - Add release checklist
 
 ## Validation
+
 - docs/testing.md exists
 - docs/release-checklist.md exists
 - required commands are listed
 
 ## Rollback
+
 Revert testing documentation or mark pending tests.
 ```
 
@@ -1840,9 +1856,11 @@ Revert testing documentation or mark pending tests.
 
 ```md
 ## Goal
+
 Document incident response, backup, restore, and continuity procedures.
 
 ## Tasks
+
 - Add incident types
 - Add response steps
 - Add emergency actions
@@ -1850,11 +1868,13 @@ Document incident response, backup, restore, and continuity procedures.
 - Add monitoring/alerting events
 
 ## Validation
+
 - docs/incident-response.md exists
 - docs/backup-restore.md exists
 - emergency module disable path is documented
 
 ## Rollback
+
 Revert runbook changes.
 ```
 
@@ -1862,9 +1882,11 @@ Revert runbook changes.
 
 ```md
 ## Goal
+
 Map AWCMS-Micro controls to relevant ISO standards.
 
 ## Tasks
+
 - Add ISO/IEC 27001 mapping
 - Add ISO/IEC 27002 mapping
 - Add ISO/IEC 27005 mapping
@@ -1876,10 +1898,12 @@ Map AWCMS-Micro controls to relevant ISO standards.
 - Add ISO/IEC 15408 assurance notes
 
 ## Validation
+
 - docs/iso-alignment.md exists
 - each standard has relevant control mapping
 
 ## Rollback
+
 Revert ISO documentation changes.
 ```
 

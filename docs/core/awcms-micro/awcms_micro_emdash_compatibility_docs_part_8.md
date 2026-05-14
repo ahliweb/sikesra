@@ -85,17 +85,17 @@ Audit Logs / Worker Logs / Optional Logpush
 
 ### 3.2 Runtime Roles
 
-| Layer | Role |
-| --- | --- |
-| Cloudflare DNS | Domain routing and DNS management |
-| Cloudflare CDN | Cache public assets and responses |
-| Cloudflare WAF | Edge protection and managed rules |
-| Worker | SSR/API runtime and gateway logic |
-| D1 | SQL records, content metadata, settings, module data |
-| R2 | media, documents, private files, backups |
-| KV | cache, feature flags, lightweight config, maintenance flags |
-| Turnstile | bot mitigation for forms and verification flows |
-| Workers Logs | runtime logs, errors, request troubleshooting |
+| Layer          | Role                                                        |
+| -------------- | ----------------------------------------------------------- |
+| Cloudflare DNS | Domain routing and DNS management                           |
+| Cloudflare CDN | Cache public assets and responses                           |
+| Cloudflare WAF | Edge protection and managed rules                           |
+| Worker         | SSR/API runtime and gateway logic                           |
+| D1             | SQL records, content metadata, settings, module data        |
+| R2             | media, documents, private files, backups                    |
+| KV             | cache, feature flags, lightweight config, maintenance flags |
+| Turnstile      | bot mitigation for forms and verification flows             |
+| Workers Logs   | runtime logs, errors, request troubleshooting               |
 
 ---
 
@@ -222,19 +222,19 @@ import emdash, { r2 } from "emdash/astro";
 import { d1 } from "@emdash-cms/cloudflare";
 
 export default defineConfig({
-  output: "server",
-  adapter: cloudflare(),
-  integrations: [
-    react(),
-    emdash({
-      database: d1({ binding: "DB" }),
-      storage: r2({
-        binding: "MEDIA_BUCKET",
-        publicUrl: "https://cdn.example.com", // optional
-      }),
-      plugins: [],
-    }),
-  ],
+	output: "server",
+	adapter: cloudflare(),
+	integrations: [
+		react(),
+		emdash({
+			database: d1({ binding: "DB" }),
+			storage: r2({
+				binding: "MEDIA_BUCKET",
+				publicUrl: "https://cdn.example.com", // optional
+			}),
+			plugins: [],
+		}),
+	],
 });
 ```
 
@@ -244,77 +244,77 @@ Note: Sandboxed plugins run via Dynamic Worker Loaders on Cloudflare Workers. Th
 
 ```jsonc
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "awcms-micro-standard",
-  "main": "./dist/_worker.js/index.js",
-  "compatibility_date": "2026-05-05",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true
-  },
-  "vars": {
-    "ENVIRONMENT": "staging",
-    "PUBLIC_SITE_URL": "https://staging.example.com",
-    "AWCMS_DEFAULT_TENANT_ID": "00000000-0000-0000-0000-000000000001",
-    "AWCMS_DEFAULT_TENANT_CODE": "default",
-    "AWCMS_DEFAULT_SITE_ID": "main"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "awcms_micro_staging",
-      "database_id": "REPLACE_WITH_STAGING_D1_DATABASE_ID"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA_BUCKET",
-      "bucket_name": "awcms-micro-staging-media"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "AWCMS_KV",
-      "id": "REPLACE_WITH_STAGING_KV_NAMESPACE_ID"
-    }
-  ],
-  "env": {
-    "production": {
-      "name": "awcms-micro-standard-production",
-      "routes": [
-        {
-          "pattern": "example.com/*",
-          "zone_name": "example.com"
-        }
-      ],
-      "vars": {
-        "ENVIRONMENT": "production",
-        "PUBLIC_SITE_URL": "https://example.com",
-        "AWCMS_DEFAULT_TENANT_ID": "00000000-0000-0000-0000-000000000001",
-        "AWCMS_DEFAULT_TENANT_CODE": "default",
-        "AWCMS_DEFAULT_SITE_ID": "main"
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "awcms_micro_production",
-          "database_id": "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "MEDIA_BUCKET",
-          "bucket_name": "awcms-micro-production-media"
-        }
-      ],
-      "kv_namespaces": [
-        {
-          "binding": "AWCMS_KV",
-          "id": "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
-        }
-      ]
-    }
-  }
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "awcms-micro-standard",
+	"main": "./dist/_worker.js/index.js",
+	"compatibility_date": "2026-05-05",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true,
+	},
+	"vars": {
+		"ENVIRONMENT": "staging",
+		"PUBLIC_SITE_URL": "https://staging.example.com",
+		"AWCMS_DEFAULT_TENANT_ID": "00000000-0000-0000-0000-000000000001",
+		"AWCMS_DEFAULT_TENANT_CODE": "default",
+		"AWCMS_DEFAULT_SITE_ID": "main",
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "awcms_micro_staging",
+			"database_id": "REPLACE_WITH_STAGING_D1_DATABASE_ID",
+		},
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "awcms-micro-staging-media",
+		},
+	],
+	"kv_namespaces": [
+		{
+			"binding": "AWCMS_KV",
+			"id": "REPLACE_WITH_STAGING_KV_NAMESPACE_ID",
+		},
+	],
+	"env": {
+		"production": {
+			"name": "awcms-micro-standard-production",
+			"routes": [
+				{
+					"pattern": "example.com/*",
+					"zone_name": "example.com",
+				},
+			],
+			"vars": {
+				"ENVIRONMENT": "production",
+				"PUBLIC_SITE_URL": "https://example.com",
+				"AWCMS_DEFAULT_TENANT_ID": "00000000-0000-0000-0000-000000000001",
+				"AWCMS_DEFAULT_TENANT_CODE": "default",
+				"AWCMS_DEFAULT_SITE_ID": "main",
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "awcms_micro_production",
+					"database_id": "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID",
+				},
+			],
+			"r2_buckets": [
+				{
+					"binding": "MEDIA_BUCKET",
+					"bucket_name": "awcms-micro-production-media",
+				},
+			],
+			"kv_namespaces": [
+				{
+					"binding": "AWCMS_KV",
+					"id": "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID",
+				},
+			],
+		},
+	},
 }
 ```
 
@@ -472,13 +472,13 @@ audit snapshot when needed
 
 ### 9.3 Restore Scenarios
 
-| Scenario | Restore Strategy |
-| --- | --- |
-| Bad migration | D1 point-in-time restore or corrective migration |
-| Bad seed | Restore backup or reverse seed with corrective migration |
-| Accidental soft delete | Restore row by clearing `deleted_at` |
-| Accidental hard delete | Restore from backup/time travel |
-| Plugin corruption | Disable plugin and restore affected records |
+| Scenario               | Restore Strategy                                         |
+| ---------------------- | -------------------------------------------------------- |
+| Bad migration          | D1 point-in-time restore or corrective migration         |
+| Bad seed               | Restore backup or reverse seed with corrective migration |
+| Accidental soft delete | Restore row by clearing `deleted_at`                     |
+| Accidental hard delete | Restore from backup/time travel                          |
+| Plugin corruption      | Disable plugin and restore affected records              |
 
 ### 9.4 Restore Test
 
@@ -1192,11 +1192,11 @@ Mobile API:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "MAINTENANCE_MODE",
-    "message": "Service is temporarily unavailable."
-  }
+	"success": false,
+	"error": {
+		"code": "MAINTENANCE_MODE",
+		"message": "Service is temporarily unavailable."
+	}
 }
 ```
 
@@ -1347,12 +1347,12 @@ Post-incident review
 
 ### 26.3 Severity Levels
 
-| Severity | Example | Response |
-| --- | --- | --- |
-| SEV-1 | private data exposure, full outage | immediate containment and owner notification |
-| SEV-2 | admin broken, major feature down | rollback or hotfix quickly |
-| SEV-3 | non-critical page/module issue | fix in normal sprint |
-| SEV-4 | documentation/cosmetic issue | backlog |
+| Severity | Example                            | Response                                     |
+| -------- | ---------------------------------- | -------------------------------------------- |
+| SEV-1    | private data exposure, full outage | immediate containment and owner notification |
+| SEV-2    | admin broken, major feature down   | rollback or hotfix quickly                   |
+| SEV-3    | non-critical page/module issue     | fix in normal sprint                         |
+| SEV-4    | documentation/cosmetic issue       | backlog                                      |
 
 ---
 
@@ -1533,9 +1533,11 @@ review unused resources
 
 ```md
 ## Goal
+
 Document Cloudflare deployment architecture for AWCMS-Micro.
 
 ## Tasks
+
 - Define Workers role
 - Define D1 role
 - Define R2 role
@@ -1544,11 +1546,13 @@ Document Cloudflare deployment architecture for AWCMS-Micro.
 - Define staging/production separation
 
 ## Validation
+
 - docs/deployment.md updated
 - architecture diagram exists
 - no production resources changed
 
 ## Rollback
+
 Revert documentation changes.
 ```
 
@@ -1556,9 +1560,11 @@ Revert documentation changes.
 
 ```md
 ## Goal
+
 Create safe example Wrangler configuration.
 
 ## Tasks
+
 - Add wrangler.example.jsonc
 - Add staging and production examples
 - Add D1 binding placeholders
@@ -1567,11 +1573,13 @@ Create safe example Wrangler configuration.
 - Add required secrets list
 
 ## Validation
+
 - no real IDs/secrets committed
 - config is clearly marked example
 - .gitignore excludes local secret files
 
 ## Rollback
+
 Remove example config.
 ```
 
@@ -1579,9 +1587,11 @@ Remove example config.
 
 ```md
 ## Goal
+
 Document environment and secret handling for Cloudflare deployment.
 
 ## Tasks
+
 - Define public vars
 - Define secrets
 - Define local .dev.vars usage
@@ -1589,11 +1599,13 @@ Document environment and secret handling for Cloudflare deployment.
 - Define secret rotation rule
 
 ## Validation
+
 - docs/cloudflare-security.md updated
 - .env.example updated
 - no secrets committed
 
 ## Rollback
+
 Revert docs and example env changes.
 ```
 
@@ -1601,9 +1613,11 @@ Revert docs and example env changes.
 
 ```md
 ## Goal
+
 Add GitHub Actions deployment baseline.
 
 ## Tasks
+
 - Add validation job
 - Add staging deployment job
 - Add production deployment job with environment approval
@@ -1611,11 +1625,13 @@ Add GitHub Actions deployment baseline.
 - Document rollback process
 
 ## Validation
+
 - workflow uses secrets, not hardcoded tokens
 - production requires approval
 - validation runs before deployment
 
 ## Rollback
+
 Disable workflow or revert workflow file.
 ```
 
@@ -1623,9 +1639,11 @@ Disable workflow or revert workflow file.
 
 ```md
 ## Goal
+
 Document backup and restore operations for D1, R2, KV, and module data.
 
 ## Tasks
+
 - Add pre-migration backup checklist
 - Add D1 restore strategy
 - Add R2 restore strategy
@@ -1633,11 +1651,13 @@ Document backup and restore operations for D1, R2, KV, and module data.
 - Add post-restore validation
 
 ## Validation
+
 - docs/backup-restore.md updated
 - restore checklist exists
 - migration checklist references backup
 
 ## Rollback
+
 Revert documentation changes.
 ```
 
@@ -1645,9 +1665,11 @@ Revert documentation changes.
 
 ```md
 ## Goal
+
 Define operational monitoring and incident handling.
 
 ## Tasks
+
 - Define logs to monitor
 - Define alert conditions
 - Define incident severity levels
@@ -1656,11 +1678,13 @@ Define operational monitoring and incident handling.
 - Define monthly maintenance checklist
 
 ## Validation
+
 - docs/incident-response.md updated
 - docs/operations.md updated
 - monitoring events are listed
 
 ## Rollback
+
 Revert runbook changes.
 ```
 

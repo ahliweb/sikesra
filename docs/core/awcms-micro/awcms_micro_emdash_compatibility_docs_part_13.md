@@ -167,16 +167,16 @@ AWCMS-Micro should not copy Odoo’s full ERP scope into MVP.
 
 ### 6.1 Useful Odoo Lessons
 
-| Odoo Concept | AWCMS-Micro Adaptation |
-| --- | --- |
-| Apps/modules | AWCMS module registry |
-| Menu/action model | Manifest-driven admin pages |
-| Access rights | AWCMS permission registry + ABAC |
-| Record rules | Future ABAC/RLS policies |
-| Workflows | Lightweight approval module |
-| Chatter/logs | Audit log and activity log |
-| Reports | Dashboard/report module |
-| Integrations | Adapter modules |
+| Odoo Concept      | AWCMS-Micro Adaptation           |
+| ----------------- | -------------------------------- |
+| Apps/modules      | AWCMS module registry            |
+| Menu/action model | Manifest-driven admin pages      |
+| Access rights     | AWCMS permission registry + ABAC |
+| Record rules      | Future ABAC/RLS policies         |
+| Workflows         | Lightweight approval module      |
+| Chatter/logs      | Audit log and activity log       |
+| Reports           | Dashboard/report module          |
+| Integrations      | Adapter modules                  |
 
 ---
 
@@ -203,22 +203,22 @@ communication
 
 ### 7.1 Module Category Examples
 
-| Category | Future Modules |
-| --- | --- |
-| core-website | Pages, News, Menus, SEO, Media |
-| public-service | Kelulusan, Secure Documents, Public Forms |
-| crm | Leads, Contacts, Opportunities |
-| sales | Quotations, Orders, Invoices integration |
-| finance | Simple billing integration, payment logs |
-| inventory | Items, stock movements, warehouse integration |
-| procurement | Purchase requests, vendor records |
-| project-management | Tasks, milestones, client portals |
-| hr | Staff directory, leave request, attendance integration |
-| asset-management | Assets, maintenance logs |
-| reporting | Dashboard, exports, KPIs |
-| integration | Odoo, Kommo, Duitku, Xendit, WhatsApp, Email |
-| workflow | Approval rules, status transitions |
-| communication | Notifications, email, WhatsApp, webhook |
+| Category           | Future Modules                                         |
+| ------------------ | ------------------------------------------------------ |
+| core-website       | Pages, News, Menus, SEO, Media                         |
+| public-service     | Kelulusan, Secure Documents, Public Forms              |
+| crm                | Leads, Contacts, Opportunities                         |
+| sales              | Quotations, Orders, Invoices integration               |
+| finance            | Simple billing integration, payment logs               |
+| inventory          | Items, stock movements, warehouse integration          |
+| procurement        | Purchase requests, vendor records                      |
+| project-management | Tasks, milestones, client portals                      |
+| hr                 | Staff directory, leave request, attendance integration |
+| asset-management   | Assets, maintenance logs                               |
+| reporting          | Dashboard, exports, KPIs                               |
+| integration        | Odoo, Kommo, Duitku, Xendit, WhatsApp, Email           |
+| workflow           | Approval rules, status transitions                     |
+| communication      | Notifications, email, WhatsApp, webhook                |
 
 ---
 
@@ -397,18 +397,18 @@ Do not force ERP records into EmDash content collections unless they are truly c
 
 Examples:
 
-| Data | Recommended Storage |
-| --- | --- |
-| News article | EmDash content collection |
-| Public page | EmDash content collection |
-| Public document | Documents module + media metadata |
-| Lead | CRM module table |
-| Quotation | Sales module table or Odoo integration |
-| Invoice | Odoo/accounting integration, not MVP AWCMS core |
-| Stock movement | Inventory module table or Odoo integration |
-| Purchase request | Procurement module table |
-| Staff profile public bio | Content/staff module |
-| Payroll | External HR/payroll system, not AWCMS-Micro MVP |
+| Data                     | Recommended Storage                             |
+| ------------------------ | ----------------------------------------------- |
+| News article             | EmDash content collection                       |
+| Public page              | EmDash content collection                       |
+| Public document          | Documents module + media metadata               |
+| Lead                     | CRM module table                                |
+| Quotation                | Sales module table or Odoo integration          |
+| Invoice                  | Odoo/accounting integration, not MVP AWCMS core |
+| Stock movement           | Inventory module table or Odoo integration      |
+| Purchase request         | Procurement module table                        |
+| Staff profile public bio | Content/staff module                            |
+| Payroll                  | External HR/payroll system, not AWCMS-Micro MVP |
 
 ### 10.2 Standard ERP Module Columns
 
@@ -978,11 +978,11 @@ Dashboard widget format:
 
 ```json
 {
-  "id": "lead-count",
-  "label": "Leads",
-  "moduleId": "crm",
-  "permission": "crm:lead:read",
-  "component": "LeadCountWidget"
+	"id": "lead-count",
+	"label": "Leads",
+	"moduleId": "crm",
+	"permission": "crm:lead:read",
+	"component": "LeadCountWidget"
 }
 ```
 
@@ -1251,12 +1251,12 @@ Use stable response shape:
 
 ```json
 {
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1670,19 +1670,23 @@ Use void/cancel/reversal patterns where appropriate.
 
 ```md
 ## Goal
+
 Document what ERP-ready means for AWCMS-Micro and what must stay out of MVP.
 
 ## Tasks
+
 - [ ] Define ERP-ready concept
 - [ ] Define non-goals
 - [ ] Define EmDash compatibility boundary
 - [ ] Define Odoo-inspired but not Odoo-clone strategy
 
 ## Acceptance Criteria
+
 - [ ] ERP-ready boundary is documented
 - [ ] MVP scope creep is explicitly prevented
 
 ## Rollback Plan
+
 Revert documentation changes.
 ```
 
@@ -1690,9 +1694,11 @@ Revert documentation changes.
 
 ```md
 ## Goal
+
 Create future ERP-ready module taxonomy.
 
 ## Tasks
+
 - [ ] Define CRM category
 - [ ] Define sales/payment category
 - [ ] Define inventory category
@@ -1701,10 +1707,12 @@ Create future ERP-ready module taxonomy.
 - [ ] Define project/reporting/integration categories
 
 ## Acceptance Criteria
+
 - [ ] Module taxonomy exists
 - [ ] Each category has examples and non-goals
 
 ## Rollback Plan
+
 Revert module taxonomy docs.
 ```
 
@@ -1712,9 +1720,11 @@ Revert module taxonomy docs.
 
 ```md
 ## Goal
+
 Define data model and permission standards for future ERP-ready modules.
 
 ## Tasks
+
 - [ ] Define module table columns
 - [ ] Define approval fields
 - [ ] Define permission namespace examples
@@ -1722,11 +1732,13 @@ Define data model and permission standards for future ERP-ready modules.
 - [ ] Define ABAC/audit requirements
 
 ## Acceptance Criteria
+
 - [ ] Future modules have clear table standards
 - [ ] Permission naming is consistent
 - [ ] High-risk controls are documented
 
 ## Rollback Plan
+
 Revert standards documentation.
 ```
 
@@ -1734,9 +1746,11 @@ Revert standards documentation.
 
 ```md
 ## Goal
+
 Define how AWCMS-Micro should integrate with Odoo without becoming Odoo.
 
 ## Tasks
+
 - [ ] Define when to use Odoo
 - [ ] Define AWCMS-Micro role
 - [ ] Define Odoo adapter module
@@ -1744,11 +1758,13 @@ Define how AWCMS-Micro should integrate with Odoo without becoming Odoo.
 - [ ] Define security rules
 
 ## Acceptance Criteria
+
 - [ ] Odoo integration boundary is documented
 - [ ] Odoo credentials are server-side only
 - [ ] Sync logs are defined
 
 ## Rollback Plan
+
 Disable Odoo integration module.
 ```
 
@@ -1756,9 +1772,11 @@ Disable Odoo integration module.
 
 ```md
 ## Goal
+
 Define minimal workflow and approval strategy for future modules.
 
 ## Tasks
+
 - [ ] Define status transitions
 - [ ] Define approval request model
 - [ ] Define audit events
@@ -1766,10 +1784,12 @@ Define minimal workflow and approval strategy for future modules.
 - [ ] Define out-of-scope workflow engine details
 
 ## Acceptance Criteria
+
 - [ ] Simple workflow strategy exists
 - [ ] Full workflow engine is kept out of MVP
 
 ## Rollback Plan
+
 Disable workflow module or revert docs.
 ```
 
@@ -1777,9 +1797,11 @@ Disable workflow module or revert docs.
 
 ```md
 ## Goal
+
 Define tests and rollback strategy for future ERP-ready modules.
 
 ## Tasks
+
 - [ ] Define unit/API/permission tests
 - [ ] Define integration tests
 - [ ] Define migration tests
@@ -1787,10 +1809,12 @@ Define tests and rollback strategy for future ERP-ready modules.
 - [ ] Define integration rollback
 
 ## Acceptance Criteria
+
 - [ ] Future ERP modules have test requirements
 - [ ] Rollback strategy is clear
 
 ## Rollback Plan
+
 Revert docs changes.
 ```
 

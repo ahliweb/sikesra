@@ -128,16 +128,16 @@ M7 — Production Deployment Baseline
 
 ### 3.1 Milestone Summary
 
-| Milestone | Goal | Output |
-| --- | --- | --- |
-| M0 | Understand references and create structure | docs, issues, repo skeleton |
-| M1 | Run local site | homepage, admin baseline, local dev |
-| M2 | Add content modules | pages, news, menus, announcements |
-| M3 | Add interaction modules | media, forms, documents, SEO |
-| M4 | Add governance | default tenant, audit, module registry |
-| M5 | Add validation/security | tests, release gates, Cloudflare staging docs |
-| M6 | Stabilize MVP | bug fixes, smoke tests, release candidate |
-| M7 | Deploy baseline | staging/prod runbook and deployment |
+| Milestone | Goal                                       | Output                                        |
+| --------- | ------------------------------------------ | --------------------------------------------- |
+| M0        | Understand references and create structure | docs, issues, repo skeleton                   |
+| M1        | Run local site                             | homepage, admin baseline, local dev           |
+| M2        | Add content modules                        | pages, news, menus, announcements             |
+| M3        | Add interaction modules                    | media, forms, documents, SEO                  |
+| M4        | Add governance                             | default tenant, audit, module registry        |
+| M5        | Add validation/security                    | tests, release gates, Cloudflare staging docs |
+| M6        | Stabilize MVP                              | bug fixes, smoke tests, release candidate     |
+| M7        | Deploy baseline                            | staging/prod runbook and deployment           |
 
 ---
 
@@ -207,20 +207,20 @@ MVP Release Candidate
 
 ### 5.2 Feature Dependencies
 
-| Feature | Depends On |
-| --- | --- |
-| Pages | EmDash content baseline |
-| Blog/News | EmDash content baseline |
-| Menus | Site settings/content baseline |
-| SEO | Pages/posts/settings |
-| Media | Storage baseline |
-| Documents | Media + storage + audit |
-| Forms | Validation + audit + privacy docs |
-| Audit Log | Tenant context + event schema |
-| Module Registry | Plugin/module manifest standard |
-| ABAC Matrix | Permission registry + audit + module registry |
-| Mobile API | Content services + documents/forms optional |
-| Cloudflare Deployment | build + env + storage/database config |
+| Feature               | Depends On                                    |
+| --------------------- | --------------------------------------------- |
+| Pages                 | EmDash content baseline                       |
+| Blog/News             | EmDash content baseline                       |
+| Menus                 | Site settings/content baseline                |
+| SEO                   | Pages/posts/settings                          |
+| Media                 | Storage baseline                              |
+| Documents             | Media + storage + audit                       |
+| Forms                 | Validation + audit + privacy docs             |
+| Audit Log             | Tenant context + event schema                 |
+| Module Registry       | Plugin/module manifest standard               |
+| ABAC Matrix           | Permission registry + audit + module registry |
+| Mobile API            | Content services + documents/forms optional   |
+| Cloudflare Deployment | build + env + storage/database config         |
 
 ---
 
@@ -288,29 +288,37 @@ Use this issue template:
 
 ```md
 ## Goal
+
 Describe the outcome of this issue.
 
 ## Context
+
 Explain why this is needed and how it relates to EmDash compatibility and AWCMS-Micro governance.
 
 ## Scope
+
 List what is included.
 
 ## Out of Scope
+
 List what must not be done in this issue.
 
 ## Tasks
+
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Task 3
 
 ## Acceptance Criteria
+
 - [ ] Criteria 1
 - [ ] Criteria 2
 - [ ] Criteria 3
 
 ## Validation
+
 Commands or checks:
+
 - [ ] pnpm lint
 - [ ] pnpm typecheck
 - [ ] pnpm test
@@ -318,12 +326,15 @@ Commands or checks:
 - [ ] pnpm test:e2e, if relevant
 
 ## Security / Compliance Notes
+
 Mention security, privacy, tenant, storage, or audit impact.
 
 ## EmDash Compatibility Impact
+
 Explain whether this touches EmDash core, plugin API, admin, storage, or templates.
 
 ## Rollback Plan
+
 Explain how to revert or disable the change safely.
 ```
 
@@ -396,9 +407,11 @@ Understand EmDash, inspect the reference repo, create the initial planning and g
 
 ```md
 ## Goal
+
 Inspect the original EmDash repository and SMAN 2 AWCMS-Micro reference implementation.
 
 ## Tasks
+
 - [ ] Read EmDash AGENTS.md
 - [ ] Read EmDash README.md
 - [ ] Read official EmDash docs
@@ -408,14 +421,17 @@ Inspect the original EmDash repository and SMAN 2 AWCMS-Micro reference implemen
 - [ ] Document findings
 
 ## Acceptance Criteria
+
 - [ ] Discovery notes exist
 - [ ] Reusable patterns are listed
 - [ ] Compatibility risks are listed
 
 ## Validation
+
 - [ ] No code changes unless documentation only
 
 ## Rollback Plan
+
 Revert discovery documentation commit.
 ```
 
@@ -423,19 +439,23 @@ Revert discovery documentation commit.
 
 ```md
 ## Goal
+
 Prepare GitHub project organization for atomic MVP development.
 
 ## Tasks
+
 - [ ] Create labels
 - [ ] Create milestones M0–M7
 - [ ] Create issue template
 
 ## Acceptance Criteria
+
 - [ ] Labels exist
 - [ ] Milestones exist
 - [ ] Issue template exists
 
 ## Rollback Plan
+
 Remove or rename labels/milestones if needed.
 ```
 
@@ -443,9 +463,11 @@ Remove or rename labels/milestones if needed.
 
 ```md
 ## Goal
+
 Create the clean AWCMS-Micro standard repository structure.
 
 ## Tasks
+
 - [ ] Add AGENTS.md
 - [ ] Add README.md
 - [ ] Add package.json
@@ -458,15 +480,18 @@ Create the clean AWCMS-Micro standard repository structure.
 - [ ] Add scripts folder
 
 ## Acceptance Criteria
+
 - [ ] Repository structure exists
 - [ ] No secrets committed
 - [ ] No client-specific data committed
 
 ## Validation
+
 - [ ] git status reviewed
 - [ ] initial commit created
 
 ## Rollback Plan
+
 Revert foundation commit.
 ```
 
@@ -496,22 +521,27 @@ Create the documentation foundation that prevents AWCMS-Micro from becoming a fr
 
 ```md
 ## Goal
+
 Document how AWCMS-Micro tracks the original EmDash repository.
 
 ## Tasks
+
 - [ ] Add docs/upstream-sync.md
 - [ ] Add sync checklist
 - [ ] Add adopt/adapt/delay/reject decision process
 - [ ] Add validation commands
 
 ## Acceptance Criteria
+
 - [ ] Upstream sync process is documented
 - [ ] Validation commands are listed
 
 ## Validation
+
 - [ ] docs reviewed
 
 ## Rollback Plan
+
 Revert docs commit.
 ```
 
@@ -519,18 +549,22 @@ Revert docs commit.
 
 ```md
 ## Goal
+
 Track compatibility with EmDash core, admin, plugins, templates, storage, and schema.
 
 ## Tasks
+
 - [ ] Add docs/compatibility-matrix.md
 - [ ] Add compatibility areas
 - [ ] Add status/risk/test columns
 
 ## Acceptance Criteria
+
 - [ ] Matrix exists
 - [ ] EmDash compatibility areas are listed
 
 ## Rollback Plan
+
 Revert matrix commit.
 ```
 
@@ -538,18 +572,22 @@ Revert matrix commit.
 
 ```md
 ## Goal
+
 Create a required log for any divergence from EmDash upstream.
 
 ## Tasks
+
 - [ ] Add docs/divergence-log.md
 - [ ] Add standard table format
 - [ ] Add initial no-divergence entry
 
 ## Acceptance Criteria
+
 - [ ] Divergence log exists
 - [ ] No undocumented divergence exists
 
 ## Rollback Plan
+
 Revert docs commit.
 ```
 
@@ -557,20 +595,24 @@ Revert docs commit.
 
 ```md
 ## Goal
+
 Define AWCMS-Micro architecture and governance baseline.
 
 ## Tasks
+
 - [ ] Add docs/architecture.md
 - [ ] Add docs/modules.md
 - [ ] Add docs/rollback.md
 - [ ] Add docs/testing.md
 
 ## Acceptance Criteria
+
 - [ ] Docs explain EmDash vs AWCMS-Micro boundaries
 - [ ] MVP scope is clear
 - [ ] Rollback principle exists
 
 ## Rollback Plan
+
 Revert documentation commit.
 ```
 
@@ -599,23 +641,28 @@ Create a local development baseline that can run a standard AWCMS-Micro website 
 
 ```md
 ## Goal
+
 Create the `sites/main` package for local development.
 
 ## Tasks
+
 - [ ] Run `npm create emdash@latest` or scaffold manually
 - [ ] Add sites/main/package.json with Astro 6+ and EmDash dependencies
 - [ ] Add dev/build/preview scripts
 - [ ] Add local README
 
 ## Acceptance Criteria
+
 - [ ] `sites/main` package exists
 - [ ] package scripts are defined
 
 ## Validation
+
 - [ ] pnpm install
 - [ ] pnpm --filter @awcms-micro/site-main build, if available
 
 ## Rollback Plan
+
 Revert site package commit.
 ```
 
@@ -623,9 +670,11 @@ Revert site package commit.
 
 ```md
 ## Goal
+
 Add Astro configuration for local AWCMS-Micro website development.
 
 ## Tasks
+
 - [ ] Add astro.config.mjs with `import emdash from "emdash/astro"`
 - [ ] Add Node adapter (`@astrojs/node`) for local dev
 - [ ] Add React integration (`@astrojs/react`)
@@ -634,14 +683,17 @@ Add Astro configuration for local AWCMS-Micro website development.
 - [ ] Document local config assumptions
 
 ## Acceptance Criteria
+
 - [ ] Astro config exists
 - [ ] Config does not guess unsupported EmDash imports
 - [ ] Config follows upstream docs
 
 ## Validation
+
 - [ ] pnpm build or documented pending state
 
 ## Rollback Plan
+
 Revert config commit.
 ```
 
@@ -649,9 +701,11 @@ Revert config commit.
 
 ```md
 ## Goal
+
 Add safe local environment examples.
 
 ## Tasks
+
 - [ ] Add .env.example
 - [ ] Add local database placeholder
 - [ ] Add local storage placeholder
@@ -659,10 +713,12 @@ Add safe local environment examples.
 - [ ] Ensure .env and .dev.vars are ignored
 
 ## Acceptance Criteria
+
 - [ ] No real secrets committed
 - [ ] Local env requirements are documented
 
 ## Rollback Plan
+
 Revert env example changes.
 ```
 
@@ -670,18 +726,22 @@ Revert env example changes.
 
 ```md
 ## Goal
+
 Add repeatable validation script.
 
 ## Tasks
+
 - [ ] Add scripts/validate.sh
 - [ ] Add package.json validate script
 - [ ] Run available checks safely
 
 ## Acceptance Criteria
+
 - [ ] `pnpm validate` exists or equivalent is documented
 - [ ] Missing scripts are handled clearly
 
 ## Rollback Plan
+
 Revert script changes.
 ```
 
@@ -709,23 +769,28 @@ Create the first public website shell: homepage, layout, header, footer, global 
 
 ```md
 ## Goal
+
 Create the base Astro layout for the public website.
 
 ## Tasks
+
 - [ ] Add BaseLayout.astro
 - [ ] Add HTML structure
 - [ ] Add meta title/description support
 - [ ] Add Header/Footer slots or imports
 
 ## Acceptance Criteria
+
 - [ ] Layout renders
 - [ ] SEO baseline exists
 - [ ] Semantic HTML is used
 
 ## Validation
+
 - [ ] build passes
 
 ## Rollback Plan
+
 Revert layout commit.
 ```
 
@@ -733,20 +798,24 @@ Revert layout commit.
 
 ```md
 ## Goal
+
 Create reusable public header and footer components.
 
 ## Tasks
+
 - [ ] Add Header.astro
 - [ ] Add Footer.astro
 - [ ] Add navigation placeholder
 - [ ] Add footer credit placeholder
 
 ## Acceptance Criteria
+
 - [ ] Header renders
 - [ ] Footer renders
 - [ ] Navigation is accessible
 
 ## Rollback Plan
+
 Revert component commit.
 ```
 
@@ -754,9 +823,11 @@ Revert component commit.
 
 ```md
 ## Goal
+
 Create the first standard homepage shell.
 
 ## Tasks
+
 - [ ] Add hero section
 - [ ] Add about section placeholder
 - [ ] Add news preview placeholder
@@ -764,15 +835,18 @@ Create the first standard homepage shell.
 - [ ] Add contact CTA
 
 ## Acceptance Criteria
+
 - [ ] Homepage loads
 - [ ] Mobile-first layout works
 - [ ] No client-specific branding hardcoded
 
 ## Validation
+
 - [ ] build passes
 - [ ] screenshot/manual check
 
 ## Rollback Plan
+
 Revert homepage commit.
 ```
 
@@ -780,18 +854,22 @@ Revert homepage commit.
 
 ```md
 ## Goal
+
 Create theme-standard manifest and settings baseline.
 
 ## Tasks
+
 - [ ] Add packages/awcms/theme-standard/theme.manifest.json
 - [ ] Add theme settings sample
 - [ ] Add README
 
 ## Acceptance Criteria
+
 - [ ] Theme manifest exists
 - [ ] Theme does not require EmDash core changes
 
 ## Rollback Plan
+
 Revert theme package changes.
 ```
 
@@ -821,9 +899,11 @@ Add the minimum standard website content model and rendering strategy.
 
 ```md
 ## Goal
+
 Define and implement site settings seed/config strategy.
 
 ## Tasks
+
 - [ ] Add site-settings.json
 - [ ] Define site identity
 - [ ] Define contact/social settings
@@ -831,10 +911,12 @@ Define and implement site settings seed/config strategy.
 - [ ] Define default tenant/site context
 
 ## Acceptance Criteria
+
 - [ ] Settings seed is safe and reusable
 - [ ] No private data exists
 
 ## Rollback Plan
+
 Revert seed file.
 ```
 
@@ -842,19 +924,23 @@ Revert seed file.
 
 ```md
 ## Goal
+
 Define pages module behavior for standard websites.
 
 ## Tasks
+
 - [ ] Add pages seed
 - [ ] Define page fields
 - [ ] Define published-only rendering rule
 - [ ] Add route strategy
 
 ## Acceptance Criteria
+
 - [ ] Pages are documented
 - [ ] Public pages exclude drafts/private/deleted content
 
 ## Rollback Plan
+
 Revert page strategy changes.
 ```
 
@@ -862,9 +948,11 @@ Revert page strategy changes.
 
 ```md
 ## Goal
+
 Define blog/news behavior.
 
 ## Tasks
+
 - [ ] Add posts seed
 - [ ] Define post fields
 - [ ] Define listing route
@@ -872,10 +960,12 @@ Define blog/news behavior.
 - [ ] Define SEO behavior
 
 ## Acceptance Criteria
+
 - [ ] News listing and detail strategy exist
 - [ ] Published-only rule exists
 
 ## Rollback Plan
+
 Revert posts changes.
 ```
 
@@ -883,19 +973,23 @@ Revert posts changes.
 
 ```md
 ## Goal
+
 Define standard menu structure.
 
 ## Tasks
+
 - [ ] Add menus.json
 - [ ] Define main menu
 - [ ] Define footer menu
 - [ ] Document future admin-managed menus
 
 ## Acceptance Criteria
+
 - [ ] Menu seed exists
 - [ ] Header/footer can use menu data later
 
 ## Rollback Plan
+
 Revert menu seed.
 ```
 
@@ -903,19 +997,23 @@ Revert menu seed.
 
 ```md
 ## Goal
+
 Define announcements module behavior.
 
 ## Tasks
+
 - [ ] Define announcement fields
 - [ ] Define public listing behavior
 - [ ] Define expiration behavior
 - [ ] Define admin management expectation
 
 ## Acceptance Criteria
+
 - [ ] Announcements are documented
 - [ ] Expired/deleted announcements are hidden
 
 ## Rollback Plan
+
 Revert docs/seed changes.
 ```
 
@@ -944,9 +1042,11 @@ Add the website features most needed by real client websites: media, documents, 
 
 ```md
 ## Goal
+
 Define media object metadata and storage path policy.
 
 ## Tasks
+
 - [ ] Add media_objects model docs or migration placeholder
 - [ ] Define tenant/site/module object key
 - [ ] Define safe filename policy
@@ -954,10 +1054,12 @@ Define media object metadata and storage path policy.
 - [ ] Define audit events
 
 ## Acceptance Criteria
+
 - [ ] No bare uploads/{filename} pattern
 - [ ] Media path includes tenant/site context
 
 ## Rollback Plan
+
 Disable media upload or revert media changes.
 ```
 
@@ -965,9 +1067,11 @@ Disable media upload or revert media changes.
 
 ```md
 ## Goal
+
 Create the baseline documents module plan or skeleton.
 
 ## Tasks
+
 - [ ] Add packages/plugins/documents skeleton
 - [ ] Add module.manifest.json
 - [ ] Define permissions
@@ -975,11 +1079,13 @@ Create the baseline documents module plan or skeleton.
 - [ ] Define public/private document behavior
 
 ## Acceptance Criteria
+
 - [ ] Documents module manifest exists
 - [ ] Public documents are separate from private documents
 - [ ] Private documents require signed URL strategy
 
 ## Rollback Plan
+
 Disable documents module.
 ```
 
@@ -987,9 +1093,11 @@ Disable documents module.
 
 ```md
 ## Goal
+
 Create the baseline forms module plan or skeleton.
 
 ## Tasks
+
 - [ ] Add packages/plugins/forms skeleton
 - [ ] Add module.manifest.json
 - [ ] Define form submission behavior
@@ -997,10 +1105,12 @@ Create the baseline forms module plan or skeleton.
 - [ ] Define spam protection placeholder
 
 ## Acceptance Criteria
+
 - [ ] Forms module manifest exists
 - [ ] Consent and privacy requirements documented
 
 ## Rollback Plan
+
 Disable forms module.
 ```
 
@@ -1008,9 +1118,11 @@ Disable forms module.
 
 ```md
 ## Goal
+
 Define SEO fields, fallback rules, sitemap, and robots strategy.
 
 ## Tasks
+
 - [ ] Add docs/seo.md
 - [ ] Define SEO fields
 - [ ] Define fallback order
@@ -1018,10 +1130,12 @@ Define SEO fields, fallback rules, sitemap, and robots strategy.
 - [ ] Define private content exclusion
 
 ## Acceptance Criteria
+
 - [ ] SEO strategy exists
 - [ ] Sitemap excludes private/draft/deleted content
 
 ## Rollback Plan
+
 Revert SEO changes.
 ```
 
@@ -1049,20 +1163,24 @@ Add the governance layer that prepares AWCMS-Micro for secure, tenant-ready expa
 
 ```md
 ## Goal
+
 Create default tenant and site model.
 
 ## Tasks
+
 - [ ] Define default tenant ID/code/name
 - [ ] Define default site ID/code/name
 - [ ] Add seed/config strategy
 - [ ] Add tenant context helper design
 
 ## Acceptance Criteria
+
 - [ ] Default tenant documented
 - [ ] Default site documented
 - [ ] Tenant context strategy exists
 
 ## Rollback Plan
+
 Revert tenant baseline changes.
 ```
 
@@ -1070,9 +1188,11 @@ Revert tenant baseline changes.
 
 ```md
 ## Goal
+
 Create audit log module skeleton and event taxonomy.
 
 ## Tasks
+
 - [ ] Add packages/plugins/audit-log skeleton
 - [ ] Add module.manifest.json
 - [ ] Define audit_events schema
@@ -1080,10 +1200,12 @@ Create audit log module skeleton and event taxonomy.
 - [ ] Define admin audit page plan
 
 ## Acceptance Criteria
+
 - [ ] Audit event taxonomy exists
 - [ ] Sensitive actions are listed
 
 ## Rollback Plan
+
 Disable audit module only if no production dependency yet.
 ```
 
@@ -1091,20 +1213,24 @@ Disable audit module only if no production dependency yet.
 
 ```md
 ## Goal
+
 Create module registry baseline.
 
 ## Tasks
+
 - [ ] Add packages/awcms/module-registry structure
 - [ ] Define module manifest schema
 - [ ] Define module lifecycle states
 - [ ] Define install/enable/disable flow
 
 ## Acceptance Criteria
+
 - [ ] Module registry docs exist
 - [ ] Manifest standard exists
 - [ ] Lifecycle states exist
 
 ## Rollback Plan
+
 Disable registry UI/feature and keep module configs static.
 ```
 
@@ -1112,19 +1238,23 @@ Disable registry UI/feature and keep module configs static.
 
 ```md
 ## Goal
+
 Create permission registry baseline for later ABAC.
 
 ## Tasks
+
 - [ ] Add packages/awcms/permissions structure
 - [ ] Define permission namespace
 - [ ] Define MVP permissions
 - [ ] Define high-risk permission list
 
 ## Acceptance Criteria
+
 - [ ] Permissions are namespaced
 - [ ] No random route-level permission strings
 
 ## Rollback Plan
+
 Revert permission registry baseline.
 ```
 
@@ -1152,9 +1282,11 @@ Prepare the MVP for safe staging deployment and repeatable validation.
 
 ```md
 ## Goal
+
 Add secure-by-default baseline documentation.
 
 ## Tasks
+
 - [ ] Add threat model
 - [ ] Add security controls by layer
 - [ ] Add secure upload policy
@@ -1162,10 +1294,12 @@ Add secure-by-default baseline documentation.
 - [ ] Add audit requirements
 
 ## Acceptance Criteria
+
 - [ ] docs/security.md exists
 - [ ] high-risk controls are documented
 
 ## Rollback Plan
+
 Revert docs changes.
 ```
 
@@ -1173,9 +1307,11 @@ Revert docs changes.
 
 ```md
 ## Goal
+
 Add privacy and Indonesian compliance baseline.
 
 ## Tasks
+
 - [ ] Add docs/privacy.md
 - [ ] Add docs/compliance.md
 - [ ] Add form consent requirements
@@ -1183,10 +1319,12 @@ Add privacy and Indonesian compliance baseline.
 - [ ] Add school/public-sector considerations
 
 ## Acceptance Criteria
+
 - [ ] Privacy baseline exists
 - [ ] Consent and retention are documented
 
 ## Rollback Plan
+
 Revert docs changes.
 ```
 
@@ -1194,9 +1332,11 @@ Revert docs changes.
 
 ```md
 ## Goal
+
 Create initial e2e test plan.
 
 ## Tasks
+
 - [ ] Add tests/e2e/README.md
 - [ ] Define homepage test using Playwright
 - [ ] Define admin route test (use dev-bypass endpoint: `/_emdash/api/auth/dev-bypass`)
@@ -1206,10 +1346,12 @@ Create initial e2e test plan.
 - [ ] Document that vitest is used for unit/integration tests, Playwright for e2e
 
 ## Acceptance Criteria
+
 - [ ] E2E test plan exists
 - [ ] Critical MVP flows are listed
 
 ## Rollback Plan
+
 Revert test plan.
 ```
 
@@ -1217,9 +1359,11 @@ Revert test plan.
 
 ```md
 ## Goal
+
 Prepare safe Cloudflare staging deployment docs/config examples.
 
 ## Tasks
+
 - [ ] Add wrangler.example.jsonc
 - [ ] Add staging/production separation
 - [ ] Add D1/R2/KV placeholder bindings
@@ -1227,10 +1371,12 @@ Prepare safe Cloudflare staging deployment docs/config examples.
 - [ ] Add deployment checklist
 
 ## Acceptance Criteria
+
 - [ ] No real secrets or IDs committed
 - [ ] Staging/production separation documented
 
 ## Rollback Plan
+
 Remove example config.
 ```
 
@@ -1258,9 +1404,11 @@ Stabilize the MVP, fix bugs, run full validation, and prepare release candidate 
 
 ```md
 ## Goal
+
 Check MVP compatibility with original EmDash rules and architecture.
 
 ## Tasks
+
 - [ ] Review EmDash upstream impact
 - [ ] Review plugin compatibility
 - [ ] Review template compatibility
@@ -1269,10 +1417,12 @@ Check MVP compatibility with original EmDash rules and architecture.
 - [ ] Update compatibility matrix
 
 ## Acceptance Criteria
+
 - [ ] Compatibility matrix updated
 - [ ] Divergence log updated if needed
 
 ## Rollback Plan
+
 Document incompatible features and disable them.
 ```
 
@@ -1280,9 +1430,11 @@ Document incompatible features and disable them.
 
 ```md
 ## Goal
+
 Run all MVP validation commands.
 
 ## Tasks
+
 - [ ] pnpm lint
 - [ ] pnpm typecheck
 - [ ] pnpm test
@@ -1290,9 +1442,11 @@ Run all MVP validation commands.
 - [ ] pnpm test:e2e if configured
 
 ## Acceptance Criteria
+
 - [ ] All required validations pass or exceptions are documented
 
 ## Rollback Plan
+
 Fix failing issues or delay release.
 ```
 
@@ -1300,9 +1454,11 @@ Fix failing issues or delay release.
 
 ```md
 ## Goal
+
 Document MVP release scope.
 
 ## Tasks
+
 - [ ] Summarize completed features
 - [ ] Summarize known limitations
 - [ ] Summarize validation results
@@ -1310,10 +1466,12 @@ Document MVP release scope.
 - [ ] Tag release candidate if appropriate
 
 ## Acceptance Criteria
+
 - [ ] Release notes exist
 - [ ] Known limitations are transparent
 
 ## Rollback Plan
+
 Do not publish release candidate until notes are correct.
 ```
 
@@ -1341,9 +1499,11 @@ Prepare production deployment baseline after MVP is stable in staging.
 
 ```md
 ## Goal
+
 Create production deployment checklist.
 
 ## Tasks
+
 - [ ] Add production environment checklist
 - [ ] Add secret checklist
 - [ ] Add DNS checklist
@@ -1351,10 +1511,12 @@ Create production deployment checklist.
 - [ ] Add rollback checklist
 
 ## Acceptance Criteria
+
 - [ ] Production checklist exists
 - [ ] Manual approval requirement exists
 
 ## Rollback Plan
+
 Revert checklist changes.
 ```
 
@@ -1362,9 +1524,11 @@ Revert checklist changes.
 
 ```md
 ## Goal
+
 Create post-deployment smoke test checklist.
 
 ## Tasks
+
 - [ ] Homepage test
 - [ ] Admin test
 - [ ] Public content test
@@ -1373,10 +1537,12 @@ Create post-deployment smoke test checklist.
 - [ ] Worker log check
 
 ## Acceptance Criteria
+
 - [ ] Smoke test checklist exists
 - [ ] Production validation steps are clear
 
 ## Rollback Plan
+
 Rollback deployment if smoke tests fail.
 ```
 
@@ -1384,9 +1550,11 @@ Rollback deployment if smoke tests fail.
 
 ```md
 ## Goal
+
 Add daily/weekly/monthly operations checklist.
 
 ## Tasks
+
 - [ ] Add daily checks
 - [ ] Add weekly checks
 - [ ] Add monthly checks
@@ -1394,10 +1562,12 @@ Add daily/weekly/monthly operations checklist.
 - [ ] Add incident severity model
 
 ## Acceptance Criteria
+
 - [ ] Operations runbook exists
 - [ ] Incident response steps exist
 
 ## Rollback Plan
+
 Revert docs changes.
 ```
 
@@ -1415,46 +1585,46 @@ Revert docs changes.
 
 ## 20. MVP Backlog Summary Table
 
-| ID | Title | Milestone | Priority | Area |
-| --- | --- | --- | --- | --- |
-| 0.1 | Inspect EmDash and SMAN 2 Reference | M0 | P0 | docs |
-| 0.2 | Create Labels and Milestones | M0 | P0 | project |
-| 0.3 | Create Repository Foundation | M0 | P0 | repo |
-| 1.1 | Add Upstream Sync Policy | M1 | P0 | emdash-compat |
-| 1.2 | Add Compatibility Matrix | M1 | P0 | emdash-compat |
-| 1.3 | Add Divergence Log | M1 | P0 | emdash-compat |
-| 1.4 | Add Architecture Docs | M1 | P0 | docs |
-| 2.1 | Add Local Site Package | M2 | P0 | frontend |
-| 2.2 | Add Astro Config | M2 | P0 | frontend |
-| 2.3 | Add Env Examples | M2 | P0 | config |
-| 2.4 | Add Validation Script | M2 | P0 | test |
-| 3.1 | Add Base Layout | M3 | P0 | frontend |
-| 3.2 | Add Header/Footer | M3 | P0 | frontend |
-| 3.3 | Add Homepage Shell | M3 | P0 | frontend |
-| 3.4 | Add Theme Manifest | M3 | P1 | theme |
-| 4.1 | Add Site Settings Strategy | M4 | P0 | content |
-| 4.2 | Add Pages Strategy | M4 | P0 | content |
-| 4.3 | Add Blog/News Strategy | M4 | P0 | content |
-| 4.4 | Add Menus Strategy | M4 | P0 | content |
-| 4.5 | Add Announcements Strategy | M4 | P1 | content |
-| 5.1 | Add Media Storage Policy | M5 | P0 | storage |
-| 5.2 | Add Documents Module Baseline | M5 | P0 | documents |
-| 5.3 | Add Forms Module Baseline | M5 | P0 | forms |
-| 5.4 | Add SEO Baseline | M5 | P0 | seo |
-| 6.1 | Add Default Tenant/Site | M6 | P0 | tenancy |
-| 6.2 | Add Audit Log Baseline | M6 | P0 | audit |
-| 6.3 | Add Module Registry Baseline | M6 | P0 | modules |
-| 6.4 | Add Permission Registry Baseline | M6 | P1 | access |
-| 7.1 | Add Security Baseline | M7 | P0 | security |
-| 7.2 | Add Privacy/Compliance Baseline | M7 | P0 | compliance |
-| 7.3 | Add E2E Smoke Test Plan | M7 | P0 | test |
-| 7.4 | Add Cloudflare Staging Baseline | M7 | P0 | deployment |
-| 8.1 | Run Compatibility Audit | M8 | P0 | compat |
-| 8.2 | Run Full Validation | M8 | P0 | release |
-| 8.3 | Prepare MVP Release Notes | M8 | P0 | release |
-| 9.1 | Add Production Checklist | M9 | P1 | deployment |
-| 9.2 | Add Post-Deployment Smoke Tests | M9 | P1 | test |
-| 9.3 | Add Operations Runbook | M9 | P1 | ops |
+| ID  | Title                               | Milestone | Priority | Area          |
+| --- | ----------------------------------- | --------- | -------- | ------------- |
+| 0.1 | Inspect EmDash and SMAN 2 Reference | M0        | P0       | docs          |
+| 0.2 | Create Labels and Milestones        | M0        | P0       | project       |
+| 0.3 | Create Repository Foundation        | M0        | P0       | repo          |
+| 1.1 | Add Upstream Sync Policy            | M1        | P0       | emdash-compat |
+| 1.2 | Add Compatibility Matrix            | M1        | P0       | emdash-compat |
+| 1.3 | Add Divergence Log                  | M1        | P0       | emdash-compat |
+| 1.4 | Add Architecture Docs               | M1        | P0       | docs          |
+| 2.1 | Add Local Site Package              | M2        | P0       | frontend      |
+| 2.2 | Add Astro Config                    | M2        | P0       | frontend      |
+| 2.3 | Add Env Examples                    | M2        | P0       | config        |
+| 2.4 | Add Validation Script               | M2        | P0       | test          |
+| 3.1 | Add Base Layout                     | M3        | P0       | frontend      |
+| 3.2 | Add Header/Footer                   | M3        | P0       | frontend      |
+| 3.3 | Add Homepage Shell                  | M3        | P0       | frontend      |
+| 3.4 | Add Theme Manifest                  | M3        | P1       | theme         |
+| 4.1 | Add Site Settings Strategy          | M4        | P0       | content       |
+| 4.2 | Add Pages Strategy                  | M4        | P0       | content       |
+| 4.3 | Add Blog/News Strategy              | M4        | P0       | content       |
+| 4.4 | Add Menus Strategy                  | M4        | P0       | content       |
+| 4.5 | Add Announcements Strategy          | M4        | P1       | content       |
+| 5.1 | Add Media Storage Policy            | M5        | P0       | storage       |
+| 5.2 | Add Documents Module Baseline       | M5        | P0       | documents     |
+| 5.3 | Add Forms Module Baseline           | M5        | P0       | forms         |
+| 5.4 | Add SEO Baseline                    | M5        | P0       | seo           |
+| 6.1 | Add Default Tenant/Site             | M6        | P0       | tenancy       |
+| 6.2 | Add Audit Log Baseline              | M6        | P0       | audit         |
+| 6.3 | Add Module Registry Baseline        | M6        | P0       | modules       |
+| 6.4 | Add Permission Registry Baseline    | M6        | P1       | access        |
+| 7.1 | Add Security Baseline               | M7        | P0       | security      |
+| 7.2 | Add Privacy/Compliance Baseline     | M7        | P0       | compliance    |
+| 7.3 | Add E2E Smoke Test Plan             | M7        | P0       | test          |
+| 7.4 | Add Cloudflare Staging Baseline     | M7        | P0       | deployment    |
+| 8.1 | Run Compatibility Audit             | M8        | P0       | compat        |
+| 8.2 | Run Full Validation                 | M8        | P0       | release       |
+| 8.3 | Prepare MVP Release Notes           | M8        | P0       | release       |
+| 9.1 | Add Production Checklist            | M9        | P1       | deployment    |
+| 9.2 | Add Post-Deployment Smoke Tests     | M9        | P1       | test          |
+| 9.3 | Add Operations Runbook              | M9        | P1       | ops           |
 
 ---
 
@@ -1576,18 +1746,18 @@ The MVP is acceptable when:
 
 ## 23. Risk Register for MVP
 
-| Risk | Impact | Likelihood | Mitigation |
-| --- | ---: | ---: | --- |
-| EmDash upstream changes break integration | High | Medium | compatibility matrix, upstream sync policy |
-| AWCMS custom logic becomes fragile fork | High | Medium | isolate in plugins/modules/docs/tests |
-| Secret accidentally committed | Critical | Low/Medium | .gitignore, secret scanning, review |
-| Private documents exposed | Critical | Medium | signed URLs, ABAC, audit, tests |
-| Overengineering MVP | Medium | High | strict MVP scope |
-| Cloudflare config accidentally uses production | High | Medium | staging/prod separation, manual approval |
-| Lack of tests slows updates | High | Medium | smoke tests, validation scripts |
-| Permission system becomes confusing | High | Medium | permission registry, matrix GUI later |
-| Bad migration corrupts data | High | Low/Medium | backup, staging migration, rollback docs |
-| Plugin breaks marketplace compatibility | High | Medium | plugin compatibility tests |
+| Risk                                           |   Impact | Likelihood | Mitigation                                 |
+| ---------------------------------------------- | -------: | ---------: | ------------------------------------------ |
+| EmDash upstream changes break integration      |     High |     Medium | compatibility matrix, upstream sync policy |
+| AWCMS custom logic becomes fragile fork        |     High |     Medium | isolate in plugins/modules/docs/tests      |
+| Secret accidentally committed                  | Critical | Low/Medium | .gitignore, secret scanning, review        |
+| Private documents exposed                      | Critical |     Medium | signed URLs, ABAC, audit, tests            |
+| Overengineering MVP                            |   Medium |       High | strict MVP scope                           |
+| Cloudflare config accidentally uses production |     High |     Medium | staging/prod separation, manual approval   |
+| Lack of tests slows updates                    |     High |     Medium | smoke tests, validation scripts            |
+| Permission system becomes confusing            |     High |     Medium | permission registry, matrix GUI later      |
+| Bad migration corrupts data                    |     High | Low/Medium | backup, staging migration, rollback docs   |
+| Plugin breaks marketplace compatibility        |     High |     Medium | plugin compatibility tests                 |
 
 ---
 

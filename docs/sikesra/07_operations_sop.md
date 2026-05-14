@@ -36,16 +36,16 @@ Procedure:
 
 Minimum fields before ID generation:
 
-| Field | Rule |
-|---|---|
-| Object type | Required, active, two digits. |
-| Object subtype | Required, active under type, two digits. |
-| Display name | Required. |
+| Field                 | Rule                                             |
+| --------------------- | ------------------------------------------------ |
+| Object type           | Required, active, two digits.                    |
+| Object subtype        | Required, active under type, two digits.         |
+| Display name          | Required.                                        |
 | Official village code | Required, valid 10-digit village/kelurahan code. |
-| Entity kind | Must match object type. |
-| Source input | Required. |
-| Sensitivity level | Required. |
-| Module fields | Required fields pass validation. |
+| Entity kind           | Must match object type.                          |
+| Source input          | Required.                                        |
+| Sensitivity level     | Required.                                        |
+| Module fields         | Required fields pass validation.                 |
 
 ## SOP 2: Excel Import
 
@@ -98,21 +98,21 @@ Use the stable validation section keys from `04_api_contracts.md`.
 
 Duplicate signals:
 
-| Entity | Signals |
-|---|---|
-| Person | NIK/KIA hash, name, birth date, gender, village, guardian, phone. |
-| Rumah ibadah | Name, subtype, village, address, coordinate, pengurus. |
-| Lembaga | Name, type/religion, village, address, SK/legal document. |
-| Document | Checksum, original filename, document type, entity. |
-| Benefit/service | Receiver, year, source, service type, amount/quantity. |
+| Entity          | Signals                                                           |
+| --------------- | ----------------------------------------------------------------- |
+| Person          | NIK/KIA hash, name, birth date, gender, village, guardian, phone. |
+| Rumah ibadah    | Name, subtype, village, address, coordinate, pengurus.            |
+| Lembaga         | Name, type/religion, village, address, SK/legal document.         |
+| Document        | Checksum, original filename, document type, entity.               |
+| Benefit/service | Receiver, year, source, service type, amount/quantity.            |
 
 Risk levels:
 
-| Risk | Action |
-|---|---|
-| Low | Warning only. |
-| Medium | Review before submit/promote. |
-| High | Decision and reason required. |
+| Risk     | Action                                                    |
+| -------- | --------------------------------------------------------- |
+| Low      | Warning only.                                             |
+| Medium   | Review before submit/promote.                             |
+| High     | Decision and reason required.                             |
 | Blocking | Submit/promote blocked unless authorized override exists. |
 
 Decision options: skip, promote_as_new, merge, dismiss, confirm_duplicate.
@@ -149,21 +149,21 @@ Correction requires `awcms:sikesra:code:correct`, reason, confirmation, before/a
 
 Status transitions:
 
-| Current | Decision | Next | Note Required |
-|---|---|---|---:|
-| `draft` | Submit | `submitted_village` | No |
-| `submitted_village` | Verify | `verified_village` or `submitted_subdistrict` | No |
-| `submitted_village` | Need revision | `need_revision` | Yes |
-| `submitted_village` | Reject | `rejected` | Yes |
-| `submitted_subdistrict` | Verify | `verified_subdistrict` or `submitted_regency` | No |
-| `submitted_subdistrict` | Need revision | `need_revision` | Yes |
-| `submitted_subdistrict` | Reject | `rejected` | Yes |
-| `submitted_regency` | Verify | `verified` and `active` | No |
-| `submitted_regency` | Need revision | `need_revision` | Yes |
-| `submitted_regency` | Reject | `rejected` | Yes |
-| `need_revision` | Correct and resubmit | configured submitted level | No |
-| active/verified | Controlled revision | configured revision state | Yes |
-| any non-archived | Archive | `archived` | Yes |
+| Current                 | Decision             | Next                                          | Note Required |
+| ----------------------- | -------------------- | --------------------------------------------- | ------------: |
+| `draft`                 | Submit               | `submitted_village`                           |            No |
+| `submitted_village`     | Verify               | `verified_village` or `submitted_subdistrict` |            No |
+| `submitted_village`     | Need revision        | `need_revision`                               |           Yes |
+| `submitted_village`     | Reject               | `rejected`                                    |           Yes |
+| `submitted_subdistrict` | Verify               | `verified_subdistrict` or `submitted_regency` |            No |
+| `submitted_subdistrict` | Need revision        | `need_revision`                               |           Yes |
+| `submitted_subdistrict` | Reject               | `rejected`                                    |           Yes |
+| `submitted_regency`     | Verify               | `verified` and `active`                       |            No |
+| `submitted_regency`     | Need revision        | `need_revision`                               |           Yes |
+| `submitted_regency`     | Reject               | `rejected`                                    |           Yes |
+| `need_revision`         | Correct and resubmit | configured submitted level                    |            No |
+| active/verified         | Controlled revision  | configured revision state                     |           Yes |
+| any non-archived        | Archive              | `archived`                                    |           Yes |
 
 Checklist:
 

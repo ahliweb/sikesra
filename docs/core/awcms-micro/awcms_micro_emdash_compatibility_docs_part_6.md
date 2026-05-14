@@ -171,15 +171,15 @@ Recommended shape:
 
 ```json
 {
-  "id": "documents",
-  "label": "Documents",
-  "path": "/_emdash/admin/plugins/documents",
-  "group": "Documents",
-  "icon": "FileText",
-  "moduleId": "documents",
-  "permission": "awcms:document:read",
-  "order": 40,
-  "enabled": true
+	"id": "documents",
+	"label": "Documents",
+	"path": "/_emdash/admin/plugins/documents",
+	"group": "Documents",
+	"icon": "FileText",
+	"moduleId": "documents",
+	"permission": "awcms:document:read",
+	"order": 40,
+	"enabled": true
 }
 ```
 
@@ -398,12 +398,12 @@ Draft, private, restricted, deleted, or internal content must never leak to publ
 
 AWCMS-Micro should support:
 
-| Mode | Use Case |
-| --- | --- |
+| Mode              | Use Case                                         |
+| ----------------- | ------------------------------------------------ |
 | Static generation | marketing pages, company profile, school profile |
-| Server rendering | forms, secure documents, dynamic pages |
-| Hybrid | public content static, private endpoints dynamic |
-| Edge rendering | Cloudflare Workers deployment |
+| Server rendering  | forms, secure documents, dynamic pages           |
+| Hybrid            | public content static, private endpoints dynamic |
+| Edge rendering    | Cloudflare Workers deployment                    |
 
 ### 8.4 Recommended Public Routes
 
@@ -485,7 +485,7 @@ const { entries: posts } = await getEmDashCollection("posts");
 
 // Get drafts (admin only, behind auth)
 const { entries: drafts } = await getEmDashCollection("posts", {
-  status: "draft",
+	status: "draft",
 });
 
 // Get a single entry by slug
@@ -593,33 +593,27 @@ packages/awcms/theme-standard/
 
 ```json
 {
-  "id": "theme-standard",
-  "name": "AWCMS Standard Theme",
-  "version": "0.1.0",
-  "description": "A clean, responsive, EmDash-compatible theme for AWCMS-Micro websites.",
-  "supports": {
-    "pages": true,
-    "posts": true,
-    "documents": true,
-    "forms": true,
-    "menus": true,
-    "seo": true
-  },
-  "layouts": [
-    "default",
-    "homepage",
-    "article",
-    "landing",
-    "document-list"
-  ],
-  "settings": [
-    "brand.logo",
-    "brand.primaryColor",
-    "brand.accentColor",
-    "typography.fontFamily",
-    "header.variant",
-    "footer.variant"
-  ]
+	"id": "theme-standard",
+	"name": "AWCMS Standard Theme",
+	"version": "0.1.0",
+	"description": "A clean, responsive, EmDash-compatible theme for AWCMS-Micro websites.",
+	"supports": {
+		"pages": true,
+		"posts": true,
+		"documents": true,
+		"forms": true,
+		"menus": true,
+		"seo": true
+	},
+	"layouts": ["default", "homepage", "article", "landing", "document-list"],
+	"settings": [
+		"brand.logo",
+		"brand.primaryColor",
+		"brand.accentColor",
+		"typography.fontFamily",
+		"header.variant",
+		"footer.variant"
+	]
 }
 ```
 
@@ -629,22 +623,22 @@ Recommended settings:
 
 ```json
 {
-  "brand": {
-    "logoUrl": null,
-    "siteName": "AWCMS-Micro Standard",
-    "primaryColor": "#2563eb",
-    "accentColor": "#0f172a"
-  },
-  "typography": {
-    "fontFamily": "system-ui"
-  },
-  "header": {
-    "variant": "standard",
-    "sticky": false
-  },
-  "footer": {
-    "variant": "standard"
-  }
+	"brand": {
+		"logoUrl": null,
+		"siteName": "AWCMS-Micro Standard",
+		"primaryColor": "#2563eb",
+		"accentColor": "#0f172a"
+	},
+	"typography": {
+		"fontFamily": "system-ui"
+	},
+	"header": {
+		"variant": "standard",
+		"sticky": false
+	},
+	"footer": {
+		"variant": "standard"
+	}
 }
 ```
 
@@ -773,30 +767,25 @@ templates/school/
 
 ```json
 {
-  "id": "template-school",
-  "name": "School Website Template",
-  "version": "0.1.0",
-  "category": "school",
-  "requiredModules": [
-    "pages",
-    "blog-news",
-    "announcements",
-    "documents",
-    "forms",
-    "media",
-    "menus",
-    "seo"
-  ],
-  "optionalModules": [
-    "academic-calendar",
-    "staff-directory",
-    "gallery",
-    "kelulusan"
-  ],
-  "securityNotes": [
-    "Do not publish student private data.",
-    "Use signed URLs for private documents."
-  ]
+	"id": "template-school",
+	"name": "School Website Template",
+	"version": "0.1.0",
+	"category": "school",
+	"requiredModules": [
+		"pages",
+		"blog-news",
+		"announcements",
+		"documents",
+		"forms",
+		"media",
+		"menus",
+		"seo"
+	],
+	"optionalModules": ["academic-calendar", "staff-directory", "gallery", "kelulusan"],
+	"securityNotes": [
+		"Do not publish student private data.",
+		"Use signed URLs for private documents."
+	]
 }
 ```
 
@@ -814,15 +803,15 @@ Do not scatter raw database queries throughout public pages.
 ### 14.2 Recommended Content Service Functions
 
 ```ts
-getSiteSettings(context)
-getMainMenu(context)
-getPublishedPages(context)
-getPageBySlug(context, slug)
-getPublishedPosts(context, options)
-getPostBySlug(context, slug)
-getPublishedAnnouncements(context)
-getPublicDocuments(context, options)
-getPublicDocumentBySlug(context, slug)
+getSiteSettings(context);
+getMainMenu(context);
+getPublishedPages(context);
+getPageBySlug(context, slug);
+getPublishedPosts(context, options);
+getPostBySlug(context, slug);
+getPublishedAnnouncements(context);
+getPublicDocuments(context, options);
+getPublicDocumentBySlug(context, slug);
 ```
 
 ### 14.3 Content Safety Filter
@@ -1086,30 +1075,30 @@ GET  /api/mobile/v1/me/documents
 
 ```json
 {
-  "success": true,
-  "data": {
-    "site": {
-      "name": "AWCMS-Micro Standard",
-      "tagline": "EmDash-compatible website foundation",
-      "locale": "id-ID",
-      "timezone": "Asia/Jakarta"
-    },
-    "features": {
-      "news": true,
-      "announcements": true,
-      "documents": true,
-      "forms": true,
-      "secureDocumentLookup": false
-    },
-    "api": {
-      "version": "v1",
-      "minimumAppVersion": "1.0.0",
-      "maintenanceMode": false
-    }
-  },
-  "meta": {
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {
+		"site": {
+			"name": "AWCMS-Micro Standard",
+			"tagline": "EmDash-compatible website foundation",
+			"locale": "id-ID",
+			"timezone": "Asia/Jakarta"
+		},
+		"features": {
+			"news": true,
+			"announcements": true,
+			"documents": true,
+			"forms": true,
+			"secureDocumentLookup": false
+		},
+		"api": {
+			"version": "v1",
+			"minimumAppVersion": "1.0.0",
+			"maintenanceMode": false
+		}
+	},
+	"meta": {
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1121,12 +1110,12 @@ GET  /api/mobile/v1/me/documents
 
 ```json
 {
-  "success": true,
-  "data": {},
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1134,16 +1123,16 @@ GET  /api/mobile/v1/me/documents
 
 ```json
 {
-  "success": true,
-  "data": [],
-  "pagination": {
-    "nextCursor": null,
-    "hasMore": false
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": [],
+	"pagination": {
+		"nextCursor": null,
+		"hasMore": false
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1151,16 +1140,16 @@ GET  /api/mobile/v1/me/documents
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "FORBIDDEN",
-    "message": "You do not have permission to access this resource.",
-    "details": null
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": false,
+	"error": {
+		"code": "FORBIDDEN",
+		"message": "You do not have permission to access this resource.",
+		"details": null
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1832,9 +1821,11 @@ Do not run destructive seed in production without approval.
 
 ```md
 ## Goal
+
 Document how AWCMS-Micro extends EmDash admin without creating a fragile fork.
 
 ## Tasks
+
 - Define admin extension priority
 - Define admin menu item shape
 - Define role-aware menu behavior
@@ -1842,11 +1833,13 @@ Document how AWCMS-Micro extends EmDash admin without creating a fragile fork.
 - Define unauthorized behavior
 
 ## Validation
+
 - Admin extension does not require EmDash core modification
 - Menu visibility depends on permission
 - Direct route access still checks permission
 
 ## Rollback
+
 Revert admin extension documentation or disable custom admin page.
 ```
 
@@ -1854,9 +1847,11 @@ Revert admin extension documentation or disable custom admin page.
 
 ```md
 ## Goal
+
 Define Astro-first public frontend architecture.
 
 ## Tasks
+
 - Define public route strategy
 - Define content rendering rules
 - Define layout system
@@ -1864,11 +1859,13 @@ Define Astro-first public frontend architecture.
 - Define public content filtering
 
 ## Validation
+
 - Public routes expose only public published content
 - Draft/private/deleted content is hidden
 - SEO fields are documented
 
 ## Rollback
+
 Revert frontend shell or theme changes.
 ```
 
@@ -1876,9 +1873,11 @@ Revert frontend shell or theme changes.
 
 ```md
 ## Goal
+
 Create the theme/layout manager design.
 
 ## Tasks
+
 - Define theme manifest
 - Define theme settings
 - Define theme admin features
@@ -1886,11 +1885,13 @@ Create the theme/layout manager design.
 - Define template compatibility rules
 
 ## Validation
+
 - Theme does not require EmDash core modification
 - Theme settings can be rolled back
 - Template structure is documented
 
 ## Rollback
+
 Switch to previous theme or revert theme settings.
 ```
 
@@ -1898,9 +1899,11 @@ Switch to previous theme or revert theme settings.
 
 ```md
 ## Goal
+
 Define the mobile API plugin and MVP endpoints.
 
 ## Tasks
+
 - Define plugin namespace
 - Define public alias
 - Define bootstrap endpoint
@@ -1909,11 +1912,13 @@ Define the mobile API plugin and MVP endpoints.
 - Define security rules
 
 ## Validation
+
 - Mobile API does not expose EmDash admin APIs directly
 - Public endpoints filter private/draft/deleted content
 - Response contract is stable
 
 ## Rollback
+
 Disable mobile API plugin or revert gateway route.
 ```
 
@@ -1921,9 +1926,11 @@ Disable mobile API plugin or revert gateway route.
 
 ```md
 ## Goal
+
 Define SEO and public metadata strategy.
 
 ## Tasks
+
 - Define SEO fields
 - Define fallback rules
 - Define sitemap rules
@@ -1931,11 +1938,13 @@ Define SEO and public metadata strategy.
 - Define Open Graph fields
 
 ## Validation
+
 - Public pages render title and description
 - Sitemap includes only public published content
 - Private content is excluded
 
 ## Rollback
+
 Revert SEO rendering changes.
 ```
 
@@ -1943,9 +1952,11 @@ Revert SEO rendering changes.
 
 ```md
 ## Goal
+
 Create Playwright test plan for admin, public frontend, mobile API, and theme behavior.
 
 ## Tasks
+
 - Add admin tests
 - Add public frontend tests
 - Add mobile API tests
@@ -1953,10 +1964,12 @@ Create Playwright test plan for admin, public frontend, mobile API, and theme be
 - Add private content leak tests
 
 ## Validation
+
 - Test plan covers critical flows
 - Future test implementation can follow plan
 
 ## Rollback
+
 Revert test plan or mark pending flows.
 ```
 

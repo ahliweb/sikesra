@@ -6,12 +6,12 @@ SIKESRA must be built as a modular EmDash/AWCMS-Micro plugin. It contributes adm
 
 ## Route Boundaries
 
-| Surface | Route | Rule |
-|---|---|---|
-| Public page | `/sikesra` | No login. Aggregate-safe data only. |
-| Admin UI | `/_emdash/admin/plugins/sikesra/*` | Login and permission required. |
-| Admin API | `/_emdash/api/plugins/sikesra/v1/*` | Login, RBAC, ABAC, region scope, masking, audit. |
-| Public data | Astro loader or `/public/*` under plugin API | Must not expose admin/internal detail. |
+| Surface     | Route                                        | Rule                                             |
+| ----------- | -------------------------------------------- | ------------------------------------------------ |
+| Public page | `/sikesra`                                   | No login. Aggregate-safe data only.              |
+| Admin UI    | `/_emdash/admin/plugins/sikesra/*`           | Login and permission required.                   |
+| Admin API   | `/_emdash/api/plugins/sikesra/v1/*`          | Login, RBAC, ABAC, region scope, masking, audit. |
+| Public data | Astro loader or `/public/*` under plugin API | Must not expose admin/internal detail.           |
 
 ## Recommended Module Layout
 
@@ -47,34 +47,34 @@ packages/plugins/sikesra/
 
 ## Layer Responsibilities
 
-| Layer | Responsibility |
-|---|---|
-| Presentation | Public Astro page, admin React pages, EmDash/Kumo components. |
-| API/Routes | Request ID, auth, input validation, route permission, response envelope. |
-| Context | Trusted tenant, site, user, role, permission, region, request metadata. |
-| Security | RBAC, ABAC, masking, sensitivity decisions, denied access handling. |
-| Services | Business rules, validation, workflow transitions, audit orchestration. |
-| Repositories | D1 SQL only. Apply tenant/site/deleted/region filters. |
-| Storage | R2 key generation, upload, download, checksum, signed/proxy access. |
-| Audit | Immutable critical action events and redacted audit retrieval. |
+| Layer        | Responsibility                                                           |
+| ------------ | ------------------------------------------------------------------------ |
+| Presentation | Public Astro page, admin React pages, EmDash/Kumo components.            |
+| API/Routes   | Request ID, auth, input validation, route permission, response envelope. |
+| Context      | Trusted tenant, site, user, role, permission, region, request metadata.  |
+| Security     | RBAC, ABAC, masking, sensitivity decisions, denied access handling.      |
+| Services     | Business rules, validation, workflow transitions, audit orchestration.   |
+| Repositories | D1 SQL only. Apply tenant/site/deleted/region filters.                   |
+| Storage      | R2 key generation, upload, download, checksum, signed/proxy access.      |
+| Audit        | Immutable critical action events and redacted audit retrieval.           |
 
 ## Core Services
 
-| Service | Main Responsibility |
-|---|---|
-| `SikesraEntityService` | Draft, autosave, list, detail, archive/restore, detail writes. |
-| `SikesraCodeService` | Generate and correct `sikesra_id_20` with audit. |
-| `SikesraRegionService` | Official and local region lookup/management. |
-| `SikesraAttributeService` | Attribute definitions and entity attribute values. |
-| `SikesraAbacService` | Policy evaluation and effective access preview. |
-| `SikesraVerificationService` | Queues, transitions, decisions, notes, checklist. |
-| `SikesraDocumentService` | Upload, metadata, download, verification, replacement. |
-| `SikesraImportService` | Workbook import, mapping, staging, validation, promotion. |
-| `SikesraDeduplicationService` | Candidate scoring and decision persistence. |
-| `SikesraReportService` | Public/admin aggregates and report metadata. |
-| `SikesraExportService` | CSV/XLSX export jobs and restricted export controls. |
-| `SikesraAuditService` | Audit write, list, detail, redaction. |
-| `SikesraSettingsService` | Public visibility, limits, thresholds, feature flags. |
+| Service                       | Main Responsibility                                            |
+| ----------------------------- | -------------------------------------------------------------- |
+| `SikesraEntityService`        | Draft, autosave, list, detail, archive/restore, detail writes. |
+| `SikesraCodeService`          | Generate and correct `sikesra_id_20` with audit.               |
+| `SikesraRegionService`        | Official and local region lookup/management.                   |
+| `SikesraAttributeService`     | Attribute definitions and entity attribute values.             |
+| `SikesraAbacService`          | Policy evaluation and effective access preview.                |
+| `SikesraVerificationService`  | Queues, transitions, decisions, notes, checklist.              |
+| `SikesraDocumentService`      | Upload, metadata, download, verification, replacement.         |
+| `SikesraImportService`        | Workbook import, mapping, staging, validation, promotion.      |
+| `SikesraDeduplicationService` | Candidate scoring and decision persistence.                    |
+| `SikesraReportService`        | Public/admin aggregates and report metadata.                   |
+| `SikesraExportService`        | CSV/XLSX export jobs and restricted export controls.           |
+| `SikesraAuditService`         | Audit write, list, detail, redaction.                          |
+| `SikesraSettingsService`      | Public visibility, limits, thresholds, feature flags.          |
 
 ## Request Handling Sequence
 
@@ -96,23 +96,23 @@ Every admin API handler must follow this sequence:
 
 ```ts
 type SikesraRequestContext = {
-  requestId: string;
-  tenantId: string;
-  siteId: string;
-  userId: string;
-  roles: string[];
-  permissions: string[];
-  subjectAttributes: Record<string, unknown>;
-  regionScope: {
-    provinceCode?: string;
-    regencyCode?: string;
-    districtCodes?: string[];
-    villageCodes?: string[];
-    localRegionIds?: string[];
-  };
-  ipAddress?: string;
-  userAgent?: string;
-  nowIso: string;
+	requestId: string;
+	tenantId: string;
+	siteId: string;
+	userId: string;
+	roles: string[];
+	permissions: string[];
+	subjectAttributes: Record<string, unknown>;
+	regionScope: {
+		provinceCode?: string;
+		regencyCode?: string;
+		districtCodes?: string[];
+		villageCodes?: string[];
+		localRegionIds?: string[];
+	};
+	ipAddress?: string;
+	userAgent?: string;
+	nowIso: string;
 };
 ```
 
@@ -148,21 +148,21 @@ tenants/{tenant_id}/sites/{site_id}/modules/sikesra/exports/{year}/{month}/{safe
 
 ## Deployment Model
 
-| Component | Role |
-|---|---|
+| Component                | Role                                                 |
+| ------------------------ | ---------------------------------------------------- |
 | Cloudflare Pages/Workers | Runtime for public page, admin app, and plugin APIs. |
-| Cloudflare D1 | Relational data, metadata, settings, staging, audit. |
-| Cloudflare R2 | Documents, import workbooks, export files. |
-| EmDash Core | Admin/plugin/auth/session foundation. |
-| AWCMS-Micro Layer | Governance and module boundaries. |
-| SIKESRA Plugin | All SIKESRA-specific logic and UI. |
+| Cloudflare D1            | Relational data, metadata, settings, staging, audit. |
+| Cloudflare R2            | Documents, import workbooks, export files.           |
+| EmDash Core              | Admin/plugin/auth/session foundation.                |
+| AWCMS-Micro Layer        | Governance and module boundaries.                    |
+| SIKESRA Plugin           | All SIKESRA-specific logic and UI.                   |
 
 ## Architecture Open Decisions
 
-| Decision | Default Recommendation |
-|---|---|
-| Exact plugin folder | Use repository convention found in Phase 0; otherwise `packages/plugins/sikesra/`. |
-| Shared audit vs module-local audit | Prefer shared audit if compatible; otherwise `awcms_sikesra_audit_logs`. |
-| Shared media vs SIKESRA file table | Prefer shared media if compatible; otherwise `awcms_sikesra_file_objects`. |
-| ABAC integration | Prefer core ABAC Matrix if available; otherwise module-local ABAC service first. |
-| Public data delivery | Prefer Astro loader backed by public-safe service; plugin public endpoint is acceptable if strictly safe. |
+| Decision                           | Default Recommendation                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Exact plugin folder                | Use repository convention found in Phase 0; otherwise `packages/plugins/sikesra/`.                        |
+| Shared audit vs module-local audit | Prefer shared audit if compatible; otherwise `awcms_sikesra_audit_logs`.                                  |
+| Shared media vs SIKESRA file table | Prefer shared media if compatible; otherwise `awcms_sikesra_file_objects`.                                |
+| ABAC integration                   | Prefer core ABAC Matrix if available; otherwise module-local ABAC service first.                          |
+| Public data delivery               | Prefer Astro loader backed by public-safe service; plugin public endpoint is acceptable if strictly safe. |

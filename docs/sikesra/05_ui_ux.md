@@ -13,21 +13,21 @@
 
 ## Surface Map
 
-| Surface | Route | Primary Users |
-|---|---|---|
-| Public overview | `/sikesra` | Public, leadership without login. |
-| Admin dashboard | `/_emdash/admin/plugins/sikesra` | Admins, verifiers, leadership. |
-| Registry | `/_emdash/admin/plugins/sikesra/entities` | Admins, operators, verifiers. |
-| Create wizard | `/_emdash/admin/plugins/sikesra/entities/new` | Operators and admins. |
-| Entity detail | `/_emdash/admin/plugins/sikesra/entities/{id}` | Authorized admin users. |
-| Verification | `/_emdash/admin/plugins/sikesra/verification` | Verifiers. |
-| Imports | `/_emdash/admin/plugins/sikesra/imports` | Import operators/admins. |
-| Documents | `/_emdash/admin/plugins/sikesra/documents` | Operators/verifiers. |
-| Reports | `/_emdash/admin/plugins/sikesra/reports` | Leadership, admins, auditors. |
-| Regions | `/_emdash/admin/plugins/sikesra/regions` | Admin kabupaten/kecamatan. |
-| Access | `/_emdash/admin/plugins/sikesra/access` | Super admin, governance roles. |
-| Audit | `/_emdash/admin/plugins/sikesra/audit` | Auditors and super admins. |
-| Settings | `/_emdash/admin/plugins/sikesra/settings` | Super admins. |
+| Surface         | Route                                          | Primary Users                     |
+| --------------- | ---------------------------------------------- | --------------------------------- |
+| Public overview | `/sikesra`                                     | Public, leadership without login. |
+| Admin dashboard | `/_emdash/admin/plugins/sikesra`               | Admins, verifiers, leadership.    |
+| Registry        | `/_emdash/admin/plugins/sikesra/entities`      | Admins, operators, verifiers.     |
+| Create wizard   | `/_emdash/admin/plugins/sikesra/entities/new`  | Operators and admins.             |
+| Entity detail   | `/_emdash/admin/plugins/sikesra/entities/{id}` | Authorized admin users.           |
+| Verification    | `/_emdash/admin/plugins/sikesra/verification`  | Verifiers.                        |
+| Imports         | `/_emdash/admin/plugins/sikesra/imports`       | Import operators/admins.          |
+| Documents       | `/_emdash/admin/plugins/sikesra/documents`     | Operators/verifiers.              |
+| Reports         | `/_emdash/admin/plugins/sikesra/reports`       | Leadership, admins, auditors.     |
+| Regions         | `/_emdash/admin/plugins/sikesra/regions`       | Admin kabupaten/kecamatan.        |
+| Access          | `/_emdash/admin/plugins/sikesra/access`        | Super admin, governance roles.    |
+| Audit           | `/_emdash/admin/plugins/sikesra/audit`         | Auditors and super admins.        |
+| Settings        | `/_emdash/admin/plugins/sikesra/settings`      | Super admins.                     |
 
 ## Admin Navigation
 

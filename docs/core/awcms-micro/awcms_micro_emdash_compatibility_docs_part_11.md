@@ -539,70 +539,70 @@ templates/school/
 
 ```json
 {
-  "id": "template-school",
-  "name": "AWCMS-Micro School Website Template",
-  "version": "0.1.0",
-  "category": "school",
-  "description": "A school website template for AWCMS-Micro with news, announcements, academic calendar, documents, gallery, staff directory, and optional Kelulusan module.",
-  "tenantReady": true,
-  "siteScoped": true,
-  "requiredModules": [
-    "core-settings",
-    "pages",
-    "blog-news",
-    "announcements",
-    "menus",
-    "media",
-    "seo",
-    "forms",
-    "documents",
-    "audit-log"
-  ],
-  "optionalModules": [
-    "academic-calendar",
-    "staff-directory",
-    "gallery",
-    "achievements",
-    "secure-document-lookup",
-    "kelulusan",
-    "mobile-api",
-    "webhook-notifier"
-  ],
-  "layouts": [
-    "school-base",
-    "school-home",
-    "school-page",
-    "school-article",
-    "school-document",
-    "secure-lookup"
-  ],
-  "sections": [
-    "school-hero",
-    "headmaster-message",
-    "school-profile-summary",
-    "latest-news",
-    "announcements",
-    "academic-calendar-preview",
-    "achievements",
-    "gallery-preview",
-    "documents-preview",
-    "contact-map"
-  ],
-  "securityNotes": [
-    "Do not publish private student data.",
-    "Do not expose student graduation PDFs without verification.",
-    "Use signed URLs for private documents.",
-    "Audit every Kelulusan verification attempt and PDF download.",
-    "Rate-limit verification attempts."
-  ],
-  "accessibilityLevel": "baseline",
-  "locales": ["id-ID", "en-US"],
-  "deploymentTargets": ["local", "cloudflare"],
-  "rollback": {
-    "safeToDisable": true,
-    "dataDestructive": false,
-    "notes": "Disable optional school modules without deleting data. Kelulusan data must be retained or archived according to school policy."
-  }
+	"id": "template-school",
+	"name": "AWCMS-Micro School Website Template",
+	"version": "0.1.0",
+	"category": "school",
+	"description": "A school website template for AWCMS-Micro with news, announcements, academic calendar, documents, gallery, staff directory, and optional Kelulusan module.",
+	"tenantReady": true,
+	"siteScoped": true,
+	"requiredModules": [
+		"core-settings",
+		"pages",
+		"blog-news",
+		"announcements",
+		"menus",
+		"media",
+		"seo",
+		"forms",
+		"documents",
+		"audit-log"
+	],
+	"optionalModules": [
+		"academic-calendar",
+		"staff-directory",
+		"gallery",
+		"achievements",
+		"secure-document-lookup",
+		"kelulusan",
+		"mobile-api",
+		"webhook-notifier"
+	],
+	"layouts": [
+		"school-base",
+		"school-home",
+		"school-page",
+		"school-article",
+		"school-document",
+		"secure-lookup"
+	],
+	"sections": [
+		"school-hero",
+		"headmaster-message",
+		"school-profile-summary",
+		"latest-news",
+		"announcements",
+		"academic-calendar-preview",
+		"achievements",
+		"gallery-preview",
+		"documents-preview",
+		"contact-map"
+	],
+	"securityNotes": [
+		"Do not publish private student data.",
+		"Do not expose student graduation PDFs without verification.",
+		"Use signed URLs for private documents.",
+		"Audit every Kelulusan verification attempt and PDF download.",
+		"Rate-limit verification attempts."
+	],
+	"accessibilityLevel": "baseline",
+	"locales": ["id-ID", "en-US"],
+	"deploymentTargets": ["local", "cloudflare"],
+	"rollback": {
+		"safeToDisable": true,
+		"dataDestructive": false,
+		"notes": "Disable optional school modules without deleting data. Kelulusan data must be retained or archived according to school policy."
+	}
 }
 ```
 
@@ -703,95 +703,85 @@ packages/plugins/kelulusan/
 
 ```json
 {
-  "id": "kelulusan",
-  "name": "Kelulusan",
-  "description": "Secure graduation announcement and student PDF lookup module.",
-  "version": "0.1.0",
-  "tenantReady": true,
-  "siteScoped": true,
-  "status": "experimental",
-  "category": "public-service",
-  "author": "AWCMS-Micro",
-  "permissions": [
-    "awcms:kelulusan:read",
-    "awcms:kelulusan:create",
-    "awcms:kelulusan:update",
-    "awcms:kelulusan:delete",
-    "awcms:kelulusan:import",
-    "awcms:kelulusan:upload_pdf",
-    "awcms:kelulusan:publish",
-    "awcms:kelulusan:unpublish",
-    "awcms:kelulusan:audit",
-    "awcms:kelulusan:download_private_pdf"
-  ],
-  "capabilities": [
-    "content:read",
-    "media:read",
-    "media:write",
-    "storage:read",
-    "storage:write"
-  ],
-  "routes": [
-    {
-      "type": "admin",
-      "path": "/_emdash/admin/plugins/kelulusan",
-      "permission": "awcms:kelulusan:read"
-    },
-    {
-      "type": "api",
-      "method": "POST",
-      "path": "/_emdash/api/plugins/kelulusan/v1/verify",
-      "permission": "public"
-    },
-    {
-      "type": "api",
-      "method": "POST",
-      "path": "/_emdash/api/plugins/kelulusan/v1/download-url",
-      "permission": "public_verified_session"
-    }
-  ],
-  "adminPages": [
-    {
-      "label": "Kelulusan",
-      "path": "/_emdash/admin/plugins/kelulusan",
-      "permission": "awcms:kelulusan:read",
-      "group": "Documents"
-    }
-  ],
-  "storageScopes": [
-    {
-      "id": "kelulusan-private-pdf",
-      "prefix": "tenants/{tenant_id}/sites/{site_id}/modules/kelulusan/{event_year}/",
-      "visibility": "private",
-      "allowedMimeTypes": ["application/pdf"],
-      "maxFileSizeBytes": 10485760
-    }
-  ],
-  "database": {
-    "migrations": [
-      "202605051000_create_kelulusan_events.sql",
-      "202605051010_create_kelulusan_student_results.sql",
-      "202605051020_create_kelulusan_verification_attempts.sql"
-    ]
-  },
-  "dependencies": [
-    "media",
-    "documents",
-    "audit-log"
-  ],
-  "validation": {
-    "requiredSettings": [
-      "kelulusan.releaseAt",
-      "kelulusan.verifyBy",
-      "kelulusan.maxAttemptsPerHour",
-      "kelulusan.signedUrlExpirationSeconds"
-    ]
-  },
-  "rollback": {
-    "disableSafe": true,
-    "dataDestructive": false,
-    "notes": "Disabling the module hides the public lookup and admin route but preserves student result metadata, PDFs, and audit logs."
-  }
+	"id": "kelulusan",
+	"name": "Kelulusan",
+	"description": "Secure graduation announcement and student PDF lookup module.",
+	"version": "0.1.0",
+	"tenantReady": true,
+	"siteScoped": true,
+	"status": "experimental",
+	"category": "public-service",
+	"author": "AWCMS-Micro",
+	"permissions": [
+		"awcms:kelulusan:read",
+		"awcms:kelulusan:create",
+		"awcms:kelulusan:update",
+		"awcms:kelulusan:delete",
+		"awcms:kelulusan:import",
+		"awcms:kelulusan:upload_pdf",
+		"awcms:kelulusan:publish",
+		"awcms:kelulusan:unpublish",
+		"awcms:kelulusan:audit",
+		"awcms:kelulusan:download_private_pdf"
+	],
+	"capabilities": ["content:read", "media:read", "media:write", "storage:read", "storage:write"],
+	"routes": [
+		{
+			"type": "admin",
+			"path": "/_emdash/admin/plugins/kelulusan",
+			"permission": "awcms:kelulusan:read"
+		},
+		{
+			"type": "api",
+			"method": "POST",
+			"path": "/_emdash/api/plugins/kelulusan/v1/verify",
+			"permission": "public"
+		},
+		{
+			"type": "api",
+			"method": "POST",
+			"path": "/_emdash/api/plugins/kelulusan/v1/download-url",
+			"permission": "public_verified_session"
+		}
+	],
+	"adminPages": [
+		{
+			"label": "Kelulusan",
+			"path": "/_emdash/admin/plugins/kelulusan",
+			"permission": "awcms:kelulusan:read",
+			"group": "Documents"
+		}
+	],
+	"storageScopes": [
+		{
+			"id": "kelulusan-private-pdf",
+			"prefix": "tenants/{tenant_id}/sites/{site_id}/modules/kelulusan/{event_year}/",
+			"visibility": "private",
+			"allowedMimeTypes": ["application/pdf"],
+			"maxFileSizeBytes": 10485760
+		}
+	],
+	"database": {
+		"migrations": [
+			"202605051000_create_kelulusan_events.sql",
+			"202605051010_create_kelulusan_student_results.sql",
+			"202605051020_create_kelulusan_verification_attempts.sql"
+		]
+	},
+	"dependencies": ["media", "documents", "audit-log"],
+	"validation": {
+		"requiredSettings": [
+			"kelulusan.releaseAt",
+			"kelulusan.verifyBy",
+			"kelulusan.maxAttemptsPerHour",
+			"kelulusan.signedUrlExpirationSeconds"
+		]
+	},
+	"rollback": {
+		"disableSafe": true,
+		"dataDestructive": false,
+		"notes": "Disabling the module hides the public lookup and admin route but preserves student result metadata, PDFs, and audit logs."
+	}
 }
 ```
 
@@ -1045,19 +1035,19 @@ Audit event recorded
 
 ```json
 {
-  "success": true,
-  "data": {
-    "status": "lulus",
-    "studentName": "A*** B***",
-    "message": "Selamat. Anda dinyatakan lulus.",
-    "canDownloadPdf": true,
-    "downloadSessionId": "ksess_...",
-    "expiresAt": "2026-05-05T10:30:00+07:00"
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {
+		"status": "lulus",
+		"studentName": "A*** B***",
+		"message": "Selamat. Anda dinyatakan lulus.",
+		"canDownloadPdf": true,
+		"downloadSessionId": "ksess_...",
+		"expiresAt": "2026-05-05T10:30:00+07:00"
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1177,15 +1167,15 @@ return signed URL
 
 ```json
 {
-  "success": true,
-  "data": {
-    "downloadUrl": "https://signed-url.example/...",
-    "expiresInSeconds": 300
-  },
-  "meta": {
-    "requestId": "req_...",
-    "apiVersion": "v1"
-  }
+	"success": true,
+	"data": {
+		"downloadUrl": "https://signed-url.example/...",
+		"expiresInSeconds": 300
+	},
+	"meta": {
+		"requestId": "req_...",
+		"apiVersion": "v1"
+	}
 }
 ```
 
@@ -1311,14 +1301,14 @@ awcms:kelulusan:download_private_pdf
 
 Suggested role mapping:
 
-| Role | Access |
-| --- | --- |
-| owner | full access |
-| admin | manage event/import/publish/audit |
-| editor | read/update content but not publish Kelulusan by default |
-| operator | import/upload but not publish |
-| auditor | read audit only |
-| public | verify only through public route |
+| Role     | Access                                                   |
+| -------- | -------------------------------------------------------- |
+| owner    | full access                                              |
+| admin    | manage event/import/publish/audit                        |
+| editor   | read/update content but not publish Kelulusan by default |
+| operator | import/upload but not publish                            |
+| auditor  | read audit only                                          |
+| public   | verify only through public route                         |
 
 High-risk permissions:
 
@@ -1774,9 +1764,11 @@ update PDF mapping
 
 ```md
 ## Goal
+
 Create the detailed school website template specification.
 
 ## Tasks
+
 - [ ] Define required pages
 - [ ] Define homepage sections
 - [ ] Define school content model
@@ -1784,11 +1776,13 @@ Create the detailed school website template specification.
 - [ ] Define SEO and accessibility rules
 
 ## Acceptance Criteria
+
 - [ ] School template docs exist
 - [ ] Required pages and modules are listed
 - [ ] Security notes for student data are included
 
 ## Rollback Plan
+
 Revert template documentation changes.
 ```
 
@@ -1796,9 +1790,11 @@ Revert template documentation changes.
 
 ```md
 ## Goal
+
 Create the initial school template folder structure.
 
 ## Tasks
+
 - [ ] Add templates/school
 - [ ] Add src/pages placeholders
 - [ ] Add layouts placeholders
@@ -1808,10 +1804,12 @@ Create the initial school template folder structure.
 - [ ] Add tests folder
 
 ## Acceptance Criteria
+
 - [ ] Structure exists
 - [ ] No real student/private data included
 
 ## Rollback Plan
+
 Remove templates/school folder.
 ```
 
@@ -1819,9 +1817,11 @@ Remove templates/school folder.
 
 ```md
 ## Goal
+
 Create the Kelulusan module skeleton.
 
 ## Tasks
+
 - [ ] Add packages/plugins/kelulusan
 - [ ] Add module.manifest.json
 - [ ] Add routes placeholders
@@ -1831,12 +1831,14 @@ Create the Kelulusan module skeleton.
 - [ ] Add tests folder
 
 ## Acceptance Criteria
+
 - [ ] Module manifest exists
 - [ ] Permissions are declared
 - [ ] Storage scope is declared
 - [ ] Dependencies are declared
 
 ## Rollback Plan
+
 Disable/remove Kelulusan plugin skeleton.
 ```
 
@@ -1844,9 +1846,11 @@ Disable/remove Kelulusan plugin skeleton.
 
 ```md
 ## Goal
+
 Define Kelulusan data model and import template.
 
 ## Tasks
+
 - [ ] Define kelulusan_events table
 - [ ] Define kelulusan_student_results table
 - [ ] Define verification attempts table
@@ -1854,11 +1858,13 @@ Define Kelulusan data model and import template.
 - [ ] Define import template fields
 
 ## Acceptance Criteria
+
 - [ ] Data model is tenant-ready
 - [ ] NISN hashing strategy is documented
 - [ ] Raw NISN is not exposed publicly
 
 ## Rollback Plan
+
 Revert migrations/docs or disable module.
 ```
 
@@ -1866,9 +1872,11 @@ Revert migrations/docs or disable module.
 
 ```md
 ## Goal
+
 Define secure public verification and PDF download flow.
 
 ## Tasks
+
 - [ ] Define /kelulusan public flow
 - [ ] Define verify API
 - [ ] Define download-url API
@@ -1877,11 +1885,13 @@ Define secure public verification and PDF download flow.
 - [ ] Define rate limiting
 
 ## Acceptance Criteria
+
 - [ ] Public cannot list all records
 - [ ] PDF requires valid verification session
 - [ ] Signed URL expires quickly
 
 ## Rollback Plan
+
 Disable public route or download endpoint.
 ```
 
@@ -1889,9 +1899,11 @@ Disable public route or download endpoint.
 
 ```md
 ## Goal
+
 Create test plan for Kelulusan security and audit behavior.
 
 ## Tasks
+
 - [ ] Add unit test checklist
 - [ ] Add integration test checklist
 - [ ] Add Playwright flow
@@ -1899,11 +1911,13 @@ Create test plan for Kelulusan security and audit behavior.
 - [ ] Add audit event tests
 
 ## Acceptance Criteria
+
 - [ ] Test plan covers verification and download
 - [ ] Rate limit and safe error behavior are tested
 - [ ] Audit events are tested
 
 ## Rollback Plan
+
 Mark tests pending or disable module until tests pass.
 ```
 
