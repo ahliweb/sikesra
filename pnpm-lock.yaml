@@ -121,8 +121,8 @@ catalogs:
       specifier: ^2.1.10
       version: 2.1.10
     '@tanstack/react-query':
-      specifier: 5.90.21
-      version: 5.90.21
+      specifier: 5.100.10
+      version: 5.100.10
     '@tanstack/react-router':
       specifier: 1.163.2
       version: 1.163.2
@@ -414,7 +414,7 @@ importers:
         version: link:../../packages/plugins/webhook-notifier
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.21(react@19.2.4)
+        version: 5.100.10(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -503,7 +503,7 @@ importers:
         version: link:../../packages/plugins/webhook-notifier
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.21(react@19.2.4)
+        version: 5.100.10(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -537,7 +537,7 @@ importers:
         version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.21(react@19.2.4)
+        version: 5.100.10(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -574,7 +574,7 @@ importers:
         version: link:../../packages/cloudflare
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.21(react@19.2.4)
+        version: 5.100.10(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -897,7 +897,7 @@ importers:
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.21(react@19.2.4)
+        version: 5.100.10(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2398,7 +2398,7 @@ packages:
       wrangler: ^4.61.1
 
   '@astrojs/cloudflare@https://pkg.pr.new/@astrojs/cloudflare@94d342d':
-    resolution: {integrity: sha512-Bt+G512Dr1SqYdsza6HOLP2azfHg0m5UE0s6SBGX77g+ThFV95Nai5boyM8HO3jVpqwVPPh+5ycMptjrtzv7Yg==, tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
+    resolution: {tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
     version: 13.1.10
     peerDependencies:
       astro: '>=6.1.10'
@@ -3042,7 +3042,7 @@ packages:
   '@cloudflare/vite-plugin@1.32.3':
     resolution: {integrity: sha512-a8ZkCA/SOiJ36jT3LlBLkUb7ZzGInhYJoTY4BMRBGdk+nsh44HavbNvtu/RdaqS5VJEMLM4+LqVIJ+V0ahGeFg==}
     peerDependencies:
-      vite: '>=7.3.2'
+      vite: '>=6.4.2'
       wrangler: ^4.83.0
 
   '@cloudflare/vite-plugin@1.36.3':
@@ -3980,7 +3980,7 @@ packages:
     resolution: {integrity: sha512-yTCCjuQapvRz6S30B8DyqHu1WYsbYRCww6uNsmbQU4GQVf5gJzJSB60qUHj+qBSxReLtRL/mhmhYhrIc9jVFTw==}
 
   '@lunariajs/core@https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc':
-    resolution: {integrity: sha512-k8sHBM7S10HBa39fxsJcOGYMGrbru5UZ9vMS4kmCa9o6dJTUP6rt3zKVEs7uEsHAYasoXyiC6wre2Jiqs3X+zQ==, tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
+    resolution: {tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
     version: 0.1.1
     engines: {node: '>=18.17.0'}
 
@@ -5722,11 +5722,11 @@ packages:
     resolution: {integrity: sha512-Kp/WSt411ZWYvgXy6uiv5RmhHrz9cAml05AQPrtdAp7eUqvIDbMGPnML25OKbzR3RJ1q4wgENxDTvlGPa9+Mww==}
     engines: {node: '>=20.19'}
 
-  '@tanstack/query-core@5.90.20':
-    resolution: {integrity: sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==}
+  '@tanstack/query-core@5.100.10':
+    resolution: {integrity: sha512-8UR0yJR+GiQ40m3lPhUr0xbfAupe6GSQiksSBSa9SM2NjezFyxXCIA69/lz8cSoNKZLrw1/PktIyQBJcVeMi3w==}
 
-  '@tanstack/react-query@5.90.21':
-    resolution: {integrity: sha512-0Lu6y5t+tvlTJMTO7oh5NSpJfpg/5D41LlThfepTixPYkJ0sE2Jj0m0f6yYqujBwIXlId87e234+MxG3D3g7kg==}
+  '@tanstack/react-query@5.100.10':
+    resolution: {integrity: sha512-FLaZf2RCrA/Zgp4aiu5tG3TyasTRO7aZ99skxQpr3Hg/zXOhu6yq5FZCYQ/tRaJtM9ylnoK8tFK7PolXQadv6Q==}
     peerDependencies:
       react: ^18 || ^19
 
@@ -6502,7 +6502,7 @@ packages:
     hasBin: true
 
   astro@https://pkg.pr.new/astro@94d342d:
-    resolution: {integrity: sha512-1XlhRGRCQP4L5KPZUgSRCKOD28aKiGYQ8TBAxBIJvFV/HUuct3eHvc7sY/krhhCAju81JMlvbWU+1XVzltgZTQ==, tarball: https://pkg.pr.new/astro@94d342d}
+    resolution: {tarball: https://pkg.pr.new/astro@94d342d}
     version: 6.1.7
     engines: {node: '>=22.12.0', npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
@@ -14212,11 +14212,11 @@ snapshots:
 
   '@tanstack/history@1.161.4': {}
 
-  '@tanstack/query-core@5.90.20': {}
+  '@tanstack/query-core@5.100.10': {}
 
-  '@tanstack/react-query@5.90.21(react@19.2.4)':
+  '@tanstack/react-query@5.100.10(react@19.2.4)':
     dependencies:
-      '@tanstack/query-core': 5.90.20
+      '@tanstack/query-core': 5.100.10
       react: 19.2.4
 
   '@tanstack/react-router@1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
