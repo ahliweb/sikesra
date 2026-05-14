@@ -28,7 +28,7 @@
 		}
 	},
 	"scripts": {
-		"codegen": "lex-cli generate",
+		"codegen": "tsx node_modules/@atcute/lex-cli/cli.mjs generate",
 		"build:lexicons": "node scripts/copy-lexicons.mjs",
 		"build:types": "tsdown",
 		"build": "pnpm run build:lexicons && pnpm run codegen && pnpm run build:types",
@@ -46,6 +46,7 @@
 		"@atcute/lex-cli": "catalog:",
 		"publint": "catalog:",
 		"tsdown": "catalog:",
+		"tsx": "^4.21.0",
 		"typescript": "catalog:",
 		"vitest": "catalog:"
 	},
