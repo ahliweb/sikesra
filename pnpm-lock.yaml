@@ -13,11 +13,11 @@ catalogs:
       specifier: ^0.9.7
       version: 0.9.7
     '@astrojs/cloudflare':
-      specifier: ^13.1.7
-      version: 13.1.7
+      specifier: ^13.1.10
+      version: 13.1.10
     '@astrojs/node':
-      specifier: ^10.0.0
-      version: 10.0.0
+      specifier: ^10.0.5
+      version: 10.1.1
     '@astrojs/react':
       specifier: ^5.0.0
       version: 5.0.0
@@ -191,7 +191,7 @@ catalogs:
       version: 3.20.0
     '@types/node':
       specifier: 25.8.0
-      version: 24.10.13
+      version: 25.8.0
     '@types/react':
       specifier: 19.2.14
       version: 19.2.14
@@ -372,7 +372,7 @@ importers:
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
-        version: 1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0)
+        version: 1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260507.1)(wrangler@4.90.0)
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
         version: 0.16.3(@vitest/runner@4.1.5)(@vitest/snapshot@4.1.5)(vitest@4.1.5)
@@ -399,7 +399,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -448,7 +448,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -485,7 +485,7 @@ importers:
         version: link:../../packages/plugins/sikesra
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.91.0)(yaml@2.9.0)
+        version: 13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.91.0)(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -531,7 +531,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -565,7 +565,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -608,7 +608,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -648,7 +648,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: '>=13.1.10'
-        version: 13.1.10(@types/node@25.8.0)(astro@6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260507.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/starlight':
         specifier: ^0.38.2
         version: 0.38.2(astro@6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0))
@@ -684,7 +684,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -714,10 +714,10 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -766,7 +766,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2008,7 +2008,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2036,7 +2036,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2067,7 +2067,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2107,7 +2107,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2141,7 +2141,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2181,7 +2181,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2209,7 +2209,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2243,7 +2243,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
+        version: 10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2271,7 +2271,7 @@ importers:
     dependencies:
       '@astrojs/cloudflare':
         specifier: 'catalog:'
-        version: 13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
+        version: 13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
       '@astrojs/react':
         specifier: 'catalog:'
         version: 5.0.0(@types/node@25.8.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.7.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -2400,12 +2400,6 @@ packages:
       astro: '>=6.1.10'
       wrangler: ^4.61.1
 
-  '@astrojs/cloudflare@13.1.7':
-    resolution: {integrity: sha512-bNgQ1rwieK4PBchwsRGk0TBXPZ0K+BMn7npn/qBW0LWgo707M5Js5Y7Qrr5Fn/5W6BvHWIcPyjEN/tWLEc//aA==}
-    peerDependencies:
-      astro: '>=6.1.10'
-      wrangler: ^4.61.1
-
   '@astrojs/cloudflare@https://pkg.pr.new/@astrojs/cloudflare@94d342d':
     resolution: {integrity: sha512-Bt+G512Dr1SqYdsza6HOLP2azfHg0m5UE0s6SBGX77g+ThFV95Nai5boyM8HO3jVpqwVPPh+5ycMptjrtzv7Yg==, tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
     version: 13.1.10
@@ -2461,10 +2455,10 @@ packages:
     peerDependencies:
       astro: '>=6.1.10'
 
-  '@astrojs/node@10.0.0':
-    resolution: {integrity: sha512-MYz73s+U1CxdSLoYlbB9lrgA2ryi6K8ULH2rM3SBQDFbWtXuTFiBAfG8c5BHy75tsSRn2p0rc7jdFiQAzuZOyw==}
+  '@astrojs/node@10.1.1':
+    resolution: {integrity: sha512-kCRbxconkgPpY4vR0GS7exovWEiCbxXLarsp+JeKixyDNf+fKN6v7jXDL8KdQgrzjhy131Kvl+GGGX8jGd8adA==}
     peerDependencies:
-      astro: '>=6.1.10'
+      astro: ^6.3.0
 
   '@astrojs/prism@4.0.0':
     resolution: {integrity: sha512-NndtNPpxaGinRpRytljGBvYHpTOwHycSZ/c+lQi5cHvkqqrHKWdkPEhImlODBNmbuB+vyQUNUDXyjzt66CihJg==}
@@ -3058,7 +3052,7 @@ packages:
   '@cloudflare/vite-plugin@1.32.3':
     resolution: {integrity: sha512-a8ZkCA/SOiJ36jT3LlBLkUb7ZzGInhYJoTY4BMRBGdk+nsh44HavbNvtu/RdaqS5VJEMLM4+LqVIJ+V0ahGeFg==}
     peerDependencies:
-      vite: '>=7.3.2'
+      vite: '>=6.4.2'
       wrangler: ^4.83.0
 
   '@cloudflare/vite-plugin@1.36.3':
@@ -7102,6 +7096,9 @@ packages:
   devalue@5.8.0:
     resolution: {integrity: sha512-2zA9pFEsnp7vWBZbXF5JAgAq0fsUIt/1XPbRiAmRV3lp/2C3upzH+sADiyy66aFCihoLEsrQHxNM5w1gIDfsBg==}
 
+  devalue@5.8.1:
+    resolution: {integrity: sha512-4CXDYRBGqN+57wVJkuXBYmpAVUSg3L6JAQa/DFqm238G73E1wuyc/JhGQJzN7vUf/CMphYau2zXbfWzDR5aTEw==}
+
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
 
@@ -9563,10 +9560,6 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  smol-toml@1.6.0:
-    resolution: {integrity: sha512-4zemZi0HvTnYwLfrpk/CF9LOd9Lt87kAt50GnqhMpyF9U3poDAP2+iukq2bZsO/ufegbYehBkqINbsWxj4l4cw==}
-    engines: {node: '>= 18'}
-
   smol-toml@1.6.1:
     resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
@@ -10830,12 +10823,66 @@ snapshots:
       - prettier
       - prettier-plugin-astro
 
-  '@astrojs/cloudflare@13.1.10(@types/node@25.8.0)(astro@6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260507.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
+  '@astrojs/cloudflare@13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.91.0)(yaml@2.9.0)':
     dependencies:
       '@astrojs/internal-helpers': 0.8.0
       '@astrojs/underscore-redirects': 1.0.3
-      '@cloudflare/vite-plugin': 1.36.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260507.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
-      astro: 6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0)
+      '@cloudflare/vite-plugin': 1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.91.0)
+      astro: 6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
+      piccolore: 0.1.3
+      tinyglobby: 0.2.16
+      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
+      wrangler: 4.91.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@vitejs/devtools'
+      - bufferutil
+      - esbuild
+      - jiti
+      - less
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - utf-8-validate
+      - workerd
+      - yaml
+
+  '@astrojs/cloudflare@13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
+    dependencies:
+      '@astrojs/internal-helpers': 0.8.0
+      '@astrojs/underscore-redirects': 1.0.3
+      '@cloudflare/vite-plugin': 1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
+      astro: 6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0)
+      piccolore: 0.1.3
+      tinyglobby: 0.2.16
+      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
+      wrangler: 4.90.0(@cloudflare/workers-types@4.20260305.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@vitejs/devtools'
+      - bufferutil
+      - esbuild
+      - jiti
+      - less
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - utf-8-validate
+      - workerd
+      - yaml
+
+  '@astrojs/cloudflare@13.1.10(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
+    dependencies:
+      '@astrojs/internal-helpers': 0.8.0
+      '@astrojs/underscore-redirects': 1.0.3
+      '@cloudflare/vite-plugin': 1.36.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
+      astro: 6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0)
       piccolore: 0.1.3
       tinyglobby: 0.2.16
       vite: 8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -10857,68 +10904,14 @@ snapshots:
       - workerd
       - yaml
 
-  '@astrojs/cloudflare@13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.91.0)(yaml@2.9.0)':
+  '@astrojs/cloudflare@13.1.10(@types/node@25.8.0)(astro@6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
     dependencies:
       '@astrojs/internal-helpers': 0.8.0
       '@astrojs/underscore-redirects': 1.0.3
-      '@cloudflare/vite-plugin': 1.32.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.91.0)
-      astro: 6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
+      '@cloudflare/vite-plugin': 1.36.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
+      astro: 6.3.2(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.9.0)
       piccolore: 0.1.3
-      tinyglobby: 0.2.15
-      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-      wrangler: 4.91.0
-    transitivePeerDependencies:
-      - '@types/node'
-      - '@vitejs/devtools'
-      - bufferutil
-      - esbuild
-      - jiti
-      - less
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - terser
-      - tsx
-      - utf-8-validate
-      - workerd
-      - yaml
-
-  '@astrojs/cloudflare@13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
-    dependencies:
-      '@astrojs/internal-helpers': 0.8.0
-      '@astrojs/underscore-redirects': 1.0.3
-      '@cloudflare/vite-plugin': 1.32.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
-      astro: 6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0)
-      piccolore: 0.1.3
-      tinyglobby: 0.2.15
-      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-      wrangler: 4.90.0(@cloudflare/workers-types@4.20260305.1)
-    transitivePeerDependencies:
-      - '@types/node'
-      - '@vitejs/devtools'
-      - bufferutil
-      - esbuild
-      - jiti
-      - less
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - terser
-      - tsx
-      - utf-8-validate
-      - workerd
-      - yaml
-
-  '@astrojs/cloudflare@13.1.7(@types/node@25.8.0)(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)':
-    dependencies:
-      '@astrojs/internal-helpers': 0.8.0
-      '@astrojs/underscore-redirects': 1.0.3
-      '@cloudflare/vite-plugin': 1.32.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))
-      astro: 6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0)
-      piccolore: 0.1.3
-      tinyglobby: 0.2.15
+      tinyglobby: 0.2.16
       vite: 8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
       wrangler: 4.90.0(@cloudflare/workers-types@4.20260305.1)
     transitivePeerDependencies:
@@ -11027,7 +11020,7 @@ snapshots:
       remark-rehype: 11.1.2
       remark-smartypants: 3.0.2
       shiki: 4.0.1
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       unified: 11.0.5
       unist-util-remove-position: 5.0.0
       unist-util-visit: 5.1.0
@@ -11053,7 +11046,7 @@ snapshots:
       remark-smartypants: 3.0.2
       retext-smartypants: 6.2.0
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       unified: 11.0.5
       unist-util-remove-position: 5.0.0
       unist-util-visit: 5.1.0
@@ -11079,7 +11072,7 @@ snapshots:
       remark-smartypants: 3.0.2
       retext-smartypants: 6.2.0
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       unified: 11.0.5
       unist-util-remove-position: 5.0.0
       unist-util-visit: 5.1.0
@@ -11107,27 +11100,27 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/node@10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))':
+  '@astrojs/node@10.1.1(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))':
     dependencies:
-      '@astrojs/internal-helpers': 0.8.0
+      '@astrojs/internal-helpers': 0.9.1
       astro: 6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
       send: 1.2.1
       server-destroy: 1.0.1
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/node@10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))':
+  '@astrojs/node@10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))':
     dependencies:
-      '@astrojs/internal-helpers': 0.8.0
+      '@astrojs/internal-helpers': 0.9.1
       astro: 6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
       send: 1.2.1
       server-destroy: 1.0.1
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/node@10.0.0(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))':
+  '@astrojs/node@10.1.1(astro@6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))':
     dependencies:
-      '@astrojs/internal-helpers': 0.8.0
+      '@astrojs/internal-helpers': 0.9.1
       astro: 6.0.1(@types/node@25.8.0)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0)
       send: 1.2.1
       server-destroy: 1.0.1
@@ -11152,7 +11145,7 @@ snapshots:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react': 5.1.4(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      devalue: 5.8.0
+      devalue: 5.8.1
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       ultrahtml: 1.6.0
@@ -11178,7 +11171,7 @@ snapshots:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react': 5.1.4(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      devalue: 5.8.0
+      devalue: 5.8.1
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       ultrahtml: 1.6.0
@@ -12146,12 +12139,6 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260415.1
 
-  '@cloudflare/unenv-preset@2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260511.1)':
-    dependencies:
-      unenv: 2.0.0-rc.24
-    optionalDependencies:
-      workerd: 1.20260511.1
-
   '@cloudflare/unenv-preset@2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260507.1)':
     dependencies:
       unenv: 2.0.0-rc.24
@@ -12177,32 +12164,6 @@ snapshots:
       - utf-8-validate
       - workerd
 
-  '@cloudflare/vite-plugin@1.32.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))':
-    dependencies:
-      '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
-      miniflare: 4.20260415.0
-      unenv: 2.0.0-rc.24
-      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-      wrangler: 4.90.0(@cloudflare/workers-types@4.20260305.1)
-      ws: 8.18.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-      - workerd
-
-  '@cloudflare/vite-plugin@1.32.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.91.0)':
-    dependencies:
-      '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
-      miniflare: 4.20260415.0
-      unenv: 2.0.0-rc.24
-      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-      wrangler: 4.91.0
-      ws: 8.18.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-      - workerd
-
   '@cloudflare/vite-plugin@1.32.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260305.1))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
@@ -12216,12 +12177,12 @@ snapshots:
       - utf-8-validate
       - workerd
 
-  '@cloudflare/vite-plugin@1.32.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))':
+  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260507.1)(wrangler@4.90.0)':
     dependencies:
-      '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
-      miniflare: 4.20260415.0
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260507.1)
+      miniflare: 4.20260507.1
       unenv: 2.0.0-rc.24
-      vite: 8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
       wrangler: 4.90.0(@cloudflare/workers-types@4.20260305.1)
       ws: 8.18.0
     transitivePeerDependencies:
@@ -12229,7 +12190,7 @@ snapshots:
       - utf-8-validate
       - workerd
 
-  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0)':
+  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
       miniflare: 4.20260507.1
@@ -12242,9 +12203,22 @@ snapshots:
       - utf-8-validate
       - workerd
 
-  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260507.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))':
+  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.91.0)':
     dependencies:
-      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260507.1)
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
+      miniflare: 4.20260507.1
+      unenv: 2.0.0-rc.24
+      vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
+      wrangler: 4.91.0
+      ws: 8.18.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+      - workerd
+
+  '@cloudflare/vite-plugin@1.36.3(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(workerd@1.20260511.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))':
+    dependencies:
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260511.1)
       miniflare: 4.20260507.1
       unenv: 2.0.0-rc.24
       vite: 8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -15179,20 +15153,6 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/browser-playwright@4.1.5(playwright@1.60.0)(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.5)':
-    dependencies:
-      '@vitest/browser': 4.1.5(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.5)
-      '@vitest/mocker': 4.1.5(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      playwright: 1.60.0
-      tinyrainbow: 3.1.0
-      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@25.8.0)(@vitest/browser-playwright@4.1.5)(@vitest/ui@4.1.5)(jsdom@26.1.0)(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
-    optional: true
-
   '@vitest/browser@4.1.5(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.5)':
     dependencies:
       '@blazediff/core': 1.9.1
@@ -15280,7 +15240,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@25.8.0)(@vitest/browser-playwright@4.1.5)(@vitest/ui@4.1.5)(jsdom@26.1.0)(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@24.10.13)(@vitest/browser-playwright@4.1.5)(@vitest/ui@4.1.5)(jsdom@26.1.0)(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
   '@vitest/utils@4.1.5':
     dependencies:
@@ -15566,7 +15526,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dlv: 1.1.3
       dset: 3.1.4
@@ -15591,7 +15551,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -15660,7 +15620,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dlv: 1.1.3
       dset: 3.1.4
@@ -15685,7 +15645,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -15754,7 +15714,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dlv: 1.1.3
       dset: 3.1.4
@@ -15779,7 +15739,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -15848,7 +15808,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dlv: 1.1.3
       dset: 3.1.4
@@ -15873,7 +15833,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -15942,7 +15902,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dset: 3.1.4
       es-module-lexer: 2.0.0
@@ -15968,7 +15928,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -16035,7 +15995,7 @@ snapshots:
       clsx: 2.1.1
       common-ancestor-path: 2.0.0
       cookie: 1.1.1
-      devalue: 5.8.0
+      devalue: 5.8.1
       diff: 8.0.3
       dset: 3.1.4
       es-module-lexer: 2.0.0
@@ -16059,7 +16019,7 @@ snapshots:
       rehype: 13.0.2
       semver: 7.7.4
       shiki: 4.0.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
       svgo: 4.0.1
       tinyclip: 0.1.12
       tinyexec: 1.0.4
@@ -16497,6 +16457,8 @@ snapshots:
   detect-libc@2.1.2: {}
 
   devalue@5.8.0: {}
+
+  devalue@5.8.1: {}
 
   devlop@1.1.0:
     dependencies:
@@ -19686,8 +19648,6 @@ snapshots:
 
   slash@3.0.0: {}
 
-  smol-toml@1.6.0: {}
-
   smol-toml@1.6.1: {}
 
   sonic-boom@3.8.1:
@@ -20327,7 +20287,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/node': 25.8.0
-      '@vitest/browser-playwright': 4.1.5(playwright@1.60.0)(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.5)
+      '@vitest/browser-playwright': 4.1.5(playwright@1.58.2)(vite@8.0.11(@types/node@25.8.0)(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.5)
       '@vitest/ui': 4.1.5(vitest@4.1.5)
       jsdom: 26.1.0
     transitivePeerDependencies:
