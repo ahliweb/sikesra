@@ -294,7 +294,7 @@ export async function getVerificationTimeline(
 		action: string;
 		previous_status: string;
 		next_status: string;
-		level: string | null;
+		verification_level: string | null;
 		note: string | null;
 		request_id: string | null;
 		ip_address: string | null;
@@ -308,12 +308,12 @@ export async function getVerificationTimeline(
 			action,
 			previous_status,
 			next_status,
-			level,
+			verification_level,
 			note,
 			request_id,
 			ip_address,
 			created_at
-		FROM awcms_sikesra_verification_timeline
+		FROM awcms_sikesra_verification_events
 		WHERE tenant_id = ${ctx.tenantId}
 			AND site_id = ${ctx.siteId}
 			AND entity_id = ${entityId}
@@ -328,7 +328,7 @@ export async function getVerificationTimeline(
 		action: row.action,
 		previousStatus: row.previous_status,
 		nextStatus: row.next_status,
-		level: row.level,
+		level: row.verification_level,
 		note: row.note,
 		requestId: row.request_id,
 		ipAddress: row.ip_address,
@@ -353,15 +353,15 @@ async function writeVerificationTimelineEntry(
 	const id = `vtl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 	await sql`
-		INSERT INTO awcms_sikesra_verification_timeline (
+		INSERT INTO awcms_sikesra_verification_events (
 			id, tenant_id, site_id, entity_id, actor_id, actor_role,
-			action, previous_status, next_status, level, note,
+			verification_level, action, previous_status, next_status, note,
 			request_id, ip_address, created_at
 		) VALUES (
 			${id}, ${ctx.tenantId}, ${ctx.siteId}, ${input.entityId},
 			${ctx.userId}, ${ctx.roles[0] ?? 'unknown'},
-			${input.action}, ${input.previousStatus}, ${input.nextStatus},
-			${input.level}, ${input.note},
+			${input.level ?? 'desa'}, ${input.action}, ${input.previousStatus}, ${input.nextStatus},
+			${input.note},
 			${ctx.requestId}, ${ctx.ipAddress ?? null},
 			datetime('now')
 		)

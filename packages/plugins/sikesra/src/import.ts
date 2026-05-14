@@ -1,3 +1,5 @@
+import { sql } from "kysely";
+
 import { AUDIT_ACTIONS } from "./security/audit.js";
 import type { SikesraRequestContext } from "./security/request-context.js";
 
@@ -54,6 +56,7 @@ export interface ImportMapping {
 }
 
 export interface ImportStorageContext {
+	db?: unknown;
 	storage: {
 		importBatches: {
 			put(id: string, data: ImportBatch): Promise<void>;
@@ -130,7 +133,7 @@ export async function createImportBatch(
 ): Promise<{ id: string; status: ImportBatchStatus }> {
 	const id = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 	const now = new Date().toISOString();
-	await runtime.storage.importBatches.put(id, {
+	const batch: ImportBatch = {
 		tenantId: ctx.tenantId,
 		siteId: ctx.siteId,
 		originalFilename: input.originalFilename.trim() || "upload.csv",
@@ -143,7 +146,8 @@ export async function createImportBatch(
 		createdAt: now,
 		updatedAt: now,
 		createdBy: ctx.userId,
-	});
+	};
+	await saveImportBatch(runtime, id, batch, ctx);
 	await writeImportAudit(runtime, ctx, AUDIT_ACTIONS.IMPORT_CREATE, id, {
 		originalFilename: input.originalFilename,
 		objectTypeCode: input.objectTypeCode,
