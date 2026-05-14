@@ -42,6 +42,40 @@ describe("sikesraPlugin descriptor", () => {
 		expect(manifest.permissions).toContain("awcms:sikesra:entity:read");
 	});
 
+	it("ships plugin-owned migration and seed artifacts for the preserved D1 schema", () => {
+		const migrationFiles = [
+			"0001_sikesra_settings_and_master.sql",
+			"0002_sikesra_regions.sql",
+			"0003_sikesra_entities_core.sql",
+			"0004_sikesra_detail_modules.sql",
+			"0005_sikesra_relationships_and_attributes.sql",
+			"0006_sikesra_abac.sql",
+			"0007_sikesra_verification.sql",
+			"0008_sikesra_documents.sql",
+			"0009_sikesra_imports.sql",
+			"0010_sikesra_deduplication.sql",
+			"0011_sikesra_benefits_exports_audit.sql",
+			"0012_sikesra_public_summary.sql",
+		].map((file) => new URL(`../migrations/${file}`, import.meta.url));
+		const seedFiles = [
+			"0001_sikesra_settings.seed.json",
+			"0002_sikesra_object_types.seed.json",
+			"0003_sikesra_object_subtypes.seed.json",
+		].map((file) => new URL(`../seeds/${file}`, import.meta.url));
+
+		for (const migrationPath of migrationFiles) {
+			const sql = readFileSync(migrationPath, "utf8");
+			expect(sql).toContain("BEGIN;");
+			expect(sql).toContain("COMMIT;");
+		}
+
+		for (const seedPath of seedFiles) {
+			const seed = JSON.parse(readFileSync(seedPath, "utf8")) as { tenantId: string; siteId: string };
+			expect(seed.tenantId).toBe("00000000-0000-0000-0000-000000000001");
+			expect(seed.siteId).toBe("main");
+		}
+	});
+
 	it("exports the restored route boundaries", () => {
 		expect(SIKESRA_PUBLIC_ROUTE).toBe("/sikesra");
 		expect(SIKESRA_ADMIN_BASE).toBe("/_emdash/admin/plugins/sikesra");

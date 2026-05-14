@@ -68,12 +68,12 @@
 	},
 	"migrations": {
 		"ownership": "plugin-owned",
-		"status": "pending-conversion-from-backup",
+		"status": "artifact-ready",
 		"source": "update-backup/d1/"
 	},
 	"seeds": {
 		"ownership": "plugin-owned",
-		"status": "pending"
+		"status": "baseline-ready"
 	},
 	"dependencies": {
 		"runtime": ["auth/session", "plugin storage", "audit overlay", "ABAC overlay"],

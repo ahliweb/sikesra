@@ -25,6 +25,9 @@
 		"overlay"
 	],
 	"license": "MIT",
+	"dependencies": {
+		"kysely": "^0.27.0"
+	},
 	"peerDependencies": {
 		"emdash": "workspace:*"
 	},

@@ -8,7 +8,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 - Admin pages mount under `/_emdash/admin/plugins/sikesra/*` through the supported plugin shell.
 - Plugin routes mount under `/_emdash/api/plugins/sikesra/*` through the supported plugin route registry.
 - Public site output at `/sikesra` remains host-app owned and calls the plugin's public-safe endpoints.
-- D1 schema and seed replay use `scripts/sikesra-d1-overlay.mjs` plus preserved SQL in `update-backup/d1/`, not EmDash core migration edits.
+- D1 schema and seed replay use plugin-owned artifacts in `packages/plugins/sikesra/migrations/` and `packages/plugins/sikesra/seeds/`, sourced from the preserved SQL in `update-backup/d1/`, not EmDash core migration edits.
 - Cloudflare deployment bindings and wrapper behavior use `infra/sikesra/wrangler.jsonc`, `infra/sikesra/worker-wrapper-template.mjs`, and `scripts/sikesra-postbuild.mjs` rather than core package patches.
 - All SIKESRA business logic stays outside EmDash core packages -- zero changes to `packages/core/` or `packages/admin/`.
 
@@ -29,7 +29,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Security: Route guards | Permission checks + region scope enforcement (`src/security/route-guard.ts`) |
 | Security: Audit | 28 audit action types, D1 write helper, high-risk action tracking (`src/security/audit.ts`) |
 | Storage config | 6 namespaces (documents, exportJobs, importBatches, importRows, promotedEntities, auditEntries) |
-| D1 schema backup | 34 SIKESRA tables (`awcms_sikesra_*` prefix) with full backup artifacts in `update-backup/d1/` |
+| D1 schema artifacts | 12 plugin-owned SQL migration files plus baseline seeds, sourced from the 34-table preserved backup in `update-backup/d1/` |
 | Infrastructure | Worker wrapper template, wrangler config, postbuild script |
 | Demo integration | Plugin registered in `demos/plugins-demo/astro.config.mjs`, public page at `/sikesra` |
 | Scripts | `sikesra-d1-overlay.mjs` (inventory/restore), `sikesra-smoke-admin-route.mjs`, `sikesra-postbuild.mjs` |
@@ -39,10 +39,10 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 
 | Area | Current State | Next Step |
 |------|---------------|-----------|
-| Public data endpoints | `public/metadata`, `public/filters`, `public/summary` return hardcoded empty/placeholder data | Connect to D1 queries for real aggregate-safe data |
+| Public data endpoints | `public/metadata`, `public/filters`, and `public/summary` now query ambient D1 data through `emdash/runtime` when the host runtime is available, and fall back to the safe placeholder envelope when the schema is missing or not configured | Extend the aggregate query layer as entity, region, and settings features land |
 | Admin UI content | `buildAdminBlocks()` and `buildAdminWidget()` return static "restoration in progress" text | Build data-driven admin pages with live KPIs |
 | `v1/status` | Returns `{ status: "rebuild-pending" }` | Update to reflect actual system health |
-| Request context | `buildPluginRequestContext()` hardcodes `userId: "plugin-user"`, `roles: ["admin"]` | Integrate with real EmDash auth/session |
+| Request context | Trusted plugin request context is now injected from the host plugin API route, but region/tenant/site mapping still uses the current default AWCMS baseline | Bridge to richer host tenancy and scoped-role data when available |
 
 ### Not Started
 
@@ -73,7 +73,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 - Settings: `settings`
 - Subtype details: `benefit_service_history`, `anak_yatim_details`, `lansia_terlantar_details`, `disabilitas_details`, `guru_agama_details`, `lembaga_keagamaan_details`, `lks_details`, `rumah_ibadah_details`, `pendidikan_keagamaan_details`
 
-Full backup in `update-backup/d1/`. Restore via `pnpm node scripts/sikesra-d1-overlay.mjs restore`.
+Full backup remains in `update-backup/d1/`. Restore via `pnpm node scripts/sikesra-d1-overlay.mjs restore`. Canonical plugin-owned migration artifacts now live in `packages/plugins/sikesra/migrations/`, with baseline seeds in `packages/plugins/sikesra/seeds/`.
 
 ## Deployment
 

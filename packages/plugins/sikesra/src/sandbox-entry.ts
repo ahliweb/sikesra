@@ -37,14 +37,12 @@ import {
 	type StageRowsInput,
 } from "./import.js";
 import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
+import { getPublicFilters, getPublicMetadata, getPublicSummary } from "./public.js";
 import { buildRequestContextFromRoute } from "./security/request-context.js";
 import { SIKESRA_PERMISSION_LIST } from "./security/permissions.js";
 import {
 	buildAdminBlocks,
 	buildAdminWidget,
-	buildPublicFilters,
-	buildPublicMetadata,
-	buildPublicSummary,
 	getAdminPageTarget,
 	type AdminInteraction,
 } from "./shared.js";
@@ -59,15 +57,15 @@ export default definePlugin({
 		},
 		"public/metadata": {
 			public: true,
-			handler: async () => buildPublicMetadata(),
+			handler: async () => getPublicMetadata(),
 		},
 		"public/filters": {
 			public: true,
-			handler: async () => buildPublicFilters(),
+			handler: async () => getPublicFilters(),
 		},
 		"public/summary": {
 			public: true,
-			handler: async () => buildPublicSummary(),
+			handler: async () => getPublicSummary(),
 		},
 		"v1/status": {
 			handler: async () => ({
