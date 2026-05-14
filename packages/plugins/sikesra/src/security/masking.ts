@@ -6,10 +6,7 @@ export interface MaskingContext {
 const MASKED_ID_VALUE = "************????";
 const MASKED_CONTACT_VALUE = "**********";
 
-export function maskNikKia(
-	value: string | null | undefined,
-	ctx: MaskingContext,
-): string | null {
+export function maskNikKia(value: string | null | undefined, ctx: MaskingContext): string | null {
 	if (!value) return null;
 	if (ctx.canRevealHighlyRestricted) return value;
 	return value.length >= 4 ? `************${value.slice(-4)}` : MASKED_ID_VALUE;
@@ -19,10 +16,7 @@ export function maskNikKiaHash(): null {
 	return null;
 }
 
-export function maskPhone(
-	value: string | null | undefined,
-	ctx: MaskingContext,
-): string | null {
+export function maskPhone(value: string | null | undefined, ctx: MaskingContext): string | null {
 	if (!value) return null;
 	if (ctx.canRevealSensitive) return value;
 	return value.length >= 4 ? `******${value.slice(-4)}` : MASKED_CONTACT_VALUE;
@@ -37,10 +31,7 @@ export function maskProtectedName(
 	return value.length <= 2 ? "**" : `${value.charAt(0)}**`;
 }
 
-export function maskEmail(
-	value: string | null | undefined,
-	ctx: MaskingContext,
-): string | null {
+export function maskEmail(value: string | null | undefined, ctx: MaskingContext): string | null {
 	if (!value) return null;
 	if (ctx.canRevealSensitive) return value;
 	const parts = value.split("@");
@@ -50,10 +41,7 @@ export function maskEmail(
 	return localPart.length <= 2 ? `**@${domain}` : `${localPart.charAt(0)}***@${domain}`;
 }
 
-export function maskAddress(
-	value: string | null | undefined,
-	ctx: MaskingContext,
-): string | null {
+export function maskAddress(value: string | null | undefined, ctx: MaskingContext): string | null {
 	if (!value) return null;
 	return ctx.canRevealSensitive ? value : null;
 }
@@ -95,9 +83,7 @@ export function maskAuditBeforeAfter(
 	ctx: MaskingContext,
 ): Record<string, unknown> | null {
 	if (!value) return null;
-	return ctx.canRevealSensitive
-		? value
-		: { _redacted: true, _reason: "insufficient_permission" };
+	return ctx.canRevealSensitive ? value : { _redacted: true, _reason: "insufficient_permission" };
 }
 
 export function maskGuardianDetails(

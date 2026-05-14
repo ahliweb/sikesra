@@ -34,7 +34,7 @@ function createRuntime(): ImportStorageContext & {
 					return batches.get(id) ?? null;
 				},
 				async query(options) {
-					let items = [...batches.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(batches.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
 						Object.entries(where).every(([key, value]) => data[key as keyof ImportBatch] === value),
@@ -50,10 +50,12 @@ function createRuntime(): ImportStorageContext & {
 					return rows.get(id) ?? null;
 				},
 				async query(options) {
-					let items = [...rows.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(rows.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
-						Object.entries(where).every(([key, value]) => data[key as keyof ImportStagingRow] === value),
+						Object.entries(where).every(
+							([key, value]) => data[key as keyof ImportStagingRow] === value,
+						),
 					);
 					items.sort((a, b) => a.data.rowNumber - b.data.rowNumber);
 					return { items: items.slice(0, options?.limit ?? items.length) };
@@ -70,7 +72,7 @@ function createRuntime(): ImportStorageContext & {
 					return promoted.delete(id);
 				},
 				async query(options) {
-					let items = [...promoted.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(promoted.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
 						Object.entries(where).every(([key, value]) => data[key] === value),
@@ -142,7 +144,12 @@ describe("SIKESRA import workflow", () => {
 		await stageImportRows(
 			runtime,
 			batch.id,
-			{ rows: [{ Name: "Alpha", Village: "6201021001" }, { Name: "", Village: "bad" }] },
+			{
+				rows: [
+					{ Name: "Alpha", Village: "6201021001" },
+					{ Name: "", Village: "bad" },
+				],
+			},
 			ctx,
 		);
 		const result = await mapAndValidateImportRows(
@@ -215,7 +222,13 @@ describe("SIKESRA import workflow", () => {
 			ctx,
 		);
 		const rows = await listImportRows(runtime, batch.id, ctx);
-		await promoteImportRows(runtime, batch.id, rows.map((row) => row.id), {}, ctx);
+		await promoteImportRows(
+			runtime,
+			batch.id,
+			rows.map((row) => row.id),
+			{},
+			ctx,
+		);
 		const rollback = await rollbackImportPromotion(runtime, batch.id, ctx);
 		expect(rollback.rolledBack).toBe(1);
 		expect(rollback.deletedEntityIds).toHaveLength(1);

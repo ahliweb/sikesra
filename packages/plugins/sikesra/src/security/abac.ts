@@ -131,7 +131,9 @@ function evaluateCondition(condition: AbacCondition, input: AbacInput): boolean 
 }
 
 function policyMatches(policy: AbacPolicy, input: AbacInput): boolean {
-	return policy.conditions.length === 0 || policy.conditions.every((c) => evaluateCondition(c, input));
+	return (
+		policy.conditions.length === 0 || policy.conditions.every((c) => evaluateCondition(c, input))
+	);
 }
 
 function regionScopeMatches(subject: AbacSubject, resource: AbacResource): boolean {
@@ -145,7 +147,9 @@ function regionScopeMatches(subject: AbacSubject, resource: AbacResource): boole
 }
 
 function isPublicUser(subject: AbacSubject): boolean {
-	return subject.roles.length === 0 || (subject.roles.length === 1 && subject.roles[0] === "public");
+	return (
+		subject.roles.length === 0 || (subject.roles.length === 1 && subject.roles[0] === "public")
+	);
 }
 
 export function evaluateAbac(

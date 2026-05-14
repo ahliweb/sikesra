@@ -61,9 +61,7 @@ export interface AuditDbBinding {
 	};
 }
 
-export type AuditWriteResult =
-	| { ok: true; auditEventId: string }
-	| { ok: false; message: string };
+export type AuditWriteResult = { ok: true; auditEventId: string } | { ok: false; message: string };
 
 export const HIGH_RISK_AUDIT_REQUIRED: Set<AuditAction> = new Set([
 	AUDIT_ACTIONS.CODE_CORRECT,

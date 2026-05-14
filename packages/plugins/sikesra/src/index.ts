@@ -47,7 +47,11 @@ export {
 	listExportJobs,
 	requiresReasonForReport,
 } from "./export.js";
-export type { SikesraPublicFilters, SikesraPublicMetadata, SikesraPublicSummary } from "./shared.js";
+export type {
+	SikesraPublicFilters,
+	SikesraPublicMetadata,
+	SikesraPublicSummary,
+} from "./shared.js";
 export type {
 	CompleteUploadInput,
 	DocumentClassification,

@@ -14,6 +14,16 @@ import {
 	type GenerateUploadUrlInput,
 } from "./document.js";
 import {
+	createExportJob,
+	downloadExportFile,
+	generateExportFile,
+	getExportJob,
+	listAvailableReports,
+	listExportJobs,
+	type ExportCreateInput,
+	type ExportStorageContext,
+} from "./export.js";
+import {
 	createImportBatch,
 	listImportRows,
 	mapAndValidateImportRows,
@@ -26,16 +36,6 @@ import {
 	type ImportStorageContext,
 	type StageRowsInput,
 } from "./import.js";
-import {
-	createExportJob,
-	downloadExportFile,
-	generateExportFile,
-	getExportJob,
-	listAvailableReports,
-	listExportJobs,
-	type ExportCreateInput,
-	type ExportStorageContext,
-} from "./export.js";
 import { AUDIT_ACTIONS, HIGH_RISK_AUDIT_REQUIRED } from "./security/audit.js";
 import { SIKESRA_PERMISSION_LIST } from "./security/permissions.js";
 import {
@@ -96,7 +96,9 @@ export default definePlugin({
 				const requestContext = buildPluginRequestContext(ctx);
 				const input = asRecord(routeCtx.input);
 				const status = typeof input.status === "string" ? input.status : undefined;
-				return { items: await listExportJobs(ctx as ExportStorageContext, requestContext, status as never) };
+				return {
+					items: await listExportJobs(ctx as ExportStorageContext, requestContext, status as never),
+				};
 			},
 		},
 		"v1/exports/jobs/get": {
@@ -107,7 +109,11 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
-				const job = await getExportJob(ctx as ExportStorageContext, jobId, buildPluginRequestContext(ctx));
+				const job = await getExportJob(
+					ctx as ExportStorageContext,
+					jobId,
+					buildPluginRequestContext(ctx),
+				);
 				if (!job) throw new Error("EXPORT_JOB_NOT_FOUND");
 				return { job };
 			},
@@ -129,7 +135,11 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
-				return generateExportFile(ctx as ExportStorageContext, jobId, buildPluginRequestContext(ctx));
+				return generateExportFile(
+					ctx as ExportStorageContext,
+					jobId,
+					buildPluginRequestContext(ctx),
+				);
 			},
 		},
 		"v1/exports/jobs/download": {
@@ -140,7 +150,11 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const jobId = typeof input.jobId === "string" ? input.jobId : "";
 				if (!jobId) throw new Error("EXPORT_JOB_ID_REQUIRED");
-				return downloadExportFile(ctx as ExportStorageContext, jobId, buildPluginRequestContext(ctx));
+				return downloadExportFile(
+					ctx as ExportStorageContext,
+					jobId,
+					buildPluginRequestContext(ctx),
+				);
 			},
 		},
 		"v1/documents/upload-url": {
@@ -225,7 +239,12 @@ export default definePlugin({
 			handler: async (
 				routeCtx: { input: unknown; request: Request },
 				ctx: ImportStorageContext & { plugin: { id: string } },
-			) => createImportBatch(ctx as ImportStorageContext, normalizeImportBatchInput(routeCtx.input), buildPluginRequestContext(ctx)),
+			) =>
+				createImportBatch(
+					ctx as ImportStorageContext,
+					normalizeImportBatchInput(routeCtx.input),
+					buildPluginRequestContext(ctx),
+				),
 		},
 		"v1/imports/stage": {
 			handler: async (
@@ -233,7 +252,12 @@ export default definePlugin({
 				ctx: ImportStorageContext & { plugin: { id: string } },
 			) => {
 				const input = normalizeStageRowsInput(routeCtx.input);
-				return stageImportRows(ctx as ImportStorageContext, input.batchId, { rows: input.rows }, buildPluginRequestContext(ctx));
+				return stageImportRows(
+					ctx as ImportStorageContext,
+					input.batchId,
+					{ rows: input.rows },
+					buildPluginRequestContext(ctx),
+				);
 			},
 		},
 		"v1/imports/map-validate": {
@@ -242,7 +266,12 @@ export default definePlugin({
 				ctx: ImportStorageContext & { plugin: { id: string } },
 			) => {
 				const input = normalizeMapValidateInput(routeCtx.input);
-				return mapAndValidateImportRows(ctx as ImportStorageContext, input.batchId, input.mapping, buildPluginRequestContext(ctx));
+				return mapAndValidateImportRows(
+					ctx as ImportStorageContext,
+					input.batchId,
+					input.mapping,
+					buildPluginRequestContext(ctx),
+				);
 			},
 		},
 		"v1/imports/rows": {
@@ -253,7 +282,13 @@ export default definePlugin({
 				const input = asRecord(routeCtx.input);
 				const batchId = typeof input.batchId === "string" ? input.batchId : "";
 				if (!batchId) throw new Error("IMPORT_BATCH_ID_REQUIRED");
-				return { items: await listImportRows(ctx as ImportStorageContext, batchId, buildPluginRequestContext(ctx)) };
+				return {
+					items: await listImportRows(
+						ctx as ImportStorageContext,
+						batchId,
+						buildPluginRequestContext(ctx),
+					),
+				};
 			},
 		},
 		"v1/imports/promote": {
@@ -325,7 +360,8 @@ function normalizeCompleteUploadInput(value: unknown): CompleteUploadInput {
 	const fileObjectId = typeof input.fileObjectId === "string" ? input.fileObjectId : "";
 	const entityId = typeof input.entityId === "string" ? input.entityId : "";
 	const documentType = typeof input.documentType === "string" ? input.documentType : "";
-	if (!fileObjectId || !entityId || !documentType) throw new Error("DOCUMENT_COMPLETE_INPUT_REQUIRED");
+	if (!fileObjectId || !entityId || !documentType)
+		throw new Error("DOCUMENT_COMPLETE_INPUT_REQUIRED");
 	return {
 		fileObjectId,
 		entityId,
@@ -375,7 +411,8 @@ function normalizeReplacementInput(value: unknown): DocumentReplacementInput {
 
 function normalizeImportBatchInput(value: unknown): ImportBatchCreateInput {
 	const input = asRecord(value);
-	const originalFilename = typeof input.originalFilename === "string" ? input.originalFilename : "upload.csv";
+	const originalFilename =
+		typeof input.originalFilename === "string" ? input.originalFilename : "upload.csv";
 	return {
 		originalFilename,
 		objectTypeCode: typeof input.objectTypeCode === "string" ? input.objectTypeCode : undefined,
@@ -434,7 +471,9 @@ function normalizePromoteInput(value: unknown): {
 		rowIds,
 		duplicateDecisions: isPlainRecord(input.duplicateDecisions)
 			? Object.fromEntries(
-					Object.entries(input.duplicateDecisions).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+					Object.entries(input.duplicateDecisions).filter(
+						(entry): entry is [string, string] => typeof entry[1] === "string",
+					),
 				)
 			: {},
 	};

@@ -157,7 +157,8 @@ export async function createExportJob(
 ): Promise<{ id: string; status: ExportJobStatus }> {
 	const report = getReportById(input.reportType);
 	if (!report) throw new Error("INVALID_REPORT_KEY");
-	if (!ctx.permissions.includes(report.requiredPermission)) throw new Error("EXPORT_PERMISSION_DENIED");
+	if (!ctx.permissions.includes(report.requiredPermission))
+		throw new Error("EXPORT_PERMISSION_DENIED");
 	if (requiresReasonForReport(report) && !(input.reason ?? "").trim()) {
 		throw new Error("EXPORT_REASON_REQUIRED");
 	}
@@ -169,9 +170,10 @@ export async function createExportJob(
 		siteId: ctx.siteId,
 		reportType: input.reportType,
 		filters: input.filters ?? {},
-		fields: (input.fields?.length ? input.fields : report.availableFields.map((field) => field.key)).filter(
-			(field) => report.availableFields.some((available) => available.key === field),
-		),
+		fields: (input.fields?.length
+			? input.fields
+			: report.availableFields.map((field) => field.key)
+		).filter((field) => report.availableFields.some((available) => available.key === field)),
 		format: input.format ?? "csv",
 		reason: input.reason,
 		status: "pending",
@@ -181,10 +183,17 @@ export async function createExportJob(
 	};
 
 	await runtime.storage.exportJobs.put(id, record);
-	await writeExportAudit(runtime, ctx, input.reason ? AUDIT_ACTIONS.EXPORT_RESTRICTED_CREATE : AUDIT_ACTIONS.EXPORT_CREATE, id, input.reason, {
-		reportType: input.reportType,
-		format: record.format,
-	});
+	await writeExportAudit(
+		runtime,
+		ctx,
+		input.reason ? AUDIT_ACTIONS.EXPORT_RESTRICTED_CREATE : AUDIT_ACTIONS.EXPORT_CREATE,
+		id,
+		input.reason,
+		{
+			reportType: input.reportType,
+			format: record.format,
+		},
+	);
 
 	return { id, status: "pending" };
 }
@@ -227,7 +236,11 @@ export async function generateExportFile(
 	const report = getReportById(current.reportType);
 	if (!report) throw new Error("INVALID_REPORT_KEY");
 
-	const generating: ExportJobRecord = { ...current, status: "generating", updatedAt: new Date().toISOString() };
+	const generating: ExportJobRecord = {
+		...current,
+		status: "generating",
+		updatedAt: new Date().toISOString(),
+	};
 	await runtime.storage.exportJobs.put(jobId, generating);
 
 	const csvContent = buildCsvContent(report, current, ctx);
@@ -339,15 +352,18 @@ async function writeExportAudit(
 	metadata?: Record<string, unknown>,
 ): Promise<void> {
 	const createdAt = new Date().toISOString();
-	await runtime.storage.auditEntries.put(`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, {
-		action,
-		resourceType: "export_job",
-		resourceId,
-		tenantId: ctx.tenantId,
-		siteId: ctx.siteId,
-		actorId: ctx.userId,
-		createdAt,
-		reason,
-		metadata,
-	});
+	await runtime.storage.auditEntries.put(
+		`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+		{
+			action,
+			resourceType: "export_job",
+			resourceId,
+			tenantId: ctx.tenantId,
+			siteId: ctx.siteId,
+			actorId: ctx.userId,
+			createdAt,
+			reason,
+			metadata,
+		},
+	);
 }

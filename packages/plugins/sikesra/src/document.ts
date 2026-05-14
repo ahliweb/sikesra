@@ -109,7 +109,7 @@ export interface DocumentStorageContext {
 	};
 }
 
-const ALLOWED_MIME_TYPES = [
+const ALLOWED_MIME_TYPES = new Set([
 	"application/pdf",
 	"image/jpeg",
 	"image/png",
@@ -118,18 +118,20 @@ const ALLOWED_MIME_TYPES = [
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.ms-excel",
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
+]);
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export function validateUploadInput(input: GenerateUploadUrlInput): string[] {
 	const errors: string[] = [];
 	if (!input.fileName.trim()) errors.push("Filename is required.");
-	if (!ALLOWED_MIME_TYPES.includes(input.mimeType)) {
+	if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
 		errors.push(`MIME type ${input.mimeType} is not allowed.`);
 	}
 	if (input.sizeBytes > MAX_FILE_SIZE_BYTES) {
-		errors.push(`File size ${input.sizeBytes} bytes exceeds maximum allowed ${MAX_FILE_SIZE_BYTES} bytes.`);
+		errors.push(
+			`File size ${input.sizeBytes} bytes exceeds maximum allowed ${MAX_FILE_SIZE_BYTES} bytes.`,
+		);
 	}
 	if (!["internal", "restricted", "highly_restricted"].includes(input.classification)) {
 		errors.push(`Invalid classification: ${input.classification}.`);
@@ -361,14 +363,17 @@ async function writeDocumentAudit(
 	resourceId: string,
 	metadata?: Record<string, unknown>,
 ): Promise<void> {
-	await runtime.storage.auditEntries.put(`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, {
-		action,
-		resourceType: "supporting_document",
-		resourceId,
-		tenantId: ctx.tenantId,
-		siteId: ctx.siteId,
-		actorId: ctx.userId,
-		createdAt: new Date().toISOString(),
-		metadata,
-	});
+	await runtime.storage.auditEntries.put(
+		`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+		{
+			action,
+			resourceType: "supporting_document",
+			resourceId,
+			tenantId: ctx.tenantId,
+			siteId: ctx.siteId,
+			actorId: ctx.userId,
+			createdAt: new Date().toISOString(),
+			metadata,
+		},
+	);
 }

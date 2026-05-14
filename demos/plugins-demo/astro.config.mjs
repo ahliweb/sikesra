@@ -1,6 +1,6 @@
+import { sikesraPlugin } from "@ahliweb/plugin-sikesra";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
-import { sikesraPlugin } from "@ahliweb/plugin-sikesra";
 import { apiTestPlugin } from "@emdash-cms/plugin-api-test";
 import { auditLogPlugin } from "@emdash-cms/plugin-audit-log";
 import { embedsPlugin } from "@emdash-cms/plugin-embeds";

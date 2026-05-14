@@ -82,10 +82,10 @@ export interface ImportStorageContext {
 				limit?: number;
 			}): Promise<{ items: Array<{ id: string; data: Record<string, unknown> }> }>;
 		};
-			auditEntries: {
-				put(id: string, data: Record<string, unknown>): Promise<void>;
-			};
+		auditEntries: {
+			put(id: string, data: Record<string, unknown>): Promise<void>;
 		};
+	};
 	kv: {
 		get<T>(key: string): Promise<T | null>;
 	};
@@ -100,8 +100,14 @@ export interface StageRowsInput {
 	rows: Array<Record<string, unknown>>;
 }
 
-export function parseCsvFile(text: string): { headers: string[]; rows: Array<Record<string, unknown>> } {
-	const lines = text.split(/\r?\n/).filter((line) => line.trim());
+const CSV_LINE_BREAK_RE = /\r?\n/;
+const VILLAGE_CODE_RE = /^\d{10}$/;
+
+export function parseCsvFile(text: string): {
+	headers: string[];
+	rows: Array<Record<string, unknown>>;
+} {
+	const lines = text.split(CSV_LINE_BREAK_RE).filter((line) => line.trim());
 	if (lines.length === 0) return { headers: [], rows: [] };
 	const [firstLine] = lines;
 	if (!firstLine) return { headers: [], rows: [] };
@@ -292,7 +298,10 @@ export async function promoteImportRows(
 		status: promoted > 0 ? "promoted" : batch.status,
 		updatedAt: new Date().toISOString(),
 	});
-	await writeImportAudit(runtime, ctx, AUDIT_ACTIONS.IMPORT_PROMOTE, batchId, { promoted, skipped });
+	await writeImportAudit(runtime, ctx, AUDIT_ACTIONS.IMPORT_PROMOTE, batchId, {
+		promoted,
+		skipped,
+	});
 	return { promoted, skipped };
 }
 
@@ -378,7 +387,7 @@ function validateMappedRow(mapped: Record<string, unknown>): Record<string, stri
 	const villageCode = String(mapped.officialVillageCode ?? "").trim();
 	if (!villageCode) {
 		errors.officialVillageCode = ["Desa/kelurahan resmi wajib tersedia untuk validasi region."];
-	} else if (!/^\d{10}$/.test(villageCode)) {
+	} else if (!VILLAGE_CODE_RE.test(villageCode)) {
 		errors.officialVillageCode = ["Kode desa/kelurahan resmi harus 10 digit."];
 	}
 	return Object.keys(errors).length ? errors : undefined;
@@ -388,16 +397,18 @@ function detectDuplicateRisk(
 	mappedData: Record<string, unknown>,
 	seenSignatures: Set<string>,
 ): "low" | "high" | "blocking" {
-	const displayName = String(mappedData.displayName ?? "").trim().toLowerCase();
+	const displayName = String(mappedData.displayName ?? "")
+		.trim()
+		.toLowerCase();
 	const villageCode = String(mappedData.officialVillageCode ?? "").trim();
 	if (!displayName || !villageCode) return "low";
 	return seenSignatures.has(buildDuplicateSignature(mappedData)) ? "blocking" : "low";
 }
 
 function buildDuplicateSignature(mappedData: Record<string, unknown>): string {
-	return `${String(mappedData.displayName ?? "").trim().toLowerCase()}::${String(
-		mappedData.officialVillageCode ?? "",
-	).trim()}`;
+	return `${String(mappedData.displayName ?? "")
+		.trim()
+		.toLowerCase()}::${String(mappedData.officialVillageCode ?? "").trim()}`;
 }
 
 async function requireBatch(
@@ -432,14 +443,17 @@ async function writeImportAudit(
 	resourceId: string,
 	metadata?: Record<string, unknown>,
 ): Promise<void> {
-	await runtime.storage.auditEntries.put(`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, {
-		action,
-		resourceType: "import_batch",
-		resourceId,
-		tenantId: ctx.tenantId,
-		siteId: ctx.siteId,
-		actorId: ctx.userId,
-		createdAt: new Date().toISOString(),
-		metadata,
-	});
+	await runtime.storage.auditEntries.put(
+		`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+		{
+			action,
+			resourceType: "import_batch",
+			resourceId,
+			tenantId: ctx.tenantId,
+			siteId: ctx.siteId,
+			actorId: ctx.userId,
+			createdAt: new Date().toISOString(),
+			metadata,
+		},
+	);
 }

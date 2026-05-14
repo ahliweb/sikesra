@@ -46,7 +46,10 @@ export default {
 		if (pathname === "/sikesra" || pathname === "/sikesra/") {
 			return handleEmDash(request, env, ctx, "sikesra-public");
 		}
-		if (pathname === "/_emdash/api/plugins/sikesra/admin" || pathname === "/_emdash/api/plugins/sikesra/admin/") {
+		if (
+			pathname === "/_emdash/api/plugins/sikesra/admin" ||
+			pathname === "/_emdash/api/plugins/sikesra/admin/"
+		) {
 			return handleEmDash(request, env, ctx, "sikesra-admin");
 		}
 		if (pathname.startsWith("/_emdash/api/plugins/sikesra/public/")) {
@@ -59,10 +62,14 @@ export default {
 		try {
 			return await handleEmDash(request, env, ctx, pathname === "/" ? "emdash-root" : "emdash");
 		} catch (error) {
-			return routeResponse(`EmDash error: ${errorMessage(error)}`, {
-				status: 500,
-				headers: withNoStoreHeaders({ "Content-Type": "text/plain; charset=utf-8" }),
-			}, pathname === "/" ? "emdash-root" : "emdash");
+			return routeResponse(
+				`EmDash error: ${errorMessage(error)}`,
+				{
+					status: 500,
+					headers: withNoStoreHeaders({ "Content-Type": "text/plain; charset=utf-8" }),
+				},
+				pathname === "/" ? "emdash-root" : "emdash",
+			);
 		}
 	},
 };

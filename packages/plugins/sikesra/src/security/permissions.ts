@@ -39,8 +39,6 @@ export const SIKESRA_PERMISSIONS = {
 	RATE_LIMIT_BYPASS: "awcms:sikesra:rate_limit:bypass",
 } as const;
 
-export type SikesraPermission =
-	(typeof SIKESRA_PERMISSIONS)[keyof typeof SIKESRA_PERMISSIONS];
+export type SikesraPermission = (typeof SIKESRA_PERMISSIONS)[keyof typeof SIKESRA_PERMISSIONS];
 
-export const SIKESRA_PERMISSION_LIST: SikesraPermission[] =
-	Object.values(SIKESRA_PERMISSIONS);
+export const SIKESRA_PERMISSION_LIST: SikesraPermission[] = Object.values(SIKESRA_PERMISSIONS);

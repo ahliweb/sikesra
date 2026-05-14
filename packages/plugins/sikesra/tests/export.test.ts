@@ -30,10 +30,12 @@ function createRuntime(): ExportStorageContext & { audit: Map<string, ExportAudi
 					return exportJobs.get(id) ?? null;
 				},
 				async query(options) {
-					let items = [...exportJobs.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(exportJobs.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
-						Object.entries(where).every(([key, value]) => data[key as keyof ExportJobRecord] === value),
+						Object.entries(where).every(
+							([key, value]) => data[key as keyof ExportJobRecord] === value,
+						),
 					);
 					items.sort((a, b) => b.data.createdAt.localeCompare(a.data.createdAt));
 					return { items: items.slice(0, options?.limit ?? items.length) };
@@ -44,10 +46,12 @@ function createRuntime(): ExportStorageContext & { audit: Map<string, ExportAudi
 					audit.set(id, data);
 				},
 				async query(options) {
-					let items = [...audit.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(audit.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
-						Object.entries(where).every(([key, value]) => data[key as keyof ExportAuditEntry] === value),
+						Object.entries(where).every(
+							([key, value]) => data[key as keyof ExportAuditEntry] === value,
+						),
 					);
 					return { items: items.slice(0, options?.limit ?? items.length) };
 				},
@@ -146,15 +150,19 @@ describe("SIKESRA export workflow", () => {
 	it("records audit entries for create and download", async () => {
 		const runtime = createRuntime();
 		const ctx = makeContext();
-		const created = await createExportJob(runtime, {
-			reportType: "verification_status",
-			reason: "Monthly compliance",
-		}, ctx);
+		const created = await createExportJob(
+			runtime,
+			{
+				reportType: "verification_status",
+				reason: "Monthly compliance",
+			},
+			ctx,
+		);
 		await generateExportFile(runtime, created.id, ctx);
 		await downloadExportFile(runtime, created.id, ctx);
 
 		expect(runtime.audit.size).toBeGreaterThanOrEqual(3);
-		const actions = [...runtime.audit.values()].map((entry) => entry.action);
+		const actions = Array.from(runtime.audit.values(), (entry) => entry.action);
 		expect(actions).toContain("export.restricted_create");
 		expect(actions).toContain("export.download");
 	});

@@ -29,10 +29,12 @@ function createRuntime(): DocumentStorageContext & {
 					return documents.get(id) ?? null;
 				},
 				async query(options) {
-					let items = [...documents.entries()].map(([id, data]) => ({ id, data }));
+					let items = Array.from(documents.entries(), ([id, data]) => ({ id, data }));
 					const where = options?.where ?? {};
 					items = items.filter(({ data }) =>
-						Object.entries(where).every(([key, value]) => data[key as keyof DocumentRecord] === value),
+						Object.entries(where).every(
+							([key, value]) => data[key as keyof DocumentRecord] === value,
+						),
 					);
 					items.sort((a, b) => b.data.uploadedAt.localeCompare(a.data.uploadedAt));
 					return { items: items.slice(0, options?.limit ?? items.length) };

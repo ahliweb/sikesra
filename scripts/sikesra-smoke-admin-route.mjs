@@ -40,7 +40,9 @@ async function main() {
 		if (response.status !== 401 || payload?.error?.message !== "Authentication required") {
 			fail(`expected 401 Authentication required, received status=${response.status}`);
 		}
-		process.stdout.write(`[sikesra-smoke-admin-route] unauthorized path verified for page=${page}\n`);
+		process.stdout.write(
+			`[sikesra-smoke-admin-route] unauthorized path verified for page=${page}\n`,
+		);
 		return;
 	}
 

@@ -105,18 +105,24 @@ describe("SIKESRA security overlay", () => {
 	});
 
 	it("masks sensitive values by default", () => {
-		expect(maskNikKia("1234567890123456", {
-			canRevealSensitive: false,
-			canRevealHighlyRestricted: false,
-		})).toBe("************3456");
-		expect(maskPhone("081234567890", {
-			canRevealSensitive: false,
-			canRevealHighlyRestricted: false,
-		})).toBe("******7890");
-		expect(maskProtectedName("Ahmad Fauzi", {
-			canRevealSensitive: false,
-			canRevealHighlyRestricted: false,
-		})).not.toBe("Ahmad Fauzi");
+		expect(
+			maskNikKia("1234567890123456", {
+				canRevealSensitive: false,
+				canRevealHighlyRestricted: false,
+			}),
+		).toBe("************3456");
+		expect(
+			maskPhone("081234567890", {
+				canRevealSensitive: false,
+				canRevealHighlyRestricted: false,
+			}),
+		).toBe("******7890");
+		expect(
+			maskProtectedName("Ahmad Fauzi", {
+				canRevealSensitive: false,
+				canRevealHighlyRestricted: false,
+			}),
+		).not.toBe("Ahmad Fauzi");
 		expect(maskR2Key()).toBeNull();
 	});
 

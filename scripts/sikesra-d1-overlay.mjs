@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
@@ -49,7 +49,12 @@ function runInventory(rest) {
 		sikesraTables,
 		coreTableCount: tables.filter((table) => table.startsWith("_emdash_")).length,
 		pluginTableCount: tables.filter((table) => table.startsWith("_plugin_")).length,
-		otherTableCount: tables.filter((table) => !table.startsWith("_emdash_") && !table.startsWith("_plugin_") && !table.startsWith("awcms_sikesra_")).length,
+		otherTableCount: tables.filter(
+			(table) =>
+				!table.startsWith("_emdash_") &&
+				!table.startsWith("_plugin_") &&
+				!table.startsWith("awcms_sikesra_"),
+		).length,
 		sikesraObjectCount: objects.filter(isSikesraObject).length,
 		restoreFiles: buildPlan({ split: false }).map((step) => step.file),
 	};
@@ -74,9 +79,12 @@ function runInventory(rest) {
 
 function runRestore(rest) {
 	ensureFiles();
-	const database = readFlagValue(rest, "--database") ?? process.env.SIKESRA_D1_DATABASE ?? process.env.D1_DATABASE;
+	const database =
+		readFlagValue(rest, "--database") ?? process.env.SIKESRA_D1_DATABASE ?? process.env.D1_DATABASE;
 	if (!database) {
-		process.stderr.write("Missing database name. Pass --database <name> or set SIKESRA_D1_DATABASE.\n");
+		process.stderr.write(
+			"Missing database name. Pass --database <name> or set SIKESRA_D1_DATABASE.\n",
+		);
 		process.exit(1);
 	}
 
@@ -96,10 +104,14 @@ function runRestore(rest) {
 		process.stdout.write(`npx wrangler d1 execute ${database} ${target} --file ${file}\n\n`);
 		if (!execute) continue;
 
-		const result = spawnSync("npx", ["wrangler", "d1", "execute", database, target, "--file", file], {
-			cwd: repoRoot,
-			stdio: "inherit",
-		});
+		const result = spawnSync(
+			"npx",
+			["wrangler", "d1", "execute", database, target, "--file", file],
+			{
+				cwd: repoRoot,
+				stdio: "inherit",
+			},
+		);
 		if (result.status !== 0) process.exit(result.status ?? 1);
 	}
 }
