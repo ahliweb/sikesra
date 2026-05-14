@@ -35,6 +35,8 @@ This is a monorepo using pnpm workspaces.
 
 **Canonical docs are immutable references.** `docs-awcms-micro/` (AWCMS-Micro architecture and governance) and `docs-sikesra-awal/` (SIKESRA concept specification) are readonly concept references. They must not be removed or modified in a way that changes their core principles. Working copies live under `docs/core/` and `docs/sikesra/` respectively.
 
+**Check Context7 and skills before coding.** When working with external libraries, frameworks, or APIs, always query Context7 documentation first for up-to-date patterns and examples. When a task matches an available skill, load the skill for domain-specific instructions and workflows. Don't guess at APIs or patterns -- look them up.
+
 ## Contribution Rules (for AI agents and human contributors)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Key rules:
