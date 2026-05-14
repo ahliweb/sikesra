@@ -30,15 +30,33 @@ describe("sikesraPlugin descriptor", () => {
 		expect(SIKESRA_PUBLIC_ROUTE).toBe("/sikesra");
 		expect(SIKESRA_ADMIN_BASE).toBe("/_emdash/admin/plugins/sikesra");
 		expect(SIKESRA_API_BASE).toBe("/_emdash/api/plugins/sikesra");
-		expect(SIKESRA_ROUTE_NAMES).toEqual([
-			"admin",
-			"public/metadata",
-			"public/filters",
-			"public/summary",
-			"v1/status",
-			"v1/security/manifest",
-		]);
-	});
+			expect(SIKESRA_ROUTE_NAMES).toEqual([
+				"admin",
+				"public/metadata",
+				"public/filters",
+				"public/summary",
+				"v1/status",
+				"v1/security/manifest",
+				"v1/exports/reports",
+				"v1/exports/jobs",
+				"v1/exports/jobs/get",
+				"v1/exports/jobs/create",
+				"v1/exports/jobs/generate",
+				"v1/exports/jobs/download",
+				"v1/documents/upload-url",
+				"v1/documents/complete",
+				"v1/entities/documents",
+				"v1/documents/download",
+				"v1/documents/verify",
+				"v1/documents/replace",
+				"v1/imports/create",
+				"v1/imports/stage",
+				"v1/imports/map-validate",
+				"v1/imports/rows",
+				"v1/imports/promote",
+				"v1/imports/rollback",
+			]);
+		});
 });
 
 describe("sikesra sandbox shell", () => {
