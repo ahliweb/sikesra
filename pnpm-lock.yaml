@@ -214,8 +214,8 @@ catalogs:
       specifier: 19.2.4
       version: 19.2.4
     react-dom:
-      specifier: 19.2.4
-      version: 19.2.4
+      specifier: 19.2.6
+      version: 19.2.6
     tsdown:
       specifier: 0.20.3
       version: 0.20.3
@@ -402,7 +402,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -417,7 +417,7 @@ importers:
         version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 1.163.2(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
@@ -429,7 +429,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -451,7 +451,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -466,7 +466,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -488,7 +488,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/plugin-api-test':
         specifier: workspace:*
         version: link:../../packages/plugins/api-test
@@ -506,7 +506,7 @@ importers:
         version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 1.163.2(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -521,7 +521,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -534,13 +534,13 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 1.163.2(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -555,7 +555,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -568,7 +568,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -577,7 +577,7 @@ importers:
         version: 5.90.21(react@19.2.4)
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 1.163.2(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
@@ -589,7 +589,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -611,7 +611,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/auth-atproto':
         specifier: workspace:*
         version: link:../../packages/auth-atproto
@@ -638,7 +638,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -687,7 +687,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -708,7 +708,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
 
   fixtures/perf-site:
     dependencies:
@@ -720,7 +720,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -741,7 +741,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -769,7 +769,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -790,7 +790,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -809,7 +809,7 @@ importers:
         version: https://pkg.pr.new/@astrojs/cloudflare@94d342d(@types/node@24.10.13)(astro@https://pkg.pr.new/astro@94d342d(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -830,7 +830,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -1168,7 +1168,7 @@ importers:
         version: 1.2.10
       '@cloudflare/kumo':
         specifier: ^1.16.0
-        version: 1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.14
@@ -1180,10 +1180,10 @@ importers:
     dependencies:
       '@cloudflare/kumo':
         specifier: ^1.10.0
-        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@phosphor-icons/react':
         specifier: 'catalog:'
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1199,7 +1199,7 @@ importers:
         version: 0.18.2
       '@testing-library/react':
         specifier: ^16.3.0
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -1220,7 +1220,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
       tsdown:
         specifier: 'catalog:'
         version: 0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260213.1)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@5.9.3)
@@ -1235,19 +1235,19 @@ importers:
     dependencies:
       '@cloudflare/kumo':
         specifier: ^1.1.0
-        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@emdash-cms/blocks':
         specifier: workspace:*
         version: link:..
       '@phosphor-icons/react':
         specifier: 'catalog:'
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       react:
         specifier: 'catalog:'
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.1.11
@@ -1636,10 +1636,10 @@ importers:
     dependencies:
       '@cloudflare/kumo':
         specifier: ^1.0.0
-        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@phosphor-icons/react':
         specifier: ^2.1.10
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       emdash:
         specifier: workspace:>=0.9.0
         version: link:../../core
@@ -1661,7 +1661,7 @@ importers:
     dependencies:
       '@phosphor-icons/react':
         specifier: ^2.1.10
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       emdash:
         specifier: workspace:>=0.12.0
         version: link:../../core
@@ -1727,17 +1727,17 @@ importers:
     dependencies:
       '@cloudflare/kumo':
         specifier: ^1.0.0
-        version: 1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@phosphor-icons/react':
         specifier: ^2.1.10
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       emdash:
         specifier: workspace:>=0.9.0
         version: link:../../core
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.0
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -1755,7 +1755,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
       vitest:
         specifier: 'catalog:'
         version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@24.10.13)(@vitest/browser-playwright@4.1.5)(@vitest/ui@4.1.5)(jsdom@26.1.0)(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -1764,10 +1764,10 @@ importers:
     dependencies:
       '@cloudflare/kumo':
         specifier: ^1.0.0
-        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+        version: 1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)
       '@phosphor-icons/react':
         specifier: ^2.1.10
-        version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       astro:
         specifier: '>=6.1.10'
         version: 6.3.2(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.8.2)
@@ -2002,7 +2002,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
@@ -2017,7 +2017,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2030,7 +2030,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/plugin-audit-log':
         specifier: workspace:*
         version: link:../../packages/plugins/audit-log
@@ -2048,7 +2048,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2061,7 +2061,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -2082,7 +2082,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2101,7 +2101,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@iconify-json/ph':
         specifier: 'catalog:'
         version: 1.2.2
@@ -2110,7 +2110,7 @@ importers:
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
       astro-iconset:
         specifier: 'catalog:'
-        version: 0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       better-sqlite3:
         specifier: 'catalog:'
         version: 12.8.0
@@ -2122,7 +2122,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2135,7 +2135,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -2147,7 +2147,7 @@ importers:
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
       astro-iconset:
         specifier: 'catalog:'
-        version: 0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       emdash:
         specifier: workspace:*
         version: link:../../packages/core
@@ -2156,7 +2156,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2175,7 +2175,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
@@ -2190,7 +2190,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2203,7 +2203,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -2218,7 +2218,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2237,7 +2237,7 @@ importers:
         version: 10.0.0(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       astro:
         specifier: 'catalog:'
         version: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
@@ -2252,7 +2252,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2265,7 +2265,7 @@ importers:
         version: 13.1.7(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(workerd@1.20260508.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
       '@astrojs/react':
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)
       '@emdash-cms/cloudflare':
         specifier: workspace:*
         version: link:../../packages/cloudflare
@@ -2280,7 +2280,7 @@ importers:
         version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.6(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
@@ -2398,7 +2398,7 @@ packages:
       wrangler: ^4.61.1
 
   '@astrojs/cloudflare@https://pkg.pr.new/@astrojs/cloudflare@94d342d':
-    resolution: {integrity: sha512-Bt+G512Dr1SqYdsza6HOLP2azfHg0m5UE0s6SBGX77g+ThFV95Nai5boyM8HO3jVpqwVPPh+5ycMptjrtzv7Yg==, tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
+    resolution: {tarball: https://pkg.pr.new/@astrojs/cloudflare@94d342d}
     version: 13.1.10
     peerDependencies:
       astro: '>=6.1.10'
@@ -3042,7 +3042,7 @@ packages:
   '@cloudflare/vite-plugin@1.32.3':
     resolution: {integrity: sha512-a8ZkCA/SOiJ36jT3LlBLkUb7ZzGInhYJoTY4BMRBGdk+nsh44HavbNvtu/RdaqS5VJEMLM4+LqVIJ+V0ahGeFg==}
     peerDependencies:
-      vite: '>=7.3.2'
+      vite: '>=6.4.2'
       wrangler: ^4.83.0
 
   '@cloudflare/vite-plugin@1.36.3':
@@ -3980,7 +3980,7 @@ packages:
     resolution: {integrity: sha512-yTCCjuQapvRz6S30B8DyqHu1WYsbYRCww6uNsmbQU4GQVf5gJzJSB60qUHj+qBSxReLtRL/mhmhYhrIc9jVFTw==}
 
   '@lunariajs/core@https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc':
-    resolution: {integrity: sha512-k8sHBM7S10HBa39fxsJcOGYMGrbru5UZ9vMS4kmCa9o6dJTUP6rt3zKVEs7uEsHAYasoXyiC6wre2Jiqs3X+zQ==, tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
+    resolution: {tarball: https://pkg.pr.new/lunariajs/lunaria/@lunariajs/core@83617cc}
     version: 0.1.1
     engines: {node: '>=18.17.0'}
 
@@ -6502,7 +6502,7 @@ packages:
     hasBin: true
 
   astro@https://pkg.pr.new/astro@94d342d:
-    resolution: {integrity: sha512-1XlhRGRCQP4L5KPZUgSRCKOD28aKiGYQ8TBAxBIJvFV/HUuct3eHvc7sY/krhhCAju81JMlvbWU+1XVzltgZTQ==, tarball: https://pkg.pr.new/astro@94d342d}
+    resolution: {tarball: https://pkg.pr.new/astro@94d342d}
     version: 6.1.7
     engines: {node: '>=22.12.0', npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
@@ -9015,6 +9015,11 @@ packages:
     peerDependencies:
       react: ^19.2.4
 
+  react-dom@19.2.6:
+    resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
+    peerDependencies:
+      react: ^19.2.6
+
   react-hotkeys-hook@5.2.4:
     resolution: {integrity: sha512-BgKg+A1+TawkYluh5Bo4cTmcgMN5L29uhJbDUQdHwPX+qgXRjIPYU5kIDHyxnAwCkCBiu9V5OpB2mpyeluVF2A==}
     peerDependencies:
@@ -10869,7 +10874,7 @@ snapshots:
     dependencies:
       prismjs: 1.30.0
 
-  '@astrojs/react@5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)':
+  '@astrojs/react@5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.27.3)(jiti@2.6.1)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(tsx@4.21.0)(yaml@2.8.2)':
     dependencies:
       '@astrojs/internal-helpers': 0.8.0
       '@types/react': 19.2.14
@@ -10877,7 +10882,7 @@ snapshots:
       '@vitejs/plugin-react': 5.1.4(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
       devalue: 5.8.0
       react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
+      react-dom: 19.2.6(react@19.2.4)
       ultrahtml: 1.6.0
       vite: 8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
@@ -11582,12 +11587,36 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
+  '@base-ui/react@1.2.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@babel/runtime': 7.28.6
+      '@base-ui/utils': 0.2.5(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@floating-ui/utils': 0.2.11
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
+      tabbable: 6.4.0
+      use-sync-external-store: 1.6.0(react@19.2.4)
+    optionalDependencies:
+      '@types/react': 19.2.14
+
   '@base-ui/utils@0.2.5(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@babel/runtime': 7.28.6
       '@floating-ui/utils': 0.2.11
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+      reselect: 5.1.1
+      use-sync-external-store: 1.6.0(react@19.2.4)
+    optionalDependencies:
+      '@types/react': 19.2.14
+
+  '@base-ui/utils@0.2.5(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@babel/runtime': 7.28.6
+      '@floating-ui/utils': 0.2.11
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
       reselect: 5.1.1
       use-sync-external-store: 1.6.0(react@19.2.4)
     optionalDependencies:
@@ -11782,16 +11811,16 @@ snapshots:
       '@clack/core': 1.1.0
       sisteransi: 1.0.5
 
-  '@cloudflare/kumo@1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)':
+  '@cloudflare/kumo@1.10.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)':
     dependencies:
-      '@base-ui/react': 1.2.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@phosphor-icons/react': 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@base-ui/react': 1.2.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@phosphor-icons/react': 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       clsx: 2.1.1
       echarts: 6.0.0
-      motion: 12.35.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      motion: 12.35.0(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
       react: 19.2.4
       react-day-picker: 9.14.0(react@19.2.4)
-      react-dom: 19.2.4(react@19.2.4)
+      react-dom: 19.2.6(react@19.2.4)
       shiki: 4.0.1
       tailwind-merge: 3.4.0
     optionalDependencies:
@@ -11812,6 +11841,26 @@ snapshots:
       react: 19.2.4
       react-day-picker: 9.14.0(react@19.2.4)
       react-dom: 19.2.4(react@19.2.4)
+      shiki: 4.0.1
+      tailwind-merge: 3.4.0
+    optionalDependencies:
+      zod: 4.4.1
+    transitivePeerDependencies:
+      - '@emotion/is-prop-valid'
+      - '@types/react'
+
+  '@cloudflare/kumo@1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)(zod@4.4.1)':
+    dependencies:
+      '@base-ui/react': 1.2.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@phosphor-icons/react': 2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@shikijs/langs': 4.0.1
+      '@shikijs/themes': 4.0.1
+      clsx: 2.1.1
+      echarts: 6.0.0
+      motion: 12.35.0(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      react: 19.2.4
+      react-day-picker: 9.14.0(react@19.2.4)
+      react-dom: 19.2.6(react@19.2.4)
       shiki: 4.0.1
       tailwind-merge: 3.4.0
     optionalDependencies:
@@ -12320,6 +12369,12 @@ snapshots:
       '@floating-ui/dom': 1.7.6
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+
+  '@floating-ui/react-dom@2.1.8(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@floating-ui/dom': 1.7.6
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
 
   '@floating-ui/react@0.27.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
@@ -13175,6 +13230,11 @@ snapshots:
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+
+  '@phosphor-icons/react@2.1.10(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
 
   '@playwright/test@1.58.0':
     dependencies:
@@ -14230,11 +14290,29 @@ snapshots:
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
 
+  '@tanstack/react-router@1.163.2(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@tanstack/history': 1.161.4
+      '@tanstack/react-store': 0.9.1(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      '@tanstack/router-core': 1.163.2
+      isbot: 5.1.32
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
+      tiny-invariant: 1.3.3
+      tiny-warning: 1.0.3
+
   '@tanstack/react-store@0.9.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@tanstack/store': 0.9.1
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+      use-sync-external-store: 1.6.0(react@19.2.4)
+
+  '@tanstack/react-store@0.9.1(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@tanstack/store': 0.9.1
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
       use-sync-external-store: 1.6.0(react@19.2.4)
 
   '@tanstack/router-core@1.163.2':
@@ -14266,6 +14344,16 @@ snapshots:
       '@testing-library/dom': 10.4.1
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+    optionalDependencies:
+      '@types/react': 19.2.14
+      '@types/react-dom': 19.2.3(@types/react@19.2.14)
+
+  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@babel/runtime': 7.28.6
+      '@testing-library/dom': 10.4.1
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
@@ -15042,7 +15130,7 @@ snapshots:
       astro: 6.3.2(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.8.2)
       rehype-expressive-code: 0.41.6
 
-  astro-iconset@0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  astro-iconset@0.0.4(astro@6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2))(react-dom@19.2.6(react@19.2.4))(react@19.2.4):
     dependencies:
       '@iconify/tools': 5.0.11
       '@iconify/types': 2.0.0
@@ -15050,7 +15138,7 @@ snapshots:
       astro: 6.0.1(@types/node@24.10.13)(jiti@2.6.1)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.0-beta)(yaml@2.8.2)
     optionalDependencies:
       react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
+      react-dom: 19.2.6(react@19.2.4)
 
   astro-portabletext@0.11.4(astro@6.3.2(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.3)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
@@ -16227,6 +16315,15 @@ snapshots:
     optionalDependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+
+  framer-motion@12.35.0(react-dom@19.2.6(react@19.2.4))(react@19.2.4):
+    dependencies:
+      motion-dom: 12.35.0
+      motion-utils: 12.29.2
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
 
   fresh@2.0.0: {}
 
@@ -17648,6 +17745,14 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
+  motion@12.35.0(react-dom@19.2.6(react@19.2.4))(react@19.2.4):
+    dependencies:
+      framer-motion: 12.35.0(react-dom@19.2.6(react@19.2.4))(react@19.2.4)
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.4
+      react-dom: 19.2.6(react@19.2.4)
+
   mri@1.2.0: {}
 
   mrmime@2.0.1: {}
@@ -18356,6 +18461,11 @@ snapshots:
       react: 19.2.4
 
   react-dom@19.2.4(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      scheduler: 0.27.0
+
+  react-dom@19.2.6(react@19.2.4):
     dependencies:
       react: 19.2.4
       scheduler: 0.27.0
