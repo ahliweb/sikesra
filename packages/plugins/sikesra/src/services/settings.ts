@@ -1,7 +1,7 @@
 import { sql } from "kysely";
 
-import { guardRoute } from "../security/route-guard.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
+import { guardRoute } from "../security/route-guard.js";
 
 export interface AuditListFilters {
 	action?: string;
@@ -72,7 +72,8 @@ export async function listAuditEntries(
 	filters: AuditListFilters,
 ): Promise<{ items: AuditListItem[]; nextCursor?: string }> {
 	const denied = guardRoute(ctx, "audit:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const limit = Math.min(Math.max(filters.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
 
@@ -116,7 +117,8 @@ export async function getAuditDetail(
 	auditId: string,
 ): Promise<AuditDetailResponse> {
 	const denied = guardRoute(ctx, "audit:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<{
 		id: string;
@@ -175,7 +177,8 @@ export async function getSettings(
 	ctx: SikesraRequestContext,
 ): Promise<SettingsResponse> {
 	const denied = guardRoute(ctx, "settings:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<{
 		public_enabled: number;
@@ -226,7 +229,8 @@ export async function updateSettings(
 	reason: string,
 ): Promise<SettingsResponse> {
 	const denied = guardRoute(ctx, "settings:update");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	if (!reason.trim()) {
 		return throwRouteError("VALIDATION_ERROR", "Reason is required for settings updates", 400);
@@ -268,9 +272,11 @@ export async function updateSettings(
 		values.push(DEFAULT_TENANT_ID);
 		values.push(DEFAULT_SITE_ID);
 
-		await sql.raw(
-			`UPDATE awcms_sikesra_settings SET ${updates.join(", ")} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`
-		).execute(db as never);
+		await sql
+			.raw(
+				`UPDATE awcms_sikesra_settings SET ${updates.join(", ")} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+			)
+			.execute(db as never);
 	}
 
 	await writeSettingsAudit(db, ctx, existing, input, reason);
@@ -279,10 +285,7 @@ export async function updateSettings(
 }
 
 function buildAuditWhereSql(ctx: SikesraRequestContext, filters: AuditListFilters) {
-	const conditions = [
-		sql`tenant_id = ${ctx.tenantId}`,
-		sql`site_id = ${ctx.siteId}`,
-	];
+	const conditions = [sql`tenant_id = ${ctx.tenantId}`, sql`site_id = ${ctx.siteId}`];
 
 	if (filters.action) {
 		conditions.push(sql`action = ${filters.action}`);
@@ -300,7 +303,9 @@ function buildAuditWhereSql(ctx: SikesraRequestContext, filters: AuditListFilter
 		conditions.push(sql`success = ${filters.success ? 1 : 0}`);
 	}
 	if (filters.cursor) {
-		conditions.push(sql`(created_at, id) < (${sql.ref(filters.cursor)}, ${sql.ref(filters.cursor)})`);
+		conditions.push(
+			sql`(created_at, id) < (${sql.ref(filters.cursor)}, ${sql.ref(filters.cursor)})`,
+		);
 	}
 
 	return sql.join(conditions, sql` AND `);
@@ -378,12 +383,21 @@ async function writeSettingsAudit(
 ): Promise<void> {
 	try {
 		const changes: Record<string, unknown> = {};
-		if (input.publicEnabled !== undefined) changes.publicEnabled = { from: existing.publicEnabled, to: input.publicEnabled };
-		if (input.publicTitle !== undefined) changes.publicTitle = { from: existing.publicTitle, to: input.publicTitle };
-		if (input.publicDescription !== undefined) changes.publicDescription = { from: existing.publicDescription, to: input.publicDescription };
-		if (input.dataScopeNote !== undefined) changes.dataScopeNote = { from: existing.dataScopeNote, to: input.dataScopeNote };
-		if (input.officialContact !== undefined) changes.officialContact = { from: existing.officialContact, to: input.officialContact };
-		if (input.smallCellThreshold !== undefined) changes.smallCellThreshold = { from: existing.smallCellThreshold, to: input.smallCellThreshold };
+		if (input.publicEnabled !== undefined)
+			changes.publicEnabled = { from: existing.publicEnabled, to: input.publicEnabled };
+		if (input.publicTitle !== undefined)
+			changes.publicTitle = { from: existing.publicTitle, to: input.publicTitle };
+		if (input.publicDescription !== undefined)
+			changes.publicDescription = { from: existing.publicDescription, to: input.publicDescription };
+		if (input.dataScopeNote !== undefined)
+			changes.dataScopeNote = { from: existing.dataScopeNote, to: input.dataScopeNote };
+		if (input.officialContact !== undefined)
+			changes.officialContact = { from: existing.officialContact, to: input.officialContact };
+		if (input.smallCellThreshold !== undefined)
+			changes.smallCellThreshold = {
+				from: existing.smallCellThreshold,
+				to: input.smallCellThreshold,
+			};
 
 		await sql`
 			INSERT INTO awcms_sikesra_audit_logs (
@@ -393,7 +407,7 @@ async function writeSettingsAudit(
 			) VALUES (
 				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
 				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
-				${ctx.roles[0] ?? 'unknown'}, 'settings.update',
+				${ctx.roles[0] ?? "unknown"}, 'settings.update',
 				'settings', 'global', ${ctx.requestId}, 1, ${reason},
 				${JSON.stringify(existing)}, ${JSON.stringify(changes)},
 				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},

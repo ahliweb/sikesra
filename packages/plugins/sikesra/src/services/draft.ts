@@ -1,8 +1,8 @@
 import { sql } from "kysely";
 
 import { AUDIT_ACTIONS } from "../security/audit.js";
-import { guardRoute } from "../security/route-guard.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
+import { guardRoute } from "../security/route-guard.js";
 
 export interface DraftCreateInput {
 	objectTypeCode: string;
@@ -65,7 +65,10 @@ export interface DraftUpdateResult {
 }
 
 const SECTION_DEFINITIONS = [
-	{ key: "identity", fields: ["display_name", "object_type_code", "object_subtype_code", "entity_kind"] },
+	{
+		key: "identity",
+		fields: ["display_name", "object_type_code", "object_subtype_code", "entity_kind"],
+	},
 	{ key: "location", fields: ["official_village_code", "local_region_id", "address_text"] },
 	{ key: "details", fields: [] },
 ] as const;
@@ -78,11 +81,16 @@ export async function createDraft(
 	input: DraftCreateInput,
 ): Promise<DraftCreateResult> {
 	const denied = guardRoute(ctx, "entity:create");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const validationErrors = validateDraftInput(input);
 	if (validationErrors.length > 0) {
-		return throwRouteError("VALIDATION_ERROR", validationErrors.map(e => e.message).join("; "), 400);
+		return throwRouteError(
+			"VALIDATION_ERROR",
+			validationErrors.map((e) => e.message).join("; "),
+			400,
+		);
 	}
 
 	const id = generateEntityId();
@@ -128,7 +136,8 @@ export async function updateDraft(
 	input: DraftUpdateInput,
 ): Promise<DraftUpdateResult> {
 	const denied = guardRoute(ctx, "entity:update");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const entity = await getDraftEntity(db, ctx, input.entityId);
 	if (!entity) return throwRouteError("NOT_FOUND", "Draft not found", 404);
@@ -157,9 +166,11 @@ export async function updateDraft(
 			values.push(ctx.siteId);
 			values.push(input.entityId);
 
-			await sql.raw(
-				`UPDATE awcms_sikesra_entities SET ${setClauses.join(", ")} WHERE tenant_id = ? AND site_id = ? AND id = ? AND deleted_at IS NULL`
-			).execute(db as never);
+			await sql
+				.raw(
+					`UPDATE awcms_sikesra_entities SET ${setClauses.join(", ")} WHERE tenant_id = ? AND site_id = ? AND id = ? AND deleted_at IS NULL`,
+				)
+				.execute(db as never);
 		}
 
 		if (input.section === "details") {
@@ -189,7 +200,8 @@ export async function validateEntity(
 	entityId: string,
 ): Promise<CompletenessResult> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const entity = await getEntity(db, ctx, entityId);
 	if (!entity) return throwRouteError("NOT_FOUND", "Entity not found", 404);
@@ -205,7 +217,7 @@ export async function validateEntity(
 		});
 	}
 
-	const validSections = sections.filter(s => s.isValid).length;
+	const validSections = sections.filter((s) => s.isValid).length;
 	const overallPercent = Math.round((validSections / sections.length) * 100);
 
 	return {
@@ -230,7 +242,8 @@ export async function generateSikesraId20(
 	entityId: string,
 ): Promise<CodeGenerationResult> {
 	const denied = guardRoute(ctx, "code:generate");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const entity = await getEntity(db, ctx, entityId);
 	if (!entity) return throwRouteError("NOT_FOUND", "Entity not found", 404);
@@ -240,11 +253,11 @@ export async function generateSikesraId20(
 	}
 
 	const validation = await validateEntity(db, ctx, entityId);
-	const invalidSections = validation.sections.filter(s => !s.isValid);
+	const invalidSections = validation.sections.filter((s) => !s.isValid);
 	if (invalidSections.length > 0) {
 		return throwRouteError(
 			"VALIDATION_ERROR",
-			`Cannot generate code: sections ${invalidSections.map(s => s.sectionKey).join(", ")} have errors`,
+			`Cannot generate code: sections ${invalidSections.map((s) => s.sectionKey).join(", ")} have errors`,
 			400,
 		);
 	}
@@ -281,7 +294,8 @@ export async function correctSikesraId20(
 	input: CodeCorrectionInput,
 ): Promise<CodeGenerationResult> {
 	const denied = guardRoute(ctx, "code:correct");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	if (!SIKESRA_ID_20_RE.test(input.newCode)) {
 		return throwRouteError("VALIDATION_ERROR", "Code must be exactly 20 digits", 400);
@@ -327,7 +341,11 @@ function validateDraftInput(input: DraftCreateInput): ValidationError[] {
 		errors.push({ field: "objectTypeCode", message: "Object type is required", code: "REQUIRED" });
 	}
 	if (!input.objectSubtypeCode?.trim()) {
-		errors.push({ field: "objectSubtypeCode", message: "Object subtype is required", code: "REQUIRED" });
+		errors.push({
+			field: "objectSubtypeCode",
+			message: "Object subtype is required",
+			code: "REQUIRED",
+		});
 	}
 	if (!input.entityKind?.trim()) {
 		errors.push({ field: "entityKind", message: "Entity kind is required", code: "REQUIRED" });
@@ -336,7 +354,11 @@ function validateDraftInput(input: DraftCreateInput): ValidationError[] {
 		errors.push({ field: "displayName", message: "Display name is required", code: "REQUIRED" });
 	}
 	if (!input.officialVillageCode?.trim()) {
-		errors.push({ field: "officialVillageCode", message: "Official village is required", code: "REQUIRED" });
+		errors.push({
+			field: "officialVillageCode",
+			message: "Official village is required",
+			code: "REQUIRED",
+		});
 	}
 
 	return errors;
@@ -347,13 +369,29 @@ function validateSection(section: string, patch: Record<string, unknown>): Valid
 
 	switch (section) {
 		case "identity":
-			if (patch.display_name && typeof patch.display_name === "string" && !patch.display_name.trim()) {
-				errors.push({ field: "display_name", message: "Display name cannot be empty", code: "REQUIRED" });
+			if (
+				patch.display_name &&
+				typeof patch.display_name === "string" &&
+				!patch.display_name.trim()
+			) {
+				errors.push({
+					field: "display_name",
+					message: "Display name cannot be empty",
+					code: "REQUIRED",
+				});
 			}
 			break;
 		case "location":
-			if (patch.official_village_code && typeof patch.official_village_code === "string" && !patch.official_village_code.trim()) {
-				errors.push({ field: "official_village_code", message: "Official village is required", code: "REQUIRED" });
+			if (
+				patch.official_village_code &&
+				typeof patch.official_village_code === "string" &&
+				!patch.official_village_code.trim()
+			) {
+				errors.push({
+					field: "official_village_code",
+					message: "Official village is required",
+					code: "REQUIRED",
+				});
 			}
 			break;
 	}
@@ -361,21 +399,36 @@ function validateSection(section: string, patch: Record<string, unknown>): Valid
 	return errors;
 }
 
-function validateSectionData(sectionKey: string, entity: Record<string, unknown>): ValidationError[] {
+function validateSectionData(
+	sectionKey: string,
+	entity: Record<string, unknown>,
+): ValidationError[] {
 	const errors: ValidationError[] = [];
 
 	switch (sectionKey) {
 		case "identity":
 			if (!entity.object_type_code) {
-				errors.push({ field: "object_type_code", message: "Object type is required", code: "REQUIRED" });
+				errors.push({
+					field: "object_type_code",
+					message: "Object type is required",
+					code: "REQUIRED",
+				});
 			}
 			if (!entity.display_name) {
-				errors.push({ field: "display_name", message: "Display name is required", code: "REQUIRED" });
+				errors.push({
+					field: "display_name",
+					message: "Display name is required",
+					code: "REQUIRED",
+				});
 			}
 			break;
 		case "location":
 			if (!entity.official_village_code) {
-				errors.push({ field: "official_village_code", message: "Official village is required", code: "REQUIRED" });
+				errors.push({
+					field: "official_village_code",
+					message: "Official village is required",
+					code: "REQUIRED",
+				});
 			}
 			break;
 	}
@@ -388,9 +441,16 @@ async function buildSikesraId20(
 	ctx: SikesraRequestContext,
 	entity: Record<string, unknown>,
 ): Promise<string> {
-	const villageCode = typeof entity.official_village_code === "string" ? entity.official_village_code : "0000000000";
-	const objectTypeCode = typeof entity.object_type_code === "string" ? entity.object_type_code.padEnd(2, "0").slice(0, 2) : "00";
-	const objectSubtypeCode = typeof entity.object_subtype_code === "string" ? entity.object_subtype_code.padEnd(2, "0").slice(0, 2) : "00";
+	const villageCode =
+		typeof entity.official_village_code === "string" ? entity.official_village_code : "0000000000";
+	const objectTypeCode =
+		typeof entity.object_type_code === "string"
+			? entity.object_type_code.padEnd(2, "0").slice(0, 2)
+			: "00";
+	const objectSubtypeCode =
+		typeof entity.object_subtype_code === "string"
+			? entity.object_subtype_code.padEnd(2, "0").slice(0, 2)
+			: "00";
 
 	const sequence = await getNextSequence(db, ctx, villageCode, objectTypeCode, objectSubtypeCode);
 	const sequenceStr = sequence.toString().padStart(6, "0");
@@ -527,7 +587,7 @@ async function writeEntityAudit(
 			) VALUES (
 				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
 				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
-				${ctx.roles[0] ?? 'unknown'}, ${action},
+				${ctx.roles[0] ?? "unknown"}, ${action},
 				'entity', ${entityId}, ${ctx.requestId}, 1,
 				${null}, ${JSON.stringify(metadata)},
 				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},

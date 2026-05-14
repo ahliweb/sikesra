@@ -1,8 +1,8 @@
 import { sql } from "kysely";
 
 import { AUDIT_ACTIONS, type AuditAction } from "../security/audit.js";
-import { guardRoute } from "../security/route-guard.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
+import { guardRoute } from "../security/route-guard.js";
 
 export interface VerificationSubmitInput {
 	entityId: string;
@@ -79,10 +79,12 @@ export async function submitForVerification(
 	input: VerificationSubmitInput,
 ): Promise<VerificationSubmitResult> {
 	const denied = guardRoute(ctx, "verification:submit");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const entity = await getEntityForVerification(db, ctx, input.entityId);
-	if (!entity) return throwRouteError("NOT_FOUND", "Entity not found or not eligible for verification", 404);
+	if (!entity)
+		return throwRouteError("NOT_FOUND", "Entity not found or not eligible for verification", 404);
 
 	const previousStatus = entity.status_verification;
 	const nextStatus = "pending_verification";
@@ -126,7 +128,8 @@ export async function getVerificationQueue(
 	filters: VerificationQueueFilters,
 ): Promise<{ items: VerificationQueueItem[]; nextCursor?: string }> {
 	const denied = guardRoute(ctx, "verification:verify");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const limit = Math.min(Math.max(filters.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
 
@@ -206,14 +209,16 @@ export async function makeVerificationDecision(
 	input: VerificationDecisionInput,
 ): Promise<VerificationDecisionResult> {
 	const denied = guardRoute(ctx, "verification:verify");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	if (!input.note.trim()) {
 		return throwRouteError("VALIDATION_ERROR", "Note is required for verification decisions", 400);
 	}
 
 	const entity = await getEntityForVerification(db, ctx, input.entityId);
-	if (!entity) return throwRouteError("NOT_FOUND", "Entity not found or not eligible for verification", 404);
+	if (!entity)
+		return throwRouteError("NOT_FOUND", "Entity not found or not eligible for verification", 404);
 
 	const previousStatus = entity.status_verification;
 	let nextStatus: string;
@@ -246,11 +251,12 @@ export async function makeVerificationDecision(
 			AND deleted_at IS NULL
 	`.execute(db as never);
 
-	const auditAction = input.decision === "verify"
-		? AUDIT_ACTIONS.VERIFICATION_VERIFY
-		: input.decision === "reject"
-			? AUDIT_ACTIONS.VERIFICATION_REJECT
-			: AUDIT_ACTIONS.VERIFICATION_SUBMIT;
+	const auditAction =
+		input.decision === "verify"
+			? AUDIT_ACTIONS.VERIFICATION_VERIFY
+			: input.decision === "reject"
+				? AUDIT_ACTIONS.VERIFICATION_REJECT
+				: AUDIT_ACTIONS.VERIFICATION_SUBMIT;
 
 	const timelineId = await writeVerificationTimelineEntry(db, ctx, {
 		entityId: input.entityId,
@@ -284,7 +290,8 @@ export async function getVerificationTimeline(
 	entityId: string,
 ): Promise<VerificationTimelineEntry[]> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<{
 		id: string;
@@ -359,8 +366,8 @@ async function writeVerificationTimelineEntry(
 			request_id, ip_address, created_at
 		) VALUES (
 			${id}, ${ctx.tenantId}, ${ctx.siteId}, ${input.entityId},
-			${ctx.userId}, ${ctx.roles[0] ?? 'unknown'},
-			${input.level ?? 'desa'}, ${input.action}, ${input.previousStatus}, ${input.nextStatus},
+			${ctx.userId}, ${ctx.roles[0] ?? "unknown"},
+			${input.level ?? "desa"}, ${input.action}, ${input.previousStatus}, ${input.nextStatus},
 			${input.note},
 			${ctx.requestId}, ${ctx.ipAddress ?? null},
 			datetime('now')
@@ -370,11 +377,7 @@ async function writeVerificationTimelineEntry(
 	return id;
 }
 
-async function getEntityForVerification(
-	db: unknown,
-	ctx: SikesraRequestContext,
-	entityId: string,
-) {
+async function getEntityForVerification(db: unknown, ctx: SikesraRequestContext, entityId: string) {
 	const result = await sql<{
 		id: string;
 		status_verification: string;
@@ -416,7 +419,9 @@ function buildQueueWhereSql(ctx: SikesraRequestContext, filters: VerificationQue
 		);
 	}
 	if (filters.cursor) {
-		conditions.push(sql`(entity.updated_at, entity.id) > (${sql.ref(filters.cursor)}, ${sql.ref(filters.cursor)})`);
+		conditions.push(
+			sql`(entity.updated_at, entity.id) > (${sql.ref(filters.cursor)}, ${sql.ref(filters.cursor)})`,
+		);
 	}
 
 	return sql.join(conditions, sql` AND `);
@@ -450,7 +455,7 @@ async function writeVerificationAudit(
 			) VALUES (
 				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
 				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
-				${ctx.roles[0] ?? 'unknown'}, ${action},
+				${ctx.roles[0] ?? "unknown"}, ${action},
 				'entity', ${entityId}, ${ctx.requestId}, 1,
 				${null}, ${JSON.stringify(metadata)},
 				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},

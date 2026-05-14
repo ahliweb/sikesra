@@ -12,10 +12,7 @@
 	},
 	"routes": {
 		"public": ["/sikesra"],
-		"admin": [
-			"/_emdash/admin/plugins/sikesra/",
-			"/_emdash/admin/plugins/sikesra/operations"
-		],
+		"admin": ["/_emdash/admin/plugins/sikesra/", "/_emdash/admin/plugins/sikesra/operations"],
 		"apiNamespace": "/_emdash/api/plugins/sikesra/v1/*"
 	},
 	"permissions": [
@@ -63,7 +60,10 @@
 		"exportJobs": { "collection": "exportJobs", "purpose": "export job lifecycle overlay storage" },
 		"importBatches": { "collection": "importBatches", "purpose": "import batch overlay storage" },
 		"importRows": { "collection": "importRows", "purpose": "import staging row overlay storage" },
-		"promotedEntities": { "collection": "promotedEntities", "purpose": "promotion output overlay storage" },
+		"promotedEntities": {
+			"collection": "promotedEntities",
+			"purpose": "promotion output overlay storage"
+		},
 		"auditEntries": { "collection": "auditEntries", "purpose": "audit overlay storage" }
 	},
 	"migrations": {

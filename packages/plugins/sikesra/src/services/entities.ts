@@ -1,19 +1,8 @@
 import { sql } from "kysely";
 
-import {
-	evaluateAbac,
-	buildAbacSubject,
-	type AbacResource,
-} from "../security/abac.js";
-import {
-	maskAddress,
-	maskProtectedName,
-	type MaskingContext,
-} from "../security/masking.js";
-import {
-	SIKESRA_PERMISSIONS,
-	type SikesraPermission,
-} from "../security/permissions.js";
+import { evaluateAbac, buildAbacSubject, type AbacResource } from "../security/abac.js";
+import { maskAddress, maskProtectedName, type MaskingContext } from "../security/masking.js";
+import { SIKESRA_PERMISSIONS, type SikesraPermission } from "../security/permissions.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { checkRegionScope, guardRoute } from "../security/route-guard.js";
 
@@ -129,7 +118,8 @@ export async function listEntities(
 	filters: EntityListFilters,
 ): Promise<{ items: EntitySummary[]; nextCursor?: string }> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const limit = Math.min(Math.max(filters.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
 	const result = await sql<EntityRow>`
@@ -202,7 +192,8 @@ export async function getEntityDetail(
 	entityId: string,
 ): Promise<EntityDetailResponse> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<EntityRow>`
 		SELECT
@@ -283,7 +274,9 @@ export async function getEntityDetail(
 	if (!abac.allowed) return throwRouteError("NOT_FOUND", "Entity not found", 404);
 
 	const detailTable = DETAIL_TABLES[row.object_type_code];
-	const detailRecord = detailTable ? await getDetailRecord(db, ctx, detailTable, row.id) : undefined;
+	const detailRecord = detailTable
+		? await getDetailRecord(db, ctx, detailTable, row.id)
+		: undefined;
 	const masking = buildMaskingContext(ctx);
 
 	return {
@@ -321,7 +314,8 @@ function buildEntityWhereSql(ctx: SikesraRequestContext, filters: EntityListFilt
 			)`,
 		);
 	}
-	if (filters.objectTypeCode) conditions.push(sql`entity.object_type_code = ${filters.objectTypeCode}`);
+	if (filters.objectTypeCode)
+		conditions.push(sql`entity.object_type_code = ${filters.objectTypeCode}`);
 	if (filters.objectSubtypeCode) {
 		conditions.push(sql`entity.object_subtype_code = ${filters.objectSubtypeCode}`);
 	}
@@ -329,7 +323,8 @@ function buildEntityWhereSql(ctx: SikesraRequestContext, filters: EntityListFilt
 	if (filters.officialVillageCode) {
 		conditions.push(sql`entity.official_village_code = ${filters.officialVillageCode}`);
 	}
-	if (filters.localRegionId) conditions.push(sql`entity.local_region_id = ${filters.localRegionId}`);
+	if (filters.localRegionId)
+		conditions.push(sql`entity.local_region_id = ${filters.localRegionId}`);
 	if (filters.statusData) conditions.push(sql`entity.status_data = ${filters.statusData}`);
 	if (filters.statusVerification) {
 		conditions.push(sql`entity.status_verification = ${filters.statusVerification}`);
@@ -389,10 +384,10 @@ function mapEntitySummary(row: EntityRow, ctx: SikesraRequestContext): EntitySum
 		localRegion:
 			row.local_region_id && row.local_region_name && row.local_region_level
 				? {
-					id: row.local_region_id,
-					name: masking.canRevealSensitive ? row.local_region_name : row.local_region_level,
-					level: row.local_region_level,
-				}
+						id: row.local_region_id,
+						name: masking.canRevealSensitive ? row.local_region_name : row.local_region_level,
+						level: row.local_region_level,
+					}
 				: undefined,
 		statusData: row.status_data,
 		statusVerification: row.status_verification,

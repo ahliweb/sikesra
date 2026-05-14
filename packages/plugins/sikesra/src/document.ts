@@ -317,19 +317,29 @@ export async function replaceDocument(
 		throw new Error("DOCUMENT_NOT_FOUND");
 	}
 
-	await saveDocumentRecord(runtime, input.newFileObjectId, {
-		...replacement,
-		entityId: existing.entityId,
-		documentType: input.newDocumentType,
-		classification: input.newClassification,
-		status: "uploaded",
-		reason: input.reason,
-	}, ctx);
-	await saveDocumentRecord(runtime, input.oldDocumentId, {
-		...existing,
-		status: "replaced",
-		replacedById: input.newFileObjectId,
-	}, ctx);
+	await saveDocumentRecord(
+		runtime,
+		input.newFileObjectId,
+		{
+			...replacement,
+			entityId: existing.entityId,
+			documentType: input.newDocumentType,
+			classification: input.newClassification,
+			status: "uploaded",
+			reason: input.reason,
+		},
+		ctx,
+	);
+	await saveDocumentRecord(
+		runtime,
+		input.oldDocumentId,
+		{
+			...existing,
+			status: "replaced",
+			replacedById: input.newFileObjectId,
+		},
+		ctx,
+	);
 	await writeDocumentAudit(runtime, ctx, AUDIT_ACTIONS.DOCUMENT_REPLACE, input.oldDocumentId, {
 		newDocumentId: input.newFileObjectId,
 		reason: input.reason,
@@ -633,49 +643,51 @@ async function listEntityDocumentsFromDb(
 		ORDER BY file.created_at DESC
 	`.execute(db as never);
 
-	return result.rows.map((row: {
-		id: string;
-		tenant_id: string;
-		site_id: string;
-		r2_key: string;
-		original_filename: string;
-		mime_type: string;
-		size_bytes: number;
-		checksum_sha256: string | null;
-		file_classification: DocumentClassification;
-		document_type: string | null;
-		is_verified: number;
-		verified_by: string | null;
-		verified_at: string | null;
-		superseded_by_id: string | null;
-		file_created_at: string;
-		file_created_by: string | null;
-		supporting_document_type: string | null;
-		supporting_classification: DocumentClassification | null;
-		supporting_notes: string | null;
-		entity_id: string;
-	}) => ({
-		id: row.id,
-		data: {
-			tenantId: row.tenant_id,
-			siteId: row.site_id,
-			entityId: row.entity_id,
-			documentType: row.supporting_document_type ?? row.document_type ?? undefined,
-			classification: row.supporting_classification ?? row.file_classification,
-			originalFilename: row.original_filename,
-			mimeType: row.mime_type,
-			sizeBytes: Number(row.size_bytes),
-			checksumSha256: row.checksum_sha256 ?? undefined,
-			status: mapDocumentStatus(row),
-			contentKey: row.r2_key,
-			uploadedBy: row.file_created_by ?? "unknown",
-			uploadedAt: row.file_created_at,
-			verifiedAt: row.verified_at ?? undefined,
-			verifiedBy: row.verified_by ?? undefined,
-			verificationNote: row.supporting_notes ?? undefined,
-			replacedById: row.superseded_by_id ?? undefined,
-		},
-	}));
+	return result.rows.map(
+		(row: {
+			id: string;
+			tenant_id: string;
+			site_id: string;
+			r2_key: string;
+			original_filename: string;
+			mime_type: string;
+			size_bytes: number;
+			checksum_sha256: string | null;
+			file_classification: DocumentClassification;
+			document_type: string | null;
+			is_verified: number;
+			verified_by: string | null;
+			verified_at: string | null;
+			superseded_by_id: string | null;
+			file_created_at: string;
+			file_created_by: string | null;
+			supporting_document_type: string | null;
+			supporting_classification: DocumentClassification | null;
+			supporting_notes: string | null;
+			entity_id: string;
+		}) => ({
+			id: row.id,
+			data: {
+				tenantId: row.tenant_id,
+				siteId: row.site_id,
+				entityId: row.entity_id,
+				documentType: row.supporting_document_type ?? row.document_type ?? undefined,
+				classification: row.supporting_classification ?? row.file_classification,
+				originalFilename: row.original_filename,
+				mimeType: row.mime_type,
+				sizeBytes: Number(row.size_bytes),
+				checksumSha256: row.checksum_sha256 ?? undefined,
+				status: mapDocumentStatus(row),
+				contentKey: row.r2_key,
+				uploadedBy: row.file_created_by ?? "unknown",
+				uploadedAt: row.file_created_at,
+				verifiedAt: row.verified_at ?? undefined,
+				verifiedBy: row.verified_by ?? undefined,
+				verificationNote: row.supporting_notes ?? undefined,
+				replacedById: row.superseded_by_id ?? undefined,
+			},
+		}),
+	);
 }
 
 function mapDocumentStatus(row: {

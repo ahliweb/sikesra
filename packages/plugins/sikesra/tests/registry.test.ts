@@ -1,18 +1,15 @@
 import Database from "better-sqlite3";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Kysely, SqliteDialect } from "kysely";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { SIKESRA_PERMISSION_LIST } from "../src/security/permissions.js";
+import { buildTrustedRequestContext } from "../src/security/request-context.js";
 import {
 	getEntityDetail,
 	listEntities,
 	type EntityDetailResponse,
 } from "../src/services/entities.js";
-import {
-	listLocalRegions,
-	listOfficialRegions,
-} from "../src/services/regions.js";
-import { buildTrustedRequestContext } from "../src/security/request-context.js";
-import { SIKESRA_PERMISSION_LIST } from "../src/security/permissions.js";
+import { listLocalRegions, listOfficialRegions } from "../src/services/regions.js";
 
 let sqlite: Database.Database;
 let db: Kysely<unknown>;

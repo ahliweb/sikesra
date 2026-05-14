@@ -323,7 +323,7 @@ function isSafePublicFallbackError(error: unknown): boolean {
 		message.includes("no such table") ||
 		((message.includes("does not exist") || message.includes("doesn't exist")) &&
 			(message.includes("relation") || message.includes("table"))) ||
-			message.includes("database not configured") ||
-			message.includes("cannot find package 'emdash/runtime'")
+		message.includes("database not configured") ||
+		message.includes("cannot find package 'emdash/runtime'")
 	);
 }

@@ -38,7 +38,8 @@ export async function listOfficialRegions(
 	filters: OfficialRegionFilters,
 ): Promise<OfficialRegionSummary[]> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<OfficialRegionSummary>`
 		SELECT code, name, level, parent_code AS parentCode
@@ -57,7 +58,8 @@ export async function listLocalRegions(
 	filters: LocalRegionFilters,
 ): Promise<LocalRegionSummary[]> {
 	const denied = guardRoute(ctx, "entity:read");
-	if (!denied.allowed) return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	if (filters.officialVillageCode && !checkRegionScope(ctx, filters.officialVillageCode)) {
 		return [];
@@ -101,7 +103,11 @@ function buildOfficialWhereSql(ctx: SikesraRequestContext, filters: OfficialRegi
 	return sql.join(conditions, sql` AND `);
 }
 
-async function throwRouteError(code: string, message: string | undefined, status: number): Promise<never> {
+async function throwRouteError(
+	code: string,
+	message: string | undefined,
+	status: number,
+): Promise<never> {
 	const { PluginRouteError } = await import("emdash");
 	throw new PluginRouteError(code, message || code, status);
 }

@@ -10,12 +10,7 @@
 		"officialContact": "",
 		"smallCellThreshold": 5,
 		"maxUploadBytes": 10485760,
-		"allowedMimeTypes": [
-			"application/pdf",
-			"image/jpeg",
-			"image/png",
-			"image/webp"
-		],
+		"allowedMimeTypes": ["application/pdf", "image/jpeg", "image/png", "image/webp"],
 		"exportMaxSyncRows": 5000,
 		"requireReasonForHighlyRestrictedDownload": true,
 		"featureFlags": {
