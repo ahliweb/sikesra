@@ -1,24 +1,26 @@
 #!/usr/bin/env node
-// Symlink demos/cloudflare/dist -> dist at repo root for Cloudflare Pages deployment.
+// Copy demos/cloudflare/dist to dist at repo root for Cloudflare Pages deployment.
+// Uses copy instead of symlink because Cloudflare Pages cannot follow symlinks
+// in the build output directory.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const target = path.join(root, "demos", "cloudflare", "dist");
-const link = path.join(root, "dist");
+const source = path.join(root, "demos", "cloudflare", "dist");
+const target = path.join(root, "dist");
 
-if (!fs.existsSync(target)) {
-	console.error(`Error: ${target} does not exist. Run the demo build first.`);
+if (!fs.existsSync(source)) {
+	console.error(`Error: ${source} does not exist. Run the demo build first.`);
 	process.exit(1);
 }
 
 try {
-	fs.rmSync(link, { recursive: true, force: true });
-	fs.symlinkSync(target, link, "junction");
-	console.log(`Symlinked ${link} -> ${target}`);
+	fs.rmSync(target, { recursive: true, force: true });
+	fs.cpSync(source, target, { recursive: true });
+	console.log(`Copied ${source} -> ${target}`);
 } catch (error) {
-	console.error("Failed to create dist symlink:", error.message);
+	console.error("Failed to copy dist directory:", error.message);
 	process.exit(1);
 }
