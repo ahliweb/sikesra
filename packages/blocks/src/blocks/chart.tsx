@@ -148,7 +148,7 @@ export function ChartBlockComponent({ block }: { block: ChartBlock }) {
 	const isDarkMode = useIsDarkMode();
 
 	return (
-		<div className="rounded-lg border border-kumo-line p-4">
+		<div className="rounded-lg border border-kumo-line bg-kumo-base p-4">
 			{block.config.chart_type === "timeseries" ? (
 				<TimeseriesChartBlock block={block} isDarkMode={isDarkMode} />
 			) : (

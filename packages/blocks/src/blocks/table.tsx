@@ -71,10 +71,10 @@ export function TableBlockComponent({
 	}
 
 	return (
-		<div className="overflow-x-auto">
+		<div className="overflow-x-auto rounded-lg border border-kumo-line bg-kumo-base">
 			<table className="w-full text-start text-sm">
 				<thead>
-					<tr className="border-b border-kumo-line">
+					<tr className="border-b border-kumo-line bg-kumo-tint">
 						{block.columns.map((col) => (
 							<th
 								key={col.key}
@@ -96,7 +96,7 @@ export function TableBlockComponent({
 				</thead>
 				<tbody>
 					{block.rows.map((row, i) => (
-						<tr key={i} className="border-b border-kumo-line last:border-0">
+						<tr key={i} className="border-b border-kumo-line last:border-0 hover:bg-kumo-tint/50">
 							{block.columns.map((col) => (
 								<td key={col.key} className="px-3 py-2 text-kumo-default">
 									{formatCell(row[col.key], col.format)}

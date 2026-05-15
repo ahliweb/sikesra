@@ -9,11 +9,13 @@ export function SectionBlockComponent({
 	onAction: (interaction: BlockInteraction) => void;
 }) {
 	return (
-		<div className="flex items-start justify-between gap-4">
-			<div className="flex-1 text-kumo-default">{block.text}</div>
-			{block.accessory && (
-				<div className="flex-shrink-0">{renderElement(block.accessory, onAction)}</div>
-			)}
+		<div className="rounded-lg border border-kumo-line bg-kumo-base p-4">
+			<div className="flex items-start justify-between gap-4">
+				<div className="flex-1 text-kumo-default">{block.text}</div>
+				{block.accessory && (
+					<div className="flex-shrink-0">{renderElement(block.accessory, onAction)}</div>
+				)}
+			</div>
 		</div>
 	);
 }

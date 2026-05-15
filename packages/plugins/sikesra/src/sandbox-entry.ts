@@ -1,5 +1,6 @@
 import { definePlugin } from "emdash";
 
+import { buildAdminPage } from "./admin-pages.js";
 import {
 	completeUpload,
 	generateUploadUrl,
@@ -78,7 +79,6 @@ import {
 	getAdminPageTarget,
 	type AdminInteraction,
 } from "./shared.js";
-import { buildAdminPage } from "./admin-pages.js";
 
 export default definePlugin({
 	routes: {
@@ -93,9 +93,10 @@ export default definePlugin({
 					const requestContext = buildRequestContextFromRoute(routeCtx);
 					const inputType = routeCtx.input?.type;
 					const isAction = inputType === "block_action" || inputType === "form_submit";
-					const action = isAction && inputType
-						? { type: inputType, values: routeCtx.input as Record<string, unknown> }
-						: undefined;
+					const action =
+						isAction && inputType
+							? { type: inputType, values: routeCtx.input as Record<string, unknown> }
+							: undefined;
 					return await buildAdminPage(db, requestContext, target, action);
 				} catch {
 					// Fall back to static blocks if DB is not available

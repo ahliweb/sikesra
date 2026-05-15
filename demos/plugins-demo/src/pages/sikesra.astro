@@ -167,21 +167,27 @@
 				return response.json();
 			}
 
+			function safeSetText(id, value) {
+				const el = document.getElementById(id);
+				if (el) el.textContent = value ?? "";
+			}
+
 			Promise.all([loadJson("/metadata"), loadJson("/summary")])
 				.then(([metadata, summary]) => {
-					document.getElementById("enabled").textContent = metadata.enabled ? "Aktif" : "Nonaktif";
-					document.getElementById("description").textContent = metadata.description;
-					document.getElementById("scope-note").textContent = metadata.dataScopeNote;
-					document.getElementById("total-entities").textContent = String(summary.kpis.totalEntities);
-					document.getElementById("verified-entities").textContent = String(summary.kpis.verifiedEntities);
-					document.getElementById("active-villages").textContent = String(summary.kpis.activeVillages);
-					document.getElementById("caveat").textContent = summary.caveat;
+					const kpis = summary?.kpis ?? {};
+					safeSetText("enabled", metadata?.enabled ? "Aktif" : "Nonaktif");
+					safeSetText("description", metadata?.description);
+					safeSetText("scope-note", metadata?.dataScopeNote);
+					safeSetText("total-entities", String(kpis.totalEntities ?? 0));
+					safeSetText("verified-entities", String(kpis.verifiedEntities ?? 0));
+					safeSetText("active-villages", String(kpis.activeVillages ?? 0));
+					safeSetText("caveat", summary?.caveat);
 					return null;
 				})
 				.catch((error) => {
-					document.getElementById("enabled").textContent = "Gagal";
-					document.getElementById("description").textContent =
-						"Gagal memuat data SIKESRA dari plugin shell.";
+					safeSetText("enabled", "Gagal");
+					safeSetText("description", "Gagal memuat data SIKESRA dari plugin shell.");
+					safeSetText("scope-note", "Silakan coba lagi nanti.");
 					console.error(error);
 					return null;
 				});

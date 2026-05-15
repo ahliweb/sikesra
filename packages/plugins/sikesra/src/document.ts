@@ -93,8 +93,14 @@ export interface DocumentDownloadResult {
 export interface DocumentStorageContext {
 	db?: unknown;
 	r2?: {
-		put(key: string, content: ArrayBuffer | Blob | string, options?: { contentType?: string }): Promise<void>;
-		get(key: string): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; body: ReadableStream | null } | null>;
+		put(
+			key: string,
+			content: ArrayBuffer | Blob | string,
+			options?: { contentType?: string },
+		): Promise<void>;
+		get(
+			key: string,
+		): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; body: ReadableStream | null } | null>;
 	};
 	storage: {
 		documents: {
@@ -201,7 +207,9 @@ export async function completeUpload(
 	if (input.contentBase64) {
 		if (runtime.r2) {
 			const binary = Uint8Array.from(atob(input.contentBase64), (c) => c.charCodeAt(0));
-			await runtime.r2.put(contentKey, binary.buffer as ArrayBuffer, { contentType: input.mimeType ?? existing.mimeType });
+			await runtime.r2.put(contentKey, binary.buffer as ArrayBuffer, {
+				contentType: input.mimeType ?? existing.mimeType,
+			});
 		} else {
 			await runtime.kv.set(contentKey, input.contentBase64);
 		}

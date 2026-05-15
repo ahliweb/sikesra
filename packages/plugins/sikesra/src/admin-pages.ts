@@ -48,7 +48,12 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -66,6 +71,13 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 		{ type: "stats", items: kpis },
 		{ type: "divider" },
 	];
+
+	// Context info card
+	blocks.push({
+		type: "section",
+		text: "Gunakan halaman ini sebagai surface admin SIKESRA yang stabil selama rebuild bertahap berlangsung. Akses detail tetap harus mengikuti auth, permission, dan ABAC di backend.",
+	});
+	blocks.push({ type: "divider" });
 
 	// Work queues
 	if (queues.pendingVerification > 0) {
@@ -123,7 +135,11 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 			empty_text: "Tidak ada aktivitas terbaru",
 		});
 	} else {
-		blocks.push({ type: "empty", title: "Belum Ada Aktivitas", description: "Aktivitas akan muncul setelah operasi dilakukan" });
+		blocks.push({
+			type: "empty",
+			title: "Belum Ada Aktivitas",
+			description: "Aktivitas akan muncul setelah operasi dilakukan",
+		});
 	}
 
 	// Quick actions
@@ -132,7 +148,12 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 	blocks.push({
 		type: "actions",
 		elements: [
-			{ type: "button", action_id: "navigate:entities/new", label: "Tambah Entitas Baru", style: "primary" },
+			{
+				type: "button",
+				action_id: "navigate:entities/new",
+				label: "Tambah Entitas Baru",
+				style: "primary",
+			},
 			{ type: "button", action_id: "navigate:entities", label: "Lihat Registry" },
 			{ type: "button", action_id: "navigate:imports", label: "Import Excel" },
 			{ type: "button", action_id: "navigate:reports", label: "Laporan" },
@@ -147,7 +168,10 @@ async function handleDashboardAction(
 	_ctx: SikesraRequestContext,
 	action: { type: string; values?: Record<string, unknown> },
 ): Promise<BlockResponse> {
-	if (action.type === "block_action" && action.values?.action_id?.toString().startsWith("navigate:")) {
+	if (
+		action.type === "block_action" &&
+		action.values?.action_id?.toString().startsWith("navigate:")
+	) {
 		const target = action.values.action_id.toString().replace("navigate:", "");
 		return {
 			blocks: [
@@ -192,7 +216,12 @@ async function loadDashboardKpis(db: unknown, ctx: SikesraRequestContext) {
 		{ label: "Total Entitas", value: row?.total ?? 0, description: "Semua entitas aktif" },
 		{ label: "Draft", value: row?.draft ?? 0, description: "Belum selesai diisi" },
 		{ label: "Menunggu Verifikasi", value: row?.submitted ?? 0, description: "Sudah diajukan" },
-		{ label: "Terverifikasi", value: row?.verified ?? 0, description: "Sudah diverifikasi", trend: "up" as const },
+		{
+			label: "Terverifikasi",
+			value: row?.verified ?? 0,
+			description: "Sudah diverifikasi",
+			trend: "up" as const,
+		},
 		{ label: "Perlu Revisi", value: row?.need_revision ?? 0, description: "Butuh perbaikan" },
 		{ label: "Ditolak", value: row?.rejected ?? 0, description: "Tidak memenuhi syarat" },
 	];
@@ -218,7 +247,11 @@ async function loadWorkQueues(db: unknown, ctx: SikesraRequestContext): Promise<
 	};
 }
 
-async function loadRecentAudit(db: unknown, ctx: SikesraRequestContext, limit: number): Promise<Array<Record<string, unknown>>> {
+async function loadRecentAudit(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	limit: number,
+): Promise<Array<Record<string, unknown>>> {
 	const result = await sql<{
 		action: string;
 		actor_id: string | null;
@@ -249,7 +282,12 @@ async function buildAuditList(db: unknown, ctx: SikesraRequestContext): Promise<
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -278,7 +316,11 @@ async function buildAuditList(db: unknown, ctx: SikesraRequestContext): Promise<
 	];
 
 	if (result.rows.length === 0) {
-		blocks.push({ type: "empty", title: "Tidak Ada Audit Log", description: "Belum ada aktivitas yang tercatat" });
+		blocks.push({
+			type: "empty",
+			title: "Tidak Ada Audit Log",
+			description: "Belum ada aktivitas yang tercatat",
+		});
 	} else {
 		blocks.push({
 			type: "table",
@@ -327,14 +369,25 @@ async function handleAuditAction(
 	}
 	if (action.values?.action_id === "audit:export") {
 		return {
-			blocks: [{ type: "banner", variant: "info", title: "Export Dimulai", description: "Audit log sedang diekspor" }],
+			blocks: [
+				{
+					type: "banner",
+					variant: "info",
+					title: "Export Dimulai",
+					description: "Audit log sedang diekspor",
+				},
+			],
 			toast: { message: "Export audit log dimulai", type: "info" },
 		};
 	}
 	return { blocks: [] };
 }
 
-async function buildAuditDetail(db: unknown, ctx: SikesraRequestContext, auditId: string): Promise<BlockResponse> {
+async function buildAuditDetail(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	auditId: string,
+): Promise<BlockResponse> {
 	const result = await sql<{
 		id: string;
 		action: string;
@@ -360,7 +413,14 @@ async function buildAuditDetail(db: unknown, ctx: SikesraRequestContext, auditId
 	const row = result.rows[0];
 	if (!row) {
 		return {
-			blocks: [{ type: "banner", variant: "error", title: "Tidak Ditemukan", description: "Audit log tidak ditemukan" }],
+			blocks: [
+				{
+					type: "banner",
+					variant: "error",
+					title: "Tidak Ditemukan",
+					description: "Audit log tidak ditemukan",
+				},
+			],
 		};
 	}
 
@@ -386,7 +446,12 @@ async function buildAuditDetail(db: unknown, ctx: SikesraRequestContext, auditId
 			{
 				type: "actions",
 				elements: [
-					{ type: "button", action_id: "audit:back_to_list", label: "Kembali ke Daftar", style: "secondary" },
+					{
+						type: "button",
+						action_id: "audit:back_to_list",
+						label: "Kembali ke Daftar",
+						style: "secondary",
+					},
 				],
 			},
 		],
@@ -400,7 +465,12 @@ async function buildSettings(db: unknown, ctx: SikesraRequestContext): Promise<B
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -439,12 +509,46 @@ async function buildSettings(db: unknown, ctx: SikesraRequestContext): Promise<B
 			{
 				type: "form",
 				fields: [
-					{ type: "toggle", action_id: "publicEnabled", label: "Aktifkan Halaman Publik", initial_value: settings.publicEnabled },
-					{ type: "text_input", action_id: "publicTitle", label: "Judul Halaman Publik", initial_value: settings.publicTitle },
-					{ type: "text_input", action_id: "publicDescription", label: "Deskripsi Halaman Publik", initial_value: settings.publicDescription, multiline: true },
-					{ type: "text_input", action_id: "dataScopeNote", label: "Catatan Lingkup Data", initial_value: settings.dataScopeNote, multiline: true },
-					{ type: "text_input", action_id: "officialContact", label: "Kontak Resmi", initial_value: settings.officialContact },
-					{ type: "number_input", action_id: "smallCellThreshold", label: "Batas Supresi Sel Kecil", initial_value: settings.smallCellThreshold, min: 1, max: 20 },
+					{
+						type: "toggle",
+						action_id: "publicEnabled",
+						label: "Aktifkan Halaman Publik",
+						initial_value: settings.publicEnabled,
+					},
+					{
+						type: "text_input",
+						action_id: "publicTitle",
+						label: "Judul Halaman Publik",
+						initial_value: settings.publicTitle,
+					},
+					{
+						type: "text_input",
+						action_id: "publicDescription",
+						label: "Deskripsi Halaman Publik",
+						initial_value: settings.publicDescription,
+						multiline: true,
+					},
+					{
+						type: "text_input",
+						action_id: "dataScopeNote",
+						label: "Catatan Lingkup Data",
+						initial_value: settings.dataScopeNote,
+						multiline: true,
+					},
+					{
+						type: "text_input",
+						action_id: "officialContact",
+						label: "Kontak Resmi",
+						initial_value: settings.officialContact,
+					},
+					{
+						type: "number_input",
+						action_id: "smallCellThreshold",
+						label: "Batas Supresi Sel Kecil",
+						initial_value: settings.smallCellThreshold,
+						min: 1,
+						max: 20,
+					},
 				],
 				submit: { label: "Simpan Pengaturan", action_id: "settings:update" },
 			},
@@ -496,7 +600,9 @@ async function handleSettingsAction(
 			params.push(ctx.siteId);
 
 			await sql
-				.raw(`UPDATE awcms_sikesra_settings SET ${updates.join(", ")} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`)
+				.raw(
+					`UPDATE awcms_sikesra_settings SET ${updates.join(", ")} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+				)
 				.execute(db as never);
 		}
 
@@ -519,7 +625,12 @@ async function handleSettingsAction(
 
 		return {
 			blocks: [
-				{ type: "banner", variant: "alert", title: "Pengaturan Disimpan", description: "Perubahan telah disimpan dengan sukses" },
+				{
+					type: "banner",
+					variant: "alert",
+					title: "Pengaturan Disimpan",
+					description: "Perubahan telah disimpan dengan sukses",
+				},
 			],
 			toast: { message: "Pengaturan berhasil disimpan", type: "success" },
 		};
@@ -535,7 +646,12 @@ async function buildOperations(db: unknown, ctx: SikesraRequestContext): Promise
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -547,9 +663,19 @@ async function buildOperations(db: unknown, ctx: SikesraRequestContext): Promise
 		{
 			type: "actions",
 			elements: [
-				{ type: "button", action_id: "navigate:documents", label: "Kelola Dokumen", style: "primary" },
+				{
+					type: "button",
+					action_id: "navigate:documents",
+					label: "Kelola Dokumen",
+					style: "primary",
+				},
 				{ type: "button", action_id: "navigate:imports", label: "Import Excel", style: "primary" },
-				{ type: "button", action_id: "navigate:reports", label: "Laporan & Export", style: "primary" },
+				{
+					type: "button",
+					action_id: "navigate:reports",
+					label: "Laporan & Export",
+					style: "primary",
+				},
 			],
 		},
 		{ type: "divider" },
@@ -586,7 +712,12 @@ async function buildEntityList(db: unknown, ctx: SikesraRequestContext): Promise
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -623,21 +754,36 @@ async function buildEntityList(db: unknown, ctx: SikesraRequestContext): Promise
 	blocks.push({
 		type: "form",
 		fields: [
-			{ type: "text_input", action_id: "keyword", label: "Kata Kunci", placeholder: "Cari nama atau ID" },
-			{ type: "select", action_id: "statusVerification", label: "Status Verifikasi", options: [
-				{ label: "Semua", value: "" },
-				{ label: "Draft", value: "draft" },
-				{ label: "Submitted", value: "submitted" },
-				{ label: "Verified", value: "verified" },
-				{ label: "Need Revision", value: "need_revision" },
-				{ label: "Rejected", value: "rejected" },
-			]},
-			{ type: "select", action_id: "sensitivityLevel", label: "Sensitivitas", options: [
-				{ label: "Semua", value: "" },
-				{ label: "Normal", value: "normal" },
-				{ label: "Sensitive", value: "sensitive" },
-				{ label: "Highly Restricted", value: "highly_restricted" },
-			]},
+			{
+				type: "text_input",
+				action_id: "keyword",
+				label: "Kata Kunci",
+				placeholder: "Cari nama atau ID",
+			},
+			{
+				type: "select",
+				action_id: "statusVerification",
+				label: "Status Verifikasi",
+				options: [
+					{ label: "Semua", value: "" },
+					{ label: "Draft", value: "draft" },
+					{ label: "Submitted", value: "submitted" },
+					{ label: "Verified", value: "verified" },
+					{ label: "Need Revision", value: "need_revision" },
+					{ label: "Rejected", value: "rejected" },
+				],
+			},
+			{
+				type: "select",
+				action_id: "sensitivityLevel",
+				label: "Sensitivitas",
+				options: [
+					{ label: "Semua", value: "" },
+					{ label: "Normal", value: "normal" },
+					{ label: "Sensitive", value: "sensitive" },
+					{ label: "Highly Restricted", value: "highly_restricted" },
+				],
+			},
 		],
 		submit: { label: "Filter", action_id: "entities:filter" },
 	});
@@ -650,7 +796,12 @@ async function buildEntityList(db: unknown, ctx: SikesraRequestContext): Promise
 			title: "Tidak Ada Entitas",
 			description: "Belum ada entitas yang terdaftar",
 			actions: [
-				{ type: "button", action_id: "navigate:entities/new", label: "Tambah Entitas Baru", style: "primary" },
+				{
+					type: "button",
+					action_id: "navigate:entities/new",
+					label: "Tambah Entitas Baru",
+					style: "primary",
+				},
 			],
 		});
 	} else {
@@ -699,7 +850,11 @@ async function handleEntityAction(
 	return { blocks: [] };
 }
 
-async function buildEntityDetail(db: unknown, ctx: SikesraRequestContext, entityId: string): Promise<BlockResponse> {
+async function buildEntityDetail(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+): Promise<BlockResponse> {
 	const result = await sql<{
 		id: string;
 		sikesra_id_20: string | null;
@@ -728,7 +883,14 @@ async function buildEntityDetail(db: unknown, ctx: SikesraRequestContext, entity
 	const row = result.rows[0];
 	if (!row) {
 		return {
-			blocks: [{ type: "banner", variant: "error", title: "Tidak Ditemukan", description: "Entitas tidak ditemukan" }],
+			blocks: [
+				{
+					type: "banner",
+					variant: "error",
+					title: "Tidak Ditemukan",
+					description: "Entitas tidak ditemukan",
+				},
+			],
 		};
 	}
 
@@ -755,8 +917,18 @@ async function buildEntityDetail(db: unknown, ctx: SikesraRequestContext, entity
 			{
 				type: "actions",
 				elements: [
-					{ type: "button", action_id: "entities:back_to_list", label: "Kembali ke Daftar", style: "secondary" },
-					{ type: "button", action_id: "entities:submit_verification", label: "Ajukan Verifikasi", style: "primary" },
+					{
+						type: "button",
+						action_id: "entities:back_to_list",
+						label: "Kembali ke Daftar",
+						style: "secondary",
+					},
+					{
+						type: "button",
+						action_id: "entities:submit_verification",
+						label: "Ajukan Verifikasi",
+						style: "primary",
+					},
 				],
 			},
 		],
@@ -765,12 +937,20 @@ async function buildEntityDetail(db: unknown, ctx: SikesraRequestContext, entity
 
 // ── Verification Queue ───────────────────────────────────────────────────────
 
-async function buildVerificationQueue(db: unknown, ctx: SikesraRequestContext): Promise<BlockResponse> {
+async function buildVerificationQueue(
+	db: unknown,
+	ctx: SikesraRequestContext,
+): Promise<BlockResponse> {
 	const denied = guardRoute(ctx, "verification:verify");
 	if (!denied.allowed) {
 		return {
 			blocks: [
-				{ type: "banner", variant: "error", title: "Akses Ditolak", description: denied.reasonMessage },
+				{
+					type: "banner",
+					variant: "error",
+					title: "Akses Ditolak",
+					description: denied.reasonMessage,
+				},
 			],
 		};
 	}
@@ -875,7 +1055,11 @@ async function handleVerificationAction(
 	return { blocks: [] };
 }
 
-async function buildVerificationReview(db: unknown, ctx: SikesraRequestContext, entityId: string): Promise<BlockResponse> {
+async function buildVerificationReview(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+): Promise<BlockResponse> {
 	const result = await sql<{
 		id: string;
 		sikesra_id_20: string | null;
@@ -898,7 +1082,14 @@ async function buildVerificationReview(db: unknown, ctx: SikesraRequestContext, 
 	const row = result.rows[0];
 	if (!row) {
 		return {
-			blocks: [{ type: "banner", variant: "error", title: "Tidak Ditemukan", description: "Entitas tidak ditemukan" }],
+			blocks: [
+				{
+					type: "banner",
+					variant: "error",
+					title: "Tidak Ditemukan",
+					description: "Entitas tidak ditemukan",
+				},
+			],
 		};
 	}
 
@@ -919,12 +1110,23 @@ async function buildVerificationReview(db: unknown, ctx: SikesraRequestContext, 
 			{
 				type: "form",
 				fields: [
-					{ type: "text_input", action_id: "note", label: "Catatan Verifikasi", multiline: true, placeholder: "Tambahkan catatan..." },
-					{ type: "select", action_id: "decision", label: "Keputusan", options: [
-						{ label: "Verifikasi", value: "verify" },
-						{ label: "Perlu Revisi", value: "need_revision" },
-						{ label: "Tolak", value: "reject" },
-					]},
+					{
+						type: "text_input",
+						action_id: "note",
+						label: "Catatan Verifikasi",
+						multiline: true,
+						placeholder: "Tambahkan catatan...",
+					},
+					{
+						type: "select",
+						action_id: "decision",
+						label: "Keputusan",
+						options: [
+							{ label: "Verifikasi", value: "verify" },
+							{ label: "Perlu Revisi", value: "need_revision" },
+							{ label: "Tolak", value: "reject" },
+						],
+					},
 				],
 				submit: { label: "Submit Keputusan", action_id: "verification:submit_decision" },
 			},
@@ -932,7 +1134,12 @@ async function buildVerificationReview(db: unknown, ctx: SikesraRequestContext, 
 			{
 				type: "actions",
 				elements: [
-					{ type: "button", action_id: "verification:back_to_queue", label: "Kembali ke Antrian", style: "secondary" },
+					{
+						type: "button",
+						action_id: "verification:back_to_queue",
+						label: "Kembali ke Antrian",
+						style: "secondary",
+					},
 				],
 			},
 		],
@@ -949,7 +1156,12 @@ function buildNotFound(page: string): BlockResponse {
 			{
 				type: "actions",
 				elements: [
-					{ type: "button", action_id: "navigate:dashboard", label: "Kembali ke Dashboard", style: "primary" },
+					{
+						type: "button",
+						action_id: "navigate:dashboard",
+						label: "Kembali ke Dashboard",
+						style: "primary",
+					},
 				],
 			},
 		],
