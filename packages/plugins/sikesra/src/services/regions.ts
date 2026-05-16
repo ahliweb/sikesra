@@ -196,7 +196,7 @@ async function getPreferredOfficialRegionScopes(
 	]);
 
 	if (canonicalCount > 0 && legacyCount > 0) {
-			return [canonicalScope, legacyScope];
+		return [canonicalScope, legacyScope];
 	}
 	if (canonicalCount > 0) {
 		return [canonicalScope];
@@ -206,7 +206,7 @@ async function getPreferredOfficialRegionScopes(
 	}
 	if (currentCount > 0) {
 		return [currentScope];
-		}
+	}
 
 	return [currentScope];
 }
@@ -333,7 +333,5 @@ function isLegacyDefaultScope(scope: TenantSiteScope) {
 }
 
 function isDefaultCompatibilityScope(scope: TenantSiteScope) {
-	return (
-		isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope)
-	);
+	return isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope);
 }

@@ -57,7 +57,9 @@ function runCommand(cmdType, rest) {
 	const database =
 		readFlagValue(rest, "--database") ?? process.env.SIKESRA_D1_DATABASE ?? process.env.D1_DATABASE;
 	if (!database) {
-		process.stderr.write("Missing database name. Pass --database <name> or set SIKESRA_D1_DATABASE.\n");
+		process.stderr.write(
+			"Missing database name. Pass --database <name> or set SIKESRA_D1_DATABASE.\n",
+		);
 		process.exit(1);
 	}
 
@@ -81,10 +83,14 @@ function runCommand(cmdType, rest) {
 
 	process.stdout.write(`Applying ${cmdType} to ${database} (${target})...\n`);
 
-	const result = spawnSync("npx", ["wrangler", "d1", "execute", database, target, "--file", tmpFile], {
-		cwd: repoRoot,
-		stdio: "inherit",
-	});
+	const result = spawnSync(
+		"npx",
+		["wrangler", "d1", "execute", database, target, "--file", tmpFile],
+		{
+			cwd: repoRoot,
+			stdio: "inherit",
+		},
+	);
 
 	try {
 		unlinkSync(tmpFile);
@@ -266,8 +272,12 @@ function readFlagValue(rest, flag) {
 
 function printHelp() {
 	process.stdout.write("Usage:\n");
-	process.stdout.write("  node scripts/sikesra-seed-regions.mjs fix-codes --database <name> [--remote] [--execute]\n");
-	process.stdout.write("  node scripts/sikesra-seed-regions.mjs seed-local --database <name> [--remote] [--execute]\n");
+	process.stdout.write(
+		"  node scripts/sikesra-seed-regions.mjs fix-codes --database <name> [--remote] [--execute]\n",
+	);
+	process.stdout.write(
+		"  node scripts/sikesra-seed-regions.mjs seed-local --database <name> [--remote] [--execute]\n",
+	);
 	process.stdout.write("  node scripts/sikesra-seed-regions.mjs sql-fix-codes\n");
 	process.stdout.write("  node scripts/sikesra-seed-regions.mjs sql-seed-local\n");
 }

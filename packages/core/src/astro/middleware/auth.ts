@@ -328,9 +328,9 @@ async function handleEmDashAuth(
 	const { url, locals } = context;
 	const { emdash } = locals;
 
-	const isPublicAdminRoute =
-		url.pathname.startsWith("/_emdash/admin/login") ||
-		url.pathname.startsWith("/_emdash/admin/invite/accept");
+	const isLoginRoute = url.pathname.startsWith("/_emdash/admin/login");
+	const isInviteAcceptRoute = url.pathname.startsWith("/_emdash/admin/invite/accept");
+	const isPublicAdminRoute = isLoginRoute || isInviteAcceptRoute;
 	const isApiRoute = url.pathname.startsWith("/_emdash/api");
 
 	if (!emdash?.db) {
@@ -342,12 +342,12 @@ async function handleEmDashAuth(
 	const authMode = getAuthMode(emdash.config);
 
 	if (authMode.type === "external") {
+		if (isLoginRoute) {
+			return next();
+		}
+
 		// In dev mode, fall back to passkey auth since external JWT won't be present
 		if (import.meta.env.DEV) {
-			if (isPublicAdminRoute) {
-				return next();
-			}
-
 			return handlePasskeyAuth(context, next, isApiRoute);
 		}
 
@@ -451,9 +451,9 @@ async function handleExternalAuth(
 	context: Parameters<Parameters<typeof defineMiddleware>[0]>[0],
 	next: Parameters<Parameters<typeof defineMiddleware>[0]>[1],
 	authMode: ExternalAuthMode,
-	_isApiRoute: boolean,
+	isApiRoute: boolean,
 ): Promise<Response> {
-	const { locals, request } = context;
+	const { locals, request, url, redirect } = context;
 	const { emdash } = locals;
 
 	try {
@@ -575,6 +575,11 @@ async function handleExternalAuth(
 		return next();
 	} catch (error) {
 		console.error("[external-auth] Auth error:", error);
+
+		if (!isApiRoute && url.pathname.startsWith("/_emdash/admin")) {
+			const loginPath = `/_emdash/admin/login?redirect=${encodeURIComponent(url.pathname + url.search)}`;
+			return redirect(loginPath);
+		}
 
 		return new Response("Authentication failed", {
 			status: 401,

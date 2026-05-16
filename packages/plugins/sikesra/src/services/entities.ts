@@ -409,11 +409,7 @@ async function getPreferredEntityScope(
 	return currentScope;
 }
 
-async function getExistingEntityScope(
-	db: unknown,
-	ctx: SikesraRequestContext,
-	entityId: string,
-) {
+async function getExistingEntityScope(db: unknown, ctx: SikesraRequestContext, entityId: string) {
 	const currentScope = { tenantId: ctx.tenantId, siteId: ctx.siteId };
 	const scopes = isLegacyDefaultScope(currentScope)
 		? [currentScope]
@@ -634,9 +630,7 @@ function isLegacyDefaultScope(scope: TenantSiteScope) {
 }
 
 function isDefaultCompatibilityScope(scope: TenantSiteScope) {
-	return (
-		isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope)
-	);
+	return isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope);
 }
 
 async function throwRouteError(code: string, message: string, status: number): Promise<never> {

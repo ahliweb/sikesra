@@ -222,9 +222,7 @@ describe("SIKESRA region and registry services", () => {
 			getEntityDetail(db, otherContext, "canon-entity-1"),
 		]);
 
-		expect(regions).toEqual([
-			expect.objectContaining({ code: "6301011001", name: "Desa Canon" }),
-		]);
+		expect(regions).toEqual([expect.objectContaining({ code: "6301011001", name: "Desa Canon" })]);
 		expect(localRegions).toEqual([
 			expect.objectContaining({ id: "canon-local-1", officialVillageCode: "6301011001" }),
 		]);
@@ -268,9 +266,7 @@ describe("SIKESRA region and registry services", () => {
 			getEntityDetail(db, legacyContext, "legacy-entity-2"),
 		]);
 
-		expect(regions).toEqual([
-			expect.objectContaining({ code: "1101012001", name: "Desa Legacy" }),
-		]);
+		expect(regions).toEqual([expect.objectContaining({ code: "1101012001", name: "Desa Legacy" })]);
 		expect(localRegions).toEqual([
 			expect.objectContaining({ id: "legacy-local-1", officialVillageCode: "1101012001" }),
 		]);

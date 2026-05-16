@@ -195,12 +195,14 @@ export async function fetchManifest(): Promise<AdminManifest> {
  */
 export async function fetchAuthMode(): Promise<{
 	authMode: string;
+	devPasskeyFallback?: boolean;
 	signupEnabled?: boolean;
 	providers?: Array<{ id: string; label: string }>;
 }> {
 	const response = await apiFetch(`${API_BASE}/auth/mode`);
 	return parseApiResponse<{
 		authMode: string;
+		devPasskeyFallback?: boolean;
 		signupEnabled?: boolean;
 		providers?: Array<{ id: string; label: string }>;
 	}>(response, "Failed to fetch auth mode");
