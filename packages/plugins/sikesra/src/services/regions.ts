@@ -3,13 +3,13 @@ import { sql } from "kysely";
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { checkRegionScope, guardRoute } from "../security/route-guard.js";
 import {
+	buildCanonicalScopeOrderSql,
 	DEFAULT_SIKESRA_SITE_ID,
 	DEFAULT_SIKESRA_TENANT_ID,
+	getTenantSiteFallbackScopes,
 	LEGACY_DEFAULT_SIKESRA_SITE_ID,
 	LEGACY_DEFAULT_SIKESRA_TENANT_ID,
-	buildCanonicalScopeOrderSql,
-	buildTenantSiteScopeSql,
-	usesLegacyDefaultScopeFallback,
+	type TenantSiteScope,
 } from "../tenant-site-scope.js";
 
 export interface OfficialRegionSummary {
@@ -46,31 +46,45 @@ export async function listOfficialRegions(
 	ctx: SikesraRequestContext,
 	filters: OfficialRegionFilters,
 ): Promise<OfficialRegionSummary[]> {
-	const denied = guardRoute(ctx, "entity:read");
+	const denied = guardRoute(ctx, "region:read");
 	if (!denied.allowed)
 		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
-	const result = await sql<OfficialRegionSummary>`
-		SELECT code, name, level, parentCode
-		FROM (
-			SELECT
-				code,
-				name,
-				level,
-				parent_code AS parentCode,
-				ROW_NUMBER() OVER (
-					PARTITION BY code
-					ORDER BY ${buildCanonicalScopeOrderSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)},
-						level ASC,
-						name ASC
-				) AS scope_rank
-			FROM awcms_sikesra_official_regions
-			WHERE ${buildOfficialWhereSql(ctx, filters)}
-		) deduped
-		WHERE scope_rank = 1
-		ORDER BY level ASC, name ASC
-		LIMIT ${DEFAULT_LIMIT}
-	`.execute(db as never);
+	const scopes = await getPreferredOfficialRegionScopes(db, ctx, filters);
+
+	const result =
+		scopes.length === 1
+			? await sql<OfficialRegionSummary>`
+					SELECT code, name, level, parent_code AS parentCode
+					FROM awcms_sikesra_official_regions
+					WHERE ${buildOfficialWhereSql(ctx, filters, scopes[0]!)}
+					ORDER BY level ASC, name ASC
+					LIMIT ${DEFAULT_LIMIT}
+				`.execute(db as never)
+			: await sql<OfficialRegionSummary>`
+					SELECT code, name, level, parentCode
+					FROM (
+						SELECT
+							code,
+							name,
+							level,
+							parent_code AS parentCode,
+							ROW_NUMBER() OVER (
+								PARTITION BY code
+								ORDER BY ${buildCanonicalScopeOrderSql(
+									"tenant_id",
+									"site_id",
+									DEFAULT_SIKESRA_TENANT_ID,
+									DEFAULT_SIKESRA_SITE_ID,
+								)}, level ASC, name ASC
+							) AS scope_rank
+						FROM awcms_sikesra_official_regions
+						WHERE ${buildOfficialMultiScopeWhereSql(ctx, filters, scopes)}
+					) deduped
+					WHERE scope_rank = 1
+					ORDER BY level ASC, name ASC
+					LIMIT ${DEFAULT_LIMIT}
+				`.execute(db as never);
 
 	return result.rows;
 }
@@ -80,7 +94,7 @@ export async function listLocalRegions(
 	ctx: SikesraRequestContext,
 	filters: LocalRegionFilters,
 ): Promise<LocalRegionSummary[]> {
-	const denied = guardRoute(ctx, "entity:read");
+	const denied = guardRoute(ctx, "region:read");
 	if (!denied.allowed)
 		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
@@ -107,9 +121,14 @@ export async function listLocalRegions(
 	return result.rows;
 }
 
-function buildOfficialWhereSql(ctx: SikesraRequestContext, filters: OfficialRegionFilters) {
+function buildOfficialWhereSql(
+	ctx: SikesraRequestContext,
+	filters: OfficialRegionFilters,
+	scope: TenantSiteScope,
+) {
 	const conditions = [
-		buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId),
+		sql`tenant_id = ${scope.tenantId}`,
+		sql`site_id = ${scope.siteId}`,
 		sql`deleted_at IS NULL`,
 	];
 
@@ -125,6 +144,71 @@ function buildOfficialWhereSql(ctx: SikesraRequestContext, filters: OfficialRegi
 	}
 
 	return sql.join(conditions, sql` AND `);
+}
+
+function buildOfficialMultiScopeWhereSql(
+	ctx: SikesraRequestContext,
+	filters: OfficialRegionFilters,
+	scopes: TenantSiteScope[],
+) {
+	const scopeConditions = scopes.map(
+		(scope) => sql`(tenant_id = ${scope.tenantId} AND site_id = ${scope.siteId})`,
+	);
+	const conditions = [sql`(${sql.join(scopeConditions, sql` OR `)})`, sql`deleted_at IS NULL`];
+
+	if (filters.level) conditions.push(sql`level = ${filters.level}`);
+	if (filters.parentCode) conditions.push(sql`parent_code = ${filters.parentCode}`);
+	if (ctx.regionScope.villageCodes?.length) {
+		conditions.push(
+			sql`(
+				level IN ('province', 'regency', 'district')
+				OR code IN (${sql.join(ctx.regionScope.villageCodes.map((code) => sql`${code}`))})
+			)`,
+		);
+	}
+
+	return sql.join(conditions, sql` AND `);
+}
+
+async function getPreferredOfficialRegionScopes(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: OfficialRegionFilters,
+) {
+	const currentScope = { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	if (isLegacyDefaultScope(currentScope)) {
+		return [currentScope];
+	}
+
+	const currentCount = await countOfficialRegions(db, ctx, filters, currentScope);
+	if (!isCanonicalDefaultScope(currentScope) && currentCount > 0) {
+		return [currentScope];
+	}
+
+	const canonicalScope = { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	const legacyScope = {
+		tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+		siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID,
+	};
+	const [canonicalCount, legacyCount] = await Promise.all([
+		countOfficialRegions(db, ctx, filters, canonicalScope),
+		countOfficialRegions(db, ctx, filters, legacyScope),
+	]);
+
+	if (canonicalCount > 0 && legacyCount > 0) {
+			return [canonicalScope, legacyScope];
+	}
+	if (canonicalCount > 0) {
+		return [canonicalScope];
+	}
+	if (legacyCount > 0) {
+		return [legacyScope];
+	}
+	if (currentCount > 0) {
+		return [currentScope];
+		}
+
+	return [currentScope];
 }
 
 async function throwRouteError(
@@ -174,40 +258,82 @@ async function getPreferredLocalRegionScope(
 	ctx: SikesraRequestContext,
 	filters: LocalRegionFilters,
 ) {
-	if (!usesLegacyDefaultScopeFallback(ctx.tenantId, ctx.siteId)) {
-		return { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	const currentScope = { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	if (isLegacyDefaultScope(currentScope)) {
+		return currentScope;
 	}
 
+	const currentCount = await countLocalRegions(db, ctx, filters, currentScope);
+	if (!isCanonicalDefaultScope(currentScope) && currentCount > 0) {
+		return currentScope;
+	}
+
+	const canonicalScope = { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	const legacyScope = {
+		tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+		siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID,
+	};
 	const [canonicalCount, legacyCount] = await Promise.all([
-		countLocalRegions(db, ctx, filters, DEFAULT_SIKESRA_TENANT_ID, DEFAULT_SIKESRA_SITE_ID),
-		countLocalRegions(
-			db,
-			ctx,
-			filters,
-			LEGACY_DEFAULT_SIKESRA_TENANT_ID,
-			LEGACY_DEFAULT_SIKESRA_SITE_ID,
-		),
+		countLocalRegions(db, ctx, filters, canonicalScope),
+		countLocalRegions(db, ctx, filters, legacyScope),
 	]);
 
-	if (canonicalCount >= legacyCount) {
-		return { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	if (canonicalCount >= legacyCount && canonicalCount > 0) {
+		return canonicalScope;
+	}
+	if (legacyCount > 0) {
+		return legacyScope;
+	}
+	if (currentCount > 0) {
+		return currentScope;
 	}
 
-	return { tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID, siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID };
+	return currentScope;
+}
+
+async function countOfficialRegions(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: OfficialRegionFilters,
+	scope: TenantSiteScope,
+) {
+	const result = await sql<{ count: number }>`
+		SELECT COUNT(*) AS count
+		FROM awcms_sikesra_official_regions
+		WHERE ${buildOfficialWhereSql(ctx, filters, scope)}
+	`.execute(db as never);
+
+	return Number(result.rows[0]?.count ?? 0);
 }
 
 async function countLocalRegions(
 	db: unknown,
 	ctx: SikesraRequestContext,
 	filters: LocalRegionFilters,
-	tenantId: string,
-	siteId: string,
+	scope: TenantSiteScope,
 ) {
 	const result = await sql<{ count: number }>`
 		SELECT COUNT(*) AS count
 		FROM awcms_sikesra_local_regions
-		WHERE ${buildLocalWhereSql(ctx, filters, { tenantId, siteId })}
+		WHERE ${buildLocalWhereSql(ctx, filters, scope)}
 	`.execute(db as never);
 
 	return Number(result.rows[0]?.count ?? 0);
+}
+
+function isCanonicalDefaultScope(scope: TenantSiteScope) {
+	return scope.tenantId === DEFAULT_SIKESRA_TENANT_ID && scope.siteId === DEFAULT_SIKESRA_SITE_ID;
+}
+
+function isLegacyDefaultScope(scope: TenantSiteScope) {
+	return (
+		scope.tenantId === LEGACY_DEFAULT_SIKESRA_TENANT_ID &&
+		scope.siteId === LEGACY_DEFAULT_SIKESRA_SITE_ID
+	);
+}
+
+function isDefaultCompatibilityScope(scope: TenantSiteScope) {
+	return (
+		isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope)
+	);
 }

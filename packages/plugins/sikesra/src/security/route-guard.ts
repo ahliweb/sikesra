@@ -16,6 +16,7 @@ export type GuardAction =
 	| "import:promote"
 	| "export:create"
 	| "export:restricted"
+	| "region:read"
 	| "region:manage"
 	| "settings:read"
 	| "settings:update"
@@ -45,6 +46,7 @@ const GUARD_PERMISSION_MAP: Record<GuardAction, string> = {
 	"import:promote": SIKESRA_PERMISSIONS.IMPORT_PROMOTE,
 	"export:create": SIKESRA_PERMISSIONS.EXPORT_CREATE,
 	"export:restricted": SIKESRA_PERMISSIONS.EXPORT_RESTRICTED,
+	"region:read": SIKESRA_PERMISSIONS.REGION_READ,
 	"region:manage": SIKESRA_PERMISSIONS.REGION_MANAGE,
 	"settings:read": SIKESRA_PERMISSIONS.SETTINGS_READ,
 	"settings:update": SIKESRA_PERMISSIONS.SETTINGS_UPDATE,

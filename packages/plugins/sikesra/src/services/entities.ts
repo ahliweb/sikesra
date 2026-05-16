@@ -8,10 +8,10 @@ import { checkRegionScope, guardRoute } from "../security/route-guard.js";
 import {
 	DEFAULT_SIKESRA_SITE_ID,
 	DEFAULT_SIKESRA_TENANT_ID,
+	getTenantSiteFallbackScopes,
 	LEGACY_DEFAULT_SIKESRA_SITE_ID,
 	LEGACY_DEFAULT_SIKESRA_TENANT_ID,
-	buildTenantSiteScopeSql,
-	usesLegacyDefaultScopeFallback,
+	type TenantSiteScope,
 } from "../tenant-site-scope.js";
 
 export interface EntityListFilters {
@@ -204,6 +204,8 @@ export async function getEntityDetail(
 	if (!denied.allowed)
 		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
+	const scope = await getExistingEntityScope(db, ctx, entityId);
+
 	const result = await sql<EntityRow>`
 		SELECT
 			entity.id,
@@ -253,7 +255,8 @@ export async function getEntityDetail(
 		LEFT JOIN awcms_sikesra_local_regions local_region
 			ON local_region.id = entity.local_region_id
 			AND local_region.deleted_at IS NULL
-		WHERE ${buildTenantSiteScopeSql("entity.tenant_id", "entity.site_id", ctx.tenantId, ctx.siteId)}
+		WHERE entity.tenant_id = ${scope.tenantId}
+			AND entity.site_id = ${scope.siteId}
 			AND entity.deleted_at IS NULL
 			AND entity.id = ${entityId}
 		LIMIT 1
@@ -283,7 +286,7 @@ export async function getEntityDetail(
 
 	const detailTable = DETAIL_TABLES[row.object_type_code];
 	const detailRecord = detailTable
-		? await getDetailRecord(db, ctx, detailTable, row.id)
+		? await getDetailRecord(db, detailTable, row.id, scope)
 		: undefined;
 	const masking = buildMaskingContext(ctx);
 
@@ -373,34 +376,95 @@ async function getPreferredEntityScope(
 	ctx: SikesraRequestContext,
 	filters: EntityListFilters,
 ) {
-	if (!usesLegacyDefaultScopeFallback(ctx.tenantId, ctx.siteId)) {
-		return { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	const currentScope = { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	if (isLegacyDefaultScope(currentScope)) {
+		return currentScope;
 	}
 
+	const currentCount = await countEntities(db, ctx, filters, currentScope);
+	if (!isCanonicalDefaultScope(currentScope) && currentCount > 0) {
+		return currentScope;
+	}
+
+	const canonicalScope = { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	const legacyScope = {
+		tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+		siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID,
+	};
 	const [canonicalCount, legacyCount] = await Promise.all([
-		countEntities(db, ctx, filters, DEFAULT_SIKESRA_TENANT_ID, DEFAULT_SIKESRA_SITE_ID),
-		countEntities(
-			db,
-			ctx,
-			filters,
-			LEGACY_DEFAULT_SIKESRA_TENANT_ID,
-			LEGACY_DEFAULT_SIKESRA_SITE_ID,
-		),
+		countEntities(db, ctx, filters, canonicalScope),
+		countEntities(db, ctx, filters, legacyScope),
 	]);
 
-	if (canonicalCount >= legacyCount) {
-		return { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	if (canonicalCount >= legacyCount && canonicalCount > 0) {
+		return canonicalScope;
+	}
+	if (legacyCount > 0) {
+		return legacyScope;
+	}
+	if (currentCount > 0) {
+		return currentScope;
 	}
 
-	return { tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID, siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID };
+	return currentScope;
+}
+
+async function getExistingEntityScope(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+) {
+	const currentScope = { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	const scopes = isLegacyDefaultScope(currentScope)
+		? [currentScope]
+		: isCanonicalDefaultScope(currentScope)
+			? getTenantSiteFallbackScopes(DEFAULT_SIKESRA_TENANT_ID, DEFAULT_SIKESRA_SITE_ID)
+			: getTenantSiteFallbackScopes(ctx.tenantId, ctx.siteId);
+
+	for (const scope of scopes) {
+		const result = await sql<{ id: string }>`
+			SELECT entity.id
+			FROM awcms_sikesra_entities entity
+			JOIN awcms_sikesra_object_types object_type
+				ON object_type.tenant_id = entity.tenant_id
+				AND object_type.site_id = entity.site_id
+				AND object_type.code = entity.object_type_code
+			JOIN awcms_sikesra_object_subtypes object_subtype
+				ON object_subtype.tenant_id = entity.tenant_id
+				AND object_subtype.site_id = entity.site_id
+				AND object_subtype.type_code = entity.object_type_code
+				AND object_subtype.code = entity.object_subtype_code
+			JOIN awcms_sikesra_official_regions village
+				ON village.tenant_id = entity.tenant_id
+				AND village.site_id = entity.site_id
+				AND village.code = entity.official_village_code
+			LEFT JOIN awcms_sikesra_official_regions district
+				ON district.tenant_id = village.tenant_id
+				AND district.site_id = village.site_id
+				AND district.code = village.parent_code
+			LEFT JOIN awcms_sikesra_local_regions local_region
+				ON local_region.id = entity.local_region_id
+				AND local_region.deleted_at IS NULL
+			WHERE entity.tenant_id = ${scope.tenantId}
+				AND entity.site_id = ${scope.siteId}
+				AND entity.deleted_at IS NULL
+				AND entity.id = ${entityId}
+			LIMIT 1
+		`.execute(db as never);
+
+		if (result.rows[0]) {
+			return scope;
+		}
+	}
+
+	return { tenantId: ctx.tenantId, siteId: ctx.siteId };
 }
 
 async function countEntities(
 	db: unknown,
 	ctx: SikesraRequestContext,
 	filters: EntityListFilters,
-	tenantId: string,
-	siteId: string,
+	scope: TenantSiteScope,
 ) {
 	const result = await sql<{ count: number }>`
 		SELECT COUNT(*) AS count
@@ -425,7 +489,7 @@ async function countEntities(
 		LEFT JOIN awcms_sikesra_local_regions local_region
 			ON local_region.id = entity.local_region_id
 			AND local_region.deleted_at IS NULL
-		WHERE ${buildEntityWhereSql(ctx, filters, { tenantId, siteId })}
+		WHERE ${buildEntityWhereSql(ctx, filters, scope)}
 	`.execute(db as never);
 
 	return Number(result.rows[0]?.count ?? 0);
@@ -532,14 +596,15 @@ function buildAbacResource(row: EntityRow): AbacResource {
 
 async function getDetailRecord(
 	db: unknown,
-	ctx: SikesraRequestContext,
 	tableName: string,
 	entityId: string,
+	scope: TenantSiteScope,
 ): Promise<Record<string, unknown> | undefined> {
 	const result = await sql<Record<string, unknown>>`
 		SELECT *
 		FROM ${sql.ref(tableName)}
-		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
+		WHERE tenant_id = ${scope.tenantId}
+			AND site_id = ${scope.siteId}
 			AND deleted_at IS NULL
 			AND entity_id = ${entityId}
 		LIMIT 1
@@ -555,6 +620,23 @@ async function getDetailRecord(
 	delete safe.created_by;
 	delete safe.updated_by;
 	return safe;
+}
+
+function isCanonicalDefaultScope(scope: TenantSiteScope) {
+	return scope.tenantId === DEFAULT_SIKESRA_TENANT_ID && scope.siteId === DEFAULT_SIKESRA_SITE_ID;
+}
+
+function isLegacyDefaultScope(scope: TenantSiteScope) {
+	return (
+		scope.tenantId === LEGACY_DEFAULT_SIKESRA_TENANT_ID &&
+		scope.siteId === LEGACY_DEFAULT_SIKESRA_SITE_ID
+	);
+}
+
+function isDefaultCompatibilityScope(scope: TenantSiteScope) {
+	return (
+		isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope)
+	);
 }
 
 async function throwRouteError(code: string, message: string, status: number): Promise<never> {

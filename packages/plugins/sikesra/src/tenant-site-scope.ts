@@ -5,6 +5,11 @@ export const DEFAULT_SIKESRA_SITE_ID = "main";
 export const LEGACY_DEFAULT_SIKESRA_TENANT_ID = "default";
 export const LEGACY_DEFAULT_SIKESRA_SITE_ID = "default";
 
+export interface TenantSiteScope {
+	tenantId: string;
+	siteId: string;
+}
+
 export function buildTenantSiteScopeSql(
 	tenantColumn: string,
 	siteColumn: string,
@@ -37,4 +42,25 @@ export function buildCanonicalScopeOrderSql(
 	siteId: string = DEFAULT_SIKESRA_SITE_ID,
 ) {
 	return sql`CASE WHEN ${sql.ref(tenantColumn)} = ${tenantId} AND ${sql.ref(siteColumn)} = ${siteId} THEN 0 ELSE 1 END`;
+}
+
+export function getTenantSiteFallbackScopes(
+	tenantId: string = DEFAULT_SIKESRA_TENANT_ID,
+	siteId: string = DEFAULT_SIKESRA_SITE_ID,
+): TenantSiteScope[] {
+	const scopes: TenantSiteScope[] = [];
+	const seen = new Set<string>();
+
+	for (const scope of [
+		{ tenantId, siteId },
+		{ tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID },
+		{ tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID, siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID },
+	]) {
+		const key = `${scope.tenantId}::${scope.siteId}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		scopes.push(scope);
+	}
+
+	return scopes;
 }

@@ -137,6 +137,18 @@ describe("SIKESRA region and registry services", () => {
 		expect(items[0]?.level).toBe("village");
 	});
 
+	it("allows region lookups for users with region read permission", async () => {
+		const items = await listOfficialRegions(
+			db,
+			makeContext({ permissions: ["awcms:sikesra:region:read"] }),
+			{ level: "district" },
+		);
+
+		expect(items).toEqual([
+			expect.objectContaining({ code: "620101", name: "Kecamatan A", level: "district" }),
+		]);
+	});
+
 	it("falls back to the legacy default scope for official regions and entities", async () => {
 		sqlite.exec(`
 			INSERT INTO awcms_sikesra_official_regions VALUES
@@ -153,7 +165,7 @@ describe("SIKESRA region and registry services", () => {
 		const legacyContext = makeContext({
 			tenantId: "00000000-0000-0000-0000-000000000001",
 			siteId: "main",
-			permissions: ["awcms:sikesra:entity:read"],
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
 		});
 
 		const regions = await listOfficialRegions(db, legacyContext, { level: "village" });
@@ -179,6 +191,93 @@ describe("SIKESRA region and registry services", () => {
 		);
 		expect(items).toHaveLength(1);
 		expect(items[0]?.officialVillageCode).toBe("6201011001");
+	});
+
+	it("falls back to canonical lookup data when the active tenant/site has no registry rows", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('6301', '00000000-0000-0000-0000-000000000001', 'main', 'Kabupaten Canon', 'regency', NULL, NULL),
+			('630101', '00000000-0000-0000-0000-000000000001', 'main', 'Kecamatan Canon', 'district', '6301', NULL),
+			('6301011001', '00000000-0000-0000-0000-000000000001', 'main', 'Desa Canon', 'village', '630101', NULL);
+			INSERT INTO awcms_sikesra_local_regions VALUES
+			('canon-local-1', '00000000-0000-0000-0000-000000000001', 'main', '6301011001', NULL, 'rw', '01', 'RW Canon', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('99', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '99', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('canon-entity-1', '00000000-0000-0000-0000-000000000001', 'main', '63010110019901000001', '99', '01', 'building', 'Canonical Entity', '6301011001', 'canon-local-1', 'Jl. Canon', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const otherContext = makeContext({
+			tenantId: "tenant-2",
+			siteId: "site-2",
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
+		});
+
+		const [regions, localRegions, entities, detail] = await Promise.all([
+			listOfficialRegions(db, otherContext, { level: "village" }),
+			listLocalRegions(db, otherContext, { officialVillageCode: "6301011001" }),
+			listEntities(db, otherContext, { objectTypeCode: "99" }),
+			getEntityDetail(db, otherContext, "canon-entity-1"),
+		]);
+
+		expect(regions).toEqual([
+			expect.objectContaining({ code: "6301011001", name: "Desa Canon" }),
+		]);
+		expect(localRegions).toEqual([
+			expect.objectContaining({ id: "canon-local-1", officialVillageCode: "6301011001" }),
+		]);
+		expect(entities.items).toEqual([
+			expect.objectContaining({ id: "canon-entity-1", objectTypeName: "Canonical Type" }),
+		]);
+		expect((detail as EntityDetailResponse).entity.id).toBe("canon-entity-1");
+	});
+
+	it("keeps legacy default callers pinned to legacy scope", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('110101', 'default', 'default', 'Kecamatan Legacy', 'district', NULL, NULL),
+			('1101012001', 'default', 'default', 'Desa Legacy', 'village', '110101', NULL),
+			('120101', '00000000-0000-0000-0000-000000000001', 'main', 'Kecamatan Canon', 'district', NULL, NULL),
+			('1201012001', '00000000-0000-0000-0000-000000000001', 'main', 'Desa Canon', 'village', '120101', NULL);
+			INSERT INTO awcms_sikesra_local_regions VALUES
+			('legacy-local-1', 'default', 'default', '1101012001', NULL, 'rw', '01', 'RW Legacy', NULL),
+			('canon-local-2', '00000000-0000-0000-0000-000000000001', 'main', '1201012001', NULL, 'rw', '02', 'RW Canon', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('09', 'default', 'default', 'Legacy Type', NULL),
+			('88', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '09', 'default', 'default', 'Legacy Subtype', NULL),
+			('01', '88', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('legacy-entity-2', 'default', 'default', '11010120010901000002', '09', '01', 'building', 'Legacy Entity', '1101012001', 'legacy-local-1', 'Jl. Legacy', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL),
+			('canon-entity-2', '00000000-0000-0000-0000-000000000001', 'main', '12010120018801000002', '88', '01', 'building', 'Canonical Entity', '1201012001', 'canon-local-2', 'Jl. Canon', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const legacyContext = makeContext({
+			tenantId: "default",
+			siteId: "default",
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
+		});
+
+		const [regions, localRegions, entities, detail] = await Promise.all([
+			listOfficialRegions(db, legacyContext, { level: "village" }),
+			listLocalRegions(db, legacyContext, { officialVillageCode: "1101012001" }),
+			listEntities(db, legacyContext, { objectTypeCode: "09" }),
+			getEntityDetail(db, legacyContext, "legacy-entity-2"),
+		]);
+
+		expect(regions).toEqual([
+			expect.objectContaining({ code: "1101012001", name: "Desa Legacy" }),
+		]);
+		expect(localRegions).toEqual([
+			expect.objectContaining({ id: "legacy-local-1", officialVillageCode: "1101012001" }),
+		]);
+		expect(entities.items).toEqual([
+			expect.objectContaining({ id: "legacy-entity-2", objectTypeName: "Legacy Type" }),
+		]);
+		expect((detail as EntityDetailResponse).entity.id).toBe("legacy-entity-2");
 	});
 
 	it("lists entities and masks protected person names without reveal permission", async () => {
