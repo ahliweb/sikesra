@@ -15,6 +15,20 @@ Required bindings:
 - `SESSION` for auth/session KV
 - `LOADER` for plugin worker loading
 
+Required secrets / env:
+
+- `CF_ACCESS_AUDIENCE` when the host app uses Cloudflare Access auth
+
+## Cloudflare Access
+
+If the host app is configured with `auth: access(...)`, the Worker alone is not enough. The public hostname must also be protected by a Cloudflare Access application so requests to `/_emdash/*` receive a `Cf-Access-Jwt-Assertion` header (or `CF_Authorization` cookie).
+
+Minimum checks:
+
+- Set the `CF_ACCESS_AUDIENCE` secret on the deployed Worker.
+- Protect the deployed admin surface, typically `https://<host>/_emdash/*`, with a Cloudflare Access application.
+- Verify that unauthenticated browser requests are challenged by Access before they reach the Worker.
+
 Replace the placeholder IDs before deployment.
 
 ## Postbuild Adapter
