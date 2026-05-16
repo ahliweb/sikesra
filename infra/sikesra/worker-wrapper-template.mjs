@@ -7,6 +7,9 @@ const NO_STORE_HEADERS = {
 	Expires: "0",
 };
 
+const DEFAULT_FAVICON_SVG =
+	"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='#0f172a'/><path d='M18 34h28' stroke='#f8fafc' stroke-width='6' stroke-linecap='round'/><circle cx='32' cy='22' r='6' fill='#38bdf8'/></svg>";
+
 function withNoStoreHeaders(headers = {}) {
 	return { ...NO_STORE_HEADERS, ...headers };
 }
@@ -42,6 +45,17 @@ async function handleEmDash(request, env, ctx, route = "emdash") {
 export default {
 	async fetch(request, env, ctx) {
 		const { pathname } = new URL(request.url);
+
+		if (pathname === "/favicon.ico") {
+			return routeResponse(
+				DEFAULT_FAVICON_SVG,
+				{
+					status: 200,
+					headers: withNoStoreHeaders({ "Content-Type": "image/svg+xml; charset=utf-8" }),
+				},
+				"favicon",
+			);
+		}
 
 		if (pathname === "/sikesra" || pathname === "/sikesra/") {
 			return handleEmDash(request, env, ctx, "sikesra-public");
