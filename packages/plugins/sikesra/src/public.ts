@@ -8,9 +8,8 @@ import {
 	type SikesraPublicMetadata,
 	type SikesraPublicSummary,
 } from "./shared.js";
+import { DEFAULT_SIKESRA_SITE_ID, DEFAULT_SIKESRA_TENANT_ID } from "./tenant-site-scope.js";
 
-const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
-const DEFAULT_SITE_ID = "main";
 const SAFE_SENSITIVITY_LEVELS = ["public_safe", "internal"] as const;
 
 const STATUS_LABELS: Record<string, string> = {
@@ -43,13 +42,13 @@ export async function getPublicMetadata(): Promise<SikesraPublicMetadata> {
 				(
 					SELECT MAX(updated_at)
 					FROM awcms_sikesra_entities
-					WHERE tenant_id = ${DEFAULT_TENANT_ID}
-						AND site_id = ${DEFAULT_SITE_ID}
+					WHERE tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+						AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
 						AND deleted_at IS NULL
 				) AS latest_update_at
 			FROM awcms_sikesra_settings
-			WHERE tenant_id = ${DEFAULT_TENANT_ID}
-				AND site_id = ${DEFAULT_SITE_ID}
+			WHERE tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+				AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
 				AND deleted_at IS NULL
 			LIMIT 1
 		`.execute(db as never);
@@ -274,8 +273,8 @@ async function getSuppressionThreshold(db: unknown): Promise<number> {
 	const result = await sql<{ small_cell_threshold: number }>`
 		SELECT small_cell_threshold
 		FROM awcms_sikesra_settings
-		WHERE tenant_id = ${DEFAULT_TENANT_ID}
-			AND site_id = ${DEFAULT_SITE_ID}
+		WHERE tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+			AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
 			AND deleted_at IS NULL
 		LIMIT 1
 	`.execute(db as never);
@@ -290,8 +289,8 @@ async function loadDb() {
 
 function publicEntityWhereSql() {
 	return sql`
-		tenant_id = ${DEFAULT_TENANT_ID}
-		AND site_id = ${DEFAULT_SITE_ID}
+		tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+		AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
 		AND deleted_at IS NULL
 		AND status_data = 'active'
 		AND status_verification = 'verified'

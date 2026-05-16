@@ -2,6 +2,15 @@ import { sql } from "kysely";
 
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { checkRegionScope, guardRoute } from "../security/route-guard.js";
+import {
+	DEFAULT_SIKESRA_SITE_ID,
+	DEFAULT_SIKESRA_TENANT_ID,
+	LEGACY_DEFAULT_SIKESRA_SITE_ID,
+	LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+	buildCanonicalScopeOrderSql,
+	buildTenantSiteScopeSql,
+	usesLegacyDefaultScopeFallback,
+} from "../tenant-site-scope.js";
 
 export interface OfficialRegionSummary {
 	code: string;
@@ -42,9 +51,23 @@ export async function listOfficialRegions(
 		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const result = await sql<OfficialRegionSummary>`
-		SELECT code, name, level, parent_code AS parentCode
-		FROM awcms_sikesra_official_regions
-		WHERE ${buildOfficialWhereSql(ctx, filters)}
+		SELECT code, name, level, parentCode
+		FROM (
+			SELECT
+				code,
+				name,
+				level,
+				parent_code AS parentCode,
+				ROW_NUMBER() OVER (
+					PARTITION BY code
+					ORDER BY ${buildCanonicalScopeOrderSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)},
+						level ASC,
+						name ASC
+				) AS scope_rank
+			FROM awcms_sikesra_official_regions
+			WHERE ${buildOfficialWhereSql(ctx, filters)}
+		) deduped
+		WHERE scope_rank = 1
 		ORDER BY level ASC, name ASC
 		LIMIT ${DEFAULT_LIMIT}
 	`.execute(db as never);
@@ -65,6 +88,8 @@ export async function listLocalRegions(
 		return [];
 	}
 
+	const scope = await getPreferredLocalRegionScope(db, ctx, filters);
+
 	const result = await sql<LocalRegionSummary>`
 		SELECT
 			id,
@@ -74,7 +99,7 @@ export async function listLocalRegions(
 			parent_id AS parentId,
 			code_local AS codeLocal
 		FROM awcms_sikesra_local_regions
-		WHERE ${buildLocalWhereSql(ctx, filters)}
+		WHERE ${buildLocalWhereSql(ctx, filters, scope)}
 		ORDER BY level ASC, name ASC
 		LIMIT ${DEFAULT_LIMIT}
 	`.execute(db as never);
@@ -84,8 +109,7 @@ export async function listLocalRegions(
 
 function buildOfficialWhereSql(ctx: SikesraRequestContext, filters: OfficialRegionFilters) {
 	const conditions = [
-		sql`tenant_id = ${ctx.tenantId}`,
-		sql`site_id = ${ctx.siteId}`,
+		buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId),
 		sql`deleted_at IS NULL`,
 	];
 
@@ -112,10 +136,14 @@ async function throwRouteError(
 	throw new PluginRouteError(code, message || code, status);
 }
 
-function buildLocalWhereSql(ctx: SikesraRequestContext, filters: LocalRegionFilters) {
+function buildLocalWhereSql(
+	ctx: SikesraRequestContext,
+	filters: LocalRegionFilters,
+	scope: { tenantId: string; siteId: string },
+) {
 	const conditions = [
-		sql`tenant_id = ${ctx.tenantId}`,
-		sql`site_id = ${ctx.siteId}`,
+		sql`tenant_id = ${scope.tenantId}`,
+		sql`site_id = ${scope.siteId}`,
 		sql`deleted_at IS NULL`,
 	];
 
@@ -139,4 +167,47 @@ function buildLocalWhereSql(ctx: SikesraRequestContext, filters: LocalRegionFilt
 	}
 
 	return sql.join(conditions, sql` AND `);
+}
+
+async function getPreferredLocalRegionScope(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: LocalRegionFilters,
+) {
+	if (!usesLegacyDefaultScopeFallback(ctx.tenantId, ctx.siteId)) {
+		return { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	}
+
+	const [canonicalCount, legacyCount] = await Promise.all([
+		countLocalRegions(db, ctx, filters, DEFAULT_SIKESRA_TENANT_ID, DEFAULT_SIKESRA_SITE_ID),
+		countLocalRegions(
+			db,
+			ctx,
+			filters,
+			LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+			LEGACY_DEFAULT_SIKESRA_SITE_ID,
+		),
+	]);
+
+	if (canonicalCount >= legacyCount) {
+		return { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	}
+
+	return { tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID, siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID };
+}
+
+async function countLocalRegions(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: LocalRegionFilters,
+	tenantId: string,
+	siteId: string,
+) {
+	const result = await sql<{ count: number }>`
+		SELECT COUNT(*) AS count
+		FROM awcms_sikesra_local_regions
+		WHERE ${buildLocalWhereSql(ctx, filters, { tenantId, siteId })}
+	`.execute(db as never);
+
+	return Number(result.rows[0]?.count ?? 0);
 }

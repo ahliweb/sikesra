@@ -60,6 +60,7 @@ describe("sikesraPlugin descriptor", () => {
 			"0010_sikesra_deduplication.sql",
 			"0011_sikesra_benefits_exports_audit.sql",
 			"0012_sikesra_public_summary.sql",
+			"0013_sikesra_normalize_legacy_default_scope.sql",
 		].map((file) => new URL(`../migrations/${file}`, import.meta.url));
 		const seedFiles = [
 			"0001_sikesra_settings.seed.json",

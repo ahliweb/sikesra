@@ -137,6 +137,40 @@ describe("SIKESRA region and registry services", () => {
 		expect(items[0]?.level).toBe("village");
 	});
 
+	it("falls back to the legacy default scope for official regions and entities", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('110101', 'default', 'default', 'Kecamatan Legacy', 'district', NULL, NULL),
+			('1101012001', 'default', 'default', 'Desa Legacy', 'village', '110101', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('09', 'default', 'default', 'Legacy Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '09', 'default', 'default', 'Legacy Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('legacy-entity-1', 'default', 'default', '11010120010901000001', '09', '01', 'building', 'Legacy Masjid', '1101012001', NULL, 'Jl. Legacy', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const legacyContext = makeContext({
+			tenantId: "00000000-0000-0000-0000-000000000001",
+			siteId: "main",
+			permissions: ["awcms:sikesra:entity:read"],
+		});
+
+		const regions = await listOfficialRegions(db, legacyContext, { level: "village" });
+		const entities = await listEntities(db, legacyContext, { objectTypeCode: "09" });
+
+		expect(regions).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ code: "1101012001", name: "Desa Legacy" }),
+			]),
+		);
+		expect(entities.items).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: "legacy-entity-1", objectTypeName: "Legacy Type" }),
+			]),
+		);
+	});
+
 	it("lists local regions constrained by village scope", async () => {
 		const items = await listLocalRegions(
 			db,

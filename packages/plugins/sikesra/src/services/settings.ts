@@ -2,6 +2,12 @@ import { sql } from "kysely";
 
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { guardRoute } from "../security/route-guard.js";
+import {
+	buildCanonicalScopeOrderSql,
+	DEFAULT_SIKESRA_SITE_ID,
+	DEFAULT_SIKESRA_TENANT_ID,
+	buildTenantSiteScopeSql,
+} from "../tenant-site-scope.js";
 
 export interface AuditListFilters {
 	action?: string;
@@ -63,9 +69,6 @@ export interface SettingsResponse {
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
-const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
-const DEFAULT_SITE_ID = "main";
-
 export async function listAuditEntries(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -141,8 +144,7 @@ export async function getAuditDetail(
 		SELECT id, tenant_id, site_id, actor_id, actor_role, action, resource_type, resource_id,
 			request_id, success, reason, before_json, after_json, ip_address, user_agent, created_at
 		FROM awcms_sikesra_audit_logs
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND id = ${auditId}
 		LIMIT 1
 	`.execute(db as never);
@@ -192,9 +194,19 @@ export async function getSettings(
 		SELECT public_enabled, public_title, public_description, data_scope_note,
 			official_contact, small_cell_threshold, updated_at
 		FROM awcms_sikesra_settings
-		WHERE tenant_id = ${DEFAULT_TENANT_ID}
-			AND site_id = ${DEFAULT_SITE_ID}
+		WHERE ${buildTenantSiteScopeSql(
+			"tenant_id",
+			"site_id",
+			DEFAULT_SIKESRA_TENANT_ID,
+			DEFAULT_SIKESRA_SITE_ID,
+		)}
 			AND deleted_at IS NULL
+		ORDER BY ${buildCanonicalScopeOrderSql(
+			"tenant_id",
+			"site_id",
+			DEFAULT_SIKESRA_TENANT_ID,
+			DEFAULT_SIKESRA_SITE_ID,
+		)}, updated_at DESC
 		LIMIT 1
 	`.execute(db as never);
 
@@ -238,45 +250,87 @@ export async function updateSettings(
 
 	const existing = await getSettings(db, ctx);
 
-	const updates: string[] = [];
-	const values: unknown[] = [];
+	const updates: ReturnType<typeof sql>[] = [];
 
 	if (input.publicEnabled !== undefined) {
-		updates.push("public_enabled = ?");
-		values.push(input.publicEnabled ? 1 : 0);
+		updates.push(sql`public_enabled = ${input.publicEnabled ? 1 : 0}`);
 	}
 	if (input.publicTitle !== undefined) {
-		updates.push("public_title = ?");
-		values.push(input.publicTitle);
+		updates.push(sql`public_title = ${input.publicTitle}`);
 	}
 	if (input.publicDescription !== undefined) {
-		updates.push("public_description = ?");
-		values.push(input.publicDescription);
+		updates.push(sql`public_description = ${input.publicDescription}`);
 	}
 	if (input.dataScopeNote !== undefined) {
-		updates.push("data_scope_note = ?");
-		values.push(input.dataScopeNote);
+		updates.push(sql`data_scope_note = ${input.dataScopeNote}`);
 	}
 	if (input.officialContact !== undefined) {
-		updates.push("official_contact = ?");
-		values.push(input.officialContact);
+		updates.push(sql`official_contact = ${input.officialContact}`);
 	}
 	if (input.smallCellThreshold !== undefined) {
-		updates.push("small_cell_threshold = ?");
-		values.push(input.smallCellThreshold);
+		updates.push(sql`small_cell_threshold = ${input.smallCellThreshold}`);
 	}
 
 	if (updates.length > 0) {
-		updates.push("updated_at = datetime('now')", "updated_by = ?");
-		values.push(ctx.userId);
-		values.push(DEFAULT_TENANT_ID);
-		values.push(DEFAULT_SITE_ID);
+		const canonicalSettingsId = `sikesra-settings-${crypto.randomUUID()}`;
 
-		await sql
-			.raw(
-				`UPDATE awcms_sikesra_settings SET ${updates.join(", ")} WHERE tenant_id = ? AND site_id = ? AND deleted_at IS NULL`,
+		await sql`
+			UPDATE awcms_sikesra_settings
+			SET public_enabled = ${existing.publicEnabled ? 1 : 0},
+				public_title = ${existing.publicTitle},
+				public_description = ${existing.publicDescription},
+				data_scope_note = ${existing.dataScopeNote},
+				official_contact = ${existing.officialContact},
+				small_cell_threshold = ${existing.smallCellThreshold},
+				deleted_at = NULL,
+				updated_at = datetime('now'),
+				updated_by = ${ctx.userId}
+			WHERE tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+				AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
+				AND deleted_at IS NOT NULL
+		`.execute(db as never);
+
+		await sql`
+			INSERT OR IGNORE INTO awcms_sikesra_settings (
+				id,
+				tenant_id,
+				site_id,
+				public_enabled,
+				public_title,
+				public_description,
+				data_scope_note,
+				official_contact,
+				small_cell_threshold,
+				created_at,
+				updated_at,
+				created_by,
+				updated_by
+			) VALUES (
+				${canonicalSettingsId},
+				${DEFAULT_SIKESRA_TENANT_ID},
+				${DEFAULT_SIKESRA_SITE_ID},
+				${existing.publicEnabled ? 1 : 0},
+				${existing.publicTitle},
+				${existing.publicDescription},
+				${existing.dataScopeNote},
+				${existing.officialContact},
+				${existing.smallCellThreshold},
+				datetime('now'),
+				datetime('now'),
+				${ctx.userId},
+				${ctx.userId}
 			)
-			.execute(db as never);
+		`.execute(db as never);
+
+		updates.push(sql`updated_at = datetime('now')`, sql`updated_by = ${ctx.userId}`);
+
+		await sql`
+			UPDATE awcms_sikesra_settings
+			SET ${sql.join(updates, sql`, `)}
+			WHERE tenant_id = ${DEFAULT_SIKESRA_TENANT_ID}
+				AND site_id = ${DEFAULT_SIKESRA_SITE_ID}
+				AND deleted_at IS NULL
+		`.execute(db as never);
 	}
 
 	await writeSettingsAudit(db, ctx, existing, input, reason);
@@ -285,7 +339,7 @@ export async function updateSettings(
 }
 
 function buildAuditWhereSql(ctx: SikesraRequestContext, filters: AuditListFilters) {
-	const conditions = [sql`tenant_id = ${ctx.tenantId}`, sql`site_id = ${ctx.siteId}`];
+	const conditions = [buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)];
 
 	if (filters.action) {
 		conditions.push(sql`action = ${filters.action}`);

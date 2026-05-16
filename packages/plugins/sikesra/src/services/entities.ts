@@ -5,6 +5,14 @@ import { maskAddress, maskProtectedName, type MaskingContext } from "../security
 import { SIKESRA_PERMISSIONS, type SikesraPermission } from "../security/permissions.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { checkRegionScope, guardRoute } from "../security/route-guard.js";
+import {
+	DEFAULT_SIKESRA_SITE_ID,
+	DEFAULT_SIKESRA_TENANT_ID,
+	LEGACY_DEFAULT_SIKESRA_SITE_ID,
+	LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+	buildTenantSiteScopeSql,
+	usesLegacyDefaultScopeFallback,
+} from "../tenant-site-scope.js";
 
 export interface EntityListFilters {
 	keyword?: string;
@@ -122,6 +130,7 @@ export async function listEntities(
 		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
 
 	const limit = Math.min(Math.max(filters.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+	const scope = await getPreferredEntityScope(db, ctx, filters);
 	const result = await sql<EntityRow>`
 		SELECT
 			entity.id,
@@ -171,7 +180,7 @@ export async function listEntities(
 		LEFT JOIN awcms_sikesra_local_regions local_region
 			ON local_region.id = entity.local_region_id
 			AND local_region.deleted_at IS NULL
-		WHERE ${buildEntityWhereSql(ctx, filters)}
+		WHERE ${buildEntityWhereSql(ctx, filters, scope)}
 		ORDER BY entity.updated_at DESC, entity.id DESC
 		LIMIT ${limit + 1}
 	`.execute(db as never);
@@ -244,8 +253,7 @@ export async function getEntityDetail(
 		LEFT JOIN awcms_sikesra_local_regions local_region
 			ON local_region.id = entity.local_region_id
 			AND local_region.deleted_at IS NULL
-		WHERE entity.tenant_id = ${ctx.tenantId}
-			AND entity.site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("entity.tenant_id", "entity.site_id", ctx.tenantId, ctx.siteId)}
 			AND entity.deleted_at IS NULL
 			AND entity.id = ${entityId}
 		LIMIT 1
@@ -299,10 +307,14 @@ export async function getEntityDetail(
 	};
 }
 
-function buildEntityWhereSql(ctx: SikesraRequestContext, filters: EntityListFilters) {
+function buildEntityWhereSql(
+	ctx: SikesraRequestContext,
+	filters: EntityListFilters,
+	scope: { tenantId: string; siteId: string },
+) {
 	const conditions = [
-		sql`entity.tenant_id = ${ctx.tenantId}`,
-		sql`entity.site_id = ${ctx.siteId}`,
+		sql`entity.tenant_id = ${scope.tenantId}`,
+		sql`entity.site_id = ${scope.siteId}`,
 		sql`entity.deleted_at IS NULL`,
 	];
 
@@ -354,6 +366,69 @@ function buildEntityWhereSql(ctx: SikesraRequestContext, filters: EntityListFilt
 	}
 
 	return sql.join(conditions, sql` AND `);
+}
+
+async function getPreferredEntityScope(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: EntityListFilters,
+) {
+	if (!usesLegacyDefaultScopeFallback(ctx.tenantId, ctx.siteId)) {
+		return { tenantId: ctx.tenantId, siteId: ctx.siteId };
+	}
+
+	const [canonicalCount, legacyCount] = await Promise.all([
+		countEntities(db, ctx, filters, DEFAULT_SIKESRA_TENANT_ID, DEFAULT_SIKESRA_SITE_ID),
+		countEntities(
+			db,
+			ctx,
+			filters,
+			LEGACY_DEFAULT_SIKESRA_TENANT_ID,
+			LEGACY_DEFAULT_SIKESRA_SITE_ID,
+		),
+	]);
+
+	if (canonicalCount >= legacyCount) {
+		return { tenantId: DEFAULT_SIKESRA_TENANT_ID, siteId: DEFAULT_SIKESRA_SITE_ID };
+	}
+
+	return { tenantId: LEGACY_DEFAULT_SIKESRA_TENANT_ID, siteId: LEGACY_DEFAULT_SIKESRA_SITE_ID };
+}
+
+async function countEntities(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	filters: EntityListFilters,
+	tenantId: string,
+	siteId: string,
+) {
+	const result = await sql<{ count: number }>`
+		SELECT COUNT(*) AS count
+		FROM awcms_sikesra_entities entity
+		JOIN awcms_sikesra_object_types object_type
+			ON object_type.tenant_id = entity.tenant_id
+			AND object_type.site_id = entity.site_id
+			AND object_type.code = entity.object_type_code
+		JOIN awcms_sikesra_object_subtypes object_subtype
+			ON object_subtype.tenant_id = entity.tenant_id
+			AND object_subtype.site_id = entity.site_id
+			AND object_subtype.type_code = entity.object_type_code
+			AND object_subtype.code = entity.object_subtype_code
+		JOIN awcms_sikesra_official_regions village
+			ON village.tenant_id = entity.tenant_id
+			AND village.site_id = entity.site_id
+			AND village.code = entity.official_village_code
+		LEFT JOIN awcms_sikesra_official_regions district
+			ON district.tenant_id = village.tenant_id
+			AND district.site_id = village.site_id
+			AND district.code = village.parent_code
+		LEFT JOIN awcms_sikesra_local_regions local_region
+			ON local_region.id = entity.local_region_id
+			AND local_region.deleted_at IS NULL
+		WHERE ${buildEntityWhereSql(ctx, filters, { tenantId, siteId })}
+	`.execute(db as never);
+
+	return Number(result.rows[0]?.count ?? 0);
 }
 
 function mapEntitySummary(row: EntityRow, ctx: SikesraRequestContext): EntitySummary {
@@ -464,8 +539,7 @@ async function getDetailRecord(
 	const result = await sql<Record<string, unknown>>`
 		SELECT *
 		FROM ${sql.ref(tableName)}
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND deleted_at IS NULL
 			AND entity_id = ${entityId}
 		LIMIT 1

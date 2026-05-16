@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import type { SikesraRequestContext } from "./security/request-context.js";
 import { guardRoute } from "./security/route-guard.js";
+import { buildTenantSiteScopeSql } from "./tenant-site-scope.js";
 
 // ── Block Types (inline to avoid @emdash-cms/blocks dependency) ─────────────
 
@@ -206,8 +207,7 @@ async function loadDashboardKpis(db: unknown, ctx: SikesraRequestContext) {
 			SUM(CASE WHEN status_verification = 'need_revision' THEN 1 ELSE 0 END) as need_revision,
 			SUM(CASE WHEN status_verification = 'rejected' THEN 1 ELSE 0 END) as rejected
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND deleted_at IS NULL
 	`.execute(db as never);
 
@@ -234,9 +234,9 @@ async function loadWorkQueues(db: unknown, ctx: SikesraRequestContext): Promise<
 		incomplete_documents: number;
 	}>`
 		SELECT
-			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE tenant_id = ${ctx.tenantId} AND site_id = ${ctx.siteId} AND deleted_at IS NULL AND status_verification LIKE 'submitted%') as pending_verification,
-			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE tenant_id = ${ctx.tenantId} AND site_id = ${ctx.siteId} AND deleted_at IS NULL AND duplicate_status = 'candidate') as duplicate_candidates,
-			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE tenant_id = ${ctx.tenantId} AND site_id = ${ctx.siteId} AND deleted_at IS NULL AND completeness_score < 100) as incomplete_documents
+			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)} AND deleted_at IS NULL AND status_verification LIKE 'submitted%') as pending_verification,
+			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)} AND deleted_at IS NULL AND duplicate_status = 'candidate') as duplicate_candidates,
+			(SELECT COUNT(*) FROM awcms_sikesra_entities WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)} AND deleted_at IS NULL AND completeness_score < 100) as incomplete_documents
 	`.execute(db as never);
 
 	const row = result.rows[0];
@@ -261,8 +261,7 @@ async function loadRecentAudit(
 	}>`
 		SELECT action, actor_id, resource_type, resource_id, created_at
 		FROM awcms_sikesra_audit_logs
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 		ORDER BY created_at DESC
 		LIMIT ${limit}
 	`.execute(db as never);
@@ -303,8 +302,7 @@ async function buildAuditList(db: unknown, ctx: SikesraRequestContext): Promise<
 	}>`
 		SELECT id, action, actor_id, resource_type, resource_id, success, created_at
 		FROM awcms_sikesra_audit_logs
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 		ORDER BY created_at DESC
 		LIMIT 50
 	`.execute(db as never);
@@ -404,8 +402,7 @@ async function buildAuditDetail(
 	}>`
 		SELECT id, action, actor_id, actor_role, resource_type, resource_id, request_id, success, reason, ip_address, user_agent, created_at
 		FROM awcms_sikesra_audit_logs
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND id = ${auditId}
 		LIMIT 1
 	`.execute(db as never);
@@ -737,8 +734,7 @@ async function buildEntityList(db: unknown, ctx: SikesraRequestContext): Promise
 		SELECT id, sikesra_id_20, object_type_code, object_subtype_code, display_name,
 			status_data, status_verification, sensitivity_level, completeness_score, created_at
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT 50
@@ -873,8 +869,7 @@ async function buildEntityDetail(
 			status_data, status_verification, sensitivity_level, completeness_score,
 			source_input, created_at, updated_at
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND id = ${entityId}
 			AND deleted_at IS NULL
 		LIMIT 1
@@ -967,8 +962,7 @@ async function buildVerificationQueue(
 		SELECT id, sikesra_id_20, display_name, object_type_code, status_verification,
 			submitted_at, completeness_score
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND deleted_at IS NULL
 			AND status_verification LIKE 'submitted%'
 		ORDER BY submitted_at ASC
@@ -990,8 +984,7 @@ async function buildVerificationQueue(
 			COUNT(*) as total_submitted,
 			AVG(completeness_score) as avg_completeness
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND deleted_at IS NULL
 			AND status_verification LIKE 'submitted%'
 	`.execute(db as never);
@@ -1072,8 +1065,7 @@ async function buildVerificationReview(
 		SELECT id, sikesra_id_20, display_name, object_type_code, object_subtype_code,
 			status_verification, completeness_score
 		FROM awcms_sikesra_entities
-		WHERE tenant_id = ${ctx.tenantId}
-			AND site_id = ${ctx.siteId}
+		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
 			AND id = ${entityId}
 			AND deleted_at IS NULL
 		LIMIT 1
