@@ -1339,8 +1339,8 @@ async function buildEntityList(
 		blocks.push({
 			type: "table",
 			columns: [
-				{ key: "entityId", label: "Entity ID", format: "text" },
-				{ key: "id", label: "ID SIKESRA", format: "code" },
+				{ key: "id", label: "Entity ID", format: "text" },
+				{ key: "sikesraId", label: "ID SIKESRA", format: "code" },
 				{ key: "type", label: "Tipe", format: "badge" },
 				{ key: "displayName", label: "Nama", format: "text" },
 				{ key: "statusData", label: "Status Data", format: "badge" },
@@ -1350,8 +1350,8 @@ async function buildEntityList(
 				{ key: "actions", label: "Aksi", format: "text" },
 			],
 			rows: result.items.map((row) => ({
-				entityId: row.id,
-				id: row.sikesraId20 ?? row.id.slice(0, 12),
+				id: row.id,
+				sikesraId: row.sikesraId20 ?? row.id.slice(0, 12),
 				type: `${row.objectTypeName} / ${row.objectSubtypeName}`,
 				displayName: row.displayName,
 				statusData: row.statusData,
@@ -2354,7 +2354,7 @@ function parseEntityFilters(values: Record<string, unknown> | undefined): Entity
 
 function getActionEntityId(values: Record<string, unknown> | undefined) {
 	if (typeof values?.entityId === "string" && values.entityId) return values.entityId;
-	if (typeof values?.id === "string" && values.id.startsWith("ent_")) return values.id;
+	if (typeof values?.id === "string" && values.id) return values.id;
 	return undefined;
 }
 
