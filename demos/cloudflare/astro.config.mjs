@@ -15,6 +15,19 @@ import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 
+function isPluginEnabled(pluginId) {
+	const raw = process.env.AWCMS_ENABLED_PLUGINS ?? "";
+	const enabled = raw
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+	if (enabled.length === 0) return true;
+	return enabled.includes(pluginId);
+}
+
+const plugins = [isPluginEnabled("sikesra") ? sikesraPlugin() : null, isPluginEnabled("forms") ? formsPlugin() : null].filter(Boolean);
+const sandboxedPlugins = [isPluginEnabled("webhook-notifier") ? webhookNotifierPlugin() : null].filter(Boolean);
+
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare({
@@ -35,7 +48,7 @@ export default defineConfig({
 	},
 	integrations: [
 		react(),
-		emdash({
+			emdash({
 			// D1 database - binding name must match wrangler.jsonc
 			// session: "auto" enables read replicas (nearest replica for anon,
 			// bookmark-based consistency for authenticated users)
@@ -57,13 +70,9 @@ export default defineConfig({
 				}),
 			],
 			// Trusted plugins (run in host worker)
-			plugins: [
-				sikesraPlugin(),
-				// Test plugin that exercises all v2 APIs
-				formsPlugin(),
-			],
-			// Sandboxed plugins (run in isolated workers)
-			sandboxed: [webhookNotifierPlugin()],
+				plugins,
+				// Sandboxed plugins (run in isolated workers)
+				sandboxed: sandboxedPlugins,
 			// Sandbox runner for Cloudflare
 			sandboxRunner: sandbox(),
 			// Plugin marketplace
