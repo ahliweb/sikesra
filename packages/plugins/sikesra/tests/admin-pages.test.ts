@@ -371,6 +371,39 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it("opens the correct entity detail from a Registry row using the real entity ID payload", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-registry-1', 'tenant-1', 'site-1', '62010110010101000999', '01', '01', 'building', 'Masjid Registry', '6201011001', 'local-1', 'Jl. Registry', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_rumah_ibadah_details VALUES
+			('detail-registry-1', 'tenant-1', 'site-1', 'entity-registry-1', 'Masjid', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1');
+		`);
+
+		const registry = await buildAdminPage(db, makeContext(), "/entities");
+		const tableBlock = registry.blocks.find((block) => block.type === "table");
+		const rows = Array.isArray(tableBlock?.rows) ? tableBlock.rows : [];
+		const targetRow = rows.find((row) => row.displayName === "Masjid Registry");
+
+		expect(targetRow).toEqual(
+			expect.objectContaining({
+				id: "entity-registry-1",
+				sikesraId: "62010110010101000999",
+			}),
+		);
+
+		const detail = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "block_action",
+			values: { action_id: "entities:view", id: "entity-registry-1" },
+		});
+
+		expect(detail.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Masjid Registry" }),
+				expect.objectContaining({ type: "context", text: "ID: 62010110010101000999" }),
+			]),
+		);
+	});
+
 	it.each([
 		{
 			objectTypeCode: "05",
