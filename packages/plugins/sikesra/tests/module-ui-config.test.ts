@@ -45,10 +45,10 @@ describe("SIKESRA module UI config", () => {
 
 	it("marks person-profile modules clearly for interim UX", () => {
 		const expectedHelperText = {
-			"05": "Masukkan ID profil orang yang sudah ada. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini.",
-			"06": "Masukkan ID profil orang yang sudah ada. Detail identitas sensitif tetap dimask server-side.",
-			"07": "Masukkan ID profil orang yang sudah ada. Detail sensitif tidak akan ditampilkan penuh pada review umum.",
-			"08": "Masukkan ID profil orang yang sudah ada. Workflow pencarian dan pembuatan profil baru masih akan ditingkatkan.",
+			"05": "Isi ID profil orang hanya jika memilih tautkan profil yang sudah ada. Untuk alur cepat, gunakan pembuatan profil inline di form detail.",
+			"06": "Isi ID profil orang hanya jika memilih tautkan profil yang sudah ada. Detail identitas sensitif tetap dimask server-side.",
+			"07": "Isi ID profil orang hanya jika memilih tautkan profil yang sudah ada. Detail sensitif tidak akan ditampilkan penuh pada review umum.",
+			"08": "Isi ID profil orang hanya jika memilih tautkan profil yang sudah ada. Pembuatan profil inline tersedia, sedangkan pencarian profil masih akan ditingkatkan.",
 		} as const;
 
 		for (const code of ["05", "06", "07", "08"] as const) {

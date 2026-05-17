@@ -1477,6 +1477,9 @@ async function handleEntityAction(
 	}
 	if (actionId === "entities:update_section") {
 		const input = normalizeDraftUpdateForm(action.values);
+		if (input.section === "details") {
+			input.patch = await preparePersonProfilePatch(db, ctx, input.entityId, input.patch);
+		}
 		await updateDraft(db, ctx, input);
 		const detail = await buildEntityDetail(db, ctx, input.entityId);
 		return { ...detail, toast: { message: "Draft berhasil diperbarui", type: "success" } };
@@ -1838,6 +1841,10 @@ async function buildEntityEditForm(
 	const detailModule = getDetailModuleConfig(detail.entity.objectTypeCode);
 	const moduleUi = getModuleUiConfig(detail.entity.objectTypeCode);
 	const subtypeOptions = getModuleSubtypeOptions(detail.entity.objectTypeCode);
+	const personProfileWorkflowFields =
+		section === "details" && moduleUi?.entityKind === "person"
+			? buildPersonProfileInputFields(detail)
+			: [];
 	const fields =
 		section === "identity"
 			? [
@@ -1868,7 +1875,7 @@ async function buildEntityEditForm(
 						{ type: "text_input", action_id: "local_region_id", label: "Local Region ID", value: detail.entity.localRegion?.id ?? "" },
 						{ type: "text_input", action_id: "address_text", label: "Alamat", multiline: true, value: (detail.summary.addressText as string | null) ?? "" },
 					]
-				: buildModuleDetailFields(detail.entity.objectTypeCode, detail.details, detailModule?.fields ?? []);
+				: [...personProfileWorkflowFields, ...buildModuleDetailFields(detail.entity.objectTypeCode, detail.details, detailModule?.fields ?? [])];
 
 	return {
 		blocks: [
@@ -2297,6 +2304,53 @@ async function auditBlockedSubmitAttempt(
 	}
 }
 
+async function preparePersonProfilePatch(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	patch: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+	const detail = await getEntityDetail(db, ctx, entityId);
+	if (detail.entity.entityKind !== "person") {
+		const { person_profile_mode: _mode, person_profile_full_name: _fullName, ...rest } = patch;
+		return rest;
+	}
+
+	const mode = typeof patch.person_profile_mode === "string" ? patch.person_profile_mode : "create_inline";
+	const { person_profile_mode: _mode, person_profile_full_name: _fullName, ...rest } = patch;
+
+	if (mode !== "create_inline") {
+		return rest;
+	}
+
+	const existingProfileId = typeof rest.person_profile_id === "string" ? rest.person_profile_id.trim() : "";
+	if (existingProfileId) {
+		return { ...rest, person_profile_id: existingProfileId };
+	}
+
+	const fullNameRaw = typeof patch.person_profile_full_name === "string" ? patch.person_profile_full_name.trim() : "";
+	const fullName = fullNameRaw || detail.entity.displayName;
+	const personProfileId = `person_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+	await sql`
+		INSERT INTO awcms_sikesra_person_profiles (
+			id,
+			tenant_id,
+			site_id,
+			full_name,
+			deleted_at
+		) VALUES (
+			${personProfileId},
+			${ctx.tenantId},
+			${ctx.siteId},
+			${fullName},
+			${null}
+		)
+	`.execute(db as never);
+
+	return { ...rest, person_profile_id: personProfileId };
+}
+
 async function buildEntityLifecycleForm(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -2541,6 +2595,32 @@ function buildModuleDetailFields(
 	});
 }
 
+function buildPersonProfileInputFields(detail: Awaited<ReturnType<typeof getEntityDetail>>): Block[] {
+	const existingProfileId =
+		typeof detail.details?.person_profile_id === "string" ? detail.details.person_profile_id : "";
+	return [
+		{
+			type: "select",
+			action_id: "person_profile_mode",
+			label: "Aksi Profil Orang",
+			value: existingProfileId ? "link_existing" : "create_inline",
+			options: [
+				{ label: "Buat profil orang dari form ini", value: "create_inline" },
+				{ label: "Tautkan profil yang sudah ada", value: "link_existing" },
+			],
+			description: "Pilih pembuatan profil inline untuk menghindari pengisian ID teknis secara manual.",
+		},
+		{
+			type: "text_input",
+			action_id: "person_profile_full_name",
+			label: "Nama Lengkap Profil Orang",
+			value: detail.entity.displayName,
+			placeholder: "Kosongkan untuk memakai Nama Tampilan entitas",
+			description: "Dipakai saat memilih buat profil orang dari form ini.",
+		},
+	];
+}
+
 function buildPersonProfileWorkflowBlocks(objectTypeCode: string): Block[] {
 	const profileLabel = getReadableFieldLabel(objectTypeCode, "person_profile_id");
 	const helperText = getModuleUiFieldConfig(objectTypeCode, "person_profile_id")?.helperText ?? "";
@@ -2552,14 +2632,14 @@ function buildPersonProfileWorkflowBlocks(objectTypeCode: string): Block[] {
 			type: "banner",
 			variant: "info",
 			title: "Status Implementasi Saat Ini",
-			description: `${profileLabel} masih memakai ID profil yang sudah ada sebagai jalur utama. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini.`,
+			description: `${profileLabel} sekarang bisa dibuat inline dari form detail, atau ditautkan ke profil yang sudah ada bila operator sudah mengetahui ID-nya. Pencarian profil yang sudah ada masih belum tersedia langsung di shell admin ini.`,
 		},
 		{
 			type: "fields",
 			fields: [
 				{ label: "Link profil yang sudah ada", value: `Didukung sekarang melalui field ${profileLabel}` },
+				{ label: "Buat profil orang dari form ini", value: "Didukung sekarang tanpa perlu mengetik ID teknis manual" },
 				{ label: "Cari profil yang sudah ada", value: "Belum tersedia langsung di shell admin ini" },
-				{ label: "Buat profil orang baru", value: "Belum tersedia langsung di shell admin ini" },
 				{ label: "Catatan", value: helperText },
 			],
 		},
