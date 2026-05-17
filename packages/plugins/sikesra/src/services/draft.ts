@@ -319,6 +319,10 @@ export async function validateEntity(
 
 	for (const sectionDef of SECTION_DEFINITIONS) {
 		const errors = validateSectionData(sectionDef.key, entity, detailRecord);
+		if (sectionDef.key === "details") {
+			const personProfileErrors = await validatePersonProfileReference(db, ctx, detailRecord);
+			errors.push(...personProfileErrors);
+		}
 		sections.push({
 			sectionKey: sectionDef.key,
 			errors,
@@ -334,6 +338,36 @@ export async function validateEntity(
 		overallPercent,
 		sections,
 	};
+}
+
+async function validatePersonProfileReference(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	detailRecord?: Record<string, unknown>,
+): Promise<ValidationError[]> {
+	const personProfileId =
+		typeof detailRecord?.person_profile_id === "string" ? detailRecord.person_profile_id.trim() : "";
+	if (!personProfileId) return [];
+
+	const result = await sql<{ id: string }>`
+		SELECT id
+		FROM awcms_sikesra_person_profiles
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND id = ${personProfileId}
+			AND deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	if (result.rows[0]) return [];
+
+	return [
+		{
+			field: "person_profile_id",
+			message: "Profil Orang yang dipilih belum ditemukan di tenant/site ini",
+			code: "NOT_FOUND",
+		},
+	];
 }
 
 export async function calculateCompleteness(

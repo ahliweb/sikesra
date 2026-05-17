@@ -183,7 +183,7 @@ export const SIKESRA_MODULE_UI_CONFIG: readonly ModuleUiConfig[] = [
 			{ code: "99", label: "Lainnya" },
 		],
 		detailFields: [
-			{ key: "person_profile_id", label: "Person Profile", input: "text", required: true, helperText: "Gunakan ID profil orang yang tersedia. Pencarian/linking profil akan ditingkatkan pada tindak lanjut terpisah." },
+			{ key: "person_profile_id", label: "Profil Orang", input: "text", required: true, helperText: "Masukkan ID profil orang yang sudah ada. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini." },
 			{ key: "agama", label: "Agama", input: "select", required: true, options: [
 				{ label: "Islam", value: "Islam" },
 				{ label: "Kristen", value: "Kristen" },
@@ -217,7 +217,7 @@ export const SIKESRA_MODULE_UI_CONFIG: readonly ModuleUiConfig[] = [
 			{ code: "03", label: "Yatim Piatu" },
 		],
 		detailFields: [
-			{ key: "person_profile_id", label: "Person Profile", input: "text", required: true, helperText: "Gunakan ID profil orang yang tersedia. Detail identitas sensitif tetap dimask server-side." },
+			{ key: "person_profile_id", label: "Profil Orang", input: "text", required: true, helperText: "Masukkan ID profil orang yang sudah ada. Detail identitas sensitif tetap dimask server-side." },
 			{ key: "kategori_anak", label: "Kategori Anak", input: "select", required: true, options: [
 				{ label: "Yatim", value: "yatim" },
 				{ label: "Piatu", value: "piatu" },
@@ -244,7 +244,7 @@ export const SIKESRA_MODULE_UI_CONFIG: readonly ModuleUiConfig[] = [
 			{ code: "04", label: "Sensorik" },
 		],
 		detailFields: [
-			{ key: "person_profile_id", label: "Person Profile", input: "text", required: true, helperText: "Gunakan ID profil orang yang tersedia. Detail sensitif tidak akan ditampilkan penuh pada review umum." },
+			{ key: "person_profile_id", label: "Profil Orang", input: "text", required: true, helperText: "Masukkan ID profil orang yang sudah ada. Detail sensitif tidak akan ditampilkan penuh pada review umum." },
 			{ key: "jenis_disabilitas", label: "Jenis Disabilitas", input: "select", required: true, options: [
 				{ label: "Fisik", value: "Fisik" },
 				{ label: "Intelektual", value: "Intelektual" },
@@ -275,7 +275,7 @@ export const SIKESRA_MODULE_UI_CONFIG: readonly ModuleUiConfig[] = [
 			{ code: "03", label: "Mandiri dengan Risiko" },
 		],
 		detailFields: [
-			{ key: "person_profile_id", label: "Person Profile", input: "text", required: true, helperText: "Gunakan ID profil orang yang tersedia. Workflow pencarian/linking profil masih akan ditingkatkan." },
+			{ key: "person_profile_id", label: "Profil Orang", input: "text", required: true, helperText: "Masukkan ID profil orang yang sudah ada. Workflow pencarian dan pembuatan profil baru masih akan ditingkatkan." },
 			{ key: "status_keterlantaran", label: "Status Keterlantaran", input: "select", required: true, options: [
 				{ label: "Terlantar", value: "terlantar" },
 				{ label: "Rawan Terlantar", value: "rawan_terlantar" },
