@@ -5,6 +5,7 @@
 import type { Kysely } from "kysely";
 
 import type { Database } from "../../database/types.js";
+import type { SandboxedPluginEntry } from "../../emdash-runtime.js";
 import { PluginStateRepository, type PluginState, type PluginStatus } from "../../plugins/state.js";
 import type { ResolvedPlugin } from "../../plugins/types.js";
 import type { ApiResult } from "../types.js";
@@ -39,15 +40,63 @@ export interface PluginResponse {
 	item: PluginInfo;
 }
 
+interface PluginCatalogEntry {
+	id: string;
+	version: string;
+	capabilities: string[];
+	adminPages: Array<{ path: string; label?: string; icon?: string }>;
+	adminWidgets: Array<{ id: string; title?: string; size?: string }>;
+	hasHooks: boolean;
+}
+
 function marketplaceIconUrl(marketplaceUrl: string, pluginId: string): string {
 	return `${marketplaceUrl}/api/v1/plugins/${encodeURIComponent(pluginId)}/icon`;
+}
+
+function toPluginCatalogEntry(
+	plugin: ResolvedPlugin | SandboxedPluginEntry,
+): PluginCatalogEntry {
+	if ("admin" in plugin) {
+		return {
+			id: plugin.id,
+			version: plugin.version,
+			capabilities: plugin.capabilities,
+			adminPages: plugin.admin.pages ?? [],
+			adminWidgets: plugin.admin.widgets ?? [],
+			hasHooks: Object.keys(plugin.hooks ?? {}).length > 0,
+		};
+	}
+
+	return {
+		id: plugin.id,
+		version: plugin.version,
+		capabilities: plugin.capabilities,
+		adminPages: plugin.adminPages ?? [],
+		adminWidgets: plugin.adminWidgets ?? [],
+		hasHooks: false,
+	};
+}
+
+function mergePluginCatalog(
+	configuredPlugins: ResolvedPlugin[],
+	sandboxedPluginEntries: SandboxedPluginEntry[],
+): PluginCatalogEntry[] {
+	const merged = configuredPlugins.map(toPluginCatalogEntry);
+	const configuredIds = new Set(merged.map((plugin) => plugin.id));
+
+	for (const entry of sandboxedPluginEntries) {
+		if (configuredIds.has(entry.id)) continue;
+		merged.push(toPluginCatalogEntry(entry));
+	}
+
+	return merged;
 }
 
 /**
  * Get plugin info from configured plugin and database state
  */
 function buildPluginInfo(
-	plugin: ResolvedPlugin,
+	plugin: PluginCatalogEntry,
 	state: PluginState | null,
 	marketplaceUrl?: string,
 ): PluginInfo {
@@ -66,9 +115,9 @@ function buildPluginInfo(
 		source: state?.source ?? "config",
 		marketplaceVersion: state?.marketplaceVersion ?? undefined,
 		capabilities: plugin.capabilities,
-		hasAdminPages: (plugin.admin.pages?.length ?? 0) > 0,
-		hasDashboardWidgets: (plugin.admin.widgets?.length ?? 0) > 0,
-		hasHooks: Object.keys(plugin.hooks ?? {}).length > 0,
+		hasAdminPages: plugin.adminPages.length > 0,
+		hasDashboardWidgets: plugin.adminWidgets.length > 0,
+		hasHooks: plugin.hasHooks,
 		installedAt: state?.installedAt?.toISOString(),
 		activatedAt: state?.activatedAt?.toISOString() ?? undefined,
 		deactivatedAt: state?.deactivatedAt?.toISOString() ?? undefined,
@@ -84,6 +133,7 @@ function buildPluginInfo(
 export async function handlePluginList(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
+	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	marketplaceUrl?: string,
 ): Promise<ApiResult<PluginListResponse>> {
 	try {
@@ -91,9 +141,10 @@ export async function handlePluginList(
 		const allStates = await stateRepo.getAll();
 		const stateMap = new Map(allStates.map((s) => [s.pluginId, s]));
 
-		const configuredIds = new Set(configuredPlugins.map((p) => p.id));
+		const availablePlugins = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries);
+		const configuredIds = new Set(availablePlugins.map((p) => p.id));
 
-		const items = configuredPlugins.map((plugin) => {
+		const items = availablePlugins.map((plugin) => {
 			const state = stateMap.get(plugin.id) ?? null;
 			return buildPluginInfo(plugin, state, marketplaceUrl);
 		});
@@ -144,11 +195,14 @@ export async function handlePluginList(
 export async function handlePluginGet(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
+	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 	marketplaceUrl?: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = configuredPlugins.find((p) => p.id === pluginId);
+		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
+			(p) => p.id === pluginId,
+		);
 		if (!plugin) {
 			return {
 				success: false,
@@ -183,10 +237,13 @@ export async function handlePluginGet(
 export async function handlePluginEnable(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
+	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = configuredPlugins.find((p) => p.id === pluginId);
+		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
+			(p) => p.id === pluginId,
+		);
 		if (!plugin) {
 			return {
 				success: false,
@@ -221,10 +278,13 @@ export async function handlePluginEnable(
 export async function handlePluginDisable(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
+	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = configuredPlugins.find((p) => p.id === pluginId);
+		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
+			(p) => p.id === pluginId,
+		);
 		if (!plugin) {
 			return {
 				success: false,

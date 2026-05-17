@@ -27,9 +27,16 @@ export const GET: APIRoute = async ({ params, locals }) => {
 		return apiError("INVALID_REQUEST", "Plugin ID required", 400);
 	}
 
+	const sandboxedPluginEntries = emdash.sandboxedPluginEntries ?? [];
+	const sandboxedPlugins = emdash.sandboxedPlugins ?? new Map();
+	const loadedSandboxedPluginEntries = sandboxedPluginEntries.filter((entry) =>
+		sandboxedPlugins.has(`${entry.id}:${entry.version}`),
+	);
+
 	const result = await handlePluginGet(
 		emdash.db,
 		emdash.configuredPlugins,
+		loadedSandboxedPluginEntries,
 		id,
 		emdash.config.marketplace,
 	);

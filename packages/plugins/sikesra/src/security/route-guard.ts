@@ -8,6 +8,7 @@ export type GuardAction =
 	| "entity:create"
 	| "entity:update"
 	| "entity:delete"
+	| "entity:restore"
 	| "verification:submit"
 	| "verification:verify"
 	| "document:upload"
@@ -38,6 +39,7 @@ const GUARD_PERMISSION_MAP: Record<GuardAction, string> = {
 	"entity:create": SIKESRA_PERMISSIONS.ENTITY_CREATE,
 	"entity:update": SIKESRA_PERMISSIONS.ENTITY_UPDATE,
 	"entity:delete": SIKESRA_PERMISSIONS.ENTITY_DELETE,
+	"entity:restore": SIKESRA_PERMISSIONS.ENTITY_RESTORE,
 	"verification:submit": SIKESRA_PERMISSIONS.VERIFICATION_SUBMIT,
 	"verification:verify": SIKESRA_PERMISSIONS.VERIFICATION_VERIFY,
 	"document:upload": SIKESRA_PERMISSIONS.DOCUMENT_UPLOAD,

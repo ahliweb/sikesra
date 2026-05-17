@@ -89,11 +89,11 @@ describe("sikesraPlugin descriptor", () => {
 		expect(SIKESRA_PUBLIC_ROUTE).toBe("/sikesra");
 		expect(SIKESRA_ADMIN_BASE).toBe("/_emdash/admin/plugins/sikesra");
 		expect(SIKESRA_API_BASE).toBe("/_emdash/api/plugins/sikesra");
-		expect(SIKESRA_ROUTE_NAMES).toEqual([
-			"admin",
-			"public/metadata",
-			"public/filters",
-			"public/summary",
+			expect(SIKESRA_ROUTE_NAMES).toEqual([
+				"admin",
+				"public/metadata",
+				"public/filters",
+				"public/summary",
 			"v1/status",
 			"v1/security/manifest",
 			"v1/entities",
@@ -101,10 +101,12 @@ describe("sikesraPlugin descriptor", () => {
 			"v1/entities/draft",
 			"v1/entities/draft/update",
 			"v1/entities/draft/autosave",
-			"v1/entities/validate",
-			"v1/entities/code/generate",
-			"v1/entities/code/correct",
-			"v1/regions/official",
+				"v1/entities/validate",
+				"v1/entities/code/generate",
+				"v1/entities/code/correct",
+				"v1/entities/archive",
+				"v1/entities/restore",
+				"v1/regions/official",
 			"v1/regions/local",
 			"v1/verification/submit",
 			"v1/verification/queue",
@@ -148,16 +150,25 @@ describe("sikesra sandbox shell", () => {
 		expect(
 			getAdminPageTarget({ type: "form_submit", action_id: "verification:submit_decision" }),
 		).toBe("/verification");
-		expect(getAdminPageTarget({ type: "block_action", action_id: "audit:view_detail" })).toBe(
-			"/audit",
-		);
-		expect(getAdminPageTarget({ type: "form_submit", action_id: "settings:update" })).toBe(
-			"/settings",
-		);
-		expect(getAdminPageTarget({ type: "block_action", action_id: "navigate:imports" })).toBe(
-			"/operations",
-		);
-	});
+			expect(getAdminPageTarget({ type: "block_action", action_id: "audit:view_detail" })).toBe(
+				"/audit",
+			);
+			expect(getAdminPageTarget({ type: "form_submit", action_id: "settings:update" })).toBe(
+				"/settings",
+			);
+			expect(getAdminPageTarget({ type: "block_action", action_id: "navigate:imports" })).toBe(
+				"/operations/imports",
+			);
+			expect(getAdminPageTarget({ type: "block_action", action_id: "navigate:documents" })).toBe(
+				"/operations/documents",
+			);
+			expect(getAdminPageTarget({ type: "block_action", action_id: "navigate:reports" })).toBe(
+				"/operations/reports",
+			);
+			expect(getAdminPageTarget({ type: "block_action", action_id: "operations:back" })).toBe(
+				"/operations",
+			);
+		});
 
 	it("registers every expected shell route", () => {
 		expect(Object.keys(defaultPlugin.routes)).toEqual([...SIKESRA_ROUTE_NAMES]);
@@ -243,7 +254,7 @@ describe("sikesra sandbox shell", () => {
 						fields: expect.arrayContaining([
 							expect.objectContaining({
 								label: "Admin route",
-								value: `${SIKESRA_ADMIN_BASE}/operations`,
+								value: `${SIKESRA_ADMIN_BASE}/operations/imports`,
 							}),
 						]),
 					}),

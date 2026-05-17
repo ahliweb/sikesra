@@ -17,6 +17,8 @@ export const SIKESRA_ROUTE_NAMES = [
 	"v1/entities/validate",
 	"v1/entities/code/generate",
 	"v1/entities/code/correct",
+	"v1/entities/archive",
+	"v1/entities/restore",
 	"v1/regions/official",
 	"v1/regions/local",
 	"v1/verification/submit",
@@ -98,6 +100,9 @@ export interface AdminInteraction {
 const SIKESRA_ADMIN_PAGE_TARGETS = new Set([
 	"/",
 	"/operations",
+	"/operations/documents",
+	"/operations/imports",
+	"/operations/reports",
 	"/entities",
 	"/verification",
 	"/audit",
@@ -113,13 +118,11 @@ function getAdminPageTargetFromActionId(actionId: string | undefined): string | 
 	if (actionId === "navigate:dashboard") return "/";
 	if (actionId === "navigate:verification") return "/verification";
 	if (actionId.startsWith("navigate:entities")) return "/entities";
-	if (
-		actionId === "navigate:documents" ||
-		actionId === "navigate:imports" ||
-		actionId === "navigate:reports"
-	) {
-		return "/operations";
-	}
+	if (actionId === "navigate:documents") return "/operations/documents";
+	if (actionId === "navigate:imports") return "/operations/imports";
+	if (actionId === "navigate:reports") return "/operations/reports";
+	if (actionId === "navigate:operations") return "/operations";
+	if (actionId === "operations:back") return "/operations";
 	return null;
 }
 
@@ -169,11 +172,12 @@ export function buildPublicSummary(): SikesraPublicSummary {
 }
 
 export function buildAdminBlocks(page = "/") {
-	const title = page === "/operations" ? "SIKESRA Operations" : "SIKESRA";
-	const description =
-		page === "/operations"
-			? "Operational workflows will be restored as isolated follow-up routes."
-			: "Plugin shell restored through supported EmDash admin and plugin route boundaries.";
+	const title = page.startsWith("/operations") ? "SIKESRA Operations" : "SIKESRA";
+	const description = page.startsWith("/operations")
+		? page === "/operations"
+			? "Operational workflows are now split into dedicated documents, imports, and reports subpages."
+			: "Operational workflow subpage restored through supported EmDash admin boundaries."
+		: "Plugin shell restored through supported EmDash admin and plugin route boundaries.";
 
 	return {
 		blocks: [

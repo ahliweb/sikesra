@@ -1,5 +1,7 @@
 import { sql } from "kysely";
 
+import { getDetailModuleConfig } from "../detail-modules.js";
+import { AUDIT_ACTIONS } from "../security/audit.js";
 import { evaluateAbac, buildAbacSubject, type AbacResource } from "../security/abac.js";
 import { maskAddress, maskProtectedName, type MaskingContext } from "../security/masking.js";
 import { SIKESRA_PERMISSIONS, type SikesraPermission } from "../security/permissions.js";
@@ -78,6 +80,29 @@ export interface EntityDetailResponse {
 	};
 }
 
+export interface EntityArchiveInput {
+	entityId: string;
+	reason: string;
+	confirmed: boolean;
+}
+
+export interface EntityArchiveResult {
+	entityId: string;
+	statusData: string;
+	previousStatusData: string;
+	audited: boolean;
+}
+
+export interface EntityDuplicatePreviewItem {
+	candidateId: string;
+	otherEntityId: string;
+	otherDisplayName: string;
+	riskLevel: string;
+	matchScore: number | null;
+	detectionSource: string;
+	matchSignals: string[];
+}
+
 interface EntityRow {
 	id: string;
 	sikesra_id_20: string | null;
@@ -109,17 +134,6 @@ interface EntityRow {
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
-const DETAIL_TABLES: Record<string, string> = {
-	"01": "awcms_sikesra_rumah_ibadah_details",
-	"02": "awcms_sikesra_lembaga_keagamaan_details",
-	"03": "awcms_sikesra_pendidikan_keagamaan_details",
-	"04": "awcms_sikesra_lks_details",
-	"05": "awcms_sikesra_guru_agama_details",
-	"06": "awcms_sikesra_anak_yatim_details",
-	"07": "awcms_sikesra_disabilitas_details",
-	"08": "awcms_sikesra_lansia_terlantar_details",
-};
-
 export async function listEntities(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -284,9 +298,9 @@ export async function getEntityDetail(
 	);
 	if (!abac.allowed) return throwRouteError("NOT_FOUND", "Entity not found", 404);
 
-	const detailTable = DETAIL_TABLES[row.object_type_code];
-	const detailRecord = detailTable
-		? await getDetailRecord(db, detailTable, row.id, scope)
+	const detailModule = getDetailModuleConfig(row.object_type_code);
+	const detailRecord = detailModule
+		? await getDetailRecord(db, detailModule.tableName, row.id, scope)
 		: undefined;
 	const masking = buildMaskingContext(ctx);
 
@@ -308,6 +322,175 @@ export async function getEntityDetail(
 		},
 		access: buildAccessFlags(ctx),
 	};
+}
+
+export async function archiveEntity(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	input: EntityArchiveInput,
+): Promise<EntityArchiveResult> {
+	const denied = guardRoute(ctx, "entity:delete");
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!input.confirmed) {
+		return throwRouteError("VALIDATION_ERROR", "Archive confirmation is required", 400);
+	}
+	if (!input.reason.trim()) {
+		return throwRouteError("VALIDATION_ERROR", "Archive reason is required", 400);
+	}
+
+	const target = await loadEntityLifecycleTarget(db, ctx, input.entityId);
+	if (target.status_data === "archived") {
+		return throwRouteError("VALIDATION_ERROR", "Entity is already archived", 400);
+	}
+
+	await sql`
+		UPDATE awcms_sikesra_entities
+		SET status_data = 'archived',
+			updated_at = datetime('now'),
+			updated_by = ${ctx.userId}
+		WHERE tenant_id = ${target.scope.tenantId}
+			AND site_id = ${target.scope.siteId}
+			AND id = ${input.entityId}
+			AND deleted_at IS NULL
+	`.execute(db as never);
+
+	const audited = await writeEntityAudit(db, ctx, AUDIT_ACTIONS.ENTITY_ARCHIVE, input.entityId, {
+		reason: input.reason,
+		before: {
+			statusData: target.status_data,
+			statusVerification: target.status_verification,
+		},
+		after: {
+			statusData: "archived",
+			statusVerification: target.status_verification,
+		},
+	});
+
+	return {
+		entityId: input.entityId,
+		statusData: "archived",
+		previousStatusData: target.status_data,
+		audited,
+	};
+}
+
+export async function restoreEntity(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	input: EntityArchiveInput,
+): Promise<EntityArchiveResult> {
+	const denied = guardRoute(ctx, "entity:restore");
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+	if (!input.confirmed) {
+		return throwRouteError("VALIDATION_ERROR", "Restore confirmation is required", 400);
+	}
+	if (!input.reason.trim()) {
+		return throwRouteError("VALIDATION_ERROR", "Restore reason is required", 400);
+	}
+
+	const target = await loadEntityLifecycleTarget(db, ctx, input.entityId);
+	if (target.status_data !== "archived") {
+		return throwRouteError("VALIDATION_ERROR", "Only archived entities can be restored", 400);
+	}
+
+	const restoredStatus = deriveRestoredStatusData(target.status_verification);
+	await sql`
+		UPDATE awcms_sikesra_entities
+		SET status_data = ${restoredStatus},
+			updated_at = datetime('now'),
+			updated_by = ${ctx.userId}
+		WHERE tenant_id = ${target.scope.tenantId}
+			AND site_id = ${target.scope.siteId}
+			AND id = ${input.entityId}
+			AND deleted_at IS NULL
+	`.execute(db as never);
+
+	const audited = await writeEntityAudit(db, ctx, AUDIT_ACTIONS.ENTITY_RESTORE, input.entityId, {
+		reason: input.reason,
+		before: {
+			statusData: target.status_data,
+			statusVerification: target.status_verification,
+		},
+		after: {
+			statusData: restoredStatus,
+			statusVerification: target.status_verification,
+		},
+	});
+
+	return {
+		entityId: input.entityId,
+		statusData: restoredStatus,
+		previousStatusData: target.status_data,
+		audited,
+	};
+}
+
+export async function getEntityDuplicatePreview(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+): Promise<EntityDuplicatePreviewItem[]> {
+	const denied = guardRoute(ctx, "entity:read");
+	if (!denied.allowed)
+		return throwRouteError("FORBIDDEN", denied.reasonMessage || "Forbidden", 403);
+
+	const target = await loadEntityLifecycleTarget(db, ctx, entityId);
+	const result = await sql<{
+		candidate_id: string;
+		entity_id_a: string;
+		entity_id_b: string;
+		risk_level: string;
+		match_score: number | null;
+		detection_source: string;
+		match_signals_json: string | null;
+		other_entity_id: string;
+		other_display_name: string;
+	}>`
+		SELECT
+			candidate.id AS candidate_id,
+			candidate.entity_id_a,
+			candidate.entity_id_b,
+			candidate.risk_level,
+			candidate.match_score,
+			candidate.detection_source,
+			candidate.match_signals_json,
+			other_entity.id AS other_entity_id,
+			other_entity.display_name AS other_display_name
+		FROM awcms_sikesra_duplicate_candidates candidate
+		JOIN awcms_sikesra_entities other_entity
+			ON other_entity.tenant_id = candidate.tenant_id
+			AND other_entity.site_id = candidate.site_id
+			AND other_entity.id = CASE
+				WHEN candidate.entity_id_a = ${entityId} THEN candidate.entity_id_b
+				ELSE candidate.entity_id_a
+			END
+		WHERE candidate.tenant_id = ${target.scope.tenantId}
+			AND candidate.site_id = ${target.scope.siteId}
+			AND candidate.deleted_at IS NULL
+			AND other_entity.deleted_at IS NULL
+			AND (candidate.entity_id_a = ${entityId} OR candidate.entity_id_b = ${entityId})
+		ORDER BY
+			CASE candidate.risk_level
+				WHEN 'blocking' THEN 4
+				WHEN 'high' THEN 3
+				WHEN 'medium' THEN 2
+				ELSE 1
+			END DESC,
+			candidate.match_score DESC,
+			candidate.created_at DESC
+	`.execute(db as never);
+
+	return result.rows.map((row) => ({
+		candidateId: row.candidate_id,
+		otherEntityId: row.other_entity_id,
+		otherDisplayName: row.other_display_name,
+		riskLevel: row.risk_level,
+		matchScore: row.match_score,
+		detectionSource: row.detection_source,
+		matchSignals: parseMatchSignals(row.match_signals_json),
+	}));
 }
 
 function buildEntityWhereSql(
@@ -491,6 +674,92 @@ async function countEntities(
 	return Number(result.rows[0]?.count ?? 0);
 }
 
+async function loadEntityLifecycleTarget(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+) {
+	const scope = await getExistingEntityScope(db, ctx, entityId);
+	const result = await sql<{
+		id: string;
+		object_type_code: string;
+		object_subtype_code: string;
+		entity_kind: string;
+		official_village_code: string;
+		district_code: string | null;
+		local_region_id: string | null;
+		sensitivity_level: string;
+		status_data: string;
+		status_verification: string;
+		source_input: string;
+	}>`
+		SELECT
+			entity.id,
+			entity.object_type_code,
+			entity.object_subtype_code,
+			entity.entity_kind,
+			entity.official_village_code,
+			district.code AS district_code,
+			entity.local_region_id,
+			entity.sensitivity_level,
+			entity.status_data,
+			entity.status_verification,
+			entity.source_input
+		FROM awcms_sikesra_entities entity
+		JOIN awcms_sikesra_official_regions village
+			ON village.tenant_id = entity.tenant_id
+			AND village.site_id = entity.site_id
+			AND village.code = entity.official_village_code
+		LEFT JOIN awcms_sikesra_official_regions district
+			ON district.tenant_id = village.tenant_id
+			AND district.site_id = village.site_id
+			AND district.code = village.parent_code
+		WHERE entity.tenant_id = ${scope.tenantId}
+			AND entity.site_id = ${scope.siteId}
+			AND entity.id = ${entityId}
+			AND entity.deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	const row = result.rows[0];
+	if (!row) return throwRouteError("NOT_FOUND", "Entity not found", 404);
+	if (!checkRegionScope(ctx, row.official_village_code, row.local_region_id || undefined)) {
+		return throwRouteError("NOT_FOUND", "Entity not found", 404);
+	}
+
+	const abac = evaluateAbac(
+		{
+			subject: buildAbacSubject(ctx),
+			resource: {
+				resourceType: "entity",
+				entityId: row.id,
+				objectTypeCode: row.object_type_code,
+				objectSubtypeCode: row.object_subtype_code,
+				entityKind: row.entity_kind,
+				officialVillageCode: row.official_village_code,
+				districtCode: row.district_code || undefined,
+				localRegionId: row.local_region_id || undefined,
+				sensitivityLevel: row.sensitivity_level,
+				statusData: row.status_data,
+				statusVerification: row.status_verification,
+				sourceInput: row.source_input,
+			},
+			action: "update",
+			environment: {
+				requestId: ctx.requestId,
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+				requireReason: true,
+			},
+		},
+		[],
+		ctx,
+	);
+	if (!abac.allowed) return throwRouteError("NOT_FOUND", "Entity not found", 404);
+
+	return { scope, ...row };
+}
+
 function mapEntitySummary(row: EntityRow, ctx: SikesraRequestContext): EntitySummary {
 	const masking = buildMaskingContext(ctx);
 	const shouldMaskName =
@@ -557,6 +826,30 @@ function buildAccessFlags(ctx: SikesraRequestContext) {
 	};
 }
 
+function deriveRestoredStatusData(statusVerification: string) {
+	if (statusVerification === "verified") return "active";
+	if (statusVerification.startsWith("submitted")) return "submitted";
+	return "draft";
+}
+
+function parseMatchSignals(value: string | null) {
+	if (!value) return [];
+	try {
+		const parsed = JSON.parse(value) as unknown;
+		if (Array.isArray(parsed)) {
+			return parsed.filter((item): item is string => typeof item === "string");
+		}
+		if (parsed && typeof parsed === "object") {
+			return Object.entries(parsed)
+				.filter(([, signalValue]) => Boolean(signalValue))
+				.map(([signal]) => signal);
+		}
+	} catch {
+		return [];
+	}
+	return [];
+}
+
 function buildDeniedActions(ctx: SikesraRequestContext) {
 	const checks: Array<[string, SikesraPermission]> = [
 		["edit", SIKESRA_PERMISSIONS.ENTITY_UPDATE],
@@ -616,6 +909,35 @@ async function getDetailRecord(
 	delete safe.created_by;
 	delete safe.updated_by;
 	return safe;
+}
+
+async function writeEntityAudit(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	action: string,
+	entityId: string,
+	metadata: { reason: string; before: Record<string, unknown>; after: Record<string, unknown> },
+) {
+	try {
+		await sql`
+			INSERT INTO awcms_sikesra_audit_logs (
+				id, tenant_id, site_id, actor_id, actor_role, action,
+				resource_type, resource_id, request_id, success, reason,
+				before_json, after_json, ip_address, user_agent, created_at
+			) VALUES (
+				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
+				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
+				${ctx.roles[0] ?? "unknown"}, ${action},
+				'entity', ${entityId}, ${ctx.requestId}, 1, ${metadata.reason},
+				${JSON.stringify(metadata.before)}, ${JSON.stringify(metadata.after)},
+				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},
+				datetime('now')
+			)
+		`.execute(db as never);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 function isCanonicalDefaultScope(scope: TenantSiteScope) {

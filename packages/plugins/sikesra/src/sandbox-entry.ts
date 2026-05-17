@@ -54,7 +54,13 @@ import {
 	type DraftAutosaveInput,
 	type CodeCorrectionInput,
 } from "./services/draft.js";
-import { getEntityDetail, listEntities } from "./services/entities.js";
+import {
+	archiveEntity,
+	getEntityDetail,
+	listEntities,
+	restoreEntity,
+	type EntityArchiveInput,
+} from "./services/entities.js";
 import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
 import {
 	listAuditEntries,
@@ -98,7 +104,8 @@ export default definePlugin({
 							? { type: inputType, values: routeCtx.input as Record<string, unknown> }
 							: undefined;
 					return await buildAdminPage(db, requestContext, target, action);
-				} catch {
+				} catch (error) {
+					console.error("[sikesra] admin page build failed:", error);
 					// Fall back to static blocks if DB is not available
 					return buildAdminBlocks(target);
 				}
@@ -204,6 +211,26 @@ export default definePlugin({
 					db,
 					buildRequestContextFromRoute(routeCtx),
 					normalizeCodeCorrectionInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/entities/archive": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return archiveEntity(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeEntityArchiveInput(routeCtx.input),
+				);
+			},
+		},
+		"v1/entities/restore": {
+			handler: async (routeCtx: { input: unknown; request: Request }) => {
+				const db = await loadDb();
+				return restoreEntity(
+					db,
+					buildRequestContextFromRoute(routeCtx),
+					normalizeEntityArchiveInput(routeCtx.input),
 				);
 			},
 		},
@@ -853,6 +880,18 @@ function normalizeCodeCorrectionInput(value: unknown): CodeCorrectionInput {
 	const reason = typeof input.reason === "string" ? input.reason : "";
 	if (!entityId || !newCode || !reason) throw new Error("CODE_CORRECTION_INPUT_REQUIRED");
 	return { entityId, newCode, reason };
+}
+
+function normalizeEntityArchiveInput(value: unknown): EntityArchiveInput {
+	const input = asRecord(value);
+	const entityId = typeof input.entityId === "string" ? input.entityId : "";
+	const reason = typeof input.reason === "string" ? input.reason : "";
+	if (!entityId || !reason) throw new Error("ENTITY_ARCHIVE_INPUT_REQUIRED");
+	return {
+		entityId,
+		reason,
+		confirmed: input.confirmed === true,
+	};
 }
 
 function normalizeVerificationSubmitInput(value: unknown): VerificationSubmitInput {

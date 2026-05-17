@@ -1,5 +1,6 @@
 import { sql } from "kysely";
 
+import { getDetailModuleConfig } from "../detail-modules.js";
 import { AUDIT_ACTIONS } from "../security/audit.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { guardRoute } from "../security/route-guard.js";
@@ -151,7 +152,7 @@ export async function createDraft(
 	`.execute(db as never);
 
 	if (input.initialData && Object.keys(input.initialData).length > 0) {
-		await storeDraftDetails(db, ctx, id, input.initialData);
+		await storeDraftDetails(db, ctx, id, input.objectTypeCode, input.initialData);
 	}
 
 	const completeness = calculateCompleteness(db, ctx, id);
@@ -187,10 +188,11 @@ export async function updateDraft(
 	const hasErrors = sectionErrors.length > 0;
 
 	if (!hasErrors && Object.keys(input.patch).length > 0) {
+		const { entityPatch, detailPatch } = partitionDraftData(entity.object_type_code, input.patch);
 		const setClauses: string[] = [];
 		const values: unknown[] = [];
 
-		for (const [key, value] of Object.entries(input.patch)) {
+		for (const [key, value] of Object.entries(entityPatch)) {
 			if (value !== undefined) {
 				const safeKey = validateEntityColumn(key);
 				setClauses.push(`${safeKey} = ?`);
@@ -212,8 +214,8 @@ export async function updateDraft(
 				.execute(db as never);
 		}
 
-		if (input.section === "details") {
-			await storeDraftDetails(db, ctx, input.entityId, input.patch);
+		if (Object.keys(detailPatch).length > 0) {
+			await storeDraftDetails(db, ctx, input.entityId, entity.object_type_code, detailPatch);
 		}
 	}
 
@@ -251,14 +253,19 @@ export async function autosaveDraft(
 	const savedFields: string[] = [];
 	const setClauses: string[] = [];
 	const values: unknown[] = [];
+	const { entityPatch, detailPatch } = partitionDraftData(entity.object_type_code, input.data);
 
-	for (const [key, value] of Object.entries(input.data)) {
+	for (const [key, value] of Object.entries(entityPatch)) {
 		if (value !== undefined && (ALLOWED_ENTITY_COLUMNS as ReadonlySet<string>).has(key)) {
 			const safeKey = validateEntityColumn(key);
 			setClauses.push(`${safeKey} = ?`);
 			values.push(value);
 			savedFields.push(key);
 		}
+	}
+
+	for (const key of Object.keys(detailPatch)) {
+		savedFields.push(key);
 	}
 
 	if (setClauses.length > 0) {
@@ -273,6 +280,10 @@ export async function autosaveDraft(
 				`UPDATE awcms_sikesra_entities SET ${setClauses.join(", ")} WHERE tenant_id = ? AND site_id = ? AND id = ? AND deleted_at IS NULL`,
 			)
 			.execute(db as never);
+	}
+
+	if (Object.keys(detailPatch).length > 0) {
+		await storeDraftDetails(db, ctx, input.entityId, entity.object_type_code, detailPatch);
 	}
 
 	const completeness = await calculateCompleteness(db, ctx, input.entityId);
@@ -301,11 +312,12 @@ export async function validateEntity(
 
 	const entity = await getEntity(db, ctx, entityId);
 	if (!entity) return throwRouteError("NOT_FOUND", "Entity not found", 404);
+	const detailRecord = await getStoredDraftDetails(db, ctx, entityId, entity.object_type_code);
 
 	const sections: ValidationSection[] = [];
 
 	for (const sectionDef of SECTION_DEFINITIONS) {
-		const errors = validateSectionData(sectionDef.key, entity);
+		const errors = validateSectionData(sectionDef.key, entity, detailRecord);
 		sections.push({
 			sectionKey: sectionDef.key,
 			errors,
@@ -498,6 +510,7 @@ function validateSection(section: string, patch: Record<string, unknown>): Valid
 function validateSectionData(
 	sectionKey: string,
 	entity: Record<string, unknown>,
+	detailRecord?: Record<string, unknown>,
 ): ValidationError[] {
 	const errors: ValidationError[] = [];
 
@@ -527,6 +540,26 @@ function validateSectionData(
 				});
 			}
 			break;
+		case "details": {
+			const objectTypeCode =
+				typeof entity.object_type_code === "string" ? entity.object_type_code : "";
+			const detailModule = getDetailModuleConfig(objectTypeCode);
+			if (!detailModule) break;
+
+			for (const field of detailModule.requiredFields) {
+				const value = detailRecord?.[field];
+				if (typeof value === "string") {
+					if (!value.trim()) {
+						errors.push({ field, message: `${field} is required`, code: "REQUIRED" });
+					}
+					continue;
+				}
+				if (value === null || value === undefined) {
+					errors.push({ field, message: `${field} is required`, code: "REQUIRED" });
+				}
+			}
+			break;
+		}
 	}
 
 	return errors;
@@ -641,10 +674,17 @@ async function storeDraftDetails(
 	db: unknown,
 	ctx: SikesraRequestContext,
 	entityId: string,
+	objectTypeCode: string,
 	data: Record<string, unknown>,
 ): Promise<void> {
+	const detailModule = getDetailModuleConfig(objectTypeCode);
+	if (!detailModule) return;
+
+	const detailPatch = sanitizeDetailPatch(detailModule.fields, data);
+	if (Object.keys(detailPatch).length === 0) return;
+
 	const existing = await sql<{ id: string }>`
-		SELECT id FROM awcms_sikesra_entity_details
+		SELECT id FROM ${sql.ref(detailModule.tableName)}
 		WHERE tenant_id = ${ctx.tenantId}
 			AND site_id = ${ctx.siteId}
 			AND entity_id = ${entityId}
@@ -652,30 +692,104 @@ async function storeDraftDetails(
 		LIMIT 1
 	`.execute(db as never);
 
+	const columns = Object.keys(detailPatch);
 	if (existing.rows[0]) {
+		const setClauses = columns.map((column) => sql`${sql.ref(column)} = ${detailPatch[column]}`);
 		await sql`
-			UPDATE awcms_sikesra_entity_details
-			SET data = ${JSON.stringify(data)},
-				updated_at = datetime('now'),
-				updated_by = ${ctx.userId}
+			UPDATE ${sql.ref(detailModule.tableName)}
+			SET ${sql.join(
+				[...setClauses, sql`updated_at = datetime('now')`, sql`updated_by = ${ctx.userId}`],
+				sql`, `,
+			)}
 			WHERE tenant_id = ${ctx.tenantId}
 				AND site_id = ${ctx.siteId}
 				AND entity_id = ${entityId}
 				AND deleted_at IS NULL
 		`.execute(db as never);
-	} else {
-		await sql`
-			INSERT INTO awcms_sikesra_entity_details (
-				id, tenant_id, site_id, entity_id, data, created_by, updated_by,
-				created_at, updated_at
-			) VALUES (
-				${`det_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
-				${ctx.tenantId}, ${ctx.siteId}, ${entityId},
-				${JSON.stringify(data)}, ${ctx.userId}, ${ctx.userId},
-				datetime('now'), datetime('now')
-			)
-		`.execute(db as never);
+		return;
 	}
+
+	await sql`
+		INSERT INTO ${sql.ref(detailModule.tableName)} (
+			${sql.join(
+				[
+					sql.ref("id"),
+					sql.ref("tenant_id"),
+					sql.ref("site_id"),
+					sql.ref("entity_id"),
+					...columns.map((column) => sql.ref(column)),
+					sql.ref("created_by"),
+					sql.ref("updated_by"),
+					sql.ref("created_at"),
+					sql.ref("updated_at"),
+				],
+				sql`, `,
+			)}
+		) VALUES (
+			${sql.join(
+				[
+					sql`${`det_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`}`,
+					sql`${ctx.tenantId}`,
+					sql`${ctx.siteId}`,
+					sql`${entityId}`,
+					...columns.map((column) => sql`${detailPatch[column]}`),
+					sql`${ctx.userId}`,
+					sql`${ctx.userId}`,
+					sql`datetime('now')`,
+					sql`datetime('now')`,
+				],
+				sql`, `,
+			)}
+		)
+	`.execute(db as never);
+}
+
+async function getStoredDraftDetails(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	objectTypeCode: string,
+) {
+	const detailModule = getDetailModuleConfig(objectTypeCode);
+	if (!detailModule) return undefined;
+
+	const result = await sql<Record<string, unknown>>`
+		SELECT *
+		FROM ${sql.ref(detailModule.tableName)}
+		WHERE tenant_id = ${ctx.tenantId}
+			AND site_id = ${ctx.siteId}
+			AND entity_id = ${entityId}
+			AND deleted_at IS NULL
+		LIMIT 1
+	`.execute(db as never);
+
+	return result.rows[0];
+}
+
+function partitionDraftData(objectTypeCode: string, data: Record<string, unknown>) {
+	const entityPatch: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(data)) {
+		if ((ALLOWED_ENTITY_COLUMNS as ReadonlySet<string>).has(key)) {
+			entityPatch[key] = value;
+		}
+	}
+
+	const detailModule = getDetailModuleConfig(objectTypeCode);
+	return {
+		entityPatch,
+		detailPatch: detailModule ? sanitizeDetailPatch(detailModule.fields, data) : {},
+	};
+}
+
+function sanitizeDetailPatch(fields: readonly string[], data: Record<string, unknown>) {
+	const allowed = new Set(fields);
+	const detailPatch: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(data)) {
+		if (allowed.has(key) && value !== undefined) {
+			detailPatch[key] = value;
+		}
+	}
+	return detailPatch;
 }
 
 function generateEntityId(): string {

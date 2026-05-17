@@ -387,6 +387,7 @@ async function getEntityForVerification(db: unknown, ctx: SikesraRequestContext,
 		WHERE tenant_id = ${ctx.tenantId}
 			AND site_id = ${ctx.siteId}
 			AND id = ${entityId}
+			AND status_data != 'archived'
 			AND deleted_at IS NULL
 		LIMIT 1
 	`.execute(db as never);
@@ -399,6 +400,7 @@ function buildQueueWhereSql(ctx: SikesraRequestContext, filters: VerificationQue
 		sql`entity.tenant_id = ${ctx.tenantId}`,
 		sql`entity.site_id = ${ctx.siteId}`,
 		sql`entity.deleted_at IS NULL`,
+		sql`entity.status_data != 'archived'`,
 		sql`entity.status_verification IN ('pending_verification', 'needs_revision')`,
 	];
 

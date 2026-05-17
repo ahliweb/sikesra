@@ -26,8 +26,15 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 
 ### Fully Implemented
 
-- Plugin descriptor with admin pages (`/`, `/operations`) and widget (`overview`)
-- 28 route handlers in `sandbox-entry.ts`
+- Plugin descriptor with admin pages (`/`, `/entities`, `/verification`, `/audit`, `/settings`, `/operations`) and widget (`overview`)
+- 30 route handlers in `sandbox-entry.ts`
+- Schema-backed draft create/update/autosave for all 8 MVP detail modules, writing to the real `awcms_sikesra_*_details` tables
+- Archive/restore backend routes with permission checks, reason+confirmation enforcement, audit, and archived-record exclusion from normal dashboard/verification flows
+- Block-based admin entity workflow for create draft, section edit, validation, code generation, submit, archive, and restore
+- Duplicate preview/warnings on entity detail and validation views using `awcms_sikesra_duplicate_candidates`
+- Document step in the entity workflow with D1-backed document metadata registration and listing
+- Wizard progress navigation and review/submit summary on the entity workflow
+- Plugin manager integration in the active Cloudflare deployment, including live listing of `sikesra`
 - Document workflow (upload, complete, list, download, verify, replace, audit)
 - Import workflow (CSV parse, batch, stage, map, validate, promote, rollback, duplicate detection)
 - Export workflow (3 report types, job lifecycle, CSV generation, permission filtering)
@@ -35,25 +42,22 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 - Storage config (6 namespaces)
 - D1 schema backup (34 `awcms_sikesra_*` tables in `update-backup/d1/`)
 - Infrastructure (worker wrapper, wrangler config, postbuild script)
-- Demo integration at `demos/plugins-demo/`
-- Tests (5 test files)
+- Cloudflare host integration at `demos/cloudflare/`
+- Tests (10 test files, including detail CRUD and admin workflow coverage)
 
 ### Placeholder
 
-- Public data endpoints (`public/metadata`, `public/filters`, `public/summary`) — return hardcoded empty data
-- Admin UI content — static "restoration in progress" text
-- `v1/status` — returns `{ status: "rebuild-pending" }`
-- Request context — hardcoded test/dev bypass
+- `v1/status` — still returns `{ status: "rebuild-pending" }`
+- Operations subpages (`documents`, `imports`, `reports`) — dedicated subpages now expose document, import, and report surfaces
+- Request context — trusted plugin request context is injected, but tenant/site/role mapping still uses fallback defaults when richer host context is unavailable
 
 ### Not Started
 
 - React admin components (zero `.tsx` files)
-- Entity CRUD interfaces
-- Import/Export admin UI
-- Settings admin page
-- Dashboard/charts
-- Verification UI
-- Document management UI
+- Import/Export workflow UI
+- Dashboard charts/visualizations
+- Verification review UI beyond the current Block Kit queue/review shell
+- Document management UI beyond the current operations shell
 
 ## Operational Runbooks
 
@@ -73,6 +77,12 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 - Admin pages: `/_emdash/admin/plugins/sikesra/*`
 - Public-safe API: `/_emdash/api/plugins/sikesra/public/*`
 - Versioned API: `/_emdash/api/plugins/sikesra/v1/*`
+
+## Current Live Notes
+
+- The active deployed host is the Cloudflare demo/worker path, not only `demos/plugins-demo/`.
+- The plugin list endpoint now includes `sikesra` in production.
+- The registry/detail services now read module-specific detail rows from the dedicated 8-table schema, and draft writes no longer depend on the removed `awcms_sikesra_entity_details` shape.
 
 ## Non-Negotiable Rules
 
