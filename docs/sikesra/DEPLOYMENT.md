@@ -29,6 +29,18 @@ Minimum checks:
 - Protect the deployed admin surface, typically `https://<host>/_emdash/*`, with a Cloudflare Access application.
 - Verify that unauthenticated browser requests are challenged by Access before they reach the Worker.
 
+Automated preflight:
+
+```bash
+pnpm sikesra:verify-access
+```
+
+This fails fast when:
+
+- the deployed Worker is missing `CF_ACCESS_AUDIENCE`
+- the Cloudflare account has no Access application covering `SIKESRA_HOSTNAME`
+- anonymous requests to `/_emdash/admin/` are reaching EmDash instead of a Cloudflare Access challenge
+
 Replace the placeholder IDs before deployment.
 
 ## Postbuild Adapter

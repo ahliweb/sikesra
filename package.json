@@ -32,6 +32,7 @@
 		"sikesra:d1:inventory": "node scripts/sikesra-d1-overlay.mjs inventory",
 		"sikesra:d1:restore": "node scripts/sikesra-d1-overlay.mjs restore",
 		"sikesra:postbuild": "node scripts/sikesra-postbuild.mjs",
+		"sikesra:verify-access": "node scripts/sikesra-verify-access.mjs",
 		"sikesra:smoke-admin": "node scripts/sikesra-smoke-admin-route.mjs",
 		"changeset:version": "pnpm changeset version && pnpm install --no-frozen-lockfile"
 	},
