@@ -1670,6 +1670,7 @@ async function buildEntityDetail(
 			{ type: "context", text: `ID: ${entity.sikesraId20 ?? entity.id}` },
 			{ type: "context", text: `Status: ${statusLine}` },
 			...buildEntityWizardSteps(entity.id, 6),
+			...(entity.entityKind === "person" ? buildPersonProfileWorkflowBlocks(entity.objectTypeCode) : []),
 			{ type: "divider" },
 			{
 				type: "fields",
@@ -1764,6 +1765,12 @@ async function buildEntityCreateForm(
 			{ type: "header", text: "Wizard Buat Entitas" },
 			{ type: "context", text: "Mulai dari memilih modul data, lalu isi identitas dasar dan wilayah entitas." },
 			...buildEntityWizardSteps(undefined, 1),
+			{
+				type: "banner",
+				variant: "info",
+				title: "Catatan Untuk Modul Perorangan",
+				description: "Untuk Guru Agama, Anak Yatim, Disabilitas, dan Lansia Terlantar, siapkan Profil Orang yang sudah ada. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini.",
+			},
 			{ type: "divider" },
 			{ type: "header", text: "Pilihan 8 Modul Data" },
 			{
@@ -1829,6 +1836,7 @@ async function buildEntityEditForm(
 	const detail = await getEntityDetail(db, ctx, entityId);
 	const villages = section === "location" ? await listOfficialRegions(db, ctx, { level: "village" }) : [];
 	const detailModule = getDetailModuleConfig(detail.entity.objectTypeCode);
+	const moduleUi = getModuleUiConfig(detail.entity.objectTypeCode);
 	const subtypeOptions = getModuleSubtypeOptions(detail.entity.objectTypeCode);
 	const fields =
 		section === "identity"
@@ -1867,6 +1875,9 @@ async function buildEntityEditForm(
 			{ type: "header", text: `Edit ${section}` },
 			{ type: "context", text: `Entity: ${detail.entity.displayName}` },
 			...buildEntityWizardSteps(entityId, section === "identity" ? 1 : section === "location" ? 2 : 3),
+			...(section === "details" && moduleUi?.entityKind === "person"
+				? (buildPersonProfileWorkflowBlocks(detail.entity.objectTypeCode) as Block[])
+				: []),
 			{ type: "form",
 				fields: [
 					{ type: "text_input", action_id: "entityId", label: "Entity ID", value: entityId },
@@ -2052,6 +2063,7 @@ async function buildEntityReviewSummary(
 			{ type: "header", text: "Review dan Submit" },
 			{ type: "context", text: `Entity: ${detail.entity.displayName}` },
 			...buildEntityWizardSteps(entityId, 6),
+			...(detail.entity.entityKind === "person" ? buildPersonProfileWorkflowBlocks(detail.entity.objectTypeCode) : []),
 			{ type: "divider" },
 			{
 				type: "stats",
@@ -2140,6 +2152,7 @@ async function buildEntitySubmitForm(
 				{ type: "header", text: "Ajukan Verifikasi" },
 				{ type: "context", text: detail.entity.displayName },
 				...buildEntityWizardSteps(entityId, 7),
+				...(detail.entity.entityKind === "person" ? buildPersonProfileWorkflowBlocks(detail.entity.objectTypeCode) : []),
 				{
 					type: "banner",
 					variant: "error",
@@ -2161,6 +2174,7 @@ async function buildEntitySubmitForm(
 			{ type: "header", text: "Ajukan Verifikasi" },
 			{ type: "context", text: detail.entity.displayName },
 			...buildEntityWizardSteps(entityId, 7),
+			...(detail.entity.entityKind === "person" ? buildPersonProfileWorkflowBlocks(detail.entity.objectTypeCode) : []),
 			{ type: "form",
 				fields: [
 					{ type: "text_input", action_id: "entityId", label: "Entity ID", value: entityId },
@@ -2525,6 +2539,32 @@ function buildModuleDetailFields(
 			description,
 		};
 	});
+}
+
+function buildPersonProfileWorkflowBlocks(objectTypeCode: string): Block[] {
+	const profileLabel = getReadableFieldLabel(objectTypeCode, "person_profile_id");
+	const helperText = getModuleUiFieldConfig(objectTypeCode, "person_profile_id")?.helperText ?? "";
+
+	return [
+		{ type: "divider" },
+		{ type: "header", text: "Workflow Profil Orang" },
+		{
+			type: "banner",
+			variant: "info",
+			title: "Status Implementasi Saat Ini",
+			description: `${profileLabel} masih memakai ID profil yang sudah ada sebagai jalur utama. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini.`,
+		},
+		{
+			type: "fields",
+			fields: [
+				{ label: "Link profil yang sudah ada", value: `Didukung sekarang melalui field ${profileLabel}` },
+				{ label: "Cari profil yang sudah ada", value: "Belum tersedia langsung di shell admin ini" },
+				{ label: "Buat profil orang baru", value: "Belum tersedia langsung di shell admin ini" },
+				{ label: "Catatan", value: helperText },
+			],
+		},
+		{ type: "divider" },
+	];
 }
 
 function buildFieldDescription(fieldConfig: ReturnType<typeof getModuleUiFieldConfig>) {

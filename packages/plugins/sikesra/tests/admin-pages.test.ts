@@ -371,38 +371,90 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
-	it("renders readable module detail labels including person profile context", async () => {
+	it.each([
+		{
+			objectTypeCode: "05",
+			tableName: "awcms_sikesra_guru_agama_details",
+			entityId: "entity-guru",
+			displayName: "Ustadz Ahmad",
+			detailValues: "'detail-guru', 'tenant-1', 'site-1', 'entity-guru', 'person-05', 'Islam', 'aktif', 'Tahfiz', 'Madrasah A', 20, 'S1', 'Sudah', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1'",
+			expectedLabel: "Status Guru",
+		},
+		{
+			objectTypeCode: "06",
+			tableName: "awcms_sikesra_anak_yatim_details",
+			entityId: "entity-anak",
+			displayName: "Anak Yatim A",
+			detailValues: "'detail-anak', 'tenant-1', 'site-1', 'entity-anak', 'person-06', 'yatim', 'aktif', 'SMP', 'SMP 1', 'Pak Wali', 'Paman', 'Jl. Wali', 'Baznas', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1'",
+			expectedLabel: "Kategori Anak",
+		},
+		{
+			objectTypeCode: "07",
+			tableName: "awcms_sikesra_disabilitas_details",
+			entityId: "entity-disabilitas",
+			displayName: "Warga Disabilitas",
+			detailValues: "'detail-disabilitas', 'tenant-1', 'site-1', 'entity-disabilitas', 'person-07', 'Sensorik', 'sedang', 1, 'Tongkat', 'Puskesmas', 'Sekolah', 'Pendamping keluarga', 'Baznas', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1'",
+			expectedLabel: "Jenis Disabilitas",
+		},
+		{
+			objectTypeCode: "08",
+			tableName: "awcms_sikesra_lansia_terlantar_details",
+			entityId: "entity-lansia",
+			displayName: "Lansia A",
+			detailValues: "'detail-lansia', 'tenant-1', 'site-1', 'entity-lansia', 'person-08', 'terlantar', 'Rumah sederhana', 'sendiri', 'Tidak tetap', 'BPJS', 'Hipertensi', 'Makanan dan obat', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1'",
+			expectedLabel: "Status Keterlantaran",
+		},
+	])("renders person-profile workflow guidance for module $objectTypeCode", async (scenario) => {
 		sqlite.exec(`
 			CREATE TABLE awcms_sikesra_guru_agama_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, agama TEXT, status_guru TEXT, bidang_pengajaran TEXT, institusi_pengajaran TEXT, jumlah_murid INTEGER, pendidikan_terakhir TEXT, sertifikasi TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_anak_yatim_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, kategori_anak TEXT, status_sekolah TEXT, tingkat_pendidikan TEXT, nama_sekolah TEXT, nama_wali TEXT, hubungan_wali TEXT, alamat_wali TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_disabilitas_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, jenis_disabilitas TEXT, tingkat_keparahan TEXT, alat_bantu_dibutuhkan INTEGER, jenis_alat_bantu TEXT, akses_layanan_kesehatan TEXT, partisipasi_sekolah_kerja TEXT, kebutuhan_pendampingan TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_lansia_terlantar_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, status_keterlantaran TEXT, kondisi_tempat_tinggal TEXT, status_tinggal TEXT, sumber_penghasilan TEXT, akses_jaminan_sosial TEXT, riwayat_penyakit TEXT, kebutuhan_prioritas TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
 			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('07', 'tenant-1', 'site-1', 'Disabilitas', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
 			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Rumahan', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '06', 'tenant-1', 'site-1', 'Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '07', 'tenant-1', 'site-1', 'Fisik', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '08', 'tenant-1', 'site-1', 'Terlantar', NULL);
 			INSERT INTO awcms_sikesra_entities VALUES
-			('entity-guru', 'tenant-1', 'site-1', NULL, '05', '01', 'person', 'Ustadz Ahmad', '6201011001', 'local-1', 'Jl. Guru', 'draft', 'draft', NULL, 'internal', 50, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
-			INSERT INTO awcms_sikesra_guru_agama_details VALUES
-			('detail-guru', 'tenant-1', 'site-1', 'entity-guru', 'person-05', 'Islam', 'aktif', 'Tahfiz', 'Madrasah A', 20, 'S1', 'Sudah', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1');
+			('${scenario.entityId}', 'tenant-1', 'site-1', NULL, '${scenario.objectTypeCode}', '01', 'person', '${scenario.displayName}', '6201011001', 'local-1', 'Jl. Person', 'draft', 'draft', NULL, 'internal', 50, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO ${scenario.tableName} VALUES (${scenario.detailValues});
 		`);
 
 		const detailEdit = await buildAdminPage(db, makeContext(), "/entities", {
 			type: "block_action",
-			values: { action_id: "entities:edit_details", entityId: "entity-guru" },
+			values: { action_id: "entities:edit_details", entityId: scenario.entityId },
 		});
 		const detailForm = detailEdit.blocks.find((block) => block.type === "form");
 		const detailFields = Array.isArray(detailForm?.fields) ? detailForm.fields : [];
 		const personProfileField = detailFields.find((field) => field.action_id === "person_profile_id");
-		const statusGuruField = detailFields.find((field) => field.action_id === "status_guru");
+		const exampleDomainField = detailFields.find((field) => field.label === scenario.expectedLabel);
+		const workflowFields = detailEdit.blocks.find((block) => block.type === "fields" && Array.isArray(block.fields) && block.fields.some((field) => field.label === "Link profil yang sudah ada"));
 
+		expect(detailEdit.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Workflow Profil Orang" }),
+				expect.objectContaining({ type: "banner", title: "Status Implementasi Saat Ini" }),
+			]),
+		);
 		expect(personProfileField).toEqual(
 			expect.objectContaining({
-				label: "Person Profile",
+				label: "Profil Orang",
 				description: expect.stringContaining("Wajib diisi."),
 			}),
 		);
-		expect(statusGuruField).toEqual(
+		expect(workflowFields).toEqual(
 			expect.objectContaining({
-				type: "select",
-				label: "Status Guru",
+				fields: expect.arrayContaining([
+					expect.objectContaining({ label: "Link profil yang sudah ada", value: expect.stringContaining("Profil Orang") }),
+					expect.objectContaining({ label: "Cari profil yang sudah ada", value: "Belum tersedia langsung di shell admin ini" }),
+					expect.objectContaining({ label: "Buat profil orang baru", value: "Belum tersedia langsung di shell admin ini" }),
+				]),
 			}),
 		);
+		expect(exampleDomainField).toBeDefined();
 	});
 
 	it("shows wizard step navigation and review summary for an entity", async () => {

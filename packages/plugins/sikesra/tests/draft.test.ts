@@ -194,7 +194,13 @@ beforeEach(() => {
 			created_by TEXT,
 			updated_by TEXT
 		);
-		CREATE TABLE awcms_sikesra_person_profiles (id TEXT);
+		CREATE TABLE awcms_sikesra_person_profiles (
+			id TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			full_name TEXT,
+			deleted_at TEXT
+		);
 		CREATE TABLE awcms_sikesra_code_sequences (
 			id TEXT,
 			tenant_id TEXT,
@@ -402,6 +408,14 @@ beforeEach(() => {
 			('${moduleCase.objectSubtypeCode}', '${moduleCase.objectTypeCode}', 'tenant-1', 'site-1', 'Subtype ${moduleCase.objectSubtypeCode}', NULL);
 		`);
 	}
+
+	sqlite.exec(`
+		INSERT INTO awcms_sikesra_person_profiles VALUES
+		('person-05', 'tenant-1', 'site-1', 'Profil 05', NULL),
+		('person-06', 'tenant-1', 'site-1', 'Profil 06', NULL),
+		('person-07', 'tenant-1', 'site-1', 'Profil 07', NULL),
+		('person-08', 'tenant-1', 'site-1', 'Profil 08', NULL);
+	`);
 });
 
 afterEach(async () => {
@@ -470,6 +484,36 @@ describe("SIKESRA draft detail CRUD", () => {
 			expect(validation.overallPercent).toBe(100);
 		},
 	);
+
+	it("fails completeness validation when a person-profile reference does not exist", async () => {
+		const ctx = makeContext();
+		const created = await createDraft(db, ctx, {
+			objectTypeCode: "05",
+			objectSubtypeCode: "01",
+			entityKind: "person",
+			displayName: "Guru Tanpa Profil",
+			officialVillageCode: "6201011001",
+			initialData: {
+				person_profile_id: "missing-person-profile",
+				agama: "Islam",
+				status_guru: "aktif",
+				institusi_pengajaran: "Madrasah A",
+			},
+		});
+
+		const validation = await validateEntity(db, ctx, created.entityId);
+		const detailSection = validation.sections.find((section) => section.sectionKey === "details");
+
+		expect(detailSection?.isValid).toBe(false);
+		expect(detailSection?.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					field: "person_profile_id",
+					message: "Profil Orang yang dipilih belum ditemukan di tenant/site ini",
+				}),
+			]),
+		);
+	});
 
 	it("merges detail updates instead of overwriting the whole module row", async () => {
 		const ctx = makeContext();
