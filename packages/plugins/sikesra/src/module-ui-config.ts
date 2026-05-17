@@ -336,6 +336,10 @@ export function getModuleSubtypeOptions(objectTypeCode?: string): Array<{ label:
 	);
 }
 
+export function hasModuleSubtype(objectTypeCode: string, subtypeCode: string): boolean {
+	return getModuleUiConfig(objectTypeCode)?.subtypes.some((subtype) => subtype.code === subtypeCode) ?? false;
+}
+
 export function getEntityKindLabel(entityKind: string): string {
 	switch (entityKind) {
 		case "person":

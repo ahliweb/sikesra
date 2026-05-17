@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import { getDetailModuleConfig } from "./detail-modules.js";
 import {
 	getEntityKindLabel,
+	hasModuleSubtype,
 	getModuleSubtypeOptions,
 	getModuleUiConfig,
 	getModuleUiFieldConfig,
@@ -1364,7 +1365,27 @@ async function handleEntityAction(
 		return buildEntityCreateForm(db, ctx);
 	}
 	if (actionId === "entities:create_draft") {
-		const created = await createDraft(db, ctx, normalizeDraftCreateForm(action.values));
+		const input = normalizeDraftCreateForm(action.values);
+		if (
+			(input.selectedSubtypeModuleCode && input.selectedSubtypeModuleCode !== input.objectTypeCode) ||
+			(input.objectTypeCode && input.objectSubtypeCode && !hasModuleSubtype(input.objectTypeCode, input.objectSubtypeCode))
+		) {
+			const createForm = await buildEntityCreateForm(db, ctx);
+			return {
+				...createForm,
+				blocks: [
+					{
+						type: "banner",
+						variant: "error",
+						title: "Subjenis Tidak Sesuai",
+						description: "Subjenis data tidak cocok dengan modul yang dipilih. Pilih subjenis yang sesuai dengan modul data SIKESRA.",
+					},
+					...createForm.blocks,
+				],
+				toast: { message: "Subjenis data tidak cocok dengan modul yang dipilih", type: "error" },
+			};
+		}
+		const created = await createDraft(db, ctx, input);
 		const detail = await buildEntityDetail(db, ctx, created.entityId);
 		return {
 			...detail,
@@ -2096,6 +2117,9 @@ function getActionEntityId(values: Record<string, unknown> | undefined) {
 function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): DraftCreateInput {
 	const rawObjectTypeCode = typeof values?.objectTypeCode === "string" ? values.objectTypeCode : "";
 	const rawObjectSubtypeCode = typeof values?.objectSubtypeCode === "string" ? values.objectSubtypeCode : "";
+	const selectedSubtypeModuleCode = rawObjectSubtypeCode.includes(":")
+		? rawObjectSubtypeCode.split(":")[0] ?? undefined
+		: undefined;
 	const objectSubtypeCode = rawObjectSubtypeCode.includes(":")
 		? rawObjectSubtypeCode.split(":")[1] ?? ""
 		: rawObjectSubtypeCode;
@@ -2103,6 +2127,7 @@ function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): 
 	return {
 		objectTypeCode: rawObjectTypeCode,
 		objectSubtypeCode,
+		selectedSubtypeModuleCode,
 		entityKind: moduleUi?.entityKind ?? "",
 		displayName: typeof values?.displayName === "string" ? values.displayName : "",
 		officialVillageCode: typeof values?.officialVillageCode === "string" ? values.officialVillageCode : "",
