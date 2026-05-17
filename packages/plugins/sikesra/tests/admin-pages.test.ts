@@ -193,6 +193,88 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(stored.rows[0]?.total).toBe(1);
 	});
 
+	it("shows operator-friendly module choices in create flow and registry filters", async () => {
+		const createPage = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "block_action",
+			values: { action_id: "entities:start_create" },
+		});
+		const registryPage = await buildAdminPage(db, makeContext(), "/entities");
+
+		const createForm = createPage.blocks.find((block) => block.type === "form");
+		const createFields = Array.isArray(createForm?.fields) ? createForm.fields : [];
+		const registryForm = registryPage.blocks.find((block) => block.type === "form");
+		const registryFields = Array.isArray(registryForm?.fields) ? registryForm.fields : [];
+		const moduleField = createFields.find((field) => field.action_id === "objectTypeCode");
+		const registryModuleField = registryFields.find((field) => field.action_id === "objectTypeCode");
+
+		expect(createPage.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Pilihan 8 Modul Data" }),
+			]),
+		);
+		expect(createFields.find((field) => field.action_id === "entityKind")).toBeUndefined();
+		expect(moduleField).toEqual(
+			expect.objectContaining({
+				type: "select",
+				label: "Modul Data SIKESRA",
+				options: expect.arrayContaining([
+					expect.objectContaining({ label: "Rumah Ibadah", value: "01" }),
+					expect.objectContaining({ label: "Lembaga Keagamaan", value: "02" }),
+					expect.objectContaining({ label: "Pendidikan Keagamaan", value: "03" }),
+					expect.objectContaining({ label: "LKS / Lembaga Kesejahteraan Sosial", value: "04" }),
+					expect.objectContaining({ label: "Guru Agama", value: "05" }),
+					expect.objectContaining({ label: "Anak Yatim", value: "06" }),
+					expect.objectContaining({ label: "Disabilitas", value: "07" }),
+					expect.objectContaining({ label: "Lansia Terlantar", value: "08" }),
+				]),
+			}),
+		);
+		expect(registryModuleField).toEqual(
+			expect.objectContaining({
+				type: "select",
+				label: "Modul Data",
+				options: expect.arrayContaining([
+					expect.objectContaining({ label: "Rumah Ibadah", value: "01" }),
+					expect.objectContaining({ label: "Guru Agama", value: "05" }),
+				]),
+			}),
+		);
+	});
+
+	it("renders readable module detail labels including person profile context", async () => {
+		sqlite.exec(`
+			CREATE TABLE awcms_sikesra_guru_agama_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, agama TEXT, status_guru TEXT, bidang_pengajaran TEXT, institusi_pengajaran TEXT, jumlah_murid INTEGER, pendidikan_terakhir TEXT, sertifikasi TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Rumahan', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-guru', 'tenant-1', 'site-1', NULL, '05', '01', 'person', 'Ustadz Ahmad', '6201011001', 'local-1', 'Jl. Guru', 'draft', 'draft', NULL, 'internal', 50, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_guru_agama_details VALUES
+			('detail-guru', 'tenant-1', 'site-1', 'entity-guru', 'person-05', 'Islam', 'aktif', 'Tahfiz', 'Madrasah A', 20, 'S1', 'Sudah', '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1');
+		`);
+
+		const detailEdit = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "block_action",
+			values: { action_id: "entities:edit_details", entityId: "entity-guru" },
+		});
+		const detailForm = detailEdit.blocks.find((block) => block.type === "form");
+		const detailFields = Array.isArray(detailForm?.fields) ? detailForm.fields : [];
+		const personProfileField = detailFields.find((field) => field.action_id === "person_profile_id");
+		const statusGuruField = detailFields.find((field) => field.action_id === "status_guru");
+
+		expect(personProfileField).toEqual(
+			expect.objectContaining({
+				label: "Person Profile",
+				description: expect.stringContaining("Wajib diisi."),
+			}),
+		);
+		expect(statusGuruField).toEqual(
+			expect.objectContaining({
+				type: "select",
+				label: "Status Guru",
+			}),
+		);
+	});
+
 	it("shows wizard step navigation and review summary for an entity", async () => {
 		sqlite.exec(`
 			INSERT INTO awcms_sikesra_entities VALUES

@@ -2,6 +2,13 @@ import { sql } from "kysely";
 
 import { getDetailModuleConfig } from "./detail-modules.js";
 import {
+	getEntityKindLabel,
+	getModuleSubtypeOptions,
+	getModuleUiConfig,
+	getModuleUiFieldConfig,
+	listModuleUiConfigs,
+} from "./module-ui-config.js";
+import {
 	completeUpload,
 	generateUploadUrl,
 	getEntityDocuments,
@@ -1187,6 +1194,14 @@ async function buildEntityList(
 	}
 
 	const result = await listEntities(db, ctx, { ...filters, limit: 50 });
+	const moduleOptions = listModuleUiConfigs().map((moduleConfig) => ({
+		label: moduleConfig.label,
+		value: moduleConfig.objectTypeCode,
+	}));
+	const subtypeOptions = [
+		{ label: "Semua Subjenis", value: "" },
+		...getModuleSubtypeOptions(filters.objectTypeCode),
+	];
 
 	const blocks: Block[] = [
 		{ type: "header", text: "Registry Entitas" },
@@ -1216,18 +1231,33 @@ async function buildEntityList(
 				placeholder: "Cari nama atau ID",
 			},
 			{
-				type: "text_input",
+				type: "select",
 				action_id: "objectTypeCode",
-				label: "Kode Jenis Data",
-				placeholder: "01-08",
+				label: "Modul Data",
+				options: [{ label: "Semua Modul", value: "" }, ...moduleOptions],
 				value: filters.objectTypeCode ?? "",
 			},
 			{
-				type: "text_input",
+				type: "select",
 				action_id: "objectSubtypeCode",
-				label: "Kode Subjenis",
-				placeholder: "01",
+				label: filters.objectTypeCode
+					? "Subjenis Modul"
+					: "Subjenis Modul (pilih modul agar lebih spesifik)",
+				options: subtypeOptions,
 				value: filters.objectSubtypeCode ?? "",
+			},
+			{
+				type: "select",
+				action_id: "statusData",
+				label: "Status Data",
+				options: [
+					{ label: "Semua", value: "" },
+					{ label: "Draft", value: "draft" },
+					{ label: "Submitted", value: "submitted" },
+					{ label: "Active", value: "active" },
+					{ label: "Archived", value: "archived" },
+				],
+				value: filters.statusData ?? "",
 			},
 			{
 				type: "select",
@@ -1236,11 +1266,25 @@ async function buildEntityList(
 				options: [
 					{ label: "Semua", value: "" },
 					{ label: "Draft", value: "draft" },
-					{ label: "Submitted", value: "submitted" },
+					{ label: "Submitted", value: "submitted_village" },
 					{ label: "Verified", value: "verified" },
 					{ label: "Need Revision", value: "need_revision" },
 					{ label: "Rejected", value: "rejected" },
 				],
+				value: filters.statusVerification ?? "",
+			},
+			{
+				type: "select",
+				action_id: "duplicateStatus",
+				label: "Status Duplikat",
+				options: [
+					{ label: "Semua", value: "" },
+					{ label: "Kandidat Duplikat", value: "candidate" },
+					{ label: "Tidak Ada", value: "none" },
+					{ label: "Terkonfirmasi", value: "confirmed" },
+					{ label: "Resolved", value: "resolved" },
+				],
+				value: filters.duplicateStatus ?? "",
 			},
 			{
 				type: "select",
@@ -1291,7 +1335,7 @@ async function buildEntityList(
 			rows: result.items.map((row) => ({
 				entityId: row.id,
 				id: row.sikesraId20 ?? row.id.slice(0, 12),
-				type: `${row.objectTypeCode}/${row.objectSubtypeCode}`,
+				type: `${row.objectTypeName} / ${row.objectSubtypeName}`,
 				displayName: row.displayName,
 				statusData: row.statusData,
 				statusVerification: row.statusVerification,
@@ -1449,7 +1493,10 @@ async function buildEntityDetail(
 		? Object.entries(detail.details)
 				.filter(([key]) => !["id", "entity_id", "created_at", "updated_at"].includes(key))
 				.slice(0, 8)
-				.map(([key, value]) => ({ label: key, value: stringifyBlockValue(value) }))
+				.map(([key, value]) => ({
+					label: getReadableFieldLabel(entity.objectTypeCode, key),
+					value: stringifyBlockValue(value),
+				}))
 		: [];
 
 	const actionButtons: Block[] = [
@@ -1622,15 +1669,31 @@ async function buildEntityCreateForm(
 	db: unknown,
 	ctx: SikesraRequestContext,
 ): Promise<BlockResponse> {
-	const [villages, objectTypes] = await Promise.all([
-		listOfficialRegions(db, ctx, { level: "village" }),
-		loadObjectTypes(db, ctx),
-	]);
+	const villages = await listOfficialRegions(db, ctx, { level: "village" });
+	const moduleConfigs = listModuleUiConfigs();
 	return {
 		blocks: [
 			{ type: "header", text: "Wizard Buat Entitas" },
-			{ type: "context", text: "Langkah 1-4: jenis data, wilayah, identitas, dan draft awal." },
+			{ type: "context", text: "Mulai dari memilih modul data, lalu isi identitas dasar dan wilayah entitas." },
 			...buildEntityWizardSteps(undefined, 1),
+			{ type: "divider" },
+			{ type: "header", text: "Pilihan 8 Modul Data" },
+			{
+				type: "table",
+				columns: [
+					{ key: "module", label: "Modul", format: "text" },
+					{ key: "description", label: "Deskripsi Singkat", format: "text" },
+					{ key: "entityKind", label: "Jenis Entitas", format: "badge" },
+					{ key: "subtypes", label: "Subjenis", format: "text" },
+				],
+				rows: moduleConfigs.map((moduleConfig) => ({
+					module: moduleConfig.label,
+					description: moduleConfig.description,
+					entityKind: getEntityKindLabel(moduleConfig.entityKind),
+					subtypes: moduleConfig.subtypes.map((item) => item.label).join(", "),
+				})),
+				empty_text: "Tidak ada modul data",
+			},
 			{ type: "divider" },
 			{
 				type: "form",
@@ -1638,29 +1701,29 @@ async function buildEntityCreateForm(
 					{
 						type: "select",
 						action_id: "objectTypeCode",
-						label: "Jenis Data",
-						options: objectTypes.map((item) => ({ label: item.label, value: item.value })),
+						label: "Modul Data SIKESRA",
+						options: moduleConfigs.map((item) => ({ label: item.label, value: item.objectTypeCode })),
 					},
-					{ type: "text_input", action_id: "objectSubtypeCode", label: "Kode Subjenis", placeholder: "01" },
 					{
 						type: "select",
-						action_id: "entityKind",
-						label: "Jenis Entitas",
-						options: [
-							{ label: "Person", value: "person" },
-							{ label: "Institution", value: "institution" },
-							{ label: "Building", value: "building" },
-							{ label: "Group", value: "group" },
-						],
+						action_id: "objectSubtypeCode",
+						label: "Subjenis Data",
+						options: getModuleSubtypeOptions(),
+						value: "",
 					},
-					{ type: "text_input", action_id: "displayName", label: "Nama Tampilan", placeholder: "Nama entitas" },
+					{
+						type: "text_input",
+						action_id: "displayName",
+						label: "Nama Tampilan",
+						placeholder: "Nama entitas, lembaga, orang, atau lokasi sesuai modul",
+					},
 					{
 						type: "select",
 						action_id: "officialVillageCode",
 						label: "Desa/Kelurahan",
 						options: villages.map((item) => ({ label: item.name, value: item.code })),
 					},
-					{ type: "text_input", action_id: "localRegionId", label: "Local Region ID", placeholder: "Opsional" },
+					{ type: "text_input", action_id: "localRegionId", label: "Wilayah Lokal (Opsional)", placeholder: "Isi bila wilayah lokal sudah tersedia" },
 					{ type: "text_input", action_id: "addressText", label: "Alamat", multiline: true },
 				],
 				submit: { label: "Buat Draft", action_id: "entities:create_draft" },
@@ -1678,13 +1741,25 @@ async function buildEntityEditForm(
 	const detail = await getEntityDetail(db, ctx, entityId);
 	const villages = section === "location" ? await listOfficialRegions(db, ctx, { level: "village" }) : [];
 	const detailModule = getDetailModuleConfig(detail.entity.objectTypeCode);
+	const subtypeOptions = getModuleSubtypeOptions(detail.entity.objectTypeCode);
 	const fields =
 		section === "identity"
 			? [
 					{ type: "text_input", action_id: "display_name", label: "Nama Tampilan", value: detail.entity.displayName },
-					{ type: "text_input", action_id: "object_type_code", label: "Kode Jenis", value: detail.entity.objectTypeCode },
-					{ type: "text_input", action_id: "object_subtype_code", label: "Kode Subjenis", value: detail.entity.objectSubtypeCode },
-					{ type: "text_input", action_id: "entity_kind", label: "Jenis Entitas", value: detail.entity.entityKind },
+					{
+						type: "select",
+						action_id: "object_type_code",
+						label: "Modul Data",
+						value: detail.entity.objectTypeCode,
+						options: listModuleUiConfigs().map((item) => ({ label: item.label, value: item.objectTypeCode })),
+					},
+					{
+						type: "select",
+						action_id: "object_subtype_code",
+						label: "Subjenis Data",
+						value: detail.entity.objectSubtypeCode,
+						options: subtypeOptions,
+					},
 				]
 			: section === "location"
 				? [
@@ -1697,12 +1772,7 @@ async function buildEntityEditForm(
 						{ type: "text_input", action_id: "local_region_id", label: "Local Region ID", value: detail.entity.localRegion?.id ?? "" },
 						{ type: "text_input", action_id: "address_text", label: "Alamat", multiline: true, value: (detail.summary.addressText as string | null) ?? "" },
 					]
-				: (detailModule?.fields.map((field) => ({
-						type: "text_input",
-						action_id: field,
-						label: field,
-						value: stringifyBlockValue(detail.details?.[field]),
-					})) ?? []);
+				: buildModuleDetailFields(detail.entity.objectTypeCode, detail.details, detailModule?.fields ?? []);
 
 	return {
 		blocks: [
@@ -1727,6 +1797,7 @@ async function buildEntityValidationView(
 	entityId: string,
 ): Promise<BlockResponse> {
 	const result = await validateEntity(db, ctx, entityId);
+	const detail = await getEntityDetail(db, ctx, entityId);
 	const duplicatePreview = ctx.permissions.includes("awcms:sikesra:duplicate:read")
 		? await getEntityDuplicatePreview(db, ctx, entityId)
 		: [];
@@ -1751,14 +1822,17 @@ async function buildEntityValidationView(
 				: []),
 			{ type: "table",
 				columns: [
-					{ key: "section", label: "Section", format: "text" },
+					{ key: "section", label: "Tahap", format: "text" },
 					{ key: "valid", label: "Valid", format: "badge" },
-					{ key: "errors", label: "Errors", format: "text" },
+					{ key: "errors", label: "Yang Perlu Dilengkapi", format: "text" },
 				],
 				rows: result.sections.map((section) => ({
-					section: section.sectionKey,
+					section: getReadableSectionLabel(section.sectionKey),
 					valid: section.isValid ? "yes" : "no",
-					errors: section.errors.map((error) => `${error.field}: ${error.message}`).join("; ") || "-",
+					errors:
+						section.errors
+							.map((error) => `${getReadableFieldLabel(detail.entity.objectTypeCode, error.field)}: ${error.message}`)
+							.join("; ") || "-",
 				})),
 				empty_text: "Tidak ada data validasi",
 			},
@@ -1882,7 +1956,8 @@ async function buildEntityReviewSummary(
 				type: "fields",
 				fields: [
 					{ label: "Nama", value: detail.entity.displayName },
-					{ label: "Jenis/Subjenis", value: `${detail.entity.objectTypeCode}/${detail.entity.objectSubtypeCode}` },
+					{ label: "Jenis/Subjenis", value: `${detail.entity.objectTypeName} / ${detail.entity.objectSubtypeName}` },
+					{ label: "Jenis Entitas", value: getEntityKindLabel(detail.entity.entityKind) },
 					{ label: "Status Data", value: detail.entity.statusData },
 					{ label: "Status Verifikasi", value: detail.entity.statusVerification },
 					{ label: "Alamat", value: stringifyBlockValue(detail.summary.addressText) },
@@ -1891,12 +1966,12 @@ async function buildEntityReviewSummary(
 			{
 				type: "table",
 				columns: [
-					{ key: "section", label: "Section", format: "text" },
+					{ key: "section", label: "Tahap", format: "text" },
 					{ key: "valid", label: "Valid", format: "badge" },
 					{ key: "issueCount", label: "Issues", format: "number" },
 				],
 				rows: validation.sections.map((section) => ({
-					section: section.sectionKey,
+					section: getReadableSectionLabel(section.sectionKey),
 					valid: section.isValid ? "yes" : "no",
 					issueCount: section.errors.length,
 				})),
@@ -1999,6 +2074,12 @@ function parseEntityFilters(values: Record<string, unknown> | undefined): Entity
 			typeof values?.statusVerification === "string" && values.statusVerification
 				? values.statusVerification
 				: undefined,
+		statusData:
+			typeof values?.statusData === "string" && values.statusData ? values.statusData : undefined,
+		duplicateStatus:
+			typeof values?.duplicateStatus === "string" && values.duplicateStatus
+				? values.duplicateStatus
+				: undefined,
 		sensitivityLevel:
 			typeof values?.sensitivityLevel === "string" && values.sensitivityLevel
 				? values.sensitivityLevel
@@ -2013,10 +2094,16 @@ function getActionEntityId(values: Record<string, unknown> | undefined) {
 }
 
 function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): DraftCreateInput {
+	const rawObjectTypeCode = typeof values?.objectTypeCode === "string" ? values.objectTypeCode : "";
+	const rawObjectSubtypeCode = typeof values?.objectSubtypeCode === "string" ? values.objectSubtypeCode : "";
+	const objectSubtypeCode = rawObjectSubtypeCode.includes(":")
+		? rawObjectSubtypeCode.split(":")[1] ?? ""
+		: rawObjectSubtypeCode;
+	const moduleUi = getModuleUiConfig(rawObjectTypeCode);
 	return {
-		objectTypeCode: typeof values?.objectTypeCode === "string" ? values.objectTypeCode : "",
-		objectSubtypeCode: typeof values?.objectSubtypeCode === "string" ? values.objectSubtypeCode : "",
-		entityKind: typeof values?.entityKind === "string" ? values.entityKind : "",
+		objectTypeCode: rawObjectTypeCode,
+		objectSubtypeCode,
+		entityKind: moduleUi?.entityKind ?? "",
 		displayName: typeof values?.displayName === "string" ? values.displayName : "",
 		officialVillageCode: typeof values?.officialVillageCode === "string" ? values.officialVillageCode : "",
 		localRegionId: typeof values?.localRegionId === "string" && values.localRegionId ? values.localRegionId : undefined,
@@ -2031,6 +2118,10 @@ function normalizeDraftUpdateForm(values: Record<string, unknown> | undefined): 
 	for (const [key, value] of Object.entries(values ?? {})) {
 		if (["action_id", "entityId", "section"].includes(key)) continue;
 		patch[key] = value;
+	}
+	if (section === "identity" && typeof patch.object_type_code === "string") {
+		const moduleUi = getModuleUiConfig(patch.object_type_code);
+		if (moduleUi) patch.entity_kind = moduleUi.entityKind;
 	}
 	return { entityId, section, patch };
 }
@@ -2097,15 +2188,66 @@ async function registerEntityDocument(
 	return upload;
 }
 
-async function loadObjectTypes(db: unknown, ctx: SikesraRequestContext) {
-	const result = await sql<{ code: string; name: string }>`
-		SELECT code, name
-		FROM awcms_sikesra_object_types
-		WHERE ${buildTenantSiteScopeSql("tenant_id", "site_id", ctx.tenantId, ctx.siteId)}
-			AND deleted_at IS NULL
-		ORDER BY code ASC
-	`.execute(db as never);
-	return result.rows.map((row) => ({ value: row.code, label: `${row.code} - ${row.name}` }));
+function buildModuleDetailFields(
+	objectTypeCode: string,
+	values: Record<string, unknown> | undefined,
+	fieldKeys: readonly string[],
+): Block[] {
+	return fieldKeys.map((fieldKey) => {
+		const fieldConfig = getModuleUiFieldConfig(objectTypeCode, fieldKey);
+		const description = buildFieldDescription(fieldConfig);
+
+		if (fieldConfig?.input === "select" && fieldConfig.options) {
+			return {
+				type: "select",
+				action_id: fieldKey,
+				label: getReadableFieldLabel(objectTypeCode, fieldKey),
+				value: stringifyBlockValue(values?.[fieldKey]),
+				options: fieldConfig.options,
+				description,
+			};
+		}
+
+		return {
+			type: "text_input",
+			action_id: fieldKey,
+			label: getReadableFieldLabel(objectTypeCode, fieldKey),
+			value: stringifyBlockValue(values?.[fieldKey]),
+			multiline: fieldConfig?.input === "textarea",
+			placeholder: fieldConfig?.placeholder,
+			description,
+		};
+	});
+}
+
+function buildFieldDescription(fieldConfig: ReturnType<typeof getModuleUiFieldConfig>) {
+	if (!fieldConfig) return undefined;
+	const requiredNote = fieldConfig.required ? "Wajib diisi." : undefined;
+	return [requiredNote, fieldConfig.helperText].filter(Boolean).join(" ") || undefined;
+}
+
+function getReadableSectionLabel(sectionKey: string): string {
+	switch (sectionKey) {
+		case "identity":
+			return "Identitas Dasar";
+		case "location":
+			return "Wilayah dan Alamat";
+		case "details":
+			return "Detail Modul";
+		default:
+			return sectionKey;
+	}
+}
+
+function getReadableFieldLabel(objectTypeCode: string, fieldKey: string): string {
+	if (fieldKey === "display_name") return "Nama Tampilan";
+	if (fieldKey === "object_type_code") return "Modul Data";
+	if (fieldKey === "object_subtype_code") return "Subjenis Data";
+	if (fieldKey === "entity_kind") return "Jenis Entitas";
+	if (fieldKey === "official_village_code") return "Desa/Kelurahan";
+	if (fieldKey === "local_region_id") return "Wilayah Lokal";
+	if (fieldKey === "address_text") return "Alamat";
+	return getModuleUiFieldConfig(objectTypeCode, fieldKey)?.label ?? fieldKey;
 }
 
 function stringifyBlockValue(value: unknown) {

@@ -31,6 +31,7 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 - Schema-backed draft create/update/autosave for all 8 MVP detail modules, writing to the real `awcms_sikesra_*_details` tables
 - Archive/restore backend routes with permission checks, reason+confirmation enforcement, audit, and archived-record exclusion from normal dashboard/verification flows
 - Block-based admin entity workflow for create draft, section edit, validation, code generation, submit, archive, and restore
+- Operator-friendly module metadata for all 8 MVP data modules, including readable create flow options, registry module filters, and readable detail field labels
 - Duplicate preview/warnings on entity detail and validation views using `awcms_sikesra_duplicate_candidates`
 - Document step in the entity workflow with D1-backed document metadata registration and listing
 - Wizard progress navigation and review/submit summary on the entity workflow

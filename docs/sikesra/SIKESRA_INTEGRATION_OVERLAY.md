@@ -25,6 +25,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Draft/detail data layer | Draft create/update/autosave now persist module detail data to the real 8 detail tables, and completeness checks required module keys |
 | Archive/restore backend | `v1/entities/archive` and `v1/entities/restore` now enforce permission, confirmation, reason, audit, and restore-state derivation |
 | Admin entity workflow  | Block-based create/edit/validate/generate/submit/archive/restore flow is available through the `/entities` admin surface   |
+| Operator module UX     | SIKESRA-local UI metadata now drives readable 8-module create choices, registry filters, subtype labels, and detail field labels |
 | Duplicate preview      | Entity detail and validation views surface duplicate candidate warnings from `awcms_sikesra_duplicate_candidates`           |
 | Document step          | Entity workflow includes D1-backed document metadata registration and document listing on the `/entities` surface           |
 | Wizard review polish   | Entity workflow includes progress navigation and a review/submit summary surface                                             |
