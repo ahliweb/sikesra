@@ -8,6 +8,7 @@ const apiToken = process.env.CLOUDFLARE_API_TOKEN || "";
 const workerName = process.env.CLOUDFLARE_WORKER_NAME || "sikesra";
 const hostname = process.env.SIKESRA_HOSTNAME || "sikesrakobar.ahlikoding.com";
 const baseUrl = process.env.SIKESRA_BASE_URL || `https://${hostname}`;
+const workerBaseUrl = process.env.SIKESRA_WORKER_BASE_URL || process.env.CLOUDFLARE_WORKER_URL || "";
 const requiredSecret = process.env.SIKESRA_REQUIRED_SECRET || "CF_ACCESS_AUDIENCE";
 const failures = [];
 
@@ -83,9 +84,14 @@ async function checkAccessApp() {
 }
 
 async function checkAuthMode() {
-	const response = await fetch(`${baseUrl}/_emdash/api/auth/mode`, { redirect: "manual" });
+	if (!workerBaseUrl) {
+		warn("skipping auth mode check because SIKESRA_WORKER_BASE_URL and CLOUDFLARE_WORKER_URL are unset");
+		return null;
+	}
+
+	const response = await fetch(`${workerBaseUrl}/_emdash/api/auth/mode`, { redirect: "manual" });
 	if (!response.ok) {
-		fail(`auth mode endpoint returned HTTP ${response.status}`);
+		fail(`worker auth mode endpoint returned HTTP ${response.status}`);
 		return null;
 	}
 	const payload = await response.json();

@@ -15,6 +15,8 @@ import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 
+const cfAccessTeamDomain = process.env.CF_ACCESS_TEAM_DOMAIN || "cloudflare-cto.cloudflareaccess.com";
+
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare({
@@ -45,7 +47,7 @@ export default defineConfig({
 			// Cloudflare Access authentication
 			// Reads CF_ACCESS_AUDIENCE from env (wrangler secret or .dev.vars)
 			auth: access({
-				teamDomain: "cloudflare-cto.cloudflareaccess.com",
+				teamDomain: cfAccessTeamDomain,
 				autoProvision: true,
 				defaultRole: 30, // Author
 				// Map your IdP groups to roles (optional)
