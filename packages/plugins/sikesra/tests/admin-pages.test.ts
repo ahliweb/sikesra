@@ -66,7 +66,7 @@ describe("SIKESRA admin entity workflow", () => {
 			values: {
 				action_id: "entities:create_draft",
 				objectTypeCode: "01",
-				objectSubtypeCode: "01",
+				objectSubtypeCode: "01:01",
 				entityKind: "building",
 				displayName: "Masjid Admin",
 				officialVillageCode: "6201011001",
@@ -83,13 +83,37 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it("rejects a mismatched module and subtype pair in the create flow", async () => {
+		const response = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:create_draft",
+				objectTypeCode: "01",
+				objectSubtypeCode: "06:01",
+				entityKind: "building",
+				displayName: "Masjid Salah Subjenis",
+				officialVillageCode: "6201011001",
+			},
+		});
+
+		expect(response.toast).toEqual({
+			message: "Subjenis data tidak cocok dengan modul yang dipilih",
+			type: "error",
+		});
+		expect(response.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "banner", title: "Subjenis Tidak Sesuai" }),
+			]),
+		);
+	});
+
 	it("archives and restores an entity through admin actions", async () => {
 		await buildAdminPage(db, makeContext(), "/entities", {
 			type: "form_submit",
 			values: {
 				action_id: "entities:create_draft",
 				objectTypeCode: "01",
-				objectSubtypeCode: "01",
+				objectSubtypeCode: "01:01",
 				entityKind: "building",
 				displayName: "Masjid Arsip UI",
 				officialVillageCode: "6201011001",
