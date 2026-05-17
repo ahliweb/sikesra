@@ -1,8 +1,8 @@
 import { sql } from "kysely";
-
 import { AUDIT_ACTIONS, type AuditAction } from "../security/audit.js";
 import type { SikesraRequestContext } from "../security/request-context.js";
 import { guardRoute } from "../security/route-guard.js";
+import { validateEntity } from "./draft.js";
 
 export interface VerificationSubmitInput {
 	entityId: string;
@@ -85,6 +85,39 @@ export async function submitForVerification(
 	const entity = await getEntityForVerification(db, ctx, input.entityId);
 	if (!entity)
 		return throwRouteError("NOT_FOUND", "Entity not found or not eligible for verification", 404);
+
+	const validation = await validateEntity(db, ctx, input.entityId);
+	const invalidSections = validation.sections.filter((section) => !section.isValid);
+	if (invalidSections.length > 0) {
+		await writeVerificationBlockedAudit(
+			db,
+			ctx,
+			input.entityId,
+			"Submit diblokir karena masih ada field wajib yang belum lengkap",
+			{ invalidSections: invalidSections.map((section) => section.sectionKey) },
+		);
+		return throwRouteError(
+			"VALIDATION_ERROR",
+			"Submit diblokir karena masih ada field wajib yang belum lengkap",
+			400,
+		);
+	}
+
+	const blockingDuplicates = await countHighRiskDuplicateCandidates(db, ctx, input.entityId);
+	if (blockingDuplicates > 0) {
+		await writeVerificationBlockedAudit(
+			db,
+			ctx,
+			input.entityId,
+			"Submit diblokir karena ada kandidat duplikat berisiko tinggi yang harus ditinjau",
+			{ blockingDuplicates },
+		);
+		return throwRouteError(
+			"VALIDATION_ERROR",
+			"Submit diblokir karena ada kandidat duplikat berisiko tinggi yang harus ditinjau",
+			400,
+		);
+	}
 
 	const previousStatus = entity.status_verification;
 	const nextStatus = "pending_verification";
@@ -395,6 +428,32 @@ async function getEntityForVerification(db: unknown, ctx: SikesraRequestContext,
 	return result.rows[0];
 }
 
+async function countHighRiskDuplicateCandidates(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+): Promise<number> {
+	const result = await sql<{ total: number }>`
+		SELECT COUNT(*) AS total
+		FROM awcms_sikesra_duplicate_candidates candidate
+		JOIN awcms_sikesra_entities other_entity
+			ON other_entity.tenant_id = candidate.tenant_id
+			AND other_entity.site_id = candidate.site_id
+			AND (
+				(candidate.entity_id_a = ${entityId} AND other_entity.id = candidate.entity_id_b)
+				OR (candidate.entity_id_b = ${entityId} AND other_entity.id = candidate.entity_id_a)
+			)
+		WHERE candidate.tenant_id = ${ctx.tenantId}
+			AND candidate.site_id = ${ctx.siteId}
+			AND candidate.deleted_at IS NULL
+			AND other_entity.deleted_at IS NULL
+			AND candidate.risk_level IN ('high', 'blocking')
+			AND (candidate.entity_id_a = ${entityId} OR candidate.entity_id_b = ${entityId})
+	`.execute(db as never);
+
+	return result.rows[0]?.total ?? 0;
+}
+
 function buildQueueWhereSql(ctx: SikesraRequestContext, filters: VerificationQueueFilters) {
 	const conditions = [
 		sql`entity.tenant_id = ${ctx.tenantId}`,
@@ -469,7 +528,88 @@ async function writeVerificationAudit(
 	}
 }
 
+async function writeVerificationBlockedAudit(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	reason: string,
+	metadata: Record<string, unknown>,
+): Promise<void> {
+	try {
+		await sql`
+			INSERT INTO awcms_sikesra_audit_logs (
+				id, tenant_id, site_id, actor_id, actor_role, action,
+				resource_type, resource_id, request_id, success, reason,
+				before_json, after_json, ip_address, user_agent, created_at
+			) VALUES (
+				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
+				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
+				${ctx.roles[0] ?? "unknown"}, ${AUDIT_ACTIONS.ACCESS_DENIED},
+				'entity', ${entityId}, ${ctx.requestId}, 0, ${reason},
+				${null}, ${JSON.stringify(metadata)},
+				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},
+				datetime('now')
+			)
+		`.execute(db as never);
+	} catch {
+		// Audit write failures should not block the main operation
+	}
+}
+
 async function throwRouteError(code: string, message: string, status: number): Promise<never> {
-	const { PluginRouteError } = await import("emdash");
-	throw new PluginRouteError(code, message, status);
+	const mod = (await import("emdash")) as {
+		PluginRouteError?: {
+			new (code: string, message: string, status?: number, details?: unknown): Error & {
+				code: string;
+				status: number;
+			};
+			badRequest?: (message: string, details?: unknown) => Error & { code: string; status: number };
+			forbidden?: (message?: string) => Error & { code: string; status: number };
+			notFound?: (message?: string) => Error & { code: string; status: number };
+			internal?: (message?: string) => Error & { code: string; status: number };
+		};
+		default?: {
+			PluginRouteError?: {
+				new (code: string, message: string, status?: number, details?: unknown): Error & {
+					code: string;
+					status: number;
+				};
+				badRequest?: (message: string, details?: unknown) => Error & { code: string; status: number };
+				forbidden?: (message?: string) => Error & { code: string; status: number };
+				notFound?: (message?: string) => Error & { code: string; status: number };
+				internal?: (message?: string) => Error & { code: string; status: number };
+			};
+		};
+	};
+	const PluginRouteError = mod.PluginRouteError ?? mod.default?.PluginRouteError;
+
+	if (PluginRouteError?.badRequest && status === 400) {
+		const error = PluginRouteError.badRequest(message);
+		error.code = code;
+		throw error;
+	}
+	if (PluginRouteError?.forbidden && status === 403) {
+		const error = PluginRouteError.forbidden(message);
+		error.code = code;
+		throw error;
+	}
+	if (PluginRouteError?.notFound && status === 404) {
+		const error = PluginRouteError.notFound(message);
+		error.code = code;
+		throw error;
+	}
+	if (PluginRouteError?.internal && status >= 500) {
+		const error = PluginRouteError.internal(message);
+		error.code = code;
+		throw error;
+	}
+	if (PluginRouteError) {
+		throw new PluginRouteError(code, message, status);
+	}
+
+	const fallback = new Error(message) as Error & { code: string; status: number };
+	fallback.name = "PluginRouteError";
+	fallback.code = code;
+	fallback.status = status;
+	throw fallback;
 }

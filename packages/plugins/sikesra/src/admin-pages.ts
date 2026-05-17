@@ -61,6 +61,15 @@ interface BlockResponse {
 	toast?: { message: string; type: "success" | "error" | "info" };
 }
 
+interface EntitySubmitReadiness {
+	invalidSections: string[];
+	highRiskDuplicateCount: number;
+	documentCount: number;
+	canSubmit: boolean;
+	recommendedAction: string;
+	reasonMessage?: string;
+}
+
 // ── Admin Page Router ────────────────────────────────────────────────────────
 
 export async function buildAdminPage(
@@ -1452,6 +1461,25 @@ async function handleEntityAction(
 	if (actionId === "entities:submit_verification") {
 		const entityId = getActionEntityId(action.values);
 		if (entityId) {
+			const readiness = await getEntitySubmitReadiness(db, ctx, entityId);
+			if (!readiness.canSubmit) {
+				await auditBlockedSubmitAttempt(db, ctx, entityId, readiness.reasonMessage ?? "Entitas belum siap diajukan", {
+					invalidSections: readiness.invalidSections,
+					highRiskDuplicateCount: readiness.highRiskDuplicateCount,
+					documentCount: readiness.documentCount,
+					canSubmit: readiness.canSubmit,
+					recommendedAction: readiness.recommendedAction,
+					reasonMessage: readiness.reasonMessage,
+				});
+				const submitView = await buildEntitySubmitForm(db, ctx, entityId);
+				return {
+					...submitView,
+					toast: {
+						message: readiness.reasonMessage ?? "Entitas belum siap diajukan",
+						type: "error",
+					},
+				};
+			}
 			await submitForVerification(db, ctx, {
 				entityId,
 				note:
@@ -1956,6 +1984,7 @@ async function buildEntityReviewSummary(
 	]);
 	const runtime = buildAdminDocumentRuntime(db);
 	const documents = await getEntityDocuments(runtime, entityId, ctx);
+	const readiness = await getEntitySubmitReadiness(db, ctx, entityId, validation, documents.length, duplicatePreview);
 
 	return {
 		blocks: [
@@ -1968,7 +1997,7 @@ async function buildEntityReviewSummary(
 				items: [
 					{ label: "Kelengkapan", value: `${validation.overallPercent}%` },
 					{ label: "Dokumen", value: documents.length },
-					{ label: "Duplikat", value: duplicatePreview.length },
+					{ label: "Duplikat", value: Math.max(duplicatePreview.length, readiness.highRiskDuplicateCount) },
 					{ label: "Status", value: detail.entity.statusVerification },
 				],
 			},
@@ -2008,6 +2037,12 @@ async function buildEntityReviewSummary(
 					},
 				] as Block[])
 				: []),
+			{
+				type: "banner",
+				variant: readiness.canSubmit ? "success" : "info",
+				title: readiness.canSubmit ? "Siap Diajukan" : "Tindakan Berikutnya",
+				description: readiness.recommendedAction,
+			},
 			...(documents.length === 0
 				? ([
 					{
@@ -2037,6 +2072,29 @@ async function buildEntitySubmitForm(
 	entityId: string,
 ): Promise<BlockResponse> {
 	const detail = await getEntityDetail(db, ctx, entityId);
+	const readiness = await getEntitySubmitReadiness(db, ctx, entityId);
+	if (!readiness.canSubmit) {
+		return {
+			blocks: [
+				{ type: "header", text: "Ajukan Verifikasi" },
+				{ type: "context", text: detail.entity.displayName },
+				...buildEntityWizardSteps(entityId, 7),
+				{
+					type: "banner",
+					variant: "error",
+					title: "Belum Bisa Diajukan",
+					description: readiness.reasonMessage ?? readiness.recommendedAction,
+				},
+				{
+					type: "actions",
+					elements: [
+						{ type: "button", action_id: "entities:open_review", entityId, label: "Kembali ke Review", style: "secondary" },
+						{ type: "button", action_id: readiness.highRiskDuplicateCount > 0 ? "entities:validate" : "entities:edit_details", entityId, label: readiness.highRiskDuplicateCount > 0 ? "Tinjau Validasi & Duplikat" : "Lengkapi Detail Modul", style: "primary" },
+					],
+				},
+			],
+		};
+	}
 	return {
 		blocks: [
 			{ type: "header", text: "Ajukan Verifikasi" },
@@ -2051,6 +2109,117 @@ async function buildEntitySubmitForm(
 			},
 		],
 	};
+}
+
+async function getEntitySubmitReadiness(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	validationResult?: Awaited<ReturnType<typeof validateEntity>>,
+	documentCount?: number,
+	duplicatePreview?: Awaited<ReturnType<typeof getEntityDuplicatePreview>>,
+): Promise<EntitySubmitReadiness> {
+	const validation = validationResult ?? (await validateEntity(db, ctx, entityId));
+	const invalidSections = validation.sections.filter((section) => !section.isValid).map((section) => section.sectionKey);
+	const highRiskDuplicateCount =
+		duplicatePreview?.filter((item) => ["high", "blocking"].includes(item.riskLevel)).length ??
+		(await countHighRiskDuplicateCandidates(db, ctx, entityId));
+	const resolvedDocumentCount =
+		documentCount ?? (await getEntityDocuments(buildAdminDocumentRuntime(db), entityId, ctx)).length;
+
+	if (invalidSections.length > 0) {
+		return {
+			invalidSections,
+			highRiskDuplicateCount,
+			documentCount: resolvedDocumentCount,
+			canSubmit: false,
+			reasonMessage: "Masih ada field wajib yang belum lengkap.",
+			recommendedAction: `Lengkapi tahap ${invalidSections.map((section) => getReadableSectionLabel(section)).join(", ")} sebelum mengajukan verifikasi.`,
+		};
+	}
+
+	if (highRiskDuplicateCount > 0) {
+		return {
+			invalidSections,
+			highRiskDuplicateCount,
+			documentCount: resolvedDocumentCount,
+			canSubmit: false,
+			reasonMessage: "Masih ada kandidat duplikat berisiko tinggi yang harus ditinjau.",
+			recommendedAction: "Tinjau kandidat duplikat berisiko tinggi pada detail atau validasi sebelum submit.",
+		};
+	}
+
+	if (resolvedDocumentCount === 0) {
+		return {
+			invalidSections,
+			highRiskDuplicateCount,
+			documentCount: resolvedDocumentCount,
+			canSubmit: true,
+			recommendedAction: "Dokumen pendukung belum ada. Tambahkan dokumen bila diwajibkan SOP, lalu ajukan verifikasi.",
+		};
+	}
+
+	return {
+		invalidSections,
+		highRiskDuplicateCount,
+		documentCount: resolvedDocumentCount,
+		canSubmit: true,
+		recommendedAction: "Semua syarat minimum sudah terpenuhi. Lanjutkan submit untuk verifikasi.",
+	};
+}
+
+async function countHighRiskDuplicateCandidates(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+): Promise<number> {
+	const result = await sql<{ total: number }>`
+		SELECT COUNT(*) AS total
+		FROM awcms_sikesra_duplicate_candidates candidate
+		JOIN awcms_sikesra_entities other_entity
+			ON other_entity.tenant_id = candidate.tenant_id
+			AND other_entity.site_id = candidate.site_id
+			AND (
+				(candidate.entity_id_a = ${entityId} AND other_entity.id = candidate.entity_id_b)
+				OR (candidate.entity_id_b = ${entityId} AND other_entity.id = candidate.entity_id_a)
+			)
+		WHERE candidate.tenant_id = ${ctx.tenantId}
+			AND candidate.site_id = ${ctx.siteId}
+			AND candidate.deleted_at IS NULL
+			AND other_entity.deleted_at IS NULL
+			AND candidate.risk_level IN ('high', 'blocking')
+			AND (candidate.entity_id_a = ${entityId} OR candidate.entity_id_b = ${entityId})
+	`.execute(db as never);
+
+	return result.rows[0]?.total ?? 0;
+}
+
+async function auditBlockedSubmitAttempt(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	reason: string,
+	metadata: Record<string, unknown>,
+): Promise<void> {
+	try {
+		await sql`
+			INSERT INTO awcms_sikesra_audit_logs (
+				id, tenant_id, site_id, actor_id, actor_role, action,
+				resource_type, resource_id, request_id, success, reason,
+				before_json, after_json, ip_address, user_agent, created_at
+			) VALUES (
+				${`audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`},
+				${ctx.tenantId}, ${ctx.siteId}, ${ctx.userId},
+				${ctx.roles[0] ?? "unknown"}, 'security.access_denied',
+				'entity', ${entityId}, ${ctx.requestId}, 0, ${reason},
+				${null}, ${JSON.stringify(metadata)},
+				${ctx.ipAddress ?? null}, ${ctx.userAgent ?? null},
+				datetime('now')
+			)
+		`.execute(db as never);
+	} catch {
+		// Audit write failures should not block the admin response
+	}
 }
 
 async function buildEntityLifecycleForm(

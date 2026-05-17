@@ -8,6 +8,7 @@ import { guardRoute } from "../security/route-guard.js";
 export interface DraftCreateInput {
 	objectTypeCode: string;
 	objectSubtypeCode: string;
+	selectedSubtypeModuleCode?: string;
 	entityKind: string;
 	displayName: string;
 	officialVillageCode: string;
