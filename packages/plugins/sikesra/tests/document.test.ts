@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 
 import {
 	completeUpload,
+	estimateBase64SizeBytes,
 	generateUploadUrl,
+	guessMimeTypeFromFilename,
 	getDocumentDownload,
 	getEntityDocuments,
 	replaceDocument,
@@ -129,6 +131,13 @@ function makeContext() {
 }
 
 describe("SIKESRA document workflow", () => {
+	it("derives mime type and base64 size from uploaded file metadata", () => {
+		expect(guessMimeTypeFromFilename("ktp.pdf")).toBe("application/pdf");
+		expect(guessMimeTypeFromFilename("foto.JPG")).toBe("image/jpeg");
+		expect(guessMimeTypeFromFilename("unknown.bin")).toBeNull();
+		expect(estimateBase64SizeBytes(Buffer.from("pdf-data", "utf8").toString("base64"))).toBe(8);
+	});
+
 	it("rejects invalid mime types", async () => {
 		await expect(
 			generateUploadUrl(
@@ -156,6 +165,7 @@ describe("SIKESRA document workflow", () => {
 			ctx,
 			runtime,
 		);
+		expect(upload.uploadUrl).toContain("/_emdash/api/plugins/sikesra/v1/documents/complete");
 		const completed = await completeUpload(
 			{
 				fileObjectId: upload.fileObjectId,

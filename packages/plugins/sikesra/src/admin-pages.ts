@@ -9,9 +9,12 @@ import {
 	getModuleUiFieldConfig,
 	listModuleUiConfigs,
 } from "./module-ui-config.js";
+import { SIKESRA_API_BASE } from "./shared.js";
 import {
 	completeUpload,
+	estimateBase64SizeBytes,
 	generateUploadUrl,
+	guessMimeTypeFromFilename,
 	getEntityDocuments,
 	validateUploadInput,
 	type CompleteUploadInput,
@@ -69,6 +72,10 @@ interface EntitySubmitReadiness {
 	recommendedAction: string;
 	reasonMessage?: string;
 }
+
+interface AdminDocumentRegisterInput
+	extends GenerateUploadUrlInput,
+		Pick<CompleteUploadInput, "entityId" | "documentType" | "checksumSha256" | "contentBase64"> {}
 
 // ── Admin Page Router ────────────────────────────────────────────────────────
 
@@ -1431,10 +1438,42 @@ async function handleEntityAction(
 		if (entityId) return buildEntityReviewSummary(db, ctx, entityId);
 	}
 	if (actionId === "entities:document_register") {
-		const input = normalizeDocumentRegisterForm(action.values);
-		await registerEntityDocument(db, ctx, input);
-		const step = await buildEntityDocumentStep(db, ctx, input.entityId);
-		return { ...step, toast: { message: "Dokumen berhasil dicatat", type: "success" } };
+		try {
+			const input = normalizeDocumentRegisterForm(action.values);
+			const registered = await registerEntityDocument(db, ctx, input);
+			if (registered.mode === "prepared") {
+				return buildPreparedDocumentUploadStep(db, ctx, input.entityId, {
+					entityId: input.entityId,
+					fileName: input.fileName,
+					documentType: input.documentType,
+					classification: input.classification,
+					mimeType: input.mimeType,
+					fileObjectId: registered.upload.fileObjectId,
+				});
+			}
+			const step = await buildEntityDocumentStep(db, ctx, input.entityId);
+			return { ...step, toast: { message: "Dokumen berhasil dicatat", type: "success" } };
+		} catch (error) {
+			const entityId = typeof action.values?.entityId === "string" ? action.values.entityId : "";
+			const step = entityId ? await buildEntityDocumentStep(db, ctx, entityId) : { blocks: [] };
+			const rawMessage = error instanceof Error ? error.message : "Dokumen tidak valid";
+			const message = rawMessage === "DOCUMENT_REGISTER_INPUT_REQUIRED"
+				? "Nama file, jenis dokumen, dan entity ID wajib diisi."
+				: rawMessage.replace(/^DOCUMENT_REGISTER_INVALID:\s*/, "");
+			return {
+				...step,
+				blocks: [
+					{
+						type: "banner",
+						variant: "error",
+						title: "Dokumen Tidak Valid",
+						description: message,
+					},
+					...step.blocks,
+				],
+				toast: { message: message || "Dokumen tidak valid", type: "error" },
+			};
+		}
 	}
 	if (actionId === "entities:update_section") {
 		const input = normalizeDraftUpdateForm(action.values);
@@ -1907,13 +1946,28 @@ async function buildEntityDocumentStep(
 			...buildEntityWizardSteps(entityId, 4),
 			{ type: "divider" },
 			{
+				type: "banner",
+				variant: "info",
+				title: "Workflow Upload Dokumen",
+				description: "MIME type diturunkan dari nama file dan ukuran dihitung dari payload file yang diberikan di shell ini. Jika shell belum bisa unggah file langsung, gunakan handoff API upload yang aman tanpa mengisi metadata teknis secara manual.",
+			},
+			{
 				type: "form",
 				fields: [
 					{ type: "text_input", action_id: "entityId", label: "Entity ID", value: entityId },
 					{ type: "text_input", action_id: "fileName", label: "Nama File", placeholder: "ktp.pdf" },
-					{ type: "text_input", action_id: "documentType", label: "Jenis Dokumen", placeholder: "ktp / kk / surat_keterangan" },
-					{ type: "text_input", action_id: "mimeType", label: "MIME Type", value: "application/pdf" },
-					{ type: "text_input", action_id: "sizeBytes", label: "Ukuran (bytes)", value: "1024" },
+					{
+						type: "select",
+						action_id: "documentType",
+						label: "Jenis Dokumen",
+						options: [
+							{ label: "KTP", value: "ktp" },
+							{ label: "KK", value: "kk" },
+							{ label: "Surat Keterangan", value: "surat_keterangan" },
+							{ label: "Foto Lokasi", value: "foto_lokasi" },
+							{ label: "Lainnya", value: "lainnya" },
+						],
+					},
 					{
 						type: "select",
 						action_id: "classification",
@@ -1924,9 +1978,16 @@ async function buildEntityDocumentStep(
 							{ label: "Highly Restricted", value: "highly_restricted" },
 						],
 					},
+					{
+						type: "text_input",
+						action_id: "contentBase64",
+						label: "Konten File Base64 (opsional untuk shell ini)",
+						multiline: true,
+						placeholder: "Tempel base64 file untuk simulasi/testing, atau kosongkan untuk menyiapkan upload URL.",
+					},
 					{ type: "text_input", action_id: "checksumSha256", label: "Checksum SHA256", placeholder: "opsional" },
 				],
-				submit: { label: "Catat Dokumen", action_id: "entities:document_register" },
+				submit: { label: "Siapkan / Catat Dokumen", action_id: "entities:document_register" },
 			},
 			{ type: "divider" },
 			...(documents.length === 0
@@ -2329,11 +2390,13 @@ function normalizeEntityLifecycleForm(values: Record<string, unknown> | undefine
 }
 
 function normalizeDocumentRegisterForm(values: Record<string, unknown> | undefined):
-	GenerateUploadUrlInput &
-	Pick<CompleteUploadInput, "entityId" | "documentType" | "checksumSha256"> {
+	AdminDocumentRegisterInput {
 	const fileName = typeof values?.fileName === "string" ? values.fileName : "";
-	const mimeType = typeof values?.mimeType === "string" ? values.mimeType : "application/pdf";
-	const sizeBytesRaw = typeof values?.sizeBytes === "string" ? Number(values.sizeBytes) : values?.sizeBytes;
+	const mimeType = guessMimeTypeFromFilename(fileName) ?? "";
+	const contentBase64 =
+		typeof values?.contentBase64 === "string" && values.contentBase64.trim()
+			? values.contentBase64.trim()
+			: undefined;
 	const classification =
 		typeof values?.classification === "string"
 			? (values.classification as DocumentClassification)
@@ -2343,16 +2406,18 @@ function normalizeDocumentRegisterForm(values: Record<string, unknown> | undefin
 	const input = {
 		fileName,
 		mimeType,
-		sizeBytes: typeof sizeBytesRaw === "number" && Number.isFinite(sizeBytesRaw) ? sizeBytesRaw : 0,
+		sizeBytes: contentBase64 ? estimateBase64SizeBytes(contentBase64) : 0,
 		classification,
 		entityId,
 		documentType,
+		contentBase64,
 		checksumSha256:
 			typeof values?.checksumSha256 === "string" && values.checksumSha256
 				? values.checksumSha256
 				: undefined,
 	};
 	if (!entityId || !documentType) throw new Error("DOCUMENT_REGISTER_INPUT_REQUIRED");
+	if (!mimeType) throw new Error("DOCUMENT_REGISTER_INVALID: Tipe file belum didukung dari nama file yang diberikan.");
 	const errors = validateUploadInput(input);
 	if (errors.length > 0) throw new Error(`DOCUMENT_REGISTER_INVALID: ${errors.join("; ")}`);
 	return input;
@@ -2361,9 +2426,16 @@ function normalizeDocumentRegisterForm(values: Record<string, unknown> | undefin
 async function registerEntityDocument(
 	db: unknown,
 	ctx: SikesraRequestContext,
-	input: GenerateUploadUrlInput & Pick<CompleteUploadInput, "entityId" | "documentType" | "checksumSha256">,
-) {
+	input: AdminDocumentRegisterInput,
+): Promise<{ mode: "prepared" | "completed"; upload: UploadUrlResponse }> {
 	const runtime = buildAdminDocumentRuntime(db);
+	if (!input.contentBase64) {
+		const upload = await generateUploadUrl(input, ctx, runtime);
+		return {
+			mode: "prepared",
+			upload,
+		};
+	}
 	const upload = await generateUploadUrl(input, ctx, runtime);
 	await completeUpload(
 		{
@@ -2371,6 +2443,7 @@ async function registerEntityDocument(
 			entityId: input.entityId,
 			documentType: input.documentType,
 			classification: input.classification,
+			contentBase64: input.contentBase64,
 			checksumSha256: input.checksumSha256,
 			originalFilename: input.fileName,
 			mimeType: input.mimeType,
@@ -2379,7 +2452,47 @@ async function registerEntityDocument(
 		ctx,
 		runtime,
 	);
-	return upload;
+	return { mode: "completed", upload };
+}
+
+async function buildPreparedDocumentUploadStep(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	entityId: string,
+	prepared: {
+		entityId: string;
+		fileName: string;
+		documentType: string;
+		classification: string;
+		mimeType: string;
+		fileObjectId: string;
+	},
+): Promise<BlockResponse> {
+	const step = await buildEntityDocumentStep(db, ctx, entityId);
+	return {
+		blocks: [
+			{
+				type: "banner",
+				variant: "info",
+				title: "Handoff Upload API",
+				description: "Shell admin ini belum mengunggah file biner langsung. Gunakan fileObjectId berikut pada klien/API yang mendukung upload, lalu panggil endpoint complete dengan MIME type, sizeBytes, dan payload file sebenarnya untuk menyimpan metadata akhir dan audit.",
+			},
+			{
+				type: "fields",
+				fields: [
+					{ label: "Entity ID", value: prepared.entityId },
+					{ label: "Nama File", value: prepared.fileName },
+					{ label: "Jenis Dokumen", value: prepared.documentType },
+					{ label: "Klasifikasi", value: prepared.classification },
+					{ label: "MIME Type", value: prepared.mimeType },
+					{ label: "File Object ID", value: prepared.fileObjectId },
+					{ label: "API Complete Upload", value: `${SIKESRA_API_BASE}/v1/documents/complete` },
+				],
+			},
+			...step.blocks,
+		],
+				toast: { message: "Handoff upload siap digunakan", type: "info" },
+			};
 }
 
 function buildModuleDetailFields(
