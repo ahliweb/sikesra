@@ -1,6 +1,7 @@
 // @ts-check
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
+import { sikesraPlugin } from "@ahliweb/plugin-sikesra";
 import {
 	d1,
 	r2,
@@ -37,7 +38,7 @@ export default defineConfig({
 	},
 	integrations: [
 		react(),
-		emdash({
+			emdash({
 			// D1 database - binding name must match wrangler.jsonc
 			// session: "auto" enables read replicas (nearest replica for anon,
 			// bookmark-based consistency for authenticated users)
@@ -72,6 +73,7 @@ export default defineConfig({
 			],
 			// Trusted plugins (run in host worker)
 			plugins: [
+				sikesraPlugin(),
 				// Test plugin that exercises all v2 APIs
 				formsPlugin(),
 			],

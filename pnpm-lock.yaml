@@ -397,6 +397,9 @@ importers:
 
   demos/cloudflare:
     dependencies:
+      '@ahliweb/plugin-sikesra':
+        specifier: workspace:*
+        version: link:../../packages/plugins/sikesra
       '@astrojs/cloudflare':
         specifier: 'catalog:'
         version: 13.1.10(@types/node@24.10.13)(astro@6.0.1(@types/node@24.10.13)(jiti@2.7.0)(rollup@4.60.3)(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.27.3)(jiti@2.7.0)(tsx@4.21.0)(workerd@1.20260515.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.9.0)
