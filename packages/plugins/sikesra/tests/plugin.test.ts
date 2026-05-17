@@ -12,6 +12,7 @@ import {
 	sikesraPlugin,
 } from "../src/index.js";
 import defaultPlugin from "../src/sandbox-entry.js";
+import { getAdminPageTarget } from "../src/shared.js";
 
 describe("sikesraPlugin descriptor", () => {
 	it("declares the standard plugin shell metadata", () => {
@@ -136,6 +137,28 @@ describe("sikesraPlugin descriptor", () => {
 });
 
 describe("sikesra sandbox shell", () => {
+	it("preserves restored admin page targets across follow-up interactions", () => {
+		expect(getAdminPageTarget({ type: "page_load", page: "/entities" })).toBe("/entities");
+		expect(getAdminPageTarget({ type: "form_submit", action_id: "entities:filter" })).toBe(
+			"/entities",
+		);
+		expect(getAdminPageTarget({ type: "block_action", action_id: "entities:view" })).toBe(
+			"/entities",
+		);
+		expect(
+			getAdminPageTarget({ type: "form_submit", action_id: "verification:submit_decision" }),
+		).toBe("/verification");
+		expect(getAdminPageTarget({ type: "block_action", action_id: "audit:view_detail" })).toBe(
+			"/audit",
+		);
+		expect(getAdminPageTarget({ type: "form_submit", action_id: "settings:update" })).toBe(
+			"/settings",
+		);
+		expect(getAdminPageTarget({ type: "block_action", action_id: "navigate:imports" })).toBe(
+			"/operations",
+		);
+	});
+
 	it("registers every expected shell route", () => {
 		expect(Object.keys(defaultPlugin.routes)).toEqual([...SIKESRA_ROUTE_NAMES]);
 	});
@@ -150,6 +173,80 @@ describe("sikesra sandbox shell", () => {
 			expect.objectContaining({
 				blocks: expect.arrayContaining([
 					expect.objectContaining({ type: "header", text: "SIKESRA" }),
+				]),
+			}),
+		);
+	});
+
+	it("routes restored admin pages to their own builders instead of the dashboard", async () => {
+		const response = await defaultPlugin.routes.admin.handler(
+			{
+				input: { type: "page_load", page: "/entities" },
+				request: new Request("http://localhost"),
+			},
+			{} as never,
+		);
+
+		expect(response).toEqual(
+			expect.objectContaining({
+				blocks: expect.arrayContaining([
+					expect.objectContaining({
+						type: "fields",
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								label: "Admin route",
+								value: `${SIKESRA_ADMIN_BASE}/entities`,
+							}),
+						]),
+					}),
+				]),
+			}),
+		);
+	});
+
+	it("keeps follow-up form and block actions on their restored admin surfaces", async () => {
+		const entityActionResponse = await defaultPlugin.routes.admin.handler(
+			{
+				input: { type: "form_submit", action_id: "entities:filter", values: {} },
+				request: new Request("http://localhost"),
+			},
+			{} as never,
+		);
+		const operationsActionResponse = await defaultPlugin.routes.admin.handler(
+			{
+				input: { type: "block_action", action_id: "navigate:imports" },
+				request: new Request("http://localhost"),
+			},
+			{} as never,
+		);
+
+		expect(entityActionResponse).toEqual(
+			expect.objectContaining({
+				blocks: expect.arrayContaining([
+					expect.objectContaining({
+						type: "fields",
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								label: "Admin route",
+								value: `${SIKESRA_ADMIN_BASE}/entities`,
+							}),
+						]),
+					}),
+				]),
+			}),
+		);
+		expect(operationsActionResponse).toEqual(
+			expect.objectContaining({
+				blocks: expect.arrayContaining([
+					expect.objectContaining({
+						type: "fields",
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								label: "Admin route",
+								value: `${SIKESRA_ADMIN_BASE}/operations`,
+							}),
+						]),
+					}),
 				]),
 			}),
 		);

@@ -95,6 +95,34 @@ export interface AdminInteraction {
 	action_id?: string;
 }
 
+const SIKESRA_ADMIN_PAGE_TARGETS = new Set([
+	"/",
+	"/operations",
+	"/entities",
+	"/verification",
+	"/audit",
+	"/settings",
+]);
+
+function getAdminPageTargetFromActionId(actionId: string | undefined): string | null {
+	if (!actionId) return null;
+	if (actionId === "settings:update") return "/settings";
+	if (actionId.startsWith("entities:")) return "/entities";
+	if (actionId.startsWith("verification:")) return "/verification";
+	if (actionId.startsWith("audit:")) return "/audit";
+	if (actionId === "navigate:dashboard") return "/";
+	if (actionId === "navigate:verification") return "/verification";
+	if (actionId.startsWith("navigate:entities")) return "/entities";
+	if (
+		actionId === "navigate:documents" ||
+		actionId === "navigate:imports" ||
+		actionId === "navigate:reports"
+	) {
+		return "/operations";
+	}
+	return null;
+}
+
 export function buildPublicMetadata(): SikesraPublicMetadata {
 	return {
 		enabled: true,
@@ -182,6 +210,8 @@ export function buildAdminWidget() {
 
 export function getAdminPageTarget(interaction: AdminInteraction | undefined): string {
 	if (interaction?.page === "widget:overview") return "widget:overview";
-	if (interaction?.page === "/operations") return "/operations";
+	if (interaction?.page && SIKESRA_ADMIN_PAGE_TARGETS.has(interaction.page)) return interaction.page;
+	const targetFromActionId = getAdminPageTargetFromActionId(interaction?.action_id);
+	if (targetFromActionId) return targetFromActionId;
 	return "/";
 }
