@@ -70,22 +70,18 @@ Current guardrail:
 
 ## Person Profile Workflow
 
-For person-based modules (`05` to `08`), the current implementation still uses an interim workflow.
+For person-based modules (`05` to `08`), the current implementation now uses a clearer interim workflow.
 
 Implemented now:
 
-- operator sees a readable `Person Profile` label
-- helper text explains that the current path uses an existing profile ID
+- operator sees a readable `Profil Orang` label
+- helper text explains that the current path links an existing profile ID only
+- the referenced `person_profile_id` must exist in the current tenant/site
 - sensitive identity values remain server-side masked in normal views
 
 Remaining gap:
 
-- no full search/create/link person-profile UI yet
-
-Follow-up issues:
-
-- `#280` improve person profile UX for person-based modules
-- `#283` improve person profile workflow for person-based modules
+- no full search/create person-profile UI yet
 
 ## Document Workflow
 
@@ -136,6 +132,16 @@ Operators and implementers must keep these rules intact:
 - duplicate preview must not expose protected details unsafely
 - raw R2 keys and private file URLs must not be shown in unsafe UI
 - blocked or sensitive actions should remain audited
+
+## Merged Slices
+
+The current operator flow reflects the merged work from these completed slices:
+
+1. UI metadata coverage for all 8 modules
+2. Safe module/subtype pairing during create flow
+3. Submit gating for invalid and live high-risk duplicate records
+4. Guided document-step handoff and direct-content completion path
+5. Dedicated `Profil Orang` workflow guidance for person-based modules
 
 ## Manual Operator Checks
 

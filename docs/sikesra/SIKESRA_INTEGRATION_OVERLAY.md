@@ -26,9 +26,11 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Archive/restore backend | `v1/entities/archive` and `v1/entities/restore` now enforce permission, confirmation, reason, audit, and restore-state derivation |
 | Admin entity workflow  | Block-based create/edit/validate/generate/submit/archive/restore flow is available through the `/entities` admin surface   |
 | Operator module UX     | SIKESRA-local UI metadata now drives readable 8-module create choices, registry filters, subtype labels, and detail field labels |
+| Person profile UX      | Person-based modules now show dedicated `Profil Orang` workflow guidance and validate referenced profile IDs against tenant/site data |
 | Duplicate preview      | Entity detail and validation views surface duplicate candidate warnings from `awcms_sikesra_duplicate_candidates`           |
-| Document step          | Entity workflow includes D1-backed document metadata registration and document listing on the `/entities` surface           |
+| Document step          | Entity workflow includes D1-backed document metadata registration, direct-content completion, and resumable API handoff guidance on the `/entities` surface |
 | Wizard review polish   | Entity workflow includes progress navigation and a review/submit summary surface                                             |
+| Submit gating          | Verification submit is blocked when required validation fails or live high-risk duplicates remain, with audit on blocked attempts |
 | Document workflow      | Upload URL gen, upload complete, list, download w/ classification checks, verify, replace -- all with audit                |
 | Import workflow        | CSV parse, batch create, row staging, column mapping + validation, duplicate detection, promote to entities, rollback      |
 | Export workflow        | 3 report types (entity_summary, verification_status, audit_evidence), job lifecycle, CSV generation, permission filtering  |
@@ -49,7 +51,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Area                  | Current State                                                                                                                                                                                                                                | Next Step                                                                      |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Public data endpoints | `public/metadata`, `public/filters`, and `public/summary` query ambient D1 data through `emdash/runtime` when the host runtime is available, and fall back to the safe placeholder envelope when the schema is missing or not configured | Extend the aggregate query layer as entity, region, and settings features land |
-| Admin UI content      | Dashboard, registry, verification queue, audit, settings, and operations pages now render live Block Kit surfaces, including dedicated documents/imports/reports subpages                                                                | Build dedicated documents/imports/reports admin pages                           |
+| Admin UI content      | Dashboard, registry, verification queue, audit, settings, and operations pages now render live Block Kit surfaces, including dedicated documents/imports/reports subpages                                                                | Add richer shell ergonomics where upload/search widgets become available        |
 | `v1/status`           | Returns `{ status: "rebuild-pending" }`                                                                                                                                                                                                      | Update to reflect actual system health                                         |
 | Request context       | Trusted plugin request context is injected from the host plugin API route, but region/tenant/site mapping still uses the current default AWCMS baseline when richer context is unavailable                                                  | Bridge to richer host tenancy and scoped-role data when available              |
 | Live schema drift     | Admin pages now include compatibility aliases for the deployed D1 schema (`completeness_percent`, missing `submitted_at`)                                                                                                                     | Normalize schema expectations and remove compatibility shim once migrations converge |
@@ -59,7 +61,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Area                   | Description                                                               |
 | ---------------------- | ------------------------------------------------------------------------- |
 | React admin components | Zero `.tsx` files -- all admin UI is block-based via EmDash plugin system |
-| Entity wizard polish   | Block-based wizard now includes active step navigation and a review/submit summary for the core 8-module flow |
+| Entity wizard polish   | Block-based wizard now includes active step navigation, review/submit summary, submit gating, and dedicated person-profile guidance for the core 8-module flow |
 | Import/Export admin UI | No dedicated upload/job management/duplicate review pages yet             |
 | Dashboard/charts       | No charts/visualizations beyond KPI and queue blocks                      |
 | Document management UI | No dedicated document management page yet                                 |
@@ -70,9 +72,6 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 - `v1/entities/get` now returns entity detail, summary, verification metadata, and backend access flags.
 - `v1/regions/official` and `v1/regions/local` now return real region data with tenant/site filtering and scope enforcement.
 - The live plugin manager API now includes `sikesra` alongside other configured plugins.
-
-## Follow-up Issues
-
 
 ## D1 Schema
 

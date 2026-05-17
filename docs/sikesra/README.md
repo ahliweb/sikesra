@@ -32,9 +32,11 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 - Archive/restore backend routes with permission checks, reason+confirmation enforcement, audit, and archived-record exclusion from normal dashboard/verification flows
 - Block-based admin entity workflow for create draft, section edit, validation, code generation, submit, archive, and restore
 - Operator-friendly module metadata for all 8 MVP data modules, including readable create flow options, registry module filters, and readable detail field labels
+- Person-based modules now expose dedicated `Profil Orang` workflow guidance and validate referenced profiles against the current tenant/site
 - Duplicate preview/warnings on entity detail and validation views using `awcms_sikesra_duplicate_candidates`
-- Document step in the entity workflow with D1-backed document metadata registration and listing
+- Document step in the entity workflow with D1-backed document metadata registration, direct-content completion, and resumable API handoff guidance
 - Wizard progress navigation and review/submit summary on the entity workflow
+- Submit gating now blocks invalid or live high-risk duplicate records and audits blocked attempts
 - Plugin manager integration in the active Cloudflare deployment, including live listing of `sikesra`
 - Document workflow (upload, complete, list, download, verify, replace, audit)
 - Import workflow (CSV parse, batch, stage, map, validate, promote, rollback, duplicate detection)
@@ -44,12 +46,11 @@ Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMP
 - D1 schema backup (34 `awcms_sikesra_*` tables in `update-backup/d1/`)
 - Infrastructure (worker wrapper, wrangler config, postbuild script)
 - Cloudflare host integration at `demos/cloudflare/`
-- Tests (10 test files, including detail CRUD and admin workflow coverage)
+- Tests (12 test files, including detail CRUD, verification gating, document workflow, and admin workflow coverage)
 
 ### Placeholder
 
 - `v1/status` — still returns `{ status: "rebuild-pending" }`
-- Operations subpages (`documents`, `imports`, `reports`) — dedicated subpages now expose document, import, and report surfaces
 - Request context — trusted plugin request context is injected, but tenant/site/role mapping still uses fallback defaults when richer host context is unavailable
 
 ### Not Started
