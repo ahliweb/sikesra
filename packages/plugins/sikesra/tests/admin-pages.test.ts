@@ -326,7 +326,33 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(review.blocks).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ type: "header", text: "Review dan Submit" }),
+				expect.objectContaining({ type: "banner" }),
 				expect.objectContaining({ type: "stats" }),
+			]),
+		);
+	});
+
+	it("blocks submit form when high-risk duplicate readiness fails even after validation passes", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-submit-blocked', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Blok Submit', '6201011001', 'local-1', 'Jl. Blok', 'draft', 'draft', NULL, 'internal', 100, 'candidate', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_rumah_ibadah_details VALUES
+			('detail-submit-blocked', 'tenant-1', 'site-1', 'entity-submit-blocked', 'Masjid', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01', '2026-01-02', NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-other', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Lain', '6201011001', 'local-1', 'Jl. Lain', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_duplicate_candidates VALUES
+			('dup-submit-1', 'tenant-1', 'site-1', 'entity-submit-blocked', 'entity-other', '["same_name"]', 0.95, 'high', 'system', NULL, '2026-01-03', '2026-01-03', NULL, 'admin-1', 'admin-1');
+		`);
+
+		const submitView = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "block_action",
+			values: { action_id: "entities:open_submit", entityId: "entity-submit-blocked" },
+		});
+
+		expect(submitView.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Ajukan Verifikasi" }),
+				expect.objectContaining({ type: "banner", title: "Belum Bisa Diajukan" }),
 			]),
 		);
 	});
