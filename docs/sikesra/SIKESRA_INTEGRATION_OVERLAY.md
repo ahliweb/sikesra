@@ -44,7 +44,7 @@ This repository restores the SIKESRA plugin as a workspace plugin at `packages/p
 | Infrastructure         | Worker wrapper template, wrangler config, postbuild script                                                                 |
 | Demo integration       | Plugin registered in the active Cloudflare host app and worker deployment, public page at `/sikesra`                       |
 | Scripts                | `sikesra-d1-overlay.mjs` (inventory/restore), `sikesra-smoke-admin-route.mjs`, `sikesra-postbuild.mjs`                     |
-| Tests                  | 10 test files covering plugin descriptor, draft detail CRUD, admin entity workflow, document lifecycle, import, export, security, and admin route regressions |
+| Tests                  | 12 test files covering plugin descriptor, draft detail CRUD, admin entity workflow, verification gating, document lifecycle, import, export, security, and admin route regressions |
 
 ### Placeholder / Needs Data Layer Connection
 
