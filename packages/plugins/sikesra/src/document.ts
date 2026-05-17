@@ -122,6 +122,17 @@ export interface DocumentStorageContext {
 	};
 }
 
+const FILENAME_MIME_MAP: Record<string, string> = {
+	".pdf": "application/pdf",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".png": "image/png",
+	".doc": "application/msword",
+	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".xls": "application/vnd.ms-excel",
+	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
 const ALLOWED_MIME_TYPES = new Set([
 	"application/pdf",
 	"image/jpeg",
@@ -152,6 +163,19 @@ export function validateUploadInput(input: GenerateUploadUrlInput): string[] {
 		errors.push(`Invalid classification: ${input.classification}.`);
 	}
 	return errors;
+}
+
+export function guessMimeTypeFromFilename(fileName: string): string | null {
+	const normalized = fileName.trim().toLowerCase();
+	const extension = normalized.includes(".") ? normalized.slice(normalized.lastIndexOf(".")) : "";
+	return FILENAME_MIME_MAP[extension] ?? null;
+}
+
+export function estimateBase64SizeBytes(contentBase64: string): number {
+	const normalized = contentBase64.replace(/\s+/g, "");
+	if (!normalized) return 0;
+	const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
+	return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
 }
 
 export async function generateUploadUrl(
@@ -188,7 +212,7 @@ export async function generateUploadUrl(
 	}
 
 	return {
-		uploadUrl: `/_emdash/api/plugins/sikesra/v1/documents/${fileObjectId}/upload`,
+		uploadUrl: `/_emdash/api/plugins/sikesra/v1/documents/complete`,
 		fileObjectId,
 	};
 }

@@ -196,9 +196,8 @@ describe("SIKESRA admin entity workflow", () => {
 				entityId: "entity-doc",
 				fileName: "ktp.pdf",
 				documentType: "ktp",
-				mimeType: "application/pdf",
-				sizeBytes: "1024",
 				classification: "restricted",
+				contentBase64: Buffer.from("pdf-data", "utf8").toString("base64"),
 			},
 		});
 		const stored = await sql<{ total: number }>`
@@ -210,11 +209,118 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(documentStep.blocks).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ type: "header", text: "Dokumen Pendukung" }),
+				expect.objectContaining({ type: "banner", title: "Workflow Upload Dokumen" }),
 				expect.objectContaining({ type: "form" }),
 			]),
 		);
+		const formBlock = documentStep.blocks.find((block) => block.type === "form");
+		const formFields = Array.isArray(formBlock?.fields) ? formBlock.fields : [];
+		expect(formFields.find((field) => field.action_id === "mimeType")).toBeUndefined();
+		expect(formFields.find((field) => field.action_id === "sizeBytes")).toBeUndefined();
+		expect(formFields.find((field) => field.action_id === "contentBase64")).toEqual(
+			expect.objectContaining({ label: "Konten File Base64 (opsional untuk shell ini)" }),
+		);
 		expect(registered.toast).toEqual({ message: "Dokumen berhasil dicatat", type: "success" });
 		expect(stored.rows[0]?.total).toBe(1);
+	});
+
+	it("prepares a guided upload handoff when file content is not provided", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-doc-prep', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Upload', '6201011001', 'local-1', 'Jl. Upload', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const prepared = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:document_register",
+				entityId: "entity-doc-prep",
+				fileName: "kk.pdf",
+				documentType: "kk",
+				classification: "restricted",
+			},
+		});
+		const pendingFiles = await sql<{ total: number; id: string | null }>`
+			SELECT COUNT(*) as total, MAX(id) as id
+			FROM awcms_sikesra_file_objects
+			WHERE tenant_id = 'tenant-1' AND site_id = 'site-1'
+		`.execute(db);
+
+		expect(prepared.toast).toEqual({ message: "Handoff upload siap digunakan", type: "info" });
+		expect(prepared.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "banner", title: "Handoff Upload API" }),
+				expect.objectContaining({ type: "fields" }),
+			]),
+		);
+		const handoffFields = prepared.blocks.find((block) => block.type === "fields");
+		expect(handoffFields).toEqual(
+			expect.objectContaining({
+				fields: expect.arrayContaining([
+					expect.objectContaining({ label: "Entity ID", value: "entity-doc-prep" }),
+					expect.objectContaining({ label: "File Object ID", value: expect.stringContaining("doc_") }),
+					expect.objectContaining({ label: "API Complete Upload", value: expect.stringContaining("/v1/documents/complete") }),
+				]),
+			}),
+		);
+		expect(pendingFiles.rows[0]?.total).toBe(1);
+		expect(pendingFiles.rows[0]?.id).toContain("doc_");
+	});
+
+	it("keeps invalid file-name errors inside the document step", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-doc-invalid', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Invalid', '6201011001', 'local-1', 'Jl. Invalid', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const invalid = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:document_register",
+				entityId: "entity-doc-invalid",
+				fileName: "scan.heic",
+				documentType: "kk",
+				classification: "restricted",
+			},
+		});
+
+		expect(invalid.toast).toEqual({
+			message: "Tipe file belum didukung dari nama file yang diberikan.",
+			type: "error",
+		});
+		expect(invalid.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "banner", title: "Dokumen Tidak Valid" }),
+				expect.objectContaining({ type: "header", text: "Dokumen Pendukung" }),
+			]),
+		);
+	});
+
+	it("shows a friendly required-input error for incomplete document handoff forms", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-doc-missing', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Missing', '6201011001', 'local-1', 'Jl. Missing', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const missing = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:document_register",
+				entityId: "entity-doc-missing",
+				fileName: "ktp.pdf",
+				classification: "restricted",
+			},
+		});
+
+		expect(missing.toast).toEqual({
+			message: "Nama file, jenis dokumen, dan entity ID wajib diisi.",
+			type: "error",
+		});
+		expect(missing.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "banner", title: "Dokumen Tidak Valid" }),
+			]),
+		);
 	});
 
 	it("shows operator-friendly module choices in create flow and registry filters", async () => {
