@@ -33,6 +33,11 @@ vi.mock("../../src/lib/api", async () => {
 
 const { LoginPage } = await import("../../src/components/LoginPage");
 
+Object.defineProperty(window, "PublicKeyCredential", {
+	value: function PublicKeyCredential() {},
+	writable: true,
+});
+
 function QueryWrapper({ children }: { children: React.ReactNode }) {
 	const qc = new QueryClient({
 		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -58,9 +63,13 @@ describe("LoginPage external auth", () => {
 		);
 
 		await expect
-			.element(screen.getByText("Authentication is managed by cloudflare-access."))
+			.element(
+				screen.getByText(
+					"Authentication is managed by an external provider (cloudflare-access). Passkey settings are not available when using external authentication.",
+				),
+			)
 			.toBeInTheDocument();
-		await expect.element(screen.getByText("Continue to sign in")).toBeInTheDocument();
+		await expect.element(screen.getByText("Continue →")).toBeInTheDocument();
 	});
 
 	it("shows passkey login in dev fallback mode", async () => {
@@ -76,5 +85,17 @@ describe("LoginPage external auth", () => {
 		);
 
 		await expect.element(screen.getByText("Sign in with Passkey")).toBeInTheDocument();
+	});
+
+	it("shows provider errors on the external-auth prompt", async () => {
+		window.history.replaceState({}, "", "/_emdash/admin/login?error=access_denied&message=Access%20denied");
+
+		const screen = await render(
+			<QueryWrapper>
+				<LoginPage />
+			</QueryWrapper>,
+		);
+
+		await expect.element(screen.getByText("Access denied")).toBeInTheDocument();
 	});
 });
