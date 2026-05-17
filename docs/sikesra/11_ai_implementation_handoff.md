@@ -152,13 +152,13 @@ Use this map to keep prompts small.
 | Database migrations    | `03_data_model.md`, relevant backlog ticket, this handoff.                       |
 | API endpoint           | `04_api_contracts.md`, `06_security_rbac_abac.md`, this handoff.                 |
 | Public page            | `01_product_requirements.md`, `05_ui_ux.md`, `06_security_rbac_abac.md`.         |
-| Admin UI               | `05_ui_ux.md`, `04_api_contracts.md`, this handoff.                              |
+| Admin UI               | `05_ui_ux.md`, `04_api_contracts.md`, `operator-workflow.md`, this handoff.      |
 | Security and ABAC      | `06_security_rbac_abac.md`, `02_architecture.md`, `10_validation_checklist.md`.  |
 | Import workflow        | `07_operations_sop.md`, `03_data_model.md`, `04_api_contracts.md`.               |
 | Documents and R2       | `02_architecture.md`, `03_data_model.md`, `06_security_rbac_abac.md`.            |
 | Verification workflow  | `07_operations_sop.md`, `04_api_contracts.md`, `06_security_rbac_abac.md`.       |
 | Reports and exports    | `04_api_contracts.md`, `06_security_rbac_abac.md`, `10_validation_checklist.md`. |
-| Release validation     | `09_12_week_mvp_plan.md`, `10_validation_checklist.md`.                          |
+| Release validation     | `09_12_week_mvp_plan.md`, `10_validation_checklist.md`, `operator-workflow.md`.  |
 
 ## Phase 0 Prompt Pack
 

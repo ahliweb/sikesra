@@ -76,10 +76,14 @@ Use this document before implementation starts, before each phase merge, and bef
 ## Entity and Wizard Validation
 
 - [ ] Draft creation works.
+- [ ] All 8 SIKESRA modules appear in the operator create flow.
+- [ ] Subtype selection is constrained or safely rejected when it does not match the selected module.
 - [ ] Autosave saves section patches.
 - [ ] Validation errors are section-aware.
 - [ ] Completeness recalculates after updates.
 - [ ] Required fields block submit and ID generation.
+- [ ] Review screen shows the next recommended action before submit.
+- [ ] Person-based modules show current `Person Profile` guidance without exposing unsafe personal detail.
 - [ ] Official and local regions are visually and technically distinct.
 - [ ] Detail tables are written according to object type.
 - [ ] Access flags drive UI actions.
@@ -107,9 +111,11 @@ Use this document before implementation starts, before each phase merge, and bef
 ## Document Validation
 
 - [ ] Upload validates MIME, extension, size, checksum, classification.
+- [ ] Operator does not manually type MIME type and size in the normal document step.
 - [ ] Dangerous file types are blocked.
 - [ ] Metadata is stored in D1.
 - [ ] Physical file is stored in R2.
+- [ ] If shell upload is unavailable, resumable handoff includes the fields required by the complete endpoint.
 - [ ] Preview/download uses signed/proxy route.
 - [ ] Raw R2 key is hidden.
 - [ ] Highly restricted download requires reason where configured.

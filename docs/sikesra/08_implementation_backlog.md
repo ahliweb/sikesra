@@ -272,6 +272,12 @@ Priority: P0. Depends on SIKESRA-034.
 
 Priority: P0. Depends on SIKESRA-033, SIKESRA-034, SIKESRA-035.
 
+Current implementation note:
+
+- Core block-based wizard flow is implemented in `packages/plugins/sikesra/src/admin-pages.ts`.
+- Operator-facing workflow reference lives in `docs/sikesra/operator-workflow.md`.
+- Remaining gaps should be tracked atomically, especially person-profile search/link UX and further shell upload ergonomics.
+
 ### SIKESRA-037: Implement 20-digit code generation service
 
 Priority: P0. Depends on SIKESRA-010 and SIKESRA-035.
@@ -323,6 +329,12 @@ Priority: P1. Depends on SIKESRA-045 and SIKESRA-046.
 ### SIKESRA-048: Build document upload/list UI
 
 Priority: P0. Depends on SIKESRA-045 and SIKESRA-046.
+
+Current implementation note:
+
+- Document list and guided upload handoff are implemented.
+- The current shell can complete uploads when payload content is provided, and otherwise returns a resumable API handoff.
+- Native file-picker ergonomics remain a shell-level follow-up, not a reason to re-open core metadata work.
 
 ## Phase 9: Import and Deduplication
 

@@ -67,6 +67,10 @@ The product must support data entry from operators, staged Excel imports, multi-
 | 07   | Disabilitas                  | Fisik, Intelektual, Mental, Sensorik.                                                              |
 | 08   | Lansia Terlantar             | Terlantar, Rawan Terlantar, Mandiri dengan Risiko.                                                 |
 
+## Current Operator Workflow Reference
+
+For the implementation-aligned operator flow, module requirements, person-profile limitations, document handoff behavior, and manual checks, see [operator-workflow.md](operator-workflow.md).
+
 ## Functional Requirements
 
 | ID     | Requirement                                                                                                 | Priority |

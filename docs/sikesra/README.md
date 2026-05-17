@@ -18,7 +18,7 @@ Sistem Informasi Kesejahteraan Rakyat — native AWCMS-Micro / EmDash-compatible
 | 10    | [10_validation_checklist.md](10_validation_checklist.md)           | Final validation checklist for implementation readiness                 |
 | 11    | [11_ai_implementation_handoff.md](11_ai_implementation_handoff.md) | Handoff guide for junior programmers and AI coding agents               |
 
-Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMPLEMENTATION_DECISIONS.md](IMPLEMENTATION_DECISIONS.md).
+Additional planning docs: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [IMPLEMENTATION_DECISIONS.md](IMPLEMENTATION_DECISIONS.md), [operator-workflow.md](operator-workflow.md).
 
 ## Implementation Status
 
