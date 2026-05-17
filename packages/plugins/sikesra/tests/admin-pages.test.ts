@@ -36,7 +36,7 @@ beforeEach(() => {
 			completeness_percent INTEGER, duplicate_status TEXT, source_input TEXT, created_at TEXT, updated_at TEXT,
 			verified_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT
 		);
-		CREATE TABLE awcms_sikesra_person_profiles (id TEXT);
+		CREATE TABLE awcms_sikesra_person_profiles (id TEXT, tenant_id TEXT, site_id TEXT, full_name TEXT, deleted_at TEXT);
 		CREATE TABLE awcms_sikesra_code_sequences (id TEXT, tenant_id TEXT, site_id TEXT, official_village_code TEXT, object_type_code TEXT, object_subtype_code TEXT, last_sequence INTEGER, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
 		CREATE TABLE awcms_sikesra_audit_logs (id TEXT, tenant_id TEXT, site_id TEXT, actor_id TEXT, actor_role TEXT, action TEXT, resource_type TEXT, resource_id TEXT, request_id TEXT, success INTEGER, reason TEXT, before_json TEXT, after_json TEXT, ip_address TEXT, user_agent TEXT, created_at TEXT);
 		CREATE TABLE awcms_sikesra_rumah_ibadah_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, jenis_rumah_ibadah TEXT, status_pembangunan TEXT, luas_bangunan REAL, luas_tanah REAL, kapasitas_jamaah INTEGER, tahun_didirikan INTEGER, imam_nama TEXT, pengurus_nama TEXT, kegiatan_rutin TEXT, sumber_dana TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
@@ -462,6 +462,8 @@ describe("SIKESRA admin entity workflow", () => {
 		});
 		const detailForm = detailEdit.blocks.find((block) => block.type === "form");
 		const detailFields = Array.isArray(detailForm?.fields) ? detailForm.fields : [];
+		const personProfileModeField = detailFields.find((field) => field.action_id === "person_profile_mode");
+		const personProfileFullNameField = detailFields.find((field) => field.action_id === "person_profile_full_name");
 		const personProfileField = detailFields.find((field) => field.action_id === "person_profile_id");
 		const exampleDomainField = detailFields.find((field) => field.label === scenario.expectedLabel);
 		const workflowFields = detailEdit.blocks.find((block) => block.type === "fields" && Array.isArray(block.fields) && block.fields.some((field) => field.label === "Link profil yang sudah ada"));
@@ -478,16 +480,126 @@ describe("SIKESRA admin entity workflow", () => {
 				description: expect.stringContaining("Wajib diisi."),
 			}),
 		);
+		expect(personProfileModeField).toEqual(
+			expect.objectContaining({
+				label: "Aksi Profil Orang",
+				type: "select",
+			}),
+		);
+		expect(personProfileFullNameField).toEqual(
+			expect.objectContaining({
+				label: "Nama Lengkap Profil Orang",
+			}),
+		);
 		expect(workflowFields).toEqual(
 			expect.objectContaining({
 				fields: expect.arrayContaining([
 					expect.objectContaining({ label: "Link profil yang sudah ada", value: expect.stringContaining("Profil Orang") }),
+					expect.objectContaining({ label: "Buat profil orang dari form ini", value: "Didukung sekarang tanpa perlu mengetik ID teknis manual" }),
 					expect.objectContaining({ label: "Cari profil yang sudah ada", value: "Belum tersedia langsung di shell admin ini" }),
-					expect.objectContaining({ label: "Buat profil orang baru", value: "Belum tersedia langsung di shell admin ini" }),
 				]),
 			}),
 		);
 		expect(exampleDomainField).toBeDefined();
+	});
+
+	it.each([
+		{
+			objectTypeCode: "05",
+			entityId: "entity-inline-guru",
+			displayName: "Guru Inline",
+			detailTable: "awcms_sikesra_guru_agama_details",
+			patch: {
+				person_profile_mode: "create_inline",
+				person_profile_full_name: "Guru Inline",
+				agama: "Islam",
+				status_guru: "aktif",
+				institusi_pengajaran: "Madrasah Inline",
+			},
+		},
+		{
+			objectTypeCode: "06",
+			entityId: "entity-inline-anak",
+			displayName: "Anak Inline",
+			detailTable: "awcms_sikesra_anak_yatim_details",
+			patch: {
+				person_profile_mode: "create_inline",
+				person_profile_full_name: "Anak Inline",
+				kategori_anak: "yatim",
+				hubungan_wali: "Paman",
+			},
+		},
+		{
+			objectTypeCode: "07",
+			entityId: "entity-inline-disabilitas",
+			displayName: "Disabilitas Inline",
+			detailTable: "awcms_sikesra_disabilitas_details",
+			patch: {
+				person_profile_mode: "create_inline",
+				person_profile_full_name: "Disabilitas Inline",
+				jenis_disabilitas: "Sensorik",
+				tingkat_keparahan: "sedang",
+			},
+		},
+		{
+			objectTypeCode: "08",
+			entityId: "entity-inline-lansia",
+			displayName: "Lansia Inline",
+			detailTable: "awcms_sikesra_lansia_terlantar_details",
+			patch: {
+				person_profile_mode: "create_inline",
+				person_profile_full_name: "Lansia Inline",
+				status_keterlantaran: "terlantar",
+				kondisi_tempat_tinggal: "Rumah sederhana",
+			},
+		},
+	])("creates person profiles inline for module $objectTypeCode through the admin detail flow", async (scenario) => {
+		sqlite.exec(`
+			CREATE TABLE awcms_sikesra_guru_agama_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, agama TEXT, status_guru TEXT, bidang_pengajaran TEXT, institusi_pengajaran TEXT, jumlah_murid INTEGER, pendidikan_terakhir TEXT, sertifikasi TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_anak_yatim_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, kategori_anak TEXT, status_sekolah TEXT, tingkat_pendidikan TEXT, nama_sekolah TEXT, nama_wali TEXT, hubungan_wali TEXT, alamat_wali TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_disabilitas_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, jenis_disabilitas TEXT, tingkat_keparahan TEXT, alat_bantu_dibutuhkan INTEGER, jenis_alat_bantu TEXT, akses_layanan_kesehatan TEXT, partisipasi_sekolah_kerja TEXT, kebutuhan_pendampingan TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_lansia_terlantar_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, status_keterlantaran TEXT, kondisi_tempat_tinggal TEXT, status_tinggal TEXT, sumber_penghasilan TEXT, akses_jaminan_sosial TEXT, riwayat_penyakit TEXT, kebutuhan_prioritas TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('07', 'tenant-1', 'site-1', 'Disabilitas', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Rumahan', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '06', 'tenant-1', 'site-1', 'Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '07', 'tenant-1', 'site-1', 'Fisik', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '08', 'tenant-1', 'site-1', 'Terlantar', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('${scenario.entityId}', 'tenant-1', 'site-1', NULL, '${scenario.objectTypeCode}', '01', 'person', '${scenario.displayName}', '6201011001', 'local-1', 'Jl. Person', 'draft', 'draft', NULL, 'internal', 0, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const response = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:update_section",
+				entityId: scenario.entityId,
+				section: "details",
+				...scenario.patch,
+			},
+		});
+
+		const linkedProfile = await sql<{ person_profile_id: string }>`
+			SELECT person_profile_id
+			FROM ${sql.ref(scenario.detailTable)}
+			WHERE entity_id = ${scenario.entityId}
+			LIMIT 1
+		`.execute(db);
+		const personProfileId = linkedProfile.rows[0]?.person_profile_id;
+		const createdProfile = await sql<{ id: string; full_name: string }>`
+			SELECT id, full_name
+			FROM awcms_sikesra_person_profiles
+			WHERE id = ${personProfileId ?? ""}
+			LIMIT 1
+		`.execute(db);
+
+		expect(response.toast).toEqual({ message: "Draft berhasil diperbarui", type: "success" });
+		expect(personProfileId).toContain("person_");
+		expect(createdProfile.rows[0]).toEqual(
+			expect.objectContaining({ id: personProfileId, full_name: scenario.displayName }),
+		);
 	});
 
 	it("shows wizard step navigation and review summary for an entity", async () => {

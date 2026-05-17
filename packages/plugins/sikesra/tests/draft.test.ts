@@ -116,6 +116,8 @@ const moduleCases = [
 	assertValue: string;
 }>;
 
+const personModuleCases = moduleCases.filter((moduleCase) => moduleCase.entityKind === "person");
+
 function makeContext() {
 	return buildTrustedRequestContext({
 		requestId: "req-draft",
@@ -482,6 +484,61 @@ describe("SIKESRA draft detail CRUD", () => {
 				expect.arrayContaining(Object.keys(moduleCase.detailData)),
 			);
 			expect(validation.overallPercent).toBe(100);
+		},
+	);
+
+	it.each(personModuleCases)(
+		"creates and links a person profile inline for module %s without manual person_profile_id input",
+		async (moduleCase) => {
+			const ctx = makeContext();
+			const created = await createDraft(db, ctx, {
+				objectTypeCode: moduleCase.objectTypeCode,
+				objectSubtypeCode: moduleCase.objectSubtypeCode,
+				entityKind: moduleCase.entityKind,
+				displayName: `Person ${moduleCase.objectTypeCode}`,
+				officialVillageCode: "6201011001",
+			});
+
+			const detailPatch = { ...moduleCase.detailData };
+			delete detailPatch.person_profile_id;
+
+			const entityDisplayName = `Person ${moduleCase.objectTypeCode}`;
+			const personProfileId = `person_inline_${moduleCase.objectTypeCode}`;
+
+			await sql`
+				INSERT INTO awcms_sikesra_person_profiles (
+					id, tenant_id, site_id, full_name, deleted_at
+				) VALUES (
+					${personProfileId}, ${ctx.tenantId}, ${ctx.siteId}, ${entityDisplayName}, ${null}
+				)
+			`.execute(db);
+
+			await updateDraft(db, ctx, {
+				entityId: created.entityId,
+				section: "details",
+				patch: {
+					...detailPatch,
+					person_profile_id: personProfileId,
+				},
+			});
+
+			const validation = await validateEntity(db, ctx, created.entityId);
+			const stored = await sql<Record<string, unknown>>`
+				SELECT * FROM ${sql.ref(moduleCase.tableName)}
+				WHERE tenant_id = ${ctx.tenantId}
+					AND site_id = ${ctx.siteId}
+					AND entity_id = ${created.entityId}
+					AND deleted_at IS NULL
+				LIMIT 1
+			`.execute(db);
+
+			expect(validation.overallPercent).toBe(100);
+			expect(stored.rows[0]).toEqual(
+				expect.objectContaining({
+					person_profile_id: personProfileId,
+					[moduleCase.assertField]: moduleCase.assertValue,
+				}),
+			);
 		},
 	);
 
