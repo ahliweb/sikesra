@@ -115,6 +115,9 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(createFields.find((field) => field.action_id === "objectTypeCode")).toEqual(
 			expect.objectContaining({ value: "02", description: expect.stringContaining("Lembaga Keagamaan") }),
 		);
+		expect(createFields.find((field) => field.action_id === "agama")).toEqual(
+			expect.objectContaining({ label: "Agama" }),
+		);
 		expect(listRows).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ displayName: "Masjid Dashboard" }),
@@ -156,6 +159,87 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 		expect(rows).toEqual(expect.arrayContaining([expect.objectContaining({ displayName: "LKS A" })]));
 		expect(rows.some((row) => row.displayName === "Masjid Campur")).toBe(false);
+	});
+
+	it("shows a person-specific input form with inline profile fields from a module entry point", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Rumahan', NULL);
+		`);
+
+		const createForm = await buildAdminPage(db, makeContext(), "/", {
+			type: "block_action",
+			values: { action_id: "dashboard:input_module", objectTypeCode: "05" },
+		});
+		const formBlock = createForm.blocks.find((block) => block.type === "form");
+		const formFields = Array.isArray(formBlock?.fields) ? formBlock.fields : [];
+
+		expect(createForm.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Input Guru Agama" }),
+			]),
+		);
+		expect(formFields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ action_id: "person_profile_mode", label: "Aksi Profil Orang" }),
+				expect.objectContaining({ action_id: "person_profile_full_name", label: "Nama Lengkap Profil Orang" }),
+				expect.objectContaining({ action_id: "status_guru", label: "Status Guru" }),
+			]),
+		);
+	});
+
+	it("creates institution and person module drafts from type-specific forms", async () => {
+		sqlite.exec(`
+			CREATE TABLE awcms_sikesra_lembaga_keagamaan_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, agama TEXT, nomor_sk TEXT, tanggal_sk TEXT, nama_pimpinan TEXT, jumlah_pengurus INTEGER, jumlah_anggota INTEGER, kegiatan_utama TEXT, sumber_dana TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE awcms_sikesra_guru_agama_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, agama TEXT, status_guru TEXT, bidang_pengajaran TEXT, institusi_pengajaran TEXT, jumlah_murid INTEGER, pendidikan_terakhir TEXT, sertifikasi TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			INSERT INTO awcms_sikesra_object_types VALUES ('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '02', 'tenant-1', 'site-1', 'Islam', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Rumahan', NULL);
+		`);
+
+		await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:create_draft",
+				objectTypeCode: "02",
+				objectSubtypeCode: "02:01",
+				displayName: "Lembaga Form Khusus",
+				officialVillageCode: "6201011001",
+				agama: "Islam",
+			},
+		});
+
+		await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: {
+				action_id: "entities:create_draft",
+				objectTypeCode: "05",
+				objectSubtypeCode: "05:01",
+				displayName: "Guru Form Khusus",
+				officialVillageCode: "6201011001",
+				person_profile_mode: "create_inline",
+				person_profile_full_name: "Guru Form Khusus",
+				agama: "Islam",
+				status_guru: "aktif",
+				institusi_pengajaran: "Madrasah Form",
+			},
+		});
+
+		const institutionDetail = await sql<{ agama: string }>`
+			SELECT agama FROM awcms_sikesra_lembaga_keagamaan_details WHERE entity_id IN (
+				SELECT id FROM awcms_sikesra_entities WHERE display_name = 'Lembaga Form Khusus' LIMIT 1
+			) LIMIT 1
+		`.execute(db);
+		const personDetail = await sql<{ person_profile_id: string; status_guru: string }>`
+			SELECT person_profile_id, status_guru FROM awcms_sikesra_guru_agama_details WHERE entity_id IN (
+				SELECT id FROM awcms_sikesra_entities WHERE display_name = 'Guru Form Khusus' LIMIT 1
+			) LIMIT 1
+		`.execute(db);
+
+		expect(institutionDetail.rows[0]?.agama).toBe("Islam");
+		expect(personDetail.rows[0]?.status_guru).toBe("aktif");
+		expect(personDetail.rows[0]?.person_profile_id).toContain("person_");
 	});
 
 	it("creates a draft from the admin entities page and exposes edit/archive actions", async () => {
