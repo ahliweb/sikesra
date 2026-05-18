@@ -9,6 +9,7 @@ import {
 	SIKESRA_PLUGIN_ID,
 	SIKESRA_PUBLIC_ROUTE,
 	SIKESRA_ROUTE_NAMES,
+	bundlePluginDescriptor,
 	isPluginEnabledForValidation,
 	parseEnabledPluginList,
 	sikesraPlugin,
@@ -33,6 +34,10 @@ describe("sikesraPlugin descriptor", () => {
 			{ path: "/operations", label: "Operasional", icon: "gear" },
 		]);
 		expect(descriptor.adminWidgets).toEqual([{ id: "overview", title: "SIKESRA", size: "third" }]);
+	});
+
+	it("exports a descriptor factory for bundle validation without probing route helpers", () => {
+		expect(bundlePluginDescriptor()).toEqual(sikesraPlugin());
 	});
 
 	it("ships the governance manifest required by the canonical docs", () => {
