@@ -362,10 +362,48 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(registryModuleField).toEqual(
 			expect.objectContaining({
 				type: "select",
-				label: "Modul Data",
+				label: "Filter Modul Data SIKESRA",
 				options: expect.arrayContaining([
 					expect.objectContaining({ label: "Rumah Ibadah", value: "01" }),
 					expect.objectContaining({ label: "Guru Agama", value: "05" }),
+				]),
+			}),
+		);
+	});
+
+	it("renders a clearer registry filter surface with reset action", async () => {
+		const registryPage = await buildAdminPage(db, makeContext(), "/entities");
+		const filterHelp = registryPage.blocks.find((block) => block.type === "fields" && Array.isArray(block.fields) && block.fields.some((field) => field.label === "Modul Data"));
+		const filterForm = registryPage.blocks.find((block) => block.type === "form");
+		const filterFields = Array.isArray(filterForm?.fields) ? filterForm.fields : [];
+		const resetActions = registryPage.blocks.find((block) => block.type === "actions" && Array.isArray(block.elements) && block.elements.some((element) => element.action_id === "entities:reset_filters"));
+
+		expect(registryPage.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Filter Daftar Data" }),
+			]),
+		);
+		expect(filterHelp).toEqual(
+			expect.objectContaining({
+				fields: expect.arrayContaining([
+					expect.objectContaining({ label: "Modul Data", value: "Pilih 1 dari 8 jenis data SIKESRA" }),
+				]),
+			}),
+		);
+		expect(filterFields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ action_id: "keyword", label: "Kata Kunci Pencarian", description: expect.stringContaining("nama entitas") }),
+				expect.objectContaining({ action_id: "objectTypeCode", label: "Filter Modul Data SIKESRA", description: expect.stringContaining("8 jenis data") }),
+				expect.objectContaining({ action_id: "statusData", label: "Filter Status Data" }),
+				expect.objectContaining({ action_id: "statusVerification", label: "Filter Status Verifikasi" }),
+				expect.objectContaining({ action_id: "duplicateStatus", label: "Filter Status Duplikat" }),
+				expect.objectContaining({ action_id: "sensitivityLevel", label: "Filter Sensitivitas Data", value: "" }),
+			]),
+		);
+		expect(resetActions).toEqual(
+			expect.objectContaining({
+				elements: expect.arrayContaining([
+					expect.objectContaining({ action_id: "entities:reset_filters", label: "Reset Filter" }),
 				]),
 			}),
 		);

@@ -1238,21 +1238,33 @@ async function buildEntityList(
 	];
 
 	// Filter form
+	blocks.push({ type: "header", text: "Filter Daftar Data" });
+	blocks.push({
+		type: "fields",
+		fields: [
+			{ label: "Kata Kunci", value: "Cari nama atau ID entitas" },
+			{ label: "Modul Data", value: "Pilih 1 dari 8 jenis data SIKESRA" },
+			{ label: "Subjenis", value: filters.objectTypeCode ? "Pilihan subjenis mengikuti modul yang dipilih" : "Pilih modul dulu untuk memperjelas subjenis" },
+			{ label: "Status", value: "Saring berdasarkan status data, verifikasi, duplikat, dan sensitivitas" },
+		],
+	});
 	blocks.push({
 		type: "form",
 		fields: [
 			{
 				type: "text_input",
 				action_id: "keyword",
-				label: "Kata Kunci",
+				label: "Kata Kunci Pencarian",
 				placeholder: "Cari nama atau ID",
+				description: "Gunakan untuk mencari nama entitas atau ID yang sudah diketahui.",
 			},
 			{
 				type: "select",
 				action_id: "objectTypeCode",
-				label: "Modul Data",
+				label: "Filter Modul Data SIKESRA",
 				options: [{ label: "Semua Modul", value: "" }, ...moduleOptions],
 				value: filters.objectTypeCode ?? "",
+				description: "Pilih salah satu dari 8 jenis data untuk mempersempit daftar.",
 			},
 			{
 				type: "select",
@@ -1262,26 +1274,30 @@ async function buildEntityList(
 					: "Subjenis Modul (pilih modul agar lebih spesifik)",
 				options: subtypeOptions,
 				value: filters.objectSubtypeCode ?? "",
+				description: filters.objectTypeCode
+					? "Subjenis yang tampil disesuaikan dengan modul yang dipilih."
+					: "Subjenis tetap tersedia, tetapi lebih jelas jika modul data dipilih lebih dulu.",
 			},
 			{
 				type: "select",
 				action_id: "statusData",
-				label: "Status Data",
+				label: "Filter Status Data",
 				options: [
-					{ label: "Semua", value: "" },
+					{ label: "Semua Status Data", value: "" },
 					{ label: "Draft", value: "draft" },
 					{ label: "Submitted", value: "submitted" },
 					{ label: "Active", value: "active" },
 					{ label: "Archived", value: "archived" },
 				],
 				value: filters.statusData ?? "",
+				description: "Gunakan untuk membedakan data draft, diajukan, aktif, atau arsip.",
 			},
 			{
 				type: "select",
 				action_id: "statusVerification",
-				label: "Status Verifikasi",
+				label: "Filter Status Verifikasi",
 				options: [
-					{ label: "Semua", value: "" },
+					{ label: "Semua Status Verifikasi", value: "" },
 					{ label: "Draft", value: "draft" },
 					{ label: "Submitted", value: "submitted_village" },
 					{ label: "Verified", value: "verified" },
@@ -1289,34 +1305,44 @@ async function buildEntityList(
 					{ label: "Rejected", value: "rejected" },
 				],
 				value: filters.statusVerification ?? "",
+				description: "Memudahkan operator melihat data yang menunggu atau sudah selesai diverifikasi.",
 			},
 			{
 				type: "select",
 				action_id: "duplicateStatus",
-				label: "Status Duplikat",
+				label: "Filter Status Duplikat",
 				options: [
-					{ label: "Semua", value: "" },
+					{ label: "Semua Status Duplikat", value: "" },
 					{ label: "Kandidat Duplikat", value: "candidate" },
 					{ label: "Tidak Ada", value: "none" },
 					{ label: "Terkonfirmasi", value: "confirmed" },
 					{ label: "Resolved", value: "resolved" },
 				],
 				value: filters.duplicateStatus ?? "",
+				description: "Gunakan saat operator ingin fokus pada data yang perlu review duplikat.",
 			},
 			{
 				type: "select",
 				action_id: "sensitivityLevel",
-				label: "Sensitivitas",
+				label: "Filter Sensitivitas Data",
 				options: [
-					{ label: "Semua", value: "" },
+					{ label: "Semua Tingkat Sensitivitas", value: "" },
 					{ label: "Public Safe", value: "public_safe" },
 					{ label: "Internal", value: "internal" },
 					{ label: "Restricted", value: "restricted" },
 					{ label: "Highly Restricted", value: "highly_restricted" },
 				],
+				value: filters.sensitivityLevel ?? "",
+				description: "Membantu operator memisahkan data umum, internal, dan data yang lebih sensitif.",
 			},
 		],
 		submit: { label: "Filter", action_id: "entities:filter" },
+	});
+	blocks.push({
+		type: "actions",
+		elements: [
+			{ type: "button", action_id: "entities:reset_filters", label: "Reset Filter", style: "secondary" },
+		],
 	});
 
 	blocks.push({ type: "divider" });
@@ -1397,6 +1423,9 @@ async function handleEntityAction(
 	const actionId = typeof action.values?.action_id === "string" ? action.values.action_id : "";
 	if (actionId === "entities:filter") {
 		return buildEntityList(db, ctx, parseEntityFilters(action.values));
+	}
+	if (actionId === "entities:reset_filters") {
+		return buildEntityList(db, ctx, {});
 	}
 	if (actionId === "entities:next_page") {
 		return buildEntityList(db, ctx, parseEntityFilters(action.values));
