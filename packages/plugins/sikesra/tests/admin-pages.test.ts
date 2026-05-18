@@ -404,6 +404,34 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it("shows a next-page action that preserves registry filters when more than 50 rows exist", async () => {
+		for (let index = 0; index < 55; index++) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('entity-admin-page-${index}', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Admin Page ${index}', '6201011001', 'local-1', 'Jl. Admin ${index}', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-${String((index % 28) + 1).padStart(2, "0")}', NULL, NULL, 'admin-1', 'admin-1');
+			`);
+		}
+
+		const firstPage = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "form_submit",
+			values: { action_id: "entities:filter", objectTypeCode: "01", statusData: "draft" },
+		});
+		const nextButtonBlock = firstPage.blocks.find((block) => block.type === "actions" && Array.isArray(block.elements) && block.elements.some((element) => element.action_id === "entities:next_page"));
+
+		expect(nextButtonBlock).toEqual(
+			expect.objectContaining({
+				elements: expect.arrayContaining([
+					expect.objectContaining({
+						action_id: "entities:next_page",
+						objectTypeCode: "01",
+						statusData: "draft",
+						cursor: expect.any(String),
+					}),
+				]),
+			}),
+		);
+	});
+
 	it.each([
 		{
 			objectTypeCode: "05",

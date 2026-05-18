@@ -330,4 +330,33 @@ describe("SIKESRA region and registry services", () => {
 		);
 		expect(result.items).toHaveLength(0);
 	});
+
+	it("returns a stable encoded nextCursor and next page for filtered registry lists", async () => {
+		for (let index = 0; index < 60; index++) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('entity-page-${index}', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Page ${index}', '6201011001', 'local-1', 'Jl. Page ${index}', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-${String((index % 28) + 1).padStart(2, "0")}', NULL, NULL, NULL, NULL, NULL);
+			`);
+		}
+
+		const firstPage = await listEntities(db, makeContext({ permissions: ["awcms:sikesra:entity:read"] }), {
+			objectTypeCode: "01",
+			statusData: "draft",
+			limit: 50,
+		});
+
+		const secondPage = await listEntities(db, makeContext({ permissions: ["awcms:sikesra:entity:read"] }), {
+			objectTypeCode: "01",
+			statusData: "draft",
+			limit: 50,
+			cursor: firstPage.nextCursor,
+		});
+
+		expect(firstPage.items).toHaveLength(50);
+		expect(firstPage.nextCursor).toBeTruthy();
+		expect(firstPage.nextCursor).not.toBe(firstPage.items[49]?.id);
+		expect(secondPage.items.length).toBeGreaterThan(0);
+		expect(secondPage.items.every((item) => item.objectTypeCode === "01" && item.statusData === "draft")).toBe(true);
+		expect(secondPage.items.some((item) => firstPage.items.some((first) => first.id === item.id))).toBe(false);
+	});
 });
