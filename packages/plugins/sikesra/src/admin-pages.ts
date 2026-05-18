@@ -146,6 +146,24 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 		text: "Gunakan halaman ini sebagai surface admin SIKESRA yang stabil selama rebuild bertahap berlangsung. Akses detail tetap harus mengikuti auth, permission, dan ABAC di backend.",
 	});
 	blocks.push({ type: "divider" });
+	blocks.push({ type: "header", text: "Kelola 8 Jenis Data SIKESRA" });
+	blocks.push({
+		type: "table",
+		columns: [
+			{ key: "module", label: "Jenis Data", format: "text" },
+			{ key: "description", label: "Deskripsi", format: "text" },
+			{ key: "actions", label: "Aksi", format: "text" },
+		],
+		rows: listModuleUiConfigs().map((moduleConfig) => ({
+			objectTypeCode: moduleConfig.objectTypeCode,
+			module: moduleConfig.label,
+			description: moduleConfig.description,
+			actions: "Input Data | Lihat Daftar",
+		})),
+		page_action_id: "dashboard:module_actions",
+		empty_text: "Tidak ada jenis data",
+	});
+	blocks.push({ type: "divider" });
 
 	// Work queues
 	if (queues.pendingVerification > 0) {
@@ -232,10 +250,37 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 }
 
 async function handleDashboardAction(
-	_db: unknown,
-	_ctx: SikesraRequestContext,
+	db: unknown,
+	ctx: SikesraRequestContext,
 	action: { type: string; values?: Record<string, unknown> },
 ): Promise<BlockResponse> {
+	const actionId = typeof action.values?.action_id === "string" ? action.values.action_id : "";
+	if (actionId === "dashboard:input_module") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) return buildEntityCreateForm(db, ctx, objectTypeCode);
+	}
+	if (actionId === "dashboard:view_module") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) return buildEntityList(db, ctx, { objectTypeCode });
+	}
+	if (actionId === "dashboard:module_actions") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (!objectTypeCode) return { blocks: [] };
+		const moduleConfig = getModuleUiConfig(objectTypeCode);
+		return {
+			blocks: [
+				{ type: "header", text: moduleConfig?.label ?? objectTypeCode },
+				{ type: "context", text: moduleConfig?.description ?? "Pilih aksi untuk jenis data ini." },
+				{
+					type: "actions",
+					elements: [
+						{ type: "button", action_id: "dashboard:input_module", objectTypeCode, label: "Input Data", style: "primary" },
+						{ type: "button", action_id: "dashboard:view_module", objectTypeCode, label: "Lihat Daftar", style: "secondary" },
+					],
+				},
+			],
+		};
+	}
 	if (
 		action.type === "block_action" &&
 		action.values?.action_id?.toString().startsWith("navigate:")
@@ -1813,9 +1858,12 @@ function buildEntityWizardSteps(entityId?: string, activeStep = 0): Block[] {
 async function buildEntityCreateForm(
 	db: unknown,
 	ctx: SikesraRequestContext,
+	presetObjectTypeCode?: string,
 ): Promise<BlockResponse> {
 	const villages = await listOfficialRegions(db, ctx, { level: "village" });
 	const moduleConfigs = listModuleUiConfigs();
+	const presetModule = presetObjectTypeCode ? getModuleUiConfig(presetObjectTypeCode) : undefined;
+	const subtypeOptions = presetObjectTypeCode ? getModuleSubtypeOptions(presetObjectTypeCode) : getModuleSubtypeOptions();
 	return {
 		blocks: [
 			{ type: "header", text: "Wizard Buat Entitas" },
@@ -1854,12 +1902,14 @@ async function buildEntityCreateForm(
 						action_id: "objectTypeCode",
 						label: "Modul Data SIKESRA",
 						options: moduleConfigs.map((item) => ({ label: item.label, value: item.objectTypeCode })),
+						value: presetObjectTypeCode ?? "",
+						description: presetModule ? `Form ini sudah dipersiapkan untuk ${presetModule.label}.` : undefined,
 					},
 					{
 						type: "select",
 						action_id: "objectSubtypeCode",
 						label: "Subjenis Data",
-						options: getModuleSubtypeOptions(),
+						options: subtypeOptions,
 						value: "",
 					},
 					{

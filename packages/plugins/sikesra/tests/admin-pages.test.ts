@@ -60,6 +60,69 @@ afterEach(async () => {
 });
 
 describe("SIKESRA admin entity workflow", () => {
+	it("shows the 8 data-type management section on the dashboard", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_object_types VALUES ('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('03', 'tenant-1', 'site-1', 'Pendidikan Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('04', 'tenant-1', 'site-1', 'LKS', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('07', 'tenant-1', 'site-1', 'Disabilitas', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
+		`);
+
+		const dashboard = await buildAdminPage(db, makeContext(), "/");
+		const moduleTable = dashboard.blocks.find((block) => block.type === "table" && Array.isArray(block.rows) && block.rows.some((row) => row.objectTypeCode === "01"));
+
+		expect(dashboard.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Kelola 8 Jenis Data SIKESRA" }),
+			]),
+		);
+		expect(moduleTable).toEqual(
+			expect.objectContaining({
+				rows: expect.arrayContaining([
+					expect.objectContaining({ objectTypeCode: "01", module: "Rumah Ibadah", actions: "Input Data | Lihat Daftar" }),
+					expect.objectContaining({ objectTypeCode: "08", module: "Lansia Terlantar", actions: "Input Data | Lihat Daftar" }),
+				]),
+			}),
+		);
+	});
+
+	it("opens a module-preset create form and a module-filtered list from the dashboard", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-dashboard-01', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Dashboard', '6201011001', 'local-1', 'Jl. Dashboard', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-dashboard-02', 'tenant-1', 'site-1', NULL, '02', '01', 'institution', 'Lembaga Dashboard', '6201011001', 'local-1', 'Jl. Dashboard 2', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-03', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_object_types VALUES ('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '02', 'tenant-1', 'site-1', 'Islam', NULL);
+		`);
+
+		const createForm = await buildAdminPage(db, makeContext(), "/", {
+			type: "block_action",
+			values: { action_id: "dashboard:input_module", objectTypeCode: "02" },
+		});
+		const filteredList = await buildAdminPage(db, makeContext(), "/", {
+			type: "block_action",
+			values: { action_id: "dashboard:view_module", objectTypeCode: "01" },
+		});
+		const createFormBlock = createForm.blocks.find((block) => block.type === "form");
+		const createFields = Array.isArray(createFormBlock?.fields) ? createFormBlock.fields : [];
+		const listTable = filteredList.blocks.find((block) => block.type === "table");
+		const listRows = Array.isArray(listTable?.rows) ? listTable.rows : [];
+
+		expect(createFields.find((field) => field.action_id === "objectTypeCode")).toEqual(
+			expect.objectContaining({ value: "02", description: expect.stringContaining("Lembaga Keagamaan") }),
+		);
+		expect(listRows).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ displayName: "Masjid Dashboard" }),
+			]),
+		);
+		expect(listRows.some((row) => row.displayName === "Lembaga Dashboard")).toBe(false);
+	});
+
 	it("creates a draft from the admin entities page and exposes edit/archive actions", async () => {
 		const response = await buildAdminPage(db, makeContext(), "/entities", {
 			type: "form_submit",
