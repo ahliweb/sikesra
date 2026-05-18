@@ -29,6 +29,7 @@ export interface EntityListFilters {
 	sourceInput?: string;
 	duplicateStatus?: string;
 	limit?: number;
+	cursor?: string;
 }
 
 export interface RegionBreadcrumb {
@@ -134,6 +135,12 @@ interface EntityRow {
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
+
+interface EntityListCursor {
+	updatedAt: string;
+	id: string;
+}
+
 export async function listEntities(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -202,11 +209,38 @@ export async function listEntities(
 	const rows = result.rows;
 	const hasMore = rows.length > limit;
 	const items = rows.slice(0, limit).map((row) => mapEntitySummary(row, ctx));
+	const nextCursorRow = hasMore ? rows[limit] : undefined;
 
 	return {
 		items,
-		nextCursor: hasMore ? rows[limit]?.id : undefined,
+		nextCursor: nextCursorRow
+			? encodeEntityListCursor({ updatedAt: nextCursorRow.updated_at, id: nextCursorRow.id })
+			: undefined,
 	};
+}
+
+function encodeEntityListCursor(cursor: EntityListCursor): string {
+	return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
+}
+
+function decodeEntityListCursor(cursor: string): EntityListCursor | null {
+	try {
+		const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as unknown;
+		if (
+			parsed &&
+			typeof parsed === "object" &&
+			!Array.isArray(parsed) &&
+			"updatedAt" in parsed &&
+			"id" in parsed &&
+			typeof parsed.updatedAt === "string" &&
+			typeof parsed.id === "string"
+		) {
+			return { updatedAt: parsed.updatedAt, id: parsed.id };
+		}
+		return null;
+	} catch {
+		return null;
+	}
 }
 
 export async function getEntityDetail(
@@ -533,6 +567,17 @@ function buildEntityWhereSql(
 	if (filters.sourceInput) conditions.push(sql`entity.source_input = ${filters.sourceInput}`);
 	if (filters.duplicateStatus) {
 		conditions.push(sql`entity.duplicate_status = ${filters.duplicateStatus}`);
+	}
+	if (filters.cursor) {
+		const cursor = decodeEntityListCursor(filters.cursor);
+		if (cursor) {
+			conditions.push(
+				sql`(
+					entity.updated_at < ${cursor.updatedAt}
+					OR (entity.updated_at = ${cursor.updatedAt} AND entity.id < ${cursor.id})
+				)`,
+			);
+		}
 	}
 	if (ctx.regionScope.villageCodes?.length) {
 		conditions.push(

@@ -1363,6 +1363,27 @@ async function buildEntityList(
 			page_action_id: "entities:view",
 			empty_text: "Tidak ada entitas",
 		});
+		if (result.nextCursor) {
+			blocks.push({
+				type: "actions",
+				elements: [
+					{
+						type: "button",
+						action_id: "entities:next_page",
+						label: "Berikutnya",
+						style: "secondary",
+						keyword: filters.keyword ?? "",
+						objectTypeCode: filters.objectTypeCode ?? "",
+						objectSubtypeCode: filters.objectSubtypeCode ?? "",
+						statusData: filters.statusData ?? "",
+						statusVerification: filters.statusVerification ?? "",
+						sensitivityLevel: filters.sensitivityLevel ?? "",
+						duplicateStatus: filters.duplicateStatus ?? "",
+						cursor: result.nextCursor,
+					},
+				],
+			});
+		}
 	}
 
 	return { blocks };
@@ -1375,6 +1396,9 @@ async function handleEntityAction(
 ): Promise<BlockResponse> {
 	const actionId = typeof action.values?.action_id === "string" ? action.values.action_id : "";
 	if (actionId === "entities:filter") {
+		return buildEntityList(db, ctx, parseEntityFilters(action.values));
+	}
+	if (actionId === "entities:next_page") {
 		return buildEntityList(db, ctx, parseEntityFilters(action.values));
 	}
 	if (actionId === "entities:start_create" || actionId === "navigate:entities/new") {
@@ -2399,6 +2423,7 @@ function parseEntityFilters(values: Record<string, unknown> | undefined): Entity
 			typeof values?.duplicateStatus === "string" && values.duplicateStatus
 				? values.duplicateStatus
 				: undefined,
+		cursor: typeof values?.cursor === "string" && values.cursor ? values.cursor : undefined,
 		sensitivityLevel:
 			typeof values?.sensitivityLevel === "string" && values.sensitivityLevel
 				? values.sensitivityLevel

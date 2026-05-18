@@ -791,6 +791,7 @@ function normalizeEntityListInput(value: unknown) {
 		sourceInput: typeof input.sourceInput === "string" ? input.sourceInput : undefined,
 		duplicateStatus: typeof input.duplicateStatus === "string" ? input.duplicateStatus : undefined,
 		limit: typeof input.limit === "number" ? input.limit : undefined,
+		cursor: typeof input.cursor === "string" ? input.cursor : undefined,
 	};
 }
 
