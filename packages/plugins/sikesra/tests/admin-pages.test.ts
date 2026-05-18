@@ -478,6 +478,81 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it("shows operator-friendly required-field labels in validation output for all 8 modules", async () => {
+		const validationCases = [
+			{ objectTypeCode: "01", entityId: "validate-01", displayName: "Masjid Validasi", entityKind: "building", labels: ["Jenis Rumah Ibadah"] },
+			{ objectTypeCode: "02", entityId: "validate-02", displayName: "Lembaga Validasi", entityKind: "institution", labels: ["Agama"] },
+			{ objectTypeCode: "03", entityId: "validate-03", displayName: "Pendidikan Validasi", entityKind: "institution", labels: ["Jenis Pendidikan"] },
+			{ objectTypeCode: "04", entityId: "validate-04", displayName: "LKS Validasi", entityKind: "institution", labels: ["Jenis LKS"] },
+			{ objectTypeCode: "05", entityId: "validate-05", displayName: "Guru Validasi", entityKind: "person", labels: ["Profil Orang", "Agama", "Status Guru", "Institusi Pengajaran"] },
+			{ objectTypeCode: "06", entityId: "validate-06", displayName: "Anak Validasi", entityKind: "person", labels: ["Profil Orang", "Kategori Anak", "Hubungan Wali"] },
+			{ objectTypeCode: "07", entityId: "validate-07", displayName: "Disabilitas Validasi", entityKind: "person", labels: ["Profil Orang", "Jenis Disabilitas", "Tingkat Keparahan"] },
+			{ objectTypeCode: "08", entityId: "validate-08", displayName: "Lansia Validasi", entityKind: "person", labels: ["Profil Orang", "Status Keterlantaran", "Kondisi Tempat Tinggal"] },
+		] as const;
+
+		sqlite.exec(`
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_lembaga_keagamaan_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, agama TEXT, nomor_sk TEXT, tanggal_sk TEXT, nama_pimpinan TEXT, jumlah_pengurus INTEGER, jumlah_anggota INTEGER, kegiatan_utama TEXT, sumber_dana TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_pendidikan_keagamaan_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, jenis_pendidikan TEXT, jumlah_santri_lk INTEGER, jumlah_santri_pr INTEGER, jumlah_guru_lk INTEGER, jumlah_guru_pr INTEGER, kurikulum TEXT, nomor_sk_operasional TEXT, status_akreditasi TEXT, sumber_dana TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_lks_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, jenis_lks TEXT, nama_pimpinan TEXT, jumlah_pengasuh INTEGER, jumlah_penerima_manfaat INTEGER, nomor_sk TEXT, tanggal_sk TEXT, sumber_dana TEXT, program_unggulan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_guru_agama_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, agama TEXT, status_guru TEXT, bidang_pengajaran TEXT, institusi_pengajaran TEXT, jumlah_murid INTEGER, pendidikan_terakhir TEXT, sertifikasi TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_anak_yatim_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, kategori_anak TEXT, status_sekolah TEXT, tingkat_pendidikan TEXT, nama_sekolah TEXT, nama_wali TEXT, hubungan_wali TEXT, alamat_wali TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_disabilitas_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, jenis_disabilitas TEXT, tingkat_keparahan TEXT, alat_bantu_dibutuhkan INTEGER, jenis_alat_bantu TEXT, akses_layanan_kesehatan TEXT, partisipasi_sekolah_kerja TEXT, kebutuhan_pendampingan TEXT, sumber_bantuan TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			CREATE TABLE IF NOT EXISTS awcms_sikesra_lansia_terlantar_details (id TEXT, tenant_id TEXT, site_id TEXT, entity_id TEXT, person_profile_id TEXT, status_keterlantaran TEXT, kondisi_tempat_tinggal TEXT, status_tinggal TEXT, sumber_penghasilan TEXT, akses_jaminan_sosial TEXT, riwayat_penyakit TEXT, kebutuhan_prioritas TEXT, created_at TEXT, updated_at TEXT, deleted_at TEXT, created_by TEXT, updated_by TEXT);
+			INSERT INTO awcms_sikesra_object_types VALUES ('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('03', 'tenant-1', 'site-1', 'Pendidikan Keagamaan', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('04', 'tenant-1', 'site-1', 'LKS', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('05', 'tenant-1', 'site-1', 'Guru Agama', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('07', 'tenant-1', 'site-1', 'Disabilitas', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES ('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '02', 'tenant-1', 'site-1', 'Islam', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '03', 'tenant-1', 'site-1', 'TPQ', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '04', 'tenant-1', 'site-1', 'Panti Asuhan', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '05', 'tenant-1', 'site-1', 'Guru', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '06', 'tenant-1', 'site-1', 'Yatim', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '07', 'tenant-1', 'site-1', 'Sensorik', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '08', 'tenant-1', 'site-1', 'Terlantar', NULL);
+		`);
+
+		for (const validationCase of validationCases) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('${validationCase.entityId}', 'tenant-1', 'site-1', NULL, '${validationCase.objectTypeCode}', '01', '${validationCase.entityKind}', '${validationCase.displayName}', '6201011001', 'local-1', 'Jl. Validasi', 'draft', 'draft', NULL, 'internal', 0, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			`);
+
+			const validation = await buildAdminPage(db, makeContext(), "/entities", {
+				type: "block_action",
+				values: { action_id: "entities:validate", entityId: validationCase.entityId },
+			});
+			const validationTable = validation.blocks.find((block) => block.type === "table");
+			const validationRows = Array.isArray(validationTable?.rows) ? validationTable.rows : [];
+			const detailRow = validationRows.find((row) => row.section === "Detail Modul");
+			const submitView = await buildAdminPage(db, makeContext(), "/entities", {
+				type: "block_action",
+				values: { action_id: "entities:open_submit", entityId: validationCase.entityId },
+			});
+
+			expect(validation.blocks).toEqual(
+				expect.arrayContaining([expect.objectContaining({ type: "header", text: "Hasil Validasi" })]),
+			);
+			expect(detailRow).toEqual(
+				expect.objectContaining({
+					valid: "no",
+					errors: expect.stringContaining(validationCase.labels[0]),
+				}),
+			);
+			for (const label of validationCase.labels) {
+				expect(detailRow?.errors).toContain(label);
+			}
+			expect(submitView.blocks).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ type: "header", text: "Ajukan Verifikasi" }),
+					expect.objectContaining({ type: "banner", title: "Belum Bisa Diajukan" }),
+				]),
+			);
+		}
+	});
+
 	it("shows a friendly required-input error for incomplete document handoff forms", async () => {
 		sqlite.exec(`
 			INSERT INTO awcms_sikesra_entities VALUES
