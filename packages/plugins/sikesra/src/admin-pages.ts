@@ -77,6 +77,8 @@ interface AdminDocumentRegisterInput
 	extends GenerateUploadUrlInput,
 		Pick<CompleteUploadInput, "entityId" | "documentType" | "checksumSha256" | "contentBase64"> {}
 
+const DOCUMENT_REGISTER_INVALID_PREFIX_RE = /^DOCUMENT_REGISTER_INVALID:\s*/;
+
 // ── Admin Page Router ────────────────────────────────────────────────────────
 
 export async function buildAdminPage(
@@ -133,7 +135,7 @@ async function buildDashboard(db: unknown, ctx: SikesraRequestContext): Promise<
 		{ type: "header", text: "Dashboard SIKESRA" },
 		{
 			type: "context",
-			text: `Tenant: ${ctx.tenantId} | Site: ${ctx.siteId} | Scope: ${ctx.regionScope || "Global"}`,
+			text: `Tenant: ${ctx.tenantId} | Site: ${ctx.siteId} | Scope: ${formatRegionScope(ctx.regionScope)}`,
 		},
 		{ type: "divider" },
 		{ type: "stats", items: kpis },
@@ -281,11 +283,9 @@ async function handleDashboardAction(
 			],
 		};
 	}
-	if (
-		action.type === "block_action" &&
-		action.values?.action_id?.toString().startsWith("navigate:")
-	) {
-		const target = action.values.action_id.toString().replace("navigate:", "");
+	const rawActionId = typeof action.values?.action_id === "string" ? action.values.action_id : "";
+	if (action.type === "block_action" && rawActionId.startsWith("navigate:")) {
+		const target = rawActionId.replace("navigate:", "");
 		return {
 			blocks: [
 				{ type: "banner", variant: "info", title: "Navigasi", description: `Menuju: ${target}` },
@@ -1641,7 +1641,7 @@ async function handleEntityAction(
 			const rawMessage = error instanceof Error ? error.message : "Dokumen tidak valid";
 			const message = rawMessage === "DOCUMENT_REGISTER_INPUT_REQUIRED"
 				? "Nama file, jenis dokumen, dan entity ID wajib diisi."
-				: rawMessage.replace(/^DOCUMENT_REGISTER_INVALID:\s*/, "");
+				: rawMessage.replace(DOCUMENT_REGISTER_INVALID_PREFIX_RE, "");
 			return {
 				...step,
 				blocks: [
@@ -2968,6 +2968,17 @@ function getReadableFieldLabel(objectTypeCode: string, fieldKey: string): string
 function stringifyBlockValue(value: unknown) {
 	if (value === null || value === undefined) return "";
 	return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function formatRegionScope(regionScope: SikesraRequestContext["regionScope"]): string {
+	const parts = [
+		regionScope.provinceCode,
+		regionScope.regencyCode,
+		regionScope.districtCodes?.join("|"),
+		regionScope.villageCodes?.join("|"),
+		regionScope.localRegionIds?.join("|"),
+	].filter((value): value is string => Boolean(value));
+	return parts.length > 0 ? parts.join(" / ") : "Global";
 }
 
 function buildAdminDocumentRuntime(db: unknown): DocumentStorageContext {
