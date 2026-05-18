@@ -261,7 +261,7 @@ async function handleDashboardAction(
 	}
 	if (actionId === "dashboard:view_module") {
 		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
-		if (objectTypeCode) return buildEntityList(db, ctx, { objectTypeCode });
+		if (objectTypeCode) return buildEntityTypeList(db, ctx, objectTypeCode, { objectTypeCode });
 	}
 	if (actionId === "dashboard:module_actions") {
 		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
@@ -1460,6 +1460,62 @@ async function buildEntityList(
 	return { blocks };
 }
 
+async function buildEntityTypeList(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	objectTypeCode: string,
+	filters: EntityListFilters = {},
+): Promise<BlockResponse> {
+	const moduleConfig = getModuleUiConfig(objectTypeCode);
+	const response = await buildEntityList(db, ctx, { ...filters, objectTypeCode });
+	if (!moduleConfig) return response;
+
+	const normalizedBlocks = response.blocks.slice();
+	if (normalizedBlocks[0]?.type === "header") {
+		normalizedBlocks[0] = { type: "header", text: `Daftar ${moduleConfig.label}` };
+	}
+	if (normalizedBlocks[1]?.type === "context") {
+		normalizedBlocks[1] = {
+			type: "context",
+			text: `${moduleConfig.description} Halaman ini hanya menampilkan data untuk jenis ${moduleConfig.label}.`,
+		};
+	}
+	if (normalizedBlocks[2]?.type === "actions" && Array.isArray(normalizedBlocks[2].elements)) {
+		normalizedBlocks[2] = {
+			type: "actions",
+			elements: [
+				{
+					type: "button",
+					action_id: "entities:start_create_module",
+					objectTypeCode,
+					label: `Input Data Baru ${moduleConfig.label}`,
+					style: "primary",
+				},
+				{
+					type: "button",
+					action_id: "entities:reset_type_filters",
+					objectTypeCode,
+					label: "Reset Filter Jenis Data",
+					style: "secondary",
+				},
+			],
+		};
+	}
+
+	for (const block of normalizedBlocks) {
+		if (block.type === "actions" && Array.isArray(block.elements)) {
+			for (const element of block.elements) {
+				if (element.action_id === "entities:next_page") {
+					element.action_id = "entities:next_type_page";
+					element.objectTypeCode = objectTypeCode;
+				}
+			}
+		}
+	}
+
+	return { ...response, blocks: normalizedBlocks };
+}
+
 async function handleEntityAction(
 	db: unknown,
 	ctx: SikesraRequestContext,
@@ -1469,14 +1525,42 @@ async function handleEntityAction(
 	if (actionId === "entities:filter") {
 		return buildEntityList(db, ctx, parseEntityFilters(action.values));
 	}
+	if (actionId === "entities:view_type_list") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) {
+			const filters = parseEntityFilters(action.values);
+			return buildEntityTypeList(db, ctx, objectTypeCode, {
+				...filters,
+				objectTypeCode,
+			});
+		}
+	}
 	if (actionId === "entities:reset_filters") {
 		return buildEntityList(db, ctx, {});
+	}
+	if (actionId === "entities:reset_type_filters") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) return buildEntityTypeList(db, ctx, objectTypeCode, { objectTypeCode });
 	}
 	if (actionId === "entities:next_page") {
 		return buildEntityList(db, ctx, parseEntityFilters(action.values));
 	}
+	if (actionId === "entities:next_type_page") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) {
+			const filters = parseEntityFilters(action.values);
+			return buildEntityTypeList(db, ctx, objectTypeCode, {
+				...filters,
+				objectTypeCode,
+			});
+		}
+	}
 	if (actionId === "entities:start_create" || actionId === "navigate:entities/new") {
 		return buildEntityCreateForm(db, ctx);
+	}
+	if (actionId === "entities:start_create_module") {
+		const objectTypeCode = typeof action.values?.objectTypeCode === "string" ? action.values.objectTypeCode : "";
+		if (objectTypeCode) return buildEntityCreateForm(db, ctx, objectTypeCode);
 	}
 	if (actionId === "entities:create_draft") {
 		const input = normalizeDraftCreateForm(action.values);
