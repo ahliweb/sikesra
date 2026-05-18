@@ -46,7 +46,7 @@ import {
 	restoreEntity,
 	type EntityListFilters,
 } from "./services/entities.js";
-import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
+import { listOfficialRegions } from "./services/regions.js";
 import { makeVerificationDecision, submitForVerification } from "./services/verification.js";
 import type { SikesraRequestContext } from "./security/request-context.js";
 import { guardRoute } from "./security/route-guard.js";

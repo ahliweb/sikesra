@@ -22,10 +22,6 @@ export {
 import { SIKESRA_EXPORT_STORAGE_CONFIG } from "./export-storage.js";
 import {
 	SIKESRA_PLUGIN_ID,
-	SIKESRA_ROUTE_NAMES,
-	SIKESRA_PUBLIC_ROUTE,
-	SIKESRA_API_BASE,
-	SIKESRA_ADMIN_BASE,
 } from "./shared.js";
 export {
 	isPluginEnabledForValidation,

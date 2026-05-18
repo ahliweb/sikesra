@@ -996,10 +996,6 @@ function isLegacyDefaultScope(scope: TenantSiteScope) {
 	);
 }
 
-function isDefaultCompatibilityScope(scope: TenantSiteScope) {
-	return isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope);
-}
-
 async function throwRouteError(code: string, message: string, status: number): Promise<never> {
 	const { PluginRouteError } = await import("emdash");
 	throw new PluginRouteError(code, message, status);
