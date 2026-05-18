@@ -6,7 +6,6 @@ import {
 	buildCanonicalScopeOrderSql,
 	DEFAULT_SIKESRA_SITE_ID,
 	DEFAULT_SIKESRA_TENANT_ID,
-	getTenantSiteFallbackScopes,
 	LEGACY_DEFAULT_SIKESRA_SITE_ID,
 	LEGACY_DEFAULT_SIKESRA_TENANT_ID,
 	type TenantSiteScope,
@@ -330,8 +329,4 @@ function isLegacyDefaultScope(scope: TenantSiteScope) {
 		scope.tenantId === LEGACY_DEFAULT_SIKESRA_TENANT_ID &&
 		scope.siteId === LEGACY_DEFAULT_SIKESRA_SITE_ID
 	);
-}
-
-function isDefaultCompatibilityScope(scope: TenantSiteScope) {
-	return isCanonicalDefaultScope(scope) || isLegacyDefaultScope(scope);
 }

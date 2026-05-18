@@ -17,7 +17,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, unlinkSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 

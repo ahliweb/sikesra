@@ -417,10 +417,10 @@ function buildMappedRow(
 
 function validateMappedRow(mapped: Record<string, unknown>): Record<string, string[]> | undefined {
 	const errors: Record<string, string[]> = {};
-	if (!String(mapped.displayName ?? "").trim()) {
+	if (!normalizeMappedText(mapped.displayName).trim()) {
 		errors.displayName = ["Nama tampil wajib tersedia dari mapping atau default value."];
 	}
-	const villageCode = String(mapped.officialVillageCode ?? "").trim();
+	const villageCode = normalizeMappedText(mapped.officialVillageCode).trim();
 	if (!villageCode) {
 		errors.officialVillageCode = ["Desa/kelurahan resmi wajib tersedia untuk validasi region."];
 	} else if (!VILLAGE_CODE_RE.test(villageCode)) {
@@ -433,18 +433,24 @@ function detectDuplicateRisk(
 	mappedData: Record<string, unknown>,
 	seenSignatures: Set<string>,
 ): "low" | "high" | "blocking" {
-	const displayName = String(mappedData.displayName ?? "")
+	const displayName = normalizeMappedText(mappedData.displayName)
 		.trim()
 		.toLowerCase();
-	const villageCode = String(mappedData.officialVillageCode ?? "").trim();
+	const villageCode = normalizeMappedText(mappedData.officialVillageCode).trim();
 	if (!displayName || !villageCode) return "low";
 	return seenSignatures.has(buildDuplicateSignature(mappedData)) ? "blocking" : "low";
 }
 
 function buildDuplicateSignature(mappedData: Record<string, unknown>): string {
-	return `${String(mappedData.displayName ?? "")
+	return `${normalizeMappedText(mappedData.displayName)
 		.trim()
-		.toLowerCase()}::${String(mappedData.officialVillageCode ?? "").trim()}`;
+		.toLowerCase()}::${normalizeMappedText(mappedData.officialVillageCode).trim()}`;
+}
+
+function normalizeMappedText(value: unknown): string {
+	if (typeof value === "string") return value;
+	if (typeof value === "number" || typeof value === "boolean") return String(value);
+	return "";
 }
 
 async function requireBatch(
@@ -714,11 +720,11 @@ async function promoteRowToD1Entity(
 	mappedData: Record<string, unknown>,
 	ctx: SikesraRequestContext,
 ): Promise<void> {
-	const displayName = String(mappedData.displayName ?? "").trim() || "Imported Entity";
-	const officialVillageCode = String(mappedData.officialVillageCode ?? "").trim();
-	const objectTypeCode = String(mappedData.objectTypeCode ?? "").trim() || "unknown";
-	const objectSubtypeCode = String(mappedData.objectSubtypeCode ?? "").trim() || "unknown";
-	const entityKind = String(mappedData.entityKind ?? "").trim() || "imported";
+	const displayName = normalizeMappedText(mappedData.displayName).trim() || "Imported Entity";
+	const officialVillageCode = normalizeMappedText(mappedData.officialVillageCode).trim();
+	const objectTypeCode = normalizeMappedText(mappedData.objectTypeCode).trim() || "unknown";
+	const objectSubtypeCode = normalizeMappedText(mappedData.objectSubtypeCode).trim() || "unknown";
+	const entityKind = normalizeMappedText(mappedData.entityKind).trim() || "imported";
 
 	await sql`
 		INSERT INTO awcms_sikesra_entities (

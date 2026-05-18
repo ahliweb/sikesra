@@ -6,6 +6,6 @@
 		"noUncheckedIndexedAccess": false,
 		"lib": ["es2023", "DOM", "DOM.Iterable", "esnext.typedarrays"]
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "../core/src/virtual-modules.d.ts"],
 	"exclude": ["node_modules", "dist"]
 }

@@ -104,9 +104,10 @@ const ALLOWED_ENTITY_COLUMNS = new Set([
 	"completeness_percent",
 	"source_input",
 ]);
+const VALID_ENTITY_COLUMN_RE = /^[a-z][a-z0-9_]*$/;
 
 function validateEntityColumn(name: string): string {
-	if (!/^[a-z][a-z0-9_]*$/.test(name)) {
+	if (!VALID_ENTITY_COLUMN_RE.test(name)) {
 		throw new Error(`INVALID_COLUMN_NAME: ${name}`);
 	}
 	if (!ALLOWED_ENTITY_COLUMNS.has(name)) {

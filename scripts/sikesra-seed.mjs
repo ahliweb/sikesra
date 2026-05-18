@@ -90,7 +90,7 @@ function runApply(rest) {
 	process.stdout.write("Seed applied successfully.\n");
 }
 
-function runSql(rest) {
+function runSql(_rest) {
 	const sql = generateSeedSql();
 	process.stdout.write(sql);
 }
