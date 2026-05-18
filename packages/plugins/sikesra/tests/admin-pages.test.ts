@@ -123,6 +123,41 @@ describe("SIKESRA admin entity workflow", () => {
 		expect(listRows.some((row) => row.displayName === "Lembaga Dashboard")).toBe(false);
 	});
 
+	it("shows a dedicated per-type list view with type-specific heading and input action", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_object_types VALUES ('04', 'tenant-1', 'site-1', 'LKS', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES ('01', '04', 'tenant-1', 'site-1', 'BAZNAS', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-lks-1', 'tenant-1', 'site-1', NULL, '04', '01', 'institution', 'LKS A', '6201011001', 'local-1', 'Jl. LKS', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-ri-1', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Campur', '6201011001', 'local-1', 'Jl. Masjid', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-03', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const typeList = await buildAdminPage(db, makeContext(), "/entities", {
+			type: "block_action",
+			values: { action_id: "entities:view_type_list", objectTypeCode: "04" },
+		});
+		const actionsBlock = typeList.blocks.find((block) => block.type === "actions" && Array.isArray(block.elements) && block.elements.some((element) => element.action_id === "entities:start_create_module"));
+		const tableBlock = typeList.blocks.find((block) => block.type === "table");
+		const rows = Array.isArray(tableBlock?.rows) ? tableBlock.rows : [];
+
+		expect(typeList.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Daftar LKS / Lembaga Kesejahteraan Sosial" }),
+				expect.objectContaining({ type: "context", text: expect.stringContaining("hanya menampilkan data") }),
+			]),
+		);
+		expect(actionsBlock).toEqual(
+			expect.objectContaining({
+				elements: expect.arrayContaining([
+					expect.objectContaining({ action_id: "entities:start_create_module", objectTypeCode: "04", label: "Input Data Baru LKS / Lembaga Kesejahteraan Sosial" }),
+				]),
+			}),
+		);
+		expect(rows).toEqual(expect.arrayContaining([expect.objectContaining({ displayName: "LKS A" })]));
+		expect(rows.some((row) => row.displayName === "Masjid Campur")).toBe(false);
+	});
+
 	it("creates a draft from the admin entities page and exposes edit/archive actions", async () => {
 		const response = await buildAdminPage(db, makeContext(), "/entities", {
 			type: "form_submit",
