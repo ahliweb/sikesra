@@ -1563,7 +1563,7 @@ async function handleEntityAction(
 		if (objectTypeCode) return buildEntityCreateForm(db, ctx, objectTypeCode);
 	}
 	if (actionId === "entities:create_draft") {
-		const input = normalizeDraftCreateForm(action.values);
+		const input = await normalizeDraftCreateForm(db, ctx, action.values);
 		if (
 			(input.selectedSubtypeModuleCode && input.selectedSubtypeModuleCode !== input.objectTypeCode) ||
 			(input.objectTypeCode && input.objectSubtypeCode && !hasModuleSubtype(input.objectTypeCode, input.objectSubtypeCode))
@@ -1948,20 +1948,46 @@ async function buildEntityCreateForm(
 	const moduleConfigs = listModuleUiConfigs();
 	const presetModule = presetObjectTypeCode ? getModuleUiConfig(presetObjectTypeCode) : undefined;
 	const subtypeOptions = presetObjectTypeCode ? getModuleSubtypeOptions(presetObjectTypeCode) : getModuleSubtypeOptions();
+	const createDetailFields = presetObjectTypeCode
+		? buildModuleDetailFields(presetObjectTypeCode, {}, getDetailModuleConfig(presetObjectTypeCode)?.fields ?? [])
+		: [];
+	const inlinePersonFields = presetModule?.entityKind === "person"
+		? [
+			{
+				type: "select",
+				action_id: "person_profile_mode",
+				label: "Aksi Profil Orang",
+				value: "create_inline",
+				options: [
+					{ label: "Buat profil orang dari form ini", value: "create_inline" },
+					{ label: "Tautkan profil yang sudah ada", value: "link_existing" },
+				],
+				description: "Gunakan pembuatan profil inline agar operator tidak perlu mengetahui ID teknis profil orang.",
+			},
+			{
+				type: "text_input",
+				action_id: "person_profile_full_name",
+				label: "Nama Lengkap Profil Orang",
+				placeholder: "Kosongkan untuk memakai Nama Tampilan entitas",
+				description: "Dipakai saat memilih buat profil orang dari form ini.",
+			},
+		]
+		: [];
 	return {
 		blocks: [
-			{ type: "header", text: "Wizard Buat Entitas" },
-			{ type: "context", text: "Mulai dari memilih modul data, lalu isi identitas dasar dan wilayah entitas." },
+			{ type: "header", text: presetModule ? `Input ${presetModule.label}` : "Wizard Buat Entitas" },
+			{ type: "context", text: presetModule ? `Form ini khusus untuk input ${presetModule.label}. Isi hanya field yang relevan untuk jenis data ini.` : "Mulai dari memilih modul data, lalu isi identitas dasar dan wilayah entitas." },
 			...buildEntityWizardSteps(undefined, 1),
-			{
+			...(!presetModule ? [{
 				type: "banner",
 				variant: "info",
 				title: "Catatan Untuk Modul Perorangan",
 				description: "Untuk Guru Agama, Anak Yatim, Disabilitas, dan Lansia Terlantar, siapkan Profil Orang yang sudah ada. Pencarian dan pembuatan profil baru belum tersedia langsung di shell admin ini.",
-			},
-			{ type: "divider" },
-			{ type: "header", text: "Pilihan 8 Modul Data" },
-			{
+			}, {
+				type: "divider"
+			}, {
+				type: "header", text: "Pilihan 8 Modul Data"
+			}, {
 				type: "table",
 				columns: [
 					{ key: "module", label: "Modul", format: "text" },
@@ -1976,7 +2002,7 @@ async function buildEntityCreateForm(
 					subtypes: moduleConfig.subtypes.map((item) => item.label).join(", "),
 				})),
 				empty_text: "Tidak ada modul data",
-			},
+			}] : []),
 			{ type: "divider" },
 			{
 				type: "form",
@@ -2010,6 +2036,8 @@ async function buildEntityCreateForm(
 					},
 					{ type: "text_input", action_id: "localRegionId", label: "Wilayah Lokal (Opsional)", placeholder: "Isi bila wilayah lokal sudah tersedia" },
 					{ type: "text_input", action_id: "addressText", label: "Alamat", multiline: true },
+					...inlinePersonFields,
+					...createDetailFields,
 				],
 				submit: { label: "Buat Draft", action_id: "entities:create_draft" },
 			},
@@ -2600,7 +2628,11 @@ function getActionEntityId(values: Record<string, unknown> | undefined) {
 	return undefined;
 }
 
-function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): DraftCreateInput {
+async function normalizeDraftCreateForm(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	values: Record<string, unknown> | undefined,
+): Promise<DraftCreateInput> {
 	const rawObjectTypeCode = typeof values?.objectTypeCode === "string" ? values.objectTypeCode : "";
 	const rawObjectSubtypeCode = typeof values?.objectSubtypeCode === "string" ? values.objectSubtypeCode : "";
 	const selectedSubtypeModuleCode = rawObjectSubtypeCode.includes(":")
@@ -2610,6 +2642,7 @@ function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): 
 		? rawObjectSubtypeCode.split(":")[1] ?? ""
 		: rawObjectSubtypeCode;
 	const moduleUi = getModuleUiConfig(rawObjectTypeCode);
+	const initialData = await normalizeDraftCreateInitialData(db, ctx, rawObjectTypeCode, values);
 	return {
 		objectTypeCode: rawObjectTypeCode,
 		objectSubtypeCode,
@@ -2619,7 +2652,74 @@ function normalizeDraftCreateForm(values: Record<string, unknown> | undefined): 
 		officialVillageCode: typeof values?.officialVillageCode === "string" ? values.officialVillageCode : "",
 		localRegionId: typeof values?.localRegionId === "string" && values.localRegionId ? values.localRegionId : undefined,
 		addressText: typeof values?.addressText === "string" && values.addressText ? values.addressText : undefined,
+		initialData,
 	};
+}
+
+async function normalizeDraftCreateInitialData(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	objectTypeCode: string,
+	values: Record<string, unknown> | undefined,
+): Promise<Record<string, unknown> | undefined> {
+	const detailModule = getDetailModuleConfig(objectTypeCode);
+	if (!detailModule) return undefined;
+
+	const initialData: Record<string, unknown> = {};
+	for (const fieldKey of detailModule.fields) {
+		if (fieldKey in (values ?? {})) {
+			initialData[fieldKey] = values?.[fieldKey];
+		}
+	}
+
+	const moduleUi = getModuleUiConfig(objectTypeCode);
+	if (moduleUi?.entityKind === "person") {
+		const prepared = await preparePersonProfileCreateData(db, ctx, values);
+		if (prepared.personProfileId) {
+			initialData.person_profile_id = prepared.personProfileId;
+		}
+	}
+
+	return Object.keys(initialData).length > 0 ? initialData : undefined;
+}
+
+async function preparePersonProfileCreateData(
+	db: unknown,
+	ctx: SikesraRequestContext,
+	values: Record<string, unknown> | undefined,
+): Promise<{ personProfileId?: string }> {
+	const mode = typeof values?.person_profile_mode === "string" ? values.person_profile_mode : "create_inline";
+	const existingProfileId = typeof values?.person_profile_id === "string" ? values.person_profile_id.trim() : "";
+	if (mode !== "create_inline") {
+		return existingProfileId ? { personProfileId: existingProfileId } : {};
+	}
+	if (existingProfileId) {
+		return { personProfileId: existingProfileId };
+	}
+
+	const fullNameRaw = typeof values?.person_profile_full_name === "string" ? values.person_profile_full_name.trim() : "";
+	const displayName = typeof values?.displayName === "string" ? values.displayName.trim() : "";
+	const fullName = fullNameRaw || displayName;
+	if (!fullName) return {};
+
+	const personProfileId = `person_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+	await sql`
+		INSERT INTO awcms_sikesra_person_profiles (
+			id,
+			tenant_id,
+			site_id,
+			full_name,
+			deleted_at
+		) VALUES (
+			${personProfileId},
+			${ctx.tenantId},
+			${ctx.siteId},
+			${fullName},
+			${null}
+		)
+	`.execute(db as never);
+
+	return { personProfileId };
 }
 
 function normalizeDraftUpdateForm(values: Record<string, unknown> | undefined): DraftUpdateInput {
