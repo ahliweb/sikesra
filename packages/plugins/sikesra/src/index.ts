@@ -27,6 +27,10 @@ import {
 	SIKESRA_API_BASE,
 	SIKESRA_ADMIN_BASE,
 } from "./shared.js";
+export {
+	isPluginEnabledForValidation,
+	parseEnabledPluginList,
+} from "./validation-mode.js";
 
 export {
 	SIKESRA_PLUGIN_ID,
