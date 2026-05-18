@@ -73,6 +73,26 @@ export default {
 			return handleEmDash(request, env, ctx, "sikesra-api");
 		}
 
+		// Block non-SIKESRA plugin routes in production (#323)
+		if (
+			(pathname.startsWith("/_emdash/api/plugins/") ||
+				pathname.startsWith("/_emdash/admin/plugins/") ||
+				pathname === "/_emdash/api/admin/plugins" ||
+				pathname.startsWith("/_emdash/api/admin/plugins/")) &&
+			!pathname.startsWith("/_emdash/api/plugins/sikesra/") &&
+			!pathname.startsWith("/_emdash/admin/plugins/sikesra/") &&
+			!pathname.startsWith("/_emdash/admin/plugins/sikesra")
+		) {
+			return routeResponse(
+				JSON.stringify({ error: "Plugin not available in SIKESRA runtime" }),
+				{
+					status: 404,
+					headers: withNoStoreHeaders({ "Content-Type": "application/json; charset=utf-8" }),
+				},
+				"blocked-plugin",
+			);
+		}
+
 		try {
 			return await handleEmDash(request, env, ctx, pathname === "/" ? "emdash-root" : "emdash");
 		} catch (error) {

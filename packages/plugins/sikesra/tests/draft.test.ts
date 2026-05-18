@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildTrustedRequestContext } from "../src/security/request-context.js";
 import { SIKESRA_PERMISSION_LIST } from "../src/security/permissions.js";
 import { archiveEntity, getEntityDetail, restoreEntity } from "../src/services/entities.js";
+import { getDetailModuleConfig } from "../src/detail-modules.js";
 import {
 	autosaveDraft,
 	createDraft,
+	generateSikesraId20,
 	updateDraft,
 	validateEntity,
 	type DraftCreateInput,
@@ -571,6 +573,40 @@ describe("SIKESRA draft detail CRUD", () => {
 			]),
 		);
 	});
+
+	it.each(moduleCases)(
+		"flags missing required detail fields for module %s and blocks code generation and verification submit",
+		async (moduleCase) => {
+			const ctx = makeContext();
+			const requiredFields = getDetailModuleConfig(moduleCase.objectTypeCode)?.requiredFields ?? [];
+			const created = await createDraft(db, ctx, {
+				objectTypeCode: moduleCase.objectTypeCode,
+				objectSubtypeCode: moduleCase.objectSubtypeCode,
+				entityKind: moduleCase.entityKind,
+				displayName: `Incomplete ${moduleCase.objectTypeCode}`,
+				officialVillageCode: "6201011001",
+			});
+
+			const validation = await validateEntity(db, ctx, created.entityId);
+			const detailSection = validation.sections.find((section) => section.sectionKey === "details");
+
+			expect(detailSection?.isValid).toBe(false);
+			expect(detailSection?.errors.map((error) => error.field)).toEqual(
+				expect.arrayContaining([...requiredFields]),
+			);
+			await expect(generateSikesraId20(db, ctx, created.entityId)).rejects.toThrow();
+
+			const entityRow = await sql<{ sikesra_id_20: string | null; status_verification: string }>`
+				SELECT sikesra_id_20, status_verification
+				FROM awcms_sikesra_entities
+				WHERE id = ${created.entityId}
+				LIMIT 1
+			`.execute(db);
+
+			expect(entityRow.rows[0]?.sikesra_id_20).toBeNull();
+			expect(entityRow.rows[0]?.status_verification).toBe("draft");
+		},
+	);
 
 	it("merges detail updates instead of overwriting the whole module row", async () => {
 		const ctx = makeContext();

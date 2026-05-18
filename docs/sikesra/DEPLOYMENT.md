@@ -43,6 +43,16 @@ This fails fast when:
 
 Replace the placeholder IDs before deployment.
 
+## SIKESRA Build
+
+Build the SIKESRA deployment with the SIKESRA-only plugin allowlist enabled:
+
+```bash
+pnpm sikesra:build
+```
+
+This is the safe production path because `AWCMS_ENABLED_PLUGINS` is consumed by `astro.config.mjs` at build time, not by the deployed Worker at request time.
+
 ## Postbuild Adapter
 
 If the host app builds an EmDash Worker into `dist/server`, patch in the repo-local wrapper with:
@@ -56,7 +66,7 @@ Environment overrides:
 - `SIKESRA_DIST_DIR` to point at a different generated server directory
 - `SIKESRA_WRAPPER_TEMPLATE` to use a different wrapper template path
 
-The wrapper template lives at `infra/sikesra/worker-wrapper-template.mjs` and keeps the `/sikesra` and SIKESRA plugin namespaces explicit without patching EmDash source packages.
+The wrapper template lives at `infra/sikesra/worker-wrapper-template.mjs` and keeps the `/sikesra` and SIKESRA plugin namespaces explicit without patching EmDash source packages. The wrapper blocks non-SIKESRA plugin routes, but it does not replace the need to build with `AWCMS_ENABLED_PLUGINS=sikesra`.
 
 ## Smoke Check
 
@@ -70,7 +80,8 @@ Optional environment variables:
 
 - `SIKESRA_BASE_URL`
 - `SIKESRA_ADMIN_PAGE`
+- `SIKESRA_ADMIN_PAGES`
 - `SIKESRA_ADMIN_COOKIE`
 - `SIKESRA_EXPECT_UNAUTHORIZED=1`
 
-This checks that `/_emdash/api/plugins/sikesra/admin` returns the expected EmDash `data.blocks` payload shape.
+By default this checks `/`, `/entities`, and `/verification` through `/_emdash/api/plugins/sikesra/admin` and fails if the response blocks do not have the expected shape.

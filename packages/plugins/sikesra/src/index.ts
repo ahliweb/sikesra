@@ -92,6 +92,10 @@ export type {
 	ReportMetadata,
 } from "./export.js";
 
+export function bundlePluginDescriptor(): PluginDescriptor {
+	return sikesraPlugin();
+}
+
 export function sikesraPlugin(): PluginDescriptor {
 	return {
 		id: SIKESRA_PLUGIN_ID,

@@ -359,4 +359,60 @@ describe("SIKESRA region and registry services", () => {
 		expect(secondPage.items.every((item) => item.objectTypeCode === "01" && item.statusData === "draft")).toBe(true);
 		expect(secondPage.items.some((item) => firstPage.items.some((first) => first.id === item.id))).toBe(false);
 	});
+
+	it("returns only draft rows for the selected module across all 8 SIKESRA data types", async () => {
+		const moduleRows = [
+			{ objectTypeCode: "01", entityId: "draft-01", displayName: "Masjid Draft", entityKind: "building" },
+			{ objectTypeCode: "02", entityId: "draft-02", displayName: "Lembaga Draft", entityKind: "institution" },
+			{ objectTypeCode: "03", entityId: "draft-03", displayName: "Pendidikan Draft", entityKind: "institution" },
+			{ objectTypeCode: "04", entityId: "draft-04", displayName: "LKS Draft", entityKind: "institution" },
+			{ objectTypeCode: "05", entityId: "draft-05", displayName: "Guru Draft", entityKind: "person" },
+			{ objectTypeCode: "06", entityId: "draft-06", displayName: "Anak Draft", entityKind: "person" },
+			{ objectTypeCode: "07", entityId: "draft-07", displayName: "Disabilitas Draft", entityKind: "person" },
+			{ objectTypeCode: "08", entityId: "draft-08", displayName: "Lansia Draft", entityKind: "person" },
+		] as const;
+
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL),
+			('03', 'tenant-1', 'site-1', 'Pendidikan Keagamaan', NULL),
+			('04', 'tenant-1', 'site-1', 'LKS', NULL),
+			('05', 'tenant-1', 'site-1', 'Guru Agama', NULL),
+			('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL),
+			('07', 'tenant-1', 'site-1', 'Disabilitas', NULL),
+			('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '02', 'tenant-1', 'site-1', 'Islam', NULL),
+			('01', '03', 'tenant-1', 'site-1', 'TPQ', NULL),
+			('01', '04', 'tenant-1', 'site-1', 'Panti Asuhan', NULL),
+			('01', '05', 'tenant-1', 'site-1', 'Guru', NULL),
+			('01', '06', 'tenant-1', 'site-1', 'Yatim', NULL),
+			('01', '07', 'tenant-1', 'site-1', 'Sensorik', NULL),
+			('01', '08', 'tenant-1', 'site-1', 'Terlantar', NULL);
+		`);
+
+		for (const moduleRow of moduleRows) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('${moduleRow.entityId}', 'tenant-1', 'site-1', NULL, '${moduleRow.objectTypeCode}', '01', '${moduleRow.entityKind}', '${moduleRow.displayName}', '6201011001', 'local-1', 'Jl. Draft', 'draft', 'draft', NULL, 'public_safe', 0, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, NULL, NULL, NULL);
+			`);
+		}
+
+		for (const moduleRow of moduleRows) {
+			const result = await listEntities(
+				db,
+				makeContext({ permissions: ["awcms:sikesra:entity:read"] }),
+				{ objectTypeCode: moduleRow.objectTypeCode, statusData: "draft" },
+			);
+
+				expect(result.items).toHaveLength(1);
+				expect(result.items[0]).toEqual(
+					expect.objectContaining({
+						id: moduleRow.entityId,
+						objectTypeCode: moduleRow.objectTypeCode,
+						statusData: "draft",
+					}),
+				);
+			}
+		});
 });
