@@ -1,7 +1,7 @@
 // @ts-check
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import { sikesraPlugin } from "@ahliweb/plugin-sikesra";
+import { isPluginEnabledForValidation, sikesraPlugin } from "@ahliweb/plugin-sikesra";
 import {
 	d1,
 	r2,
@@ -15,18 +15,13 @@ import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 
-function isPluginEnabled(pluginId) {
-	const raw = process.env.AWCMS_ENABLED_PLUGINS ?? "";
-	const enabled = raw
-		.split(",")
-		.map((item) => item.trim())
-		.filter(Boolean);
-	if (enabled.length === 0) return true;
-	return enabled.includes(pluginId);
-}
-
-const plugins = [isPluginEnabled("sikesra") ? sikesraPlugin() : null, isPluginEnabled("forms") ? formsPlugin() : null].filter(Boolean);
-const sandboxedPlugins = [isPluginEnabled("webhook-notifier") ? webhookNotifierPlugin() : null].filter(Boolean);
+const plugins = [
+	isPluginEnabledForValidation("sikesra", process.env.AWCMS_ENABLED_PLUGINS) ? sikesraPlugin() : null,
+	isPluginEnabledForValidation("forms", process.env.AWCMS_ENABLED_PLUGINS) ? formsPlugin() : null,
+].filter(Boolean);
+const sandboxedPlugins = [
+	isPluginEnabledForValidation("webhook-notifier", process.env.AWCMS_ENABLED_PLUGINS) ? webhookNotifierPlugin() : null,
+].filter(Boolean);
 
 export default defineConfig({
 	output: "server",

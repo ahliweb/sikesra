@@ -9,6 +9,8 @@ import {
 	SIKESRA_PLUGIN_ID,
 	SIKESRA_PUBLIC_ROUTE,
 	SIKESRA_ROUTE_NAMES,
+	isPluginEnabledForValidation,
+	parseEnabledPluginList,
 	sikesraPlugin,
 } from "../src/index.js";
 import defaultPlugin from "../src/sandbox-entry.js";
@@ -172,6 +174,26 @@ describe("sikesra sandbox shell", () => {
 
 	it("registers every expected shell route", () => {
 		expect(Object.keys(defaultPlugin.routes)).toEqual([...SIKESRA_ROUTE_NAMES]);
+	});
+
+	it("keeps only SIKESRA enabled in validation mode when AWCMS_ENABLED_PLUGINS=sikesra", () => {
+		expect(parseEnabledPluginList("sikesra")).toEqual(["sikesra"]);
+		expect(isPluginEnabledForValidation("sikesra", "sikesra")).toBe(true);
+		expect(isPluginEnabledForValidation("forms", "sikesra")).toBe(false);
+		expect(isPluginEnabledForValidation("webhook-notifier", "sikesra")).toBe(false);
+		expect(isPluginEnabledForValidation("audit-log", "sikesra")).toBe(false);
+		expect(isPluginEnabledForValidation("embeds", "sikesra")).toBe(false);
+		expect(isPluginEnabledForValidation("api-test", "sikesra")).toBe(false);
+
+		const descriptor = sikesraPlugin();
+		expect(descriptor.adminPages.map((page) => page.label)).toEqual([
+			"Dashboard",
+			"Registry",
+			"Verifikasi",
+			"Audit",
+			"Pengaturan",
+			"Operasional",
+		]);
 	});
 
 	it("renders the overview admin page through the plugin admin route", async () => {
