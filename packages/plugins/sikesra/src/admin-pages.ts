@@ -47,7 +47,7 @@ import {
 	type EntityListFilters,
 } from "./services/entities.js";
 import { listLocalRegions, listOfficialRegions } from "./services/regions.js";
-import { submitForVerification } from "./services/verification.js";
+import { makeVerificationDecision, submitForVerification } from "./services/verification.js";
 import type { SikesraRequestContext } from "./security/request-context.js";
 import { guardRoute } from "./security/route-guard.js";
 import { buildTenantSiteScopeSql } from "./tenant-site-scope.js";
@@ -3101,7 +3101,8 @@ async function handleVerificationAction(
 	ctx: SikesraRequestContext,
 	action: { type: string; values?: Record<string, unknown> },
 ): Promise<BlockResponse> {
-	if (action.values?.action_id === "verification:review") {
+	const actionId = typeof action.values?.action_id === "string" ? action.values.action_id : "";
+	if (actionId === "verification:review") {
 		const entityId =
 			typeof action.values?.entityId === "string"
 				? action.values.entityId
@@ -3109,6 +3110,41 @@ async function handleVerificationAction(
 		if (entityId) {
 			return buildVerificationReview(db, ctx, entityId);
 		}
+	}
+	if (actionId === "verification:submit_decision") {
+		const entityId = typeof action.values?.entityId === "string" ? action.values.entityId : "";
+		const decision =
+			action.values?.decision === "verify" ||
+			action.values?.decision === "need_revision" ||
+			action.values?.decision === "reject"
+				? action.values.decision
+				: "verify";
+		const note = typeof action.values?.note === "string" ? action.values.note : "";
+		if (!entityId) {
+			return {
+				blocks: [
+					{ type: "banner", variant: "error", title: "Keputusan Tidak Valid", description: "Entity ID wajib ada untuk keputusan verifikasi." },
+				],
+				toast: { message: "Entity ID wajib ada untuk keputusan verifikasi", type: "error" },
+			};
+		}
+		await makeVerificationDecision(db, ctx, { entityId, decision, note });
+		const review = await buildVerificationReview(db, ctx, entityId);
+		return {
+			...review,
+			toast: {
+				message:
+					decision === "verify"
+						? "Verifikasi berhasil disimpan"
+						: decision === "reject"
+							? "Penolakan berhasil disimpan"
+							: "Permintaan revisi berhasil disimpan",
+				type: "success",
+			},
+		};
+	}
+	if (actionId === "verification:back_to_queue") {
+		return buildVerificationQueue(db, ctx);
 	}
 	return { blocks: [] };
 }

@@ -914,6 +914,49 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it.each([
+		{ decision: "verify", expectedStatus: "verified", expectedToast: "Verifikasi berhasil disimpan" },
+		{ decision: "need_revision", expectedStatus: "needs_revision", expectedToast: "Permintaan revisi berhasil disimpan" },
+		{ decision: "reject", expectedStatus: "rejected", expectedToast: "Penolakan berhasil disimpan" },
+	])("submits verification decision '$decision' through the admin handler", async ({ decision, expectedStatus, expectedToast }) => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-decision', 'tenant-1', 'site-1', '62010110010101007777', '01', '01', 'building', 'Masjid Keputusan', '6201011001', 'local-1', 'Jl. Keputusan', 'draft', 'pending_verification', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const response = await buildAdminPage(db, makeContext(), "/verification", {
+			type: "form_submit",
+			values: {
+				action_id: "verification:submit_decision",
+				entityId: "entity-decision",
+				decision,
+				note: "Catatan verifikasi",
+			},
+		});
+		const entityRow = await sql<{ status_verification: string }>`
+			SELECT status_verification
+			FROM awcms_sikesra_entities
+			WHERE id = 'entity-decision'
+			LIMIT 1
+		`.execute(db);
+
+		expect(response.toast).toEqual({ message: expectedToast, type: "success" });
+		expect(entityRow.rows[0]?.status_verification).toBe(expectedStatus);
+	});
+
+	it("returns to the verification queue from the review screen", async () => {
+		const queue = await buildAdminPage(db, makeContext(), "/verification", {
+			type: "block_action",
+			values: { action_id: "verification:back_to_queue" },
+		});
+
+		expect(queue.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Antrian Verifikasi" }),
+			]),
+		);
+	});
+
 	it("blocks submit form when high-risk duplicate readiness fails even after validation passes", async () => {
 		sqlite.exec(`
 			INSERT INTO awcms_sikesra_entities VALUES
