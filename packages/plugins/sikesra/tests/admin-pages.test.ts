@@ -883,6 +883,37 @@ describe("SIKESRA admin entity workflow", () => {
 		);
 	});
 
+	it("opens the correct verification review using the real entity ID payload", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_entities VALUES
+			('entity-verify-1', 'tenant-1', 'site-1', '62010110010101009999', '01', '01', 'building', 'Masjid Verifikasi', '6201011001', 'local-1', 'Jl. Verify', 'draft', 'submitted_village', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, 'admin-1', 'admin-1');
+		`);
+
+		const queue = await buildAdminPage(db, makeContext(), "/verification");
+		const queueTable = queue.blocks.find((block) => block.type === "table");
+		const rows = Array.isArray(queueTable?.rows) ? queueTable.rows : [];
+		const targetRow = rows.find((row) => row.displayName === "Masjid Verifikasi");
+
+		expect(targetRow).toEqual(
+			expect.objectContaining({
+				entityId: "entity-verify-1",
+				id: "62010110010101009999",
+			}),
+		);
+
+		const review = await buildAdminPage(db, makeContext(), "/verification", {
+			type: "block_action",
+			values: { action_id: "verification:review", entityId: "entity-verify-1" },
+		});
+
+		expect(review.blocks).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "header", text: "Review: Masjid Verifikasi" }),
+				expect.objectContaining({ type: "context", text: "ID: 62010110010101009999" }),
+			]),
+		);
+	});
+
 	it("blocks submit form when high-risk duplicate readiness fails even after validation passes", async () => {
 		sqlite.exec(`
 			INSERT INTO awcms_sikesra_entities VALUES

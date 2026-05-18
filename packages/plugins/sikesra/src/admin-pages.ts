@@ -3071,6 +3071,7 @@ async function buildVerificationQueue(
 		blocks.push({
 			type: "table",
 			columns: [
+				{ key: "entityId", label: "Entity ID", format: "text" },
 				{ key: "id", label: "ID SIKESRA", format: "code" },
 				{ key: "displayName", label: "Nama", format: "text" },
 				{ key: "type", label: "Tipe", format: "badge" },
@@ -3079,6 +3080,7 @@ async function buildVerificationQueue(
 				{ key: "actions", label: "Aksi", format: "text" },
 			],
 			rows: result.rows.map((row) => ({
+				entityId: row.id,
 				id: row.sikesra_id_20 ?? row.id.slice(0, 12),
 				displayName: row.display_name,
 				type: row.object_type_code,
@@ -3100,7 +3102,10 @@ async function handleVerificationAction(
 	action: { type: string; values?: Record<string, unknown> },
 ): Promise<BlockResponse> {
 	if (action.values?.action_id === "verification:review") {
-		const entityId = action.values?.id as string | undefined;
+		const entityId =
+			typeof action.values?.entityId === "string"
+				? action.values.entityId
+				: (action.values?.id as string | undefined);
 		if (entityId) {
 			return buildVerificationReview(db, ctx, entityId);
 		}
