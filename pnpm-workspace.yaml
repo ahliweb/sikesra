@@ -38,7 +38,7 @@ catalog:
   "@atcute/repo": ^1.0.0
   "@atcute/xrpc-server": ^2.0.0
   "@atcute/xrpc-server-cloudflare": ^2.0.0
-  "@atproto/crypto": ^0.4.5
+  "@atproto/crypto": ^0.5.0
   "@atproto/repo": ^0.9.1
   "@cloudflare/vite-plugin": ^1.36.3
   "@cloudflare/vitest-pool-workers": ^0.16.3
