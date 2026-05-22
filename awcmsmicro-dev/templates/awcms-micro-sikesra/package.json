@@ -1,5 +1,5 @@
 {
-  "name": "@emdash-cms/template-starter",
+  "name": "@ahliweb/awcms-micro-sikesra-template",
   "version": "0.0.3",
   "private": true,
   "type": "module",
@@ -19,6 +19,7 @@
     "astro": "catalog:",
     "better-sqlite3": "catalog:",
     "emdash": "workspace:*",
+    "@ahliweb/awcms-micro-sikesra": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
