@@ -1,0 +1,78 @@
+---
+title: Plugins
+description: Extend EmDash with hooks, storage, settings, admin pages, and API routes.
+---
+
+import { Aside, Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+Plugins extend EmDash without modifying core code. They can react to content lifecycle events, store their own data, expose settings to administrators, add pages to the admin panel, and serve API routes.
+
+## What plugins can do
+
+<CardGrid>
+	<Card title="React to events" icon="rocket">
+		Run code on content saves, media uploads, comment moderation, scheduled tasks, and plugin lifecycle events.
+	</Card>
+	<Card title="Store data" icon="document">
+		Persist plugin-specific records in indexed collections, plus a per-plugin key-value store for settings and state.
+	</Card>
+	<Card title="Add admin pages" icon="laptop">
+		Contribute pages and dashboard widgets to the admin panel, with auto-generated settings forms.
+	</Card>
+	<Card title="Serve API routes">
+		Expose endpoints under `/_emdash/api/plugins/<id>/<route>` for the admin UI or external integrations.
+	</Card>
+	<Card title="Call external APIs">
+		Make HTTP requests with declared host allowlists.
+	</Card>
+	<Card title="Send email">
+		Send transactional email through whichever provider is configured.
+	</Card>
+</CardGrid>
+
+## Two kinds of plugins
+
+EmDash plugins come in two flavours:
+
+- **Sandboxed plugins** run in an isolated runtime managed by a configurable sandbox runner. They can be installed from the marketplace with one click, are subject to capability and resource enforcement, and can't reach anything they didn't explicitly declare. This is the recommended choice for most plugins.
+- **Native plugins** run in the same process as your Astro site. They have full access to the runtime, can ship React admin pages and Portable Text rendering components, and inject HTML into public pages — but can't be published to the marketplace and require a code change plus a deploy to install.
+
+If you're installing a plugin someone else built, you almost always want sandboxed. If you're building one yourself, see [Choosing a plugin format](/plugins/creating-plugins/choosing-a-format/).
+
+## For site operators
+
+If you want to install or configure plugins on your site:
+
+<LinkCard
+	title="Installing plugins"
+	href="/plugins/installing/"
+	description="Install from the marketplace, enable, configure settings."
+/>
+
+## For plugin authors
+
+If you want to build a plugin:
+
+<CardGrid>
+	<LinkCard
+		title="Choosing a plugin format"
+		href="/plugins/creating-plugins/choosing-a-format/"
+		description="Sandboxed vs native — start here."
+	/>
+	<LinkCard
+		title="Your first sandboxed plugin"
+		href="/plugins/creating-plugins/your-first-plugin/"
+		description="Build, register, and run a hello-world sandboxed plugin."
+	/>
+	<LinkCard
+		title="Creating native plugins"
+		href="/plugins/creating-native-plugins/your-first-native-plugin/"
+		description="When you need React admin, PT components, or page fragments."
+	/>
+</CardGrid>
+
+<Aside type="note">
+	EmDash plugins are not Astro integrations. They're passed to the EmDash integration in your Astro
+	config. A plugin that needs both can ship as an Astro integration that also registers EmDash
+	hooks.
+</Aside>

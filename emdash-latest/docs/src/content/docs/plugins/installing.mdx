@@ -1,0 +1,140 @@
+---
+title: Installing Plugins
+description: Install plugins from the EmDash Marketplace or add them from code.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+EmDash plugins can be installed in two ways: from the marketplace via the admin dashboard, or added directly in your Astro configuration. Marketplace plugins always run sandboxed; config-based plugins run sandboxed or in-process depending on which array they're declared in (`sandboxed: []` vs `plugins: []`).
+
+## From the Marketplace
+
+The admin dashboard includes a marketplace browser where you can search, install, and manage plugins.
+
+### Prerequisites
+
+To install marketplace plugins, your site needs:
+
+1. **Sandbox runner configured** — Marketplace plugins run in an isolated runtime, which requires the sandbox runner:
+
+   ```typescript title="astro.config.mjs"
+   import { emdash } from "emdash/astro";
+
+   export default defineConfig({
+     integrations: [
+       emdash({
+         marketplace: "https://marketplace.emdashcms.com",
+         sandboxRunner: true,
+       }),
+     ],
+   });
+   ```
+
+2. **Admin access** — Only administrators can install or remove plugins.
+
+### Browse and Install
+
+<Steps>
+1. Open the admin panel and navigate to **Plugins > Marketplace**
+2. Browse or search for a plugin
+3. Click the plugin card to see its detail page — README, screenshots, capabilities, and security audit results
+4. Click **Install**
+5. Review the capability consent dialog — this shows what the plugin will be able to access
+6. Confirm the installation
+</Steps>
+
+The plugin will be downloaded, stored in your site's R2 bucket, and loaded into the sandbox runner. It's active immediately.
+
+### Capability Consent
+
+Before installation, you'll see a dialog listing what the plugin needs access to:
+
+| Capability | What it means |
+| ---------- | ------------- |
+| `content:read` | Read your content |
+| `content:write` | Create, update, and delete content |
+| `media:read` | Access your media library |
+| `media:write` | Upload and manage media |
+| `network:request` | Make network requests to specific hosts |
+
+<Aside type="caution">
+  Only install plugins from authors you trust. The capability system limits what a sandboxed plugin can access, but a plugin with `content:write` can modify any content on your site.
+</Aside>
+
+### Security Audit
+
+Every plugin version in the marketplace has been through an automated security audit. The audit verdict appears on the plugin card:
+
+- **Pass** — No issues found
+- **Warn** — Minor concerns flagged (review the findings)
+- **Fail** — Significant security issues detected
+
+You can view the full audit report on the plugin's detail page, including individual findings and their severity.
+
+### Updates
+
+When a newer version of an installed plugin is available:
+
+1. Go to **Plugins** in the admin panel
+2. Marketplace plugins show an **Update available** badge
+3. Click **Update** to see the changelog and any capability changes
+4. If the new version requires additional capabilities, you'll see a diff and need to approve
+5. Confirm to update
+
+<Aside type="note">
+  Updates that add new capabilities require explicit approval. If a plugin that previously only read content now wants to make network requests, you'll see the new capability highlighted before confirming.
+</Aside>
+
+### Uninstalling
+
+1. Go to **Plugins** in the admin panel
+2. Click the marketplace plugin you want to remove
+3. Click **Uninstall**
+4. Choose whether to keep or delete the plugin's stored data
+5. Confirm
+
+The plugin's sandbox code is removed from your R2 bucket and it stops running immediately.
+
+## From Configuration
+
+For native plugins (your own code, or packages you install via npm), add them directly to your Astro config:
+
+```typescript title="astro.config.mjs"
+import { defineConfig } from "astro/config";
+import { emdash } from "emdash/astro";
+import seoPlugin from "@emdash-cms/plugin-seo";
+
+export default defineConfig({
+  integrations: [
+    emdash({
+      plugins: [
+        seoPlugin({ generateSitemap: true }),
+      ],
+    }),
+  ],
+});
+```
+
+Native plugins:
+
+- Run in-process (not sandboxed)
+- Have full access to Node.js APIs
+- Are loaded at build time and on every server start
+- Cannot be installed or removed from the admin UI
+
+<Aside type="tip">
+  Use native plugins only when you need features that require build-time integration: React admin pages, Portable Text rendering components, or page fragment injection. For everything else, prefer sandboxed plugins -- they can be installed, updated, and removed without code changes or redeployments.
+</Aside>
+
+## Marketplace vs. Config: When to Use Which
+
+| | Marketplace (sandboxed) | Config (native or in-process sandboxed) |
+| --- | --- | --- |
+| **Install method** | One-click in admin UI | Code change + `npm install` + deploy |
+| **Execution** | Sandbox runtime via the configured runner | In-process (or sandboxed if listed under `sandboxed: []` and a runner is available) |
+| **Capabilities** | Enforced by the sandbox bridge — `ctx.*` gating plus runtime isolation | `ctx.*` gating only (in-process plugins can bypass via direct `fetch()`, env, imports) |
+| **Node.js APIs** | Not available | Full access (in-process only) |
+| **React admin pages** | No (Block Kit instead) | Yes (native plugins) |
+| **PT rendering components** | No | Yes (native plugins) |
+| **Updates** | One-click in admin | Version bump + deploy |
+| **Best for** | Most plugins | Plugins needing build-time integration |

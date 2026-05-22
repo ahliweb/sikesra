@@ -1,0 +1,89 @@
+{
+	"id": "sikesra",
+	"version": "0.1.0",
+	"kind": "awcms-module-governance",
+	"lifecycle": {
+		"status": "restored-overlay",
+		"runtime": "descriptor-registered",
+		"notes": [
+			"EmDash runtime registration happens through sikesraPlugin() in astro.config.mjs.",
+			"This manifest is the AWCMS governance artifact required by the canonical SIKESRA docs."
+		]
+	},
+	"routes": {
+		"public": ["/sikesra"],
+		"admin": ["/_emdash/admin/plugins/sikesra/", "/_emdash/admin/plugins/sikesra/operations"],
+		"apiNamespace": "/_emdash/api/plugins/sikesra/v1/*"
+	},
+	"permissions": [
+		"awcms:sikesra:dashboard:read",
+		"awcms:sikesra:entity:read",
+		"awcms:sikesra:entity:create",
+		"awcms:sikesra:entity:update",
+		"awcms:sikesra:entity:delete",
+		"awcms:sikesra:entity:restore",
+		"awcms:sikesra:code:generate",
+		"awcms:sikesra:code:correct",
+		"awcms:sikesra:verification:submit",
+		"awcms:sikesra:verification:verify",
+		"awcms:sikesra:document:upload",
+		"awcms:sikesra:document:private_download",
+		"awcms:sikesra:document:verify",
+		"awcms:sikesra:document:replace",
+		"awcms:sikesra:import:create",
+		"awcms:sikesra:import:read",
+		"awcms:sikesra:import:promote",
+		"awcms:sikesra:duplicate:read",
+		"awcms:sikesra:duplicate:decide",
+		"awcms:sikesra:duplicate:override",
+		"awcms:sikesra:completeness:read",
+		"awcms:sikesra:export:create",
+		"awcms:sikesra:export:restricted",
+		"awcms:sikesra:export:audit",
+		"awcms:sikesra:region:read",
+		"awcms:sikesra:region:manage",
+		"awcms:sikesra:attribute:read",
+		"awcms:sikesra:attribute:write",
+		"awcms:sikesra:policy:read",
+		"awcms:sikesra:policy:write",
+		"awcms:sikesra:policy:preview",
+		"awcms:sikesra:audit:read",
+		"awcms:sikesra:audit:export",
+		"awcms:sikesra:settings:read",
+		"awcms:sikesra:settings:update",
+		"awcms:sikesra:sensitive:reveal",
+		"awcms:sikesra:sensitive:highly_restricted_read",
+		"awcms:sikesra:rate_limit:bypass"
+	],
+	"storageScopes": {
+		"documents": { "collection": "documents", "purpose": "document metadata overlay storage" },
+		"exportJobs": { "collection": "exportJobs", "purpose": "export job lifecycle overlay storage" },
+		"importBatches": { "collection": "importBatches", "purpose": "import batch overlay storage" },
+		"importRows": { "collection": "importRows", "purpose": "import staging row overlay storage" },
+		"promotedEntities": {
+			"collection": "promotedEntities",
+			"purpose": "promotion output overlay storage"
+		},
+		"auditEntries": { "collection": "auditEntries", "purpose": "audit overlay storage" }
+	},
+	"migrations": {
+		"ownership": "plugin-owned",
+		"status": "artifact-ready",
+		"source": "update-backup/d1/"
+	},
+	"seeds": {
+		"ownership": "plugin-owned",
+		"status": "baseline-ready"
+	},
+	"dependencies": {
+		"runtime": ["auth/session", "plugin storage", "audit overlay", "ABAC overlay"],
+		"cloudflare": ["D1", "R2", "KV"]
+	},
+	"rollback": {
+		"disableBehavior": "non-destructive",
+		"notes": [
+			"Disabling the plugin must not mutate EmDash core packages.",
+			"Business data remains owned by plugin tables or overlay restore artifacts."
+		]
+	}
+}

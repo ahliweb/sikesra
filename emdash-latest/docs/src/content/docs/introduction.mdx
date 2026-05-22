@@ -1,0 +1,101 @@
+---
+title: Introduction to EmDash
+description: Learn what EmDash is, how it works, and whether it's right for your project.
+---
+
+import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
+
+EmDash is an **Astro-native content management system**. It brings familiar CMS patterns—collections, taxonomies, menus, widgets, and a polished admin UI—directly into your Astro site with full TypeScript support and portable deployment.
+
+## What EmDash Is
+
+EmDash is a CMS built specifically for [Astro](https://astro.build). It uses Astro 6's Live Content Collections to serve content at runtime without rebuilds. Content is stored in SQLite-compatible databases (D1, libSQL, local SQLite) and media in S3-compatible storage (R2, local filesystem).
+
+**Key characteristics:**
+
+- **Database-first schema** — Collections and fields are defined in the database, not code. Create and modify content types from the admin UI.
+- **Live Collections** — Content changes are immediately available. No static rebuilds needed.
+- **Plugin system** — WordPress-inspired hooks, storage, settings, and admin UI extensions.
+- **Cloud-portable** — Runs on Cloudflare (Workers + D1 + R2), Node.js, local SQLite, and any S3-compatible storage.
+
+## What EmDash Is Not
+
+- **Not a headless CMS** — EmDash is tightly integrated with Astro. It's not a separate service you call via API.
+- **Not WordPress-compatible** — No PHP, no WordPress plugins running directly. But WordPress content and concepts migrate cleanly.
+- **Not a page builder** — EmDash focuses on structured content. For visual page building, use Astro components.
+
+## Who EmDash Is For
+
+<CardGrid>
+	<Card title="Agency developers" icon="laptop">
+		Spin up client sites quickly with reusable plugins and themes. No PHP security updates, no
+		plugin conflicts.
+	</Card>
+	<Card title="Solo developers" icon="seti:todo">
+		Full-stack framework with CMS built in. No separate headless CMS to manage.
+	</Card>
+	<Card title="Content editors" icon="pencil">
+		Intuitive admin panel. Create and edit content without touching code.
+	</Card>
+	<Card title="WordPress users" icon="right-arrow">
+		Migration path for content and plugins. Modern tooling, familiar concepts.
+	</Card>
+</CardGrid>
+
+## Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Your Astro Site                        │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │                 EmDash Integration                  │  │
+│  │                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐   │  │
+│  │  │  Content    │  │   Admin     │  │   Plugins    │   │  │
+│  │  │  Engine     │  │   Panel     │  │              │   │  │
+│  │  └─────────────┘  └─────────────┘  └──────────────┘   │  │
+│  │                                                       │  │
+│  │  ┌───────────────────────────────────────────────────┐│  │
+│  │  │                  Data Layer                       ││  │
+│  │  │    SQLite/D1      ←→  Kysely  ←→  R2/S3/Local    ││  │
+│  │  └───────────────────────────────────────────────────┘│  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │                   Astro Framework                     │  │
+│  │        Live Collections • Sessions • Middleware       │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+<Aside type="tip">
+	EmDash is Astro-native and cloud-portable. It runs on Cloudflare (D1 + R2 + Workers), Node.js,
+	local SQLite, and any S3-compatible storage.
+</Aside>
+
+## Core Concepts
+
+Before diving in, familiarize yourself with these key concepts:
+
+- **Collections** — Content types defined in the database (posts, pages, products, etc.)
+- **Fields** — The properties of a collection (title, content, price, etc.)
+- **Taxonomies** — Classification systems (categories, tags, custom taxonomies)
+- **Menus** — Admin-editable navigation structures
+- **Widget Areas** — Configurable content regions for sidebars and footers
+- **Plugins** — Extensions that add functionality via hooks, storage, and UI
+
+## Next Steps
+
+<CardGrid>
+	<Card title="Get Started" icon="rocket">
+		[Create your first EmDash site](/getting-started/) in under 5 minutes.
+	</Card>
+	<Card title="Explore Concepts" icon="open-book">
+		Learn about [architecture](/concepts/architecture/) and the [content
+		model](/concepts/content-model/).
+	</Card>
+	<Card title="Migrate from WordPress" icon="right-arrow">
+		[Import your WordPress content](/migration/from-wordpress/) and understand the concept mapping.
+	</Card>
+</CardGrid>
