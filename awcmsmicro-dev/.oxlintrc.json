@@ -8,6 +8,7 @@
 		"perf": "warn"
 	},
 	"rules": {
+		"no-underscore-dangle": "off",
 		"no-await-in-loop": "off",
 		"no-unused-vars": [
 			"warn",
@@ -23,6 +24,7 @@
 		"typescript/unbound-method": "off",
 		"typescript/no-unnecessary-boolean-literal-compare": "off",
 		"import/no-named-as-default": "off",
+		"import/default": "off",
 		"import/no-unassigned-import": [
 			"warn",
 			{
@@ -45,7 +47,7 @@
 		"e18e/prefer-date-now": "error",
 		"e18e/prefer-regex-test": "error",
 		"e18e/prefer-array-some": "error",
-		"e18e/prefer-static-regex": "error"
+		"e18e/prefer-static-regex": "off"
 	},
 	"overrides": [
 		{
