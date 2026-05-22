@@ -1,7 +1,7 @@
 // @ts-check
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import { isPluginEnabledForValidation, sikesraPlugin } from "@ahliweb/plugin-sikesra";
+import { isPluginEnabledForValidation, sikesraPlugin } from "@ahliweb/awcms-micro-sikesra";
 import {
 	d1,
 	r2,

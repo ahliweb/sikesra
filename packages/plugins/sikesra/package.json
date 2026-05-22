@@ -1,7 +1,7 @@
 {
 	"name": "@ahliweb/plugin-sikesra",
 	"version": "0.1.0",
-	"description": "SIKESRA overlay shell for EmDash",
+	"description": "Backward-compatible SIKESRA shim package for EmDash",
 	"type": "module",
 	"main": "dist/index.mjs",
 	"exports": {
@@ -26,13 +26,12 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"kysely": "^0.27.0"
+		"@ahliweb/awcms-micro-sikesra": "workspace:*"
 	},
 	"peerDependencies": {
 		"emdash": "workspace:*"
 	},
 	"devDependencies": {
-		"better-sqlite3": "catalog:",
 		"tsdown": "catalog:",
 		"vitest": "catalog:"
 	},

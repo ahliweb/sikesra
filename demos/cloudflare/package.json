@@ -15,7 +15,7 @@
 	"dependencies": {
 		"@astrojs/cloudflare": "catalog:",
 		"@astrojs/react": "catalog:",
-		"@ahliweb/plugin-sikesra": "workspace:*",
+		"@ahliweb/awcms-micro-sikesra": "workspace:*",
 		"@emdash-cms/cloudflare": "workspace:*",
 		"@emdash-cms/plugin-forms": "workspace:*",
 		"@emdash-cms/plugin-webhook-notifier": "workspace:*",

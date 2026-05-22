@@ -1,4 +1,4 @@
-import { isPluginEnabledForValidation, sikesraPlugin } from "@ahliweb/plugin-sikesra";
+import { isPluginEnabledForValidation, sikesraPlugin } from "@ahliweb/awcms-micro-sikesra";
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";

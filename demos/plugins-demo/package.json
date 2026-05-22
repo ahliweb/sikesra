@@ -11,7 +11,7 @@
     "typecheck": "astro check"
   },
 	"dependencies": {
-		"@ahliweb/plugin-sikesra": "workspace:*",
+		"@ahliweb/awcms-micro-sikesra": "workspace:*",
 		"@astrojs/cloudflare": "catalog:",
 		"@astrojs/react": "catalog:",
 		"@emdash-cms/cloudflare": "workspace:*",

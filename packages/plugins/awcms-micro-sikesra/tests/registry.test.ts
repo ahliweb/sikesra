@@ -1,0 +1,418 @@
+import Database from "better-sqlite3";
+import { Kysely, SqliteDialect } from "kysely";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { SIKESRA_PERMISSION_LIST } from "../src/security/permissions.js";
+import { buildTrustedRequestContext } from "../src/security/request-context.js";
+import {
+	getEntityDetail,
+	listEntities,
+	type EntityDetailResponse,
+} from "../src/services/entities.js";
+import { listLocalRegions, listOfficialRegions } from "../src/services/regions.js";
+
+let sqlite: Database.Database;
+let db: Kysely<unknown>;
+
+function makeContext(overrides: Partial<Parameters<typeof buildTrustedRequestContext>[0]> = {}) {
+	return buildTrustedRequestContext({
+		requestId: "req-registry",
+		tenantId: "tenant-1",
+		siteId: "site-1",
+		userId: "admin-1",
+		roles: ["admin"],
+		permissions: [...SIKESRA_PERMISSION_LIST],
+		regionScope: {},
+		...overrides,
+	});
+}
+
+beforeEach(() => {
+	sqlite = new Database(":memory:");
+	db = new Kysely({ dialect: new SqliteDialect({ database: sqlite }) });
+
+	sqlite.exec(`
+		CREATE TABLE awcms_sikesra_official_regions (
+			code TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			name TEXT,
+			level TEXT,
+			parent_code TEXT,
+			deleted_at TEXT
+		);
+		CREATE TABLE awcms_sikesra_local_regions (
+			id TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			official_village_code TEXT,
+			parent_id TEXT,
+			level TEXT,
+			code_local TEXT,
+			name TEXT,
+			deleted_at TEXT
+		);
+		CREATE TABLE awcms_sikesra_object_types (
+			code TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			name TEXT,
+			deleted_at TEXT
+		);
+		CREATE TABLE awcms_sikesra_object_subtypes (
+			code TEXT,
+			type_code TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			name TEXT,
+			deleted_at TEXT
+		);
+		CREATE TABLE awcms_sikesra_entities (
+			id TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			sikesra_id_20 TEXT,
+			object_type_code TEXT,
+			object_subtype_code TEXT,
+			entity_kind TEXT,
+			display_name TEXT,
+			official_village_code TEXT,
+			local_region_id TEXT,
+			address_text TEXT,
+			status_data TEXT,
+			status_verification TEXT,
+			verification_level TEXT,
+			sensitivity_level TEXT,
+			completeness_percent INTEGER,
+			duplicate_status TEXT,
+			source_input TEXT,
+			created_at TEXT,
+			updated_at TEXT,
+			verified_at TEXT,
+			deleted_at TEXT,
+			religion_attribute TEXT,
+			neglected_attribute TEXT,
+			desil_attribute TEXT
+		);
+		CREATE TABLE awcms_sikesra_rumah_ibadah_details (
+			entity_id TEXT,
+			tenant_id TEXT,
+			site_id TEXT,
+			jenis_rumah_ibadah TEXT,
+			created_by TEXT,
+			updated_by TEXT,
+			deleted_at TEXT
+		);
+	`);
+
+	sqlite.exec(`
+		INSERT INTO awcms_sikesra_official_regions VALUES
+		('6201', 'tenant-1', 'site-1', 'Kabupaten A', 'regency', NULL, NULL),
+		('620101', 'tenant-1', 'site-1', 'Kecamatan A', 'district', '6201', NULL),
+		('6201011001', 'tenant-1', 'site-1', 'Desa Aman', 'village', '620101', NULL),
+		('6201011002', 'tenant-1', 'site-1', 'Desa Rahasia', 'village', '620101', NULL);
+		INSERT INTO awcms_sikesra_local_regions VALUES
+		('local-1', 'tenant-1', 'site-1', '6201011001', NULL, 'rw', '01', 'RW 01', NULL);
+		INSERT INTO awcms_sikesra_object_types VALUES
+		('01', 'tenant-1', 'site-1', 'Rumah Ibadah', NULL);
+		INSERT INTO awcms_sikesra_object_subtypes VALUES
+		('01', '01', 'tenant-1', 'site-1', 'Masjid', NULL);
+		INSERT INTO awcms_sikesra_entities VALUES
+		('entity-1', 'tenant-1', 'site-1', '62010110010101000001', '01', '01', 'building', 'Masjid Raya', '6201011001', 'local-1', 'Jl. Aman', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL),
+		('entity-2', 'tenant-1', 'site-1', '62010110020101000002', '01', '01', 'person', 'Ahmad Rahasia', '6201011002', NULL, 'Jl. Rahasia', 'active', 'verified', 'regency', 'restricted', 80, 'candidate', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		INSERT INTO awcms_sikesra_rumah_ibadah_details VALUES
+		('entity-1', 'tenant-1', 'site-1', 'Masjid', 'creator', 'updater', NULL);
+	`);
+});
+
+afterEach(async () => {
+	await db.destroy();
+	sqlite.close();
+});
+
+describe("SIKESRA region and registry services", () => {
+	it("lists official regions with level filters", async () => {
+		const items = await listOfficialRegions(db, makeContext(), { level: "village" });
+		expect(items).toHaveLength(2);
+		expect(items[0]?.level).toBe("village");
+	});
+
+	it("allows region lookups for users with region read permission", async () => {
+		const items = await listOfficialRegions(
+			db,
+			makeContext({ permissions: ["awcms:sikesra:region:read"] }),
+			{ level: "district" },
+		);
+
+		expect(items).toEqual([
+			expect.objectContaining({ code: "620101", name: "Kecamatan A", level: "district" }),
+		]);
+	});
+
+	it("falls back to the legacy default scope for official regions and entities", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('110101', 'default', 'default', 'Kecamatan Legacy', 'district', NULL, NULL),
+			('1101012001', 'default', 'default', 'Desa Legacy', 'village', '110101', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('09', 'default', 'default', 'Legacy Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '09', 'default', 'default', 'Legacy Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('legacy-entity-1', 'default', 'default', '11010120010901000001', '09', '01', 'building', 'Legacy Masjid', '1101012001', NULL, 'Jl. Legacy', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const legacyContext = makeContext({
+			tenantId: "00000000-0000-0000-0000-000000000001",
+			siteId: "main",
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
+		});
+
+		const regions = await listOfficialRegions(db, legacyContext, { level: "village" });
+		const entities = await listEntities(db, legacyContext, { objectTypeCode: "09" });
+
+		expect(regions).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ code: "1101012001", name: "Desa Legacy" }),
+			]),
+		);
+		expect(entities.items).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: "legacy-entity-1", objectTypeName: "Legacy Type" }),
+			]),
+		);
+	});
+
+	it("lists local regions constrained by village scope", async () => {
+		const items = await listLocalRegions(
+			db,
+			makeContext({ regionScope: { villageCodes: ["6201011001"] } }),
+			{},
+		);
+		expect(items).toHaveLength(1);
+		expect(items[0]?.officialVillageCode).toBe("6201011001");
+	});
+
+	it("falls back to canonical lookup data when the active tenant/site has no registry rows", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('6301', '00000000-0000-0000-0000-000000000001', 'main', 'Kabupaten Canon', 'regency', NULL, NULL),
+			('630101', '00000000-0000-0000-0000-000000000001', 'main', 'Kecamatan Canon', 'district', '6301', NULL),
+			('6301011001', '00000000-0000-0000-0000-000000000001', 'main', 'Desa Canon', 'village', '630101', NULL);
+			INSERT INTO awcms_sikesra_local_regions VALUES
+			('canon-local-1', '00000000-0000-0000-0000-000000000001', 'main', '6301011001', NULL, 'rw', '01', 'RW Canon', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('99', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '99', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('canon-entity-1', '00000000-0000-0000-0000-000000000001', 'main', '63010110019901000001', '99', '01', 'building', 'Canonical Entity', '6301011001', 'canon-local-1', 'Jl. Canon', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const otherContext = makeContext({
+			tenantId: "tenant-2",
+			siteId: "site-2",
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
+		});
+
+		const [regions, localRegions, entities, detail] = await Promise.all([
+			listOfficialRegions(db, otherContext, { level: "village" }),
+			listLocalRegions(db, otherContext, { officialVillageCode: "6301011001" }),
+			listEntities(db, otherContext, { objectTypeCode: "99" }),
+			getEntityDetail(db, otherContext, "canon-entity-1"),
+		]);
+
+		expect(regions).toEqual([expect.objectContaining({ code: "6301011001", name: "Desa Canon" })]);
+		expect(localRegions).toEqual([
+			expect.objectContaining({ id: "canon-local-1", officialVillageCode: "6301011001" }),
+		]);
+		expect(entities.items).toEqual([
+			expect.objectContaining({ id: "canon-entity-1", objectTypeName: "Canonical Type" }),
+		]);
+		expect((detail as EntityDetailResponse).entity.id).toBe("canon-entity-1");
+	});
+
+	it("keeps legacy default callers pinned to legacy scope", async () => {
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_official_regions VALUES
+			('110101', 'default', 'default', 'Kecamatan Legacy', 'district', NULL, NULL),
+			('1101012001', 'default', 'default', 'Desa Legacy', 'village', '110101', NULL),
+			('120101', '00000000-0000-0000-0000-000000000001', 'main', 'Kecamatan Canon', 'district', NULL, NULL),
+			('1201012001', '00000000-0000-0000-0000-000000000001', 'main', 'Desa Canon', 'village', '120101', NULL);
+			INSERT INTO awcms_sikesra_local_regions VALUES
+			('legacy-local-1', 'default', 'default', '1101012001', NULL, 'rw', '01', 'RW Legacy', NULL),
+			('canon-local-2', '00000000-0000-0000-0000-000000000001', 'main', '1201012001', NULL, 'rw', '02', 'RW Canon', NULL);
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('09', 'default', 'default', 'Legacy Type', NULL),
+			('88', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Type', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '09', 'default', 'default', 'Legacy Subtype', NULL),
+			('01', '88', '00000000-0000-0000-0000-000000000001', 'main', 'Canonical Subtype', NULL);
+			INSERT INTO awcms_sikesra_entities VALUES
+			('legacy-entity-2', 'default', 'default', '11010120010901000002', '09', '01', 'building', 'Legacy Entity', '1101012001', 'legacy-local-1', 'Jl. Legacy', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL),
+			('canon-entity-2', '00000000-0000-0000-0000-000000000001', 'main', '12010120018801000002', '88', '01', 'building', 'Canonical Entity', '1201012001', 'canon-local-2', 'Jl. Canon', 'active', 'verified', 'regency', 'public_safe', 100, 'none', 'manual', '2026-01-01', '2026-01-02', '2026-01-03', NULL, 'Islam', NULL, NULL);
+		`);
+
+		const legacyContext = makeContext({
+			tenantId: "default",
+			siteId: "default",
+			permissions: ["awcms:sikesra:entity:read", "awcms:sikesra:region:read"],
+		});
+
+		const [regions, localRegions, entities, detail] = await Promise.all([
+			listOfficialRegions(db, legacyContext, { level: "village" }),
+			listLocalRegions(db, legacyContext, { officialVillageCode: "1101012001" }),
+			listEntities(db, legacyContext, { objectTypeCode: "09" }),
+			getEntityDetail(db, legacyContext, "legacy-entity-2"),
+		]);
+
+		expect(regions).toEqual([expect.objectContaining({ code: "1101012001", name: "Desa Legacy" })]);
+		expect(localRegions).toEqual([
+			expect.objectContaining({ id: "legacy-local-1", officialVillageCode: "1101012001" }),
+		]);
+		expect(entities.items).toEqual([
+			expect.objectContaining({ id: "legacy-entity-2", objectTypeName: "Legacy Type" }),
+		]);
+		expect((detail as EntityDetailResponse).entity.id).toBe("legacy-entity-2");
+	});
+
+	it("lists entities and masks protected person names without reveal permission", async () => {
+		const reader = makeContext({ permissions: ["awcms:sikesra:entity:read"] });
+		const listed = await listEntities(db, reader, {});
+		expect(listed.items).toHaveLength(2);
+		const protectedEntity = listed.items.find((item) => item.id === "entity-2");
+		expect(protectedEntity?.displayName).not.toBe("Ahmad Rahasia");
+		expect(protectedEntity?.masked).toBe(true);
+	});
+
+	it("filters entities by region scope", async () => {
+		const result = await listEntities(
+			db,
+			makeContext({
+				permissions: ["awcms:sikesra:entity:read"],
+				regionScope: { villageCodes: ["6201011001"] },
+			}),
+			{},
+		);
+		expect(result.items).toHaveLength(1);
+		expect(result.items[0]?.id).toBe("entity-1");
+	});
+
+	it("returns entity detail with access flags and safe summary", async () => {
+		const detail = (await getEntityDetail(
+			db,
+			makeContext({
+				permissions: [
+					"awcms:sikesra:entity:read",
+					"awcms:sikesra:entity:update",
+					"awcms:sikesra:verification:submit",
+					"awcms:sikesra:code:generate",
+				],
+			}),
+			"entity-1",
+		)) as EntityDetailResponse;
+
+		expect(detail.entity.id).toBe("entity-1");
+		expect(detail.access.canEdit).toBe(true);
+		expect(detail.access.canVerify).toBe(false);
+		expect(detail.summary.addressText).toBeNull();
+		expect(detail.details).toEqual(expect.objectContaining({ jenis_rumah_ibadah: "Masjid" }));
+	});
+
+	it("excludes out-of-scope entities from the registry list", async () => {
+		const result = await listEntities(
+			db,
+			makeContext({
+				permissions: ["awcms:sikesra:entity:read"],
+				regionScope: { villageCodes: ["6201011001"] },
+			}),
+			{ officialVillageCode: "6201011002" },
+		);
+		expect(result.items).toHaveLength(0);
+	});
+
+	it("returns a stable encoded nextCursor and next page for filtered registry lists", async () => {
+		for (let index = 0; index < 60; index++) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('entity-page-${index}', 'tenant-1', 'site-1', NULL, '01', '01', 'building', 'Masjid Page ${index}', '6201011001', 'local-1', 'Jl. Page ${index}', 'draft', 'draft', NULL, 'internal', 100, 'none', 'manual', '2026-01-01', '2026-01-${String((index % 28) + 1).padStart(2, "0")}', NULL, NULL, NULL, NULL, NULL);
+			`);
+		}
+
+		const firstPage = await listEntities(db, makeContext({ permissions: ["awcms:sikesra:entity:read"] }), {
+			objectTypeCode: "01",
+			statusData: "draft",
+			limit: 50,
+		});
+
+		const secondPage = await listEntities(db, makeContext({ permissions: ["awcms:sikesra:entity:read"] }), {
+			objectTypeCode: "01",
+			statusData: "draft",
+			limit: 50,
+			cursor: firstPage.nextCursor,
+		});
+
+		expect(firstPage.items).toHaveLength(50);
+		expect(firstPage.nextCursor).toBeTruthy();
+		expect(firstPage.nextCursor).not.toBe(firstPage.items[49]?.id);
+		expect(secondPage.items.length).toBeGreaterThan(0);
+		expect(secondPage.items.every((item) => item.objectTypeCode === "01" && item.statusData === "draft")).toBe(true);
+		expect(secondPage.items.some((item) => firstPage.items.some((first) => first.id === item.id))).toBe(false);
+	});
+
+	it("returns only draft rows for the selected module across all 8 SIKESRA data types", async () => {
+		const moduleRows = [
+			{ objectTypeCode: "01", entityId: "draft-01", displayName: "Masjid Draft", entityKind: "building" },
+			{ objectTypeCode: "02", entityId: "draft-02", displayName: "Lembaga Draft", entityKind: "institution" },
+			{ objectTypeCode: "03", entityId: "draft-03", displayName: "Pendidikan Draft", entityKind: "institution" },
+			{ objectTypeCode: "04", entityId: "draft-04", displayName: "LKS Draft", entityKind: "institution" },
+			{ objectTypeCode: "05", entityId: "draft-05", displayName: "Guru Draft", entityKind: "person" },
+			{ objectTypeCode: "06", entityId: "draft-06", displayName: "Anak Draft", entityKind: "person" },
+			{ objectTypeCode: "07", entityId: "draft-07", displayName: "Disabilitas Draft", entityKind: "person" },
+			{ objectTypeCode: "08", entityId: "draft-08", displayName: "Lansia Draft", entityKind: "person" },
+		] as const;
+
+		sqlite.exec(`
+			INSERT INTO awcms_sikesra_object_types VALUES
+			('02', 'tenant-1', 'site-1', 'Lembaga Keagamaan', NULL),
+			('03', 'tenant-1', 'site-1', 'Pendidikan Keagamaan', NULL),
+			('04', 'tenant-1', 'site-1', 'LKS', NULL),
+			('05', 'tenant-1', 'site-1', 'Guru Agama', NULL),
+			('06', 'tenant-1', 'site-1', 'Anak Yatim', NULL),
+			('07', 'tenant-1', 'site-1', 'Disabilitas', NULL),
+			('08', 'tenant-1', 'site-1', 'Lansia Terlantar', NULL);
+			INSERT INTO awcms_sikesra_object_subtypes VALUES
+			('01', '02', 'tenant-1', 'site-1', 'Islam', NULL),
+			('01', '03', 'tenant-1', 'site-1', 'TPQ', NULL),
+			('01', '04', 'tenant-1', 'site-1', 'Panti Asuhan', NULL),
+			('01', '05', 'tenant-1', 'site-1', 'Guru', NULL),
+			('01', '06', 'tenant-1', 'site-1', 'Yatim', NULL),
+			('01', '07', 'tenant-1', 'site-1', 'Sensorik', NULL),
+			('01', '08', 'tenant-1', 'site-1', 'Terlantar', NULL);
+		`);
+
+		for (const moduleRow of moduleRows) {
+			sqlite.exec(`
+				INSERT INTO awcms_sikesra_entities VALUES
+				('${moduleRow.entityId}', 'tenant-1', 'site-1', NULL, '${moduleRow.objectTypeCode}', '01', '${moduleRow.entityKind}', '${moduleRow.displayName}', '6201011001', 'local-1', 'Jl. Draft', 'draft', 'draft', NULL, 'public_safe', 0, 'none', 'manual', '2026-01-01', '2026-01-02', NULL, NULL, NULL, NULL, NULL);
+			`);
+		}
+
+		for (const moduleRow of moduleRows) {
+			const result = await listEntities(
+				db,
+				makeContext({ permissions: ["awcms:sikesra:entity:read"] }),
+				{ objectTypeCode: moduleRow.objectTypeCode, statusData: "draft" },
+			);
+
+				expect(result.items).toHaveLength(1);
+				expect(result.items[0]).toEqual(
+					expect.objectContaining({
+						id: moduleRow.entityId,
+						objectTypeCode: moduleRow.objectTypeCode,
+						statusData: "draft",
+					}),
+				);
+			}
+		});
+});

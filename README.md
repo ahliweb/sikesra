@@ -1,34 +1,57 @@
-# SIKESRA
+# awcms-micro-sikesra
 
-SIKESRA (Sistem Informasi Kesejahteraan Rakyat) adalah modul/plugin native AWCMS-Micro dan EmDash untuk registri data kesejahteraan, keagamaan, lembaga, warga rentan, dokumen, verifikasi, impor, laporan, dan agregasi publik yang aman.
+`awcms-micro-sikesra` is the SIKESRA implementation workspace built on top of EmDash and aligned to the AWCMS-Micro repository pattern.
 
-## Ringkasan
+## Current Mapping
+
+The long-term target structure from `tmp/prompt-refactor` is a parent repository with sibling `emdash-latest/` and `awcmsmicro-dev/` trees.
+
+This repository currently represents the `awcmsmicro-dev/` role in-place so the existing workspace, tests, and package links keep working during the transition.
+
+Canonical scaffold paths now exist in the repo for the future layout:
+
+- `templates/awcms-micro-sikesra/`
+- `templates/awcms-micro-sikesra-cloudflare/`
+- `packages/plugins/awcms-micro-sikesra/`
+- `demos/awcms-micro-sikesra-cloudflare/`
+- `docs/awcms-micro/sikesra/`
+- `e2e/awcms-micro/sikesra/`
+
+## SIKESRA Runtime
 
 - Public page: `/sikesra`
 - Admin UI: `/_emdash/admin/plugins/sikesra/*`
 - Admin API: `/_emdash/api/plugins/sikesra/v1/*`
-- Fokus: data operasional terstruktur, aman, dan terverifikasi
-- Target: pemerintah daerah, petugas input, verifikator, auditor, dan pembaca agregat publik
+- Plugin compatibility shim: `packages/plugins/sikesra/`
+- Canonical plugin package path: `packages/plugins/awcms-micro-sikesra/`
+- Canonical architecture docs: `docs/awcms-micro/sikesra/`
 
-## Fitur Utama
+## Main Capabilities
 
-- Wizard input bertahap dengan autosave dan validasi
-- ID stabil `sikesra_id_20`
-- Verifikasi berjenjang desa, kecamatan, kabupaten/OPD
-- Manajemen dokumen dengan metadata D1 dan file R2
-- Import Excel melalui staging, mapping, validasi, deduplikasi, lalu promosi
-- Export dan laporan dengan kontrol sensitivitas data
-- RBAC, ABAC, masking, audit trail, dan pembatasan data publik
+- Progressive wizard input with autosave and validation
+- Stable 20-digit `sikesra_id_20`
+- Hierarchical verification across village, district, regency, and OPD scopes
+- D1-backed metadata plus R2-backed document storage
+- Import staging, validation, deduplication, promotion, and export/report flows
+- RBAC, ABAC, masking, audit logging, and public-safe aggregation
 
-## Data Publik
+## Repository Guidance
 
-Halaman publik `/sikesra` hanya boleh menampilkan data agregat yang aman. Data individual sensitif, dokumen mentah, dan detail terlindungi tidak boleh diekspos.
+- Parent-architecture docs: `docs/repository-structure.md`
+- Protected path policy: `docs/awcmsmicro-dev-protected-paths.md`
+- Implementation boundaries: `docs/awcms-micro-implementation-boundaries.md`
+- Divergence tracking: `docs/divergence-log.md`
+- Upstream sync notes: `docs/upstream-sync-status.md`
 
-## Arsitektur
+The runtime source of truth is now centered in `packages/plugins/awcms-micro-sikesra/`. The legacy `packages/plugins/sikesra/` package remains as a backward-compatible shim while import sites migrate.
 
-SIKESRA dibangun sebagai plugin/modul modular, bukan fork EmDash core. Penyimpanan utama memakai D1, file memakai R2, dan seluruh tabel fisik memakai prefix `awcms_sikesra_*`.
+## Validation Scripts
 
-## Dokumentasi
+- `pnpm awcmsmicro:validate-boundaries`
+- `pnpm awcmsmicro:validate-after-sync`
+- `pnpm awcmsmicro:sync-and-validate`
+
+## Existing SIKESRA Product Docs
 
 - [docs/sikesra/README.md](docs/sikesra/README.md)
 - [docs/sikesra/01_product_requirements.md](docs/sikesra/01_product_requirements.md)
@@ -36,6 +59,6 @@ SIKESRA dibangun sebagai plugin/modul modular, bukan fork EmDash core. Penyimpan
 - [docs/sikesra/03_data_model.md](docs/sikesra/03_data_model.md)
 - [docs/sikesra/06_security_rbac_abac.md](docs/sikesra/06_security_rbac_abac.md)
 
-## Pengembangan
+## Development
 
-Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk alur kontribusi, testing, dan aturan kerja repo.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, test requirements, and repository rules.
