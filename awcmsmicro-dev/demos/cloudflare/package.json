@@ -12,13 +12,13 @@
     "db:reset:remote": "./scripts/reset-db.sh",
     "typecheck": "astro check"
   },
-	"dependencies": {
-		"@astrojs/cloudflare": "catalog:",
-		"@astrojs/react": "catalog:",
-		"@ahliweb/awcms-micro-sikesra": "workspace:*",
-		"@emdash-cms/cloudflare": "workspace:*",
-		"@emdash-cms/plugin-forms": "workspace:*",
-		"@emdash-cms/plugin-webhook-notifier": "workspace:*",
+  "dependencies": {
+    "@astrojs/cloudflare": "catalog:",
+    "@astrojs/react": "catalog:",
+    "@emdash-cms/cloudflare": "workspace:*",
+    "@emdash-cms/plugin-forms": "workspace:*",
+    "@emdash-cms/plugin-webhook-notifier": "workspace:*",
+    "@emdash-cms/plugin-cli": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "astro": "catalog:",
@@ -34,7 +34,5 @@
   },
   "emdash": {
     "seed": "seed/seed.json"
-  },
-  "peerDependencies": {},
-  "optionalDependencies": {}
+  }
 }

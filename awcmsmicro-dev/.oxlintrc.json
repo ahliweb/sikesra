@@ -16,18 +16,10 @@
 				"varsIgnorePattern": "^_"
 			}
 		],
-		"no-underscore-dangle": "off",
 		"unicorn/filename-case": "off",
 		"unicorn/no-null": "off",
-		"unicorn/no-array-sort": "off",
 		"unicorn/prefer-add-event-listener": "off",
-		"consistent-return": "off",
-		"no-shadow": "off",
-		"typescript/no-unsafe-type-assertion": "off",
-		"typescript/no-unnecessary-type-assertion": "off",
-		"typescript/no-unnecessary-type-conversion": "off",
-		"typescript/no-unnecessary-type-parameters": "off",
-		"typescript/no-unnecessary-template-expression": "off",
+		"typescript/no-unsafe-type-assertion": "warn",
 		"typescript/unbound-method": "off",
 		"typescript/no-unnecessary-boolean-literal-compare": "off",
 		"import/no-named-as-default": "off",
@@ -53,11 +45,17 @@
 		"e18e/prefer-date-now": "error",
 		"e18e/prefer-regex-test": "error",
 		"e18e/prefer-array-some": "error",
-		"e18e/prefer-static-regex": "off"
+		"e18e/prefer-static-regex": "error"
 	},
 	"overrides": [
 		{
-			"files": ["**/*.test.ts", "**/*.test.tsx", "**/tests/**/*.ts", "**/tests/**/*.tsx"],
+			"files": [
+				"**/*.test.ts",
+				"**/*.test.tsx",
+				"**/tests/**/*.ts",
+				"**/tests/**/*.tsx",
+				"packages/atproto-test-utils/**/*.ts"
+			],
 			"rules": {
 				"typescript/no-unsafe-type-assertion": "off",
 				"typescript/no-unnecessary-type-assertion": "off",
@@ -75,13 +73,13 @@
 				"**/client/transport.ts",
 				"**/client/portable-text.ts",
 				"**/cli/**/*.ts",
-				"packages/registry-cli/src/bundle/api.ts",
-				"packages/registry-cli/src/bundle/utils.ts",
-				"packages/registry-cli/src/bundle/command.ts",
-				"packages/registry-cli/src/bundle/types.ts",
-				"packages/registry-cli/src/oauth.ts",
-				"packages/registry-cli/src/publish/api.ts",
-				"packages/registry-cli/src/commands/publish.ts",
+				"packages/plugin-cli/src/bundle/api.ts",
+				"packages/plugin-cli/src/bundle/utils.ts",
+				"packages/plugin-cli/src/bundle/command.ts",
+				"packages/plugin-cli/src/bundle/types.ts",
+				"packages/plugin-cli/src/oauth.ts",
+				"packages/plugin-cli/src/publish/api.ts",
+				"packages/plugin-cli/src/commands/publish.ts",
 				"packages/registry-client/src/publishing/index.ts",
 				"**/api/handlers/api-tokens.ts",
 				"**/api/handlers/device-flow.ts",
@@ -106,12 +104,6 @@
 			],
 			"rules": {
 				"typescript/no-unsafe-type-assertion": "off"
-			}
-		},
-		{
-			"files": ["packages/plugins/marketplace-test/**/*.ts", "packages/plugins/sandboxed-test/**/*.ts"],
-			"rules": {
-				"typescript/no-useless-default-assignment": "off"
 			}
 		}
 	],

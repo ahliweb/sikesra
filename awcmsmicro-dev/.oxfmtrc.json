@@ -8,8 +8,6 @@
 		"**/package.json",
 		"**/emdash-env.d.ts",
 		"packages/registry-lexicons/src/generated/**",
-		"docs/sikesra-awal/**",
-		"docs-awcms-micro/**",
-		"docs-sikesra-awal/**"
+		"packages/plugin-cli/schemas/**"
 	]
 }

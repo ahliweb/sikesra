@@ -4,8 +4,8 @@ import type { StatItem, StatsBlock } from "../types.js";
 import { cn } from "../utils.js";
 
 const trendConfig = {
-	up: { icon: ArrowUp, color: "text-kumo-success" },
-	down: { icon: ArrowDown, color: "text-kumo-danger" },
+	up: { icon: ArrowUp, color: "text-green-600" },
+	down: { icon: ArrowDown, color: "text-red-600" },
 	neutral: { icon: Minus, color: "text-kumo-subtle" },
 } as const;
 
@@ -14,10 +14,10 @@ function StatCard({ item }: { item: StatItem }) {
 	const TrendIcon = trend?.icon;
 
 	return (
-		<div className="flex-1 rounded-lg border border-kumo-line bg-kumo-base p-4">
+		<div className="flex-1 rounded-lg border border-kumo-line p-4">
 			<div className="text-sm text-kumo-subtle">{item.label}</div>
 			<div className="mt-1 flex items-baseline gap-2">
-				<span className="text-2xl font-bold text-kumo-strong">{item.value}</span>
+				<span className="text-2xl font-bold text-kumo-default">{item.value}</span>
 				{TrendIcon && (
 					<span className={cn("flex items-center", trend.color)}>
 						<TrendIcon size={16} />

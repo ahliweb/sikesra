@@ -8,8 +8,6 @@ This file provides guidance to agentic coding tools when working with code in th
 
 This is a monorepo using pnpm workspaces.
 
-For the AWCMS-Micro SIKESRA refactor tracked in `tmp/prompt-refactor`, this repo currently acts as the in-place `awcmsmicro-dev/` implementation workspace. The eventual parent split with sibling `emdash-latest/` and `awcmsmicro-dev/` trees is documented under `docs/`, but has not been performed literally inside this git root.
-
 `CLAUDE.md` is a symlink to `AGENTS.md`. `.opencode/skills` and `.claude/skills` are symlinks to `skills/`. Don't try to sync between them.
 
 - **Root**: Workspace configuration and shared tooling
@@ -35,10 +33,6 @@ For the AWCMS-Micro SIKESRA refactor tracked in `tmp/prompt-refactor`, this repo
 
 **Localize everything user-facing.** All admin UI strings, aria labels, and toast messages go through Lingui. All admin layout uses RTL-safe logical Tailwind classes. See the Localization and RTL sections below.
 
-**Canonical docs are immutable references.** `docs-awcms-micro/` (AWCMS-Micro architecture and governance) and `docs-sikesra-awal/` (SIKESRA concept specification) are readonly concept references. They must not be removed or modified in a way that changes their core principles. Working copies live under `docs/core/` and `docs/sikesra/` respectively.
-
-**Check Context7 and skills before coding.** When working with external libraries, frameworks, or APIs, always query Context7 documentation first for up-to-date patterns and examples. When a task matches an available skill, load the skill for domain-specific instructions and workflows. Don't guess at APIs or patterns -- look them up.
-
 ## Contribution Rules (for AI agents and human contributors)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Key rules:
@@ -56,11 +50,11 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Key rules:
 
 ### Before Starting
 
-1. Run `pnpm --silent lint:json | jq '.diagnostics | length'` and fix any issues. Non-negotiable.
+1. Run `pnpm lint:json | jq '.diagnostics | length'` and fix any issues. Non-negotiable.
 
 ### During Work
 
-- Run `pnpm --silent lint:quick` after every edit -- takes less than a second. Returns JSON with stderr redirected to /dev/null, so it won't break parsers. Fix any issues immediately.
+- Run `pnpm lint:quick` after every edit -- takes less than a second. The `$ command` echo goes to stderr in pnpm 11, so JSON pipes cleanly without needing `--silent`. Fix any issues immediately.
 - Run `pnpm typecheck` (packages) or `pnpm typecheck:demos` (Astro demos) after each round of edits.
 - Format regularly. pnpm format in the root uses oxfmt with tabs for indentation and is very fast. Don't let formatting pile up.
 - Commit regularly, and always format and quick lint beforehand.
@@ -96,7 +90,7 @@ See [CONTRIBUTING.md § Changesets](CONTRIBUTING.md#changesets) for full guidanc
 ### PR Flow
 
 1. All tests pass: `pnpm test`
-2. Full lint suite clean: `pnpm --silent lint:json | jq '.diagnostics | length'`. Returns JSON with stderr piped to /dev/null, so it won't break parsers. Fix any issues.
+2. Full lint suite clean: `pnpm lint:json | jq '.diagnostics | length'`. The `$ command` echo goes to stderr in pnpm 11, so the JSON pipes cleanly. Fix any issues.
 3. Format with `pnpm format` (oxfmt with tabs for indentation, configured in `.prettierrc`).
 4. Add a changeset if the change affects a published package: `pnpm changeset`.
 5. Open the PR (via `gh pr create` or the GitHub UI). Fill out every section of the PR template -- copy `.github/PULL_REQUEST_TEMPLATE.md` into the body if using the API/CLI. Check the AI disclosure box if any code was AI-generated and name the model/tool you used.

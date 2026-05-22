@@ -37,6 +37,8 @@ import { MenuEditor } from "./components/MenuEditor";
 import { MenuList } from "./components/MenuList";
 import { PluginManager } from "./components/PluginManager";
 import { Redirects } from "./components/Redirects";
+import { RegistryBrowse } from "./components/RegistryBrowse";
+import { RegistryPluginDetail } from "./components/RegistryPluginDetail";
 import { SandboxedPluginPage } from "./components/SandboxedPluginPage";
 import { SectionEditor } from "./components/SectionEditor";
 import { Sections } from "./components/Sections";
@@ -389,6 +391,11 @@ function ContentListPage() {
 		return data?.pages.flatMap((page) => page.items) || [];
 	}, [data]);
 
+	// Server returns `total` on every page; the first page is authoritative
+	// because filters don't change within a fetch cycle. Fall back to the
+	// loaded count so old servers (pre-total) still render a denominator.
+	const total = data?.pages[0]?.total ?? items.length;
+
 	if (!manifest) {
 		return <LoadingScreen />;
 	}
@@ -433,6 +440,7 @@ function ContentListPage() {
 			urlPattern={collectionConfig.urlPattern}
 			sort={sort}
 			onSortChange={setSort}
+			total={total}
 		/>
 	);
 }
@@ -973,7 +981,7 @@ function MediaPage() {
 			queryKey: ["media"],
 			queryFn: ({ pageParam }) =>
 				fetchMediaList({
-					cursor: pageParam as string | undefined,
+					cursor: pageParam,
 					limit: 100,
 				}),
 			initialPageParam: undefined as string | undefined,
@@ -1265,6 +1273,11 @@ const marketplaceBrowseRoute = createRoute({
 });
 
 function MarketplaceBrowsePage() {
+	const { data: manifest } = useQuery({
+		queryKey: ["manifest"],
+		queryFn: fetchManifest,
+	});
+
 	const { data: plugins } = useQuery({
 		queryKey: ["plugins"],
 		queryFn: async () => {
@@ -1277,6 +1290,26 @@ function MarketplaceBrowsePage() {
 		if (!plugins) return new Set<string>();
 		return new Set(plugins.map((p) => p.id));
 	}, [plugins]);
+
+	// When `experimental.registry` is configured, the registry browse
+	// replaces the centralized marketplace browse on this route. Existing
+	// sidebar / deep links stay valid; users see the registry without any
+	// path change.
+	if (manifest?.registry) {
+		// Map installed registry plugins to their AT URIs for the
+		// "Installed" badge on browse cards.
+		const installedRegistryUris = new Set<string>(
+			(plugins ?? [])
+				.filter((p) => p.source === "registry" && p.registryPublisherDid && p.registrySlug)
+				.map(
+					(p) =>
+						`at://${p.registryPublisherDid}/com.emdashcms.experimental.package.profile/${p.registrySlug}`,
+				),
+		);
+		return (
+			<RegistryBrowse config={manifest.registry} installedRegistryUris={installedRegistryUris} />
+		);
+	}
 
 	return <MarketplaceBrowse installedPluginIds={installedIds} />;
 }
@@ -1291,6 +1324,11 @@ const marketplaceDetailRoute = createRoute({
 function MarketplaceDetailPage() {
 	const { pluginId } = useParams({ from: "/_admin/plugins/marketplace/$pluginId" });
 
+	const { data: manifest } = useQuery({
+		queryKey: ["manifest"],
+		queryFn: fetchManifest,
+	});
+
 	const { data: plugins } = useQuery({
 		queryKey: ["plugins"],
 		queryFn: async () => {
@@ -1303,6 +1341,17 @@ function MarketplaceDetailPage() {
 		if (!plugins) return new Set<string>();
 		return new Set(plugins.map((p) => p.id));
 	}, [plugins]);
+
+	// Discriminate by param shape, not by the manifest flag. A registry
+	// pluginId is always `${handle}/${slug}` and contains exactly one `/`;
+	// a marketplace pluginId is a single segment with no `/`. This keeps
+	// deep links to marketplace-installed plugins working on sites that
+	// later opt into the registry, instead of unconditionally routing
+	// every visit to RegistryPluginDetail.
+	const looksLikeRegistryId = pluginId.includes("/");
+	if (manifest?.registry && looksLikeRegistryId) {
+		return <RegistryPluginDetail pluginId={pluginId} config={manifest.registry} />;
+	}
 
 	return <MarketplacePluginDetail pluginId={pluginId} installedPluginIds={installedIds} />;
 }

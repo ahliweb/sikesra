@@ -9,8 +9,6 @@
  * Private routes (the default) require authentication and appropriate permissions.
  */
 
-import type { User } from "@emdash-cms/auth";
-import { roleFromLevel } from "@emdash-cms/auth";
 import type { APIRoute } from "astro";
 
 import { requirePerm } from "#api/authorize.js";
@@ -18,11 +16,6 @@ import { apiError, apiSuccess } from "#api/error.js";
 import { requireScope } from "#auth/scopes.js";
 
 export const prerender = false;
-
-const PLUGIN_CONTEXT_HEADER = "x-emdash-plugin-context";
-const DEFAULT_TENANT_ID =
-	import.meta.env.AWCMS_DEFAULT_TENANT_ID || "00000000-0000-0000-0000-000000000001";
-const DEFAULT_SITE_ID = import.meta.env.AWCMS_DEFAULT_SITE_ID || "main";
 
 /**
  * Handle all methods by matching against plugin-defined routes
@@ -72,12 +65,7 @@ const handleRequest: APIRoute = async ({ params, request, locals }) => {
 		}
 	}
 
-	const result = await emdash.handlePluginApiRoute(
-		pluginId,
-		method,
-		`/${path}`,
-		attachPluginRequestContext(request, user),
-	);
+	const result = await emdash.handlePluginApiRoute(pluginId, method, `/${path}`, request);
 
 	if (!result.success) {
 		const code = result.error?.code ?? "PLUGIN_ERROR";
@@ -102,45 +90,3 @@ export const POST = handleRequest;
 export const PUT = handleRequest;
 export const PATCH = handleRequest;
 export const DELETE = handleRequest;
-
-function attachPluginRequestContext(request: Request, user: User | undefined): Request {
-	const headers = new Headers(request.headers);
-	headers.set(
-		PLUGIN_CONTEXT_HEADER,
-		encodeURIComponent(
-			JSON.stringify({
-				requestId: request.headers.get("x-request-id") || crypto.randomUUID(),
-				tenantId: DEFAULT_TENANT_ID,
-				siteId: DEFAULT_SITE_ID,
-				userId: user?.id ?? "public",
-				role: user?.role ?? null,
-				roleName: user ? (roleFromLevel(user.role) ?? null) : "public",
-				regionScope: extractRegionScope(user?.data),
-				subjectAttributes: isPlainRecord(user?.data) ? user.data : {},
-			}),
-		),
-	);
-	return new Request(request, { headers });
-}
-
-function extractRegionScope(data: User["data"]): Record<string, unknown> {
-	if (!isPlainRecord(data)) return {};
-	const value = isPlainRecord(data.regionScope) ? data.regionScope : data;
-	return {
-		provinceCode: typeof value.provinceCode === "string" ? value.provinceCode : undefined,
-		regencyCode: typeof value.regencyCode === "string" ? value.regencyCode : undefined,
-		districtCodes: toStringArray(value.districtCodes),
-		villageCodes: toStringArray(value.villageCodes),
-		localRegionIds: toStringArray(value.localRegionIds),
-	};
-}
-
-function toStringArray(value: unknown): string[] | undefined {
-	if (!Array.isArray(value)) return undefined;
-	const items = value.filter((item): item is string => typeof item === "string");
-	return items.length > 0 ? items : undefined;
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === "object" && !Array.isArray(value);
-}

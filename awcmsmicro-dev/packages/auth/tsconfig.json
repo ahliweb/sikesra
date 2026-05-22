@@ -11,10 +11,10 @@
 		"skipLibCheck": true,
 		"esModuleInterop": true,
 		"isolatedModules": true,
-		"types": ["node"],
 		"verbatimModuleSyntax": true,
 		"outDir": "dist",
-		"rootDir": "src"
+		"rootDir": "src",
+		"types": ["node"]
 	},
 	"include": ["src"]
 }

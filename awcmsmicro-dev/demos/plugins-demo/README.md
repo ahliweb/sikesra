@@ -62,29 +62,6 @@ pnpm dev
 open http://localhost:4321
 ```
 
-## SIKESRA-only Validation Mode
-
-To validate only the SIKESRA plugin surface without loading the other demo plugins:
-
-```bash
-AWCMS_ENABLED_PLUGINS=sikesra pnpm dev
-```
-
-Expected result in this mode:
-
-- admin navigation only shows SIKESRA plugin pages
-- non-SIKESRA plugin pages do not appear
-- `/sikesra` and `/_emdash/admin/plugins/sikesra/*` remain available
-
-Rollback to normal multi-plugin demo behavior:
-
-```bash
-unset AWCMS_ENABLED_PLUGINS
-pnpm dev
-```
-
-Or simply start the demo without `AWCMS_ENABLED_PLUGINS` set.
-
 ## Testing Plugin Hooks
 
 1. Open the admin at `http://localhost:4321/_emdash/admin`

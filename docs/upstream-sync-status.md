@@ -1,23 +1,8 @@
 # Upstream Sync Status
 
-## Status
+## 2026-05-22 Update
 
-- Current workspace role: in-place `awcmsmicro-dev`
-- Parent sibling-tree layout: not yet materialized in this repo root
-- EmDash upstream baseline: current repo history plus documented SIKESRA overlay
-
-## Last Refactor Step
-
-- Added canonical protected-path scaffolds for template, plugin, demo, docs, and e2e targets.
-- Updated sync and validation scripts to work in both parent-layout and in-place workspace modes.
-- Promoted `packages/plugins/awcms-micro-sikesra/` to the primary package with copied source, tests, migrations, and seeds.
-
-## Blocking Items For Full Parent Layout
-
-- Moving the entire active pnpm workspace under a new `awcmsmicro-dev/` child directory
-- Adding a tracked `emdash-latest/` sibling tree or an external sync source
-- Retiring the remaining legacy compatibility shim and updating external consumers to `@ahliweb/awcms-micro-sikesra`
-
-## Validation Notes
-
-Record lint, typecheck, test, and build results for each future upstream sync here.
+- Upstream `emdash-latest` was successfully synchronized from `https://github.com/emdash-cms/emdash.git`.
+- `awcmsmicro-dev` was rebuilt with all protected SIKESRA paths correctly preserved.
+- **Node Environment**: Updated local Node.js to v22.22.3 via `nvm` to support upstream's `pnpm@11` requirement (which depends on `node:sqlite`).
+- **Validation Status**: `pnpm lint:quick` currently fails due to 139 upstream `oxlint` violations related to `no-underscore-dangle` rules. These lint failures originate directly from the `emdash-latest` upstream codebase and block the `validate-after-sync.sh` script from completing its `test` and `build` pipeline natively. This is a known upstream issue and has been documented.

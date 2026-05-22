@@ -28,18 +28,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
 		return apiError("INVALID_REQUEST", "Plugin ID required", 400);
 	}
 
-	const sandboxedPluginEntries = emdash.sandboxedPluginEntries ?? [];
-	const sandboxedPlugins = emdash.sandboxedPlugins ?? new Map();
-	const loadedSandboxedPluginEntries = sandboxedPluginEntries.filter((entry) =>
-		sandboxedPlugins.has(`${entry.id}:${entry.version}`),
-	);
-
-	const result = await handlePluginDisable(
-		emdash.db,
-		emdash.configuredPlugins,
-		loadedSandboxedPluginEntries,
-		id,
-	);
+	const result = await handlePluginDisable(emdash.db, emdash.configuredPlugins, id);
 
 	if (!result.success) return unwrapResult(result);
 

@@ -45,10 +45,10 @@ async function readPackageJson(cwd: string): Promise<PackageJson | null> {
 }
 
 async function runSqlFile(db: ReturnType<typeof createDatabase>, filePath: string): Promise<void> {
-	const sqlContent = await readFile(filePath, "utf-8");
+	const contents = await readFile(filePath, "utf-8");
 
 	// Remove single-line comments
-	const withoutComments = sqlContent
+	const withoutComments = contents
 		.split("\n")
 		.filter((line) => !line.trim().startsWith("--"))
 		.join("\n");
@@ -60,7 +60,7 @@ async function runSqlFile(db: ReturnType<typeof createDatabase>, filePath: strin
 		.filter((s) => s.length > 0);
 
 	for (const statement of statements) {
-		await sql.raw(statement).execute(db);
+		await db.executeQuery(sql.raw(statement).compile(db));
 	}
 }
 
@@ -70,7 +70,6 @@ async function runSqlFile(db: ReturnType<typeof createDatabase>, filePath: strin
 async function isAlreadyInitialized(db: ReturnType<typeof createDatabase>): Promise<boolean> {
 	try {
 		// Use raw SQL since this runs on an untyped database connection
-		const { sql } = await import("kysely");
 		const result = await sql<{
 			count: number;
 		}>`SELECT COUNT(id) as count FROM _emdash_collections`.execute(db);

@@ -178,6 +178,13 @@ export function LoginPage({ redirectUrl = "/_emdash/admin" }: LoginPageProps) {
 		queryFn: fetchAuthMode,
 	});
 
+	// Redirect to admin when using external auth (authentication is handled externally)
+	React.useEffect(() => {
+		if (authInfo?.authMode && authInfo.authMode !== "passkey") {
+			window.location.href = safeRedirectUrl;
+		}
+	}, [authInfo, safeRedirectUrl]);
+
 	// Check for error in URL (from OAuth/provider redirect)
 	React.useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -200,55 +207,7 @@ export function LoginPage({ redirectUrl = "/_emdash/admin" }: LoginPageProps) {
 	const buttonProviders = authProviderList.filter((p) => p.LoginButton);
 
 	// Show loading state while checking auth mode
-	const usesExternalAuth = authInfo?.authMode && authInfo.authMode !== "passkey";
-	const shouldShowExternalAuthPrompt = usesExternalAuth && !authInfo?.devPasskeyFallback;
-	const languageSelector =
-		SUPPORTED_LOCALES.length > 1 ? (
-			<div className="mt-6 flex justify-center">
-				<Select
-					aria-label={t`Language`}
-					className="w-48"
-					value={locale}
-					onValueChange={(v) => v && setLocale(v)}
-					items={Object.fromEntries(SUPPORTED_LOCALES.map((l) => [l.code, l.label]))}
-				/>
-			</div>
-		) : null;
-
-	if (authModeLoading || shouldShowExternalAuthPrompt) {
-		if (shouldShowExternalAuthPrompt && authInfo?.authMode) {
-			return (
-				<div className="min-h-screen flex items-center justify-center bg-kumo-base p-4">
-					<div className="w-full max-w-md text-center">
-						<BrandLogo className="h-10 mx-auto mb-6" />
-						{urlError && (
-							<div className="mb-6 rounded-lg bg-kumo-danger/10 border border-kumo-danger/20 p-4 text-sm text-kumo-danger text-start">
-								{urlError}
-							</div>
-						)}
-						<div className="bg-kumo-base border rounded-lg shadow-sm p-6 space-y-4">
-							<h1 className="text-2xl font-semibold text-kumo-default">{t`Sign in to your site`}</h1>
-							<p className="text-sm text-kumo-subtle">
-								{
-									t`Authentication is managed by an external provider (${authInfo.authMode}). Passkey settings are not available when using external authentication.`
-								}
-							</p>
-							<Button
-								variant="primary"
-								className="w-full justify-center"
-								onClick={() => {
-									window.location.href = safeRedirectUrl;
-								}}
-							>
-								{t`Continue →`}
-							</Button>
-						</div>
-						{languageSelector}
-					</div>
-				</div>
-			);
-		}
-
+	if (authModeLoading || (authInfo?.authMode && authInfo.authMode !== "passkey")) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-kumo-base p-4">
 				<div className="flex flex-col items-center">
@@ -380,7 +339,17 @@ export function LoginPage({ redirectUrl = "/_emdash/admin" }: LoginPageProps) {
 				)}
 
 				{/* Language selector — only shown when multiple locales are available */}
-				{languageSelector}
+				{SUPPORTED_LOCALES.length > 1 && (
+					<div className="mt-6 flex justify-center">
+						<Select
+							aria-label={t`Language`}
+							className="w-48"
+							value={locale}
+							onValueChange={(v) => v && setLocale(v)}
+							items={Object.fromEntries(SUPPORTED_LOCALES.map((l) => [l.code, l.label]))}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);

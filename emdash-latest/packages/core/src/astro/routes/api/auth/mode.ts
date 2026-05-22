@@ -44,7 +44,6 @@ export const GET: APIRoute = async ({ locals }) => {
 		{
 			data: {
 				authMode: authMode.type === "external" ? authMode.providerType : "passkey",
-				devPasskeyFallback: import.meta.env.DEV && authMode.type === "external",
 				signupEnabled,
 				providers,
 			},

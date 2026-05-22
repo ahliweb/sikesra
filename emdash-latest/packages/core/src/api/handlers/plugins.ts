@@ -5,7 +5,6 @@
 import type { Kysely } from "kysely";
 
 import type { Database } from "../../database/types.js";
-import type { SandboxedPluginEntry } from "../../emdash-runtime.js";
 import { PluginStateRepository, type PluginState, type PluginStatus } from "../../plugins/state.js";
 import type { ResolvedPlugin } from "../../plugins/types.js";
 import type { ApiResult } from "../types.js";
@@ -17,8 +16,12 @@ export interface PluginInfo {
 	package?: string;
 	enabled: boolean;
 	status: PluginStatus;
-	source?: "config" | "marketplace";
+	source?: "config" | "marketplace" | "registry";
 	marketplaceVersion?: string;
+	/** Publisher DID, for registry-source plugins */
+	registryPublisherDid?: string;
+	/** Publisher slug, for registry-source plugins */
+	registrySlug?: string;
 	capabilities: string[];
 	hasAdminPages: boolean;
 	hasDashboardWidgets: boolean;
@@ -40,63 +43,15 @@ export interface PluginResponse {
 	item: PluginInfo;
 }
 
-interface PluginCatalogEntry {
-	id: string;
-	version: string;
-	capabilities: string[];
-	adminPages: Array<{ path: string; label?: string; icon?: string }>;
-	adminWidgets: Array<{ id: string; title?: string; size?: string }>;
-	hasHooks: boolean;
-}
-
 function marketplaceIconUrl(marketplaceUrl: string, pluginId: string): string {
 	return `${marketplaceUrl}/api/v1/plugins/${encodeURIComponent(pluginId)}/icon`;
-}
-
-function toPluginCatalogEntry(
-	plugin: ResolvedPlugin | SandboxedPluginEntry,
-): PluginCatalogEntry {
-	if ("admin" in plugin) {
-		return {
-			id: plugin.id,
-			version: plugin.version,
-			capabilities: plugin.capabilities,
-			adminPages: plugin.admin.pages ?? [],
-			adminWidgets: plugin.admin.widgets ?? [],
-			hasHooks: Object.keys(plugin.hooks ?? {}).length > 0,
-		};
-	}
-
-	return {
-		id: plugin.id,
-		version: plugin.version,
-		capabilities: plugin.capabilities,
-		adminPages: plugin.adminPages ?? [],
-		adminWidgets: plugin.adminWidgets ?? [],
-		hasHooks: false,
-	};
-}
-
-function mergePluginCatalog(
-	configuredPlugins: ResolvedPlugin[],
-	sandboxedPluginEntries: SandboxedPluginEntry[],
-): PluginCatalogEntry[] {
-	const merged = configuredPlugins.map(toPluginCatalogEntry);
-	const configuredIds = new Set(merged.map((plugin) => plugin.id));
-
-	for (const entry of sandboxedPluginEntries) {
-		if (configuredIds.has(entry.id)) continue;
-		merged.push(toPluginCatalogEntry(entry));
-	}
-
-	return merged;
 }
 
 /**
  * Get plugin info from configured plugin and database state
  */
 function buildPluginInfo(
-	plugin: PluginCatalogEntry,
+	plugin: ResolvedPlugin,
 	state: PluginState | null,
 	marketplaceUrl?: string,
 ): PluginInfo {
@@ -114,10 +69,12 @@ function buildPluginInfo(
 		status,
 		source: state?.source ?? "config",
 		marketplaceVersion: state?.marketplaceVersion ?? undefined,
+		registryPublisherDid: state?.registryPublisherDid ?? undefined,
+		registrySlug: state?.registrySlug ?? undefined,
 		capabilities: plugin.capabilities,
-		hasAdminPages: plugin.adminPages.length > 0,
-		hasDashboardWidgets: plugin.adminWidgets.length > 0,
-		hasHooks: plugin.hasHooks,
+		hasAdminPages: (plugin.admin.pages?.length ?? 0) > 0,
+		hasDashboardWidgets: (plugin.admin.widgets?.length ?? 0) > 0,
+		hasHooks: Object.keys(plugin.hooks ?? {}).length > 0,
 		installedAt: state?.installedAt?.toISOString(),
 		activatedAt: state?.activatedAt?.toISOString() ?? undefined,
 		deactivatedAt: state?.deactivatedAt?.toISOString() ?? undefined,
@@ -133,7 +90,6 @@ function buildPluginInfo(
 export async function handlePluginList(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
-	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	marketplaceUrl?: string,
 ): Promise<ApiResult<PluginListResponse>> {
 	try {
@@ -141,17 +97,17 @@ export async function handlePluginList(
 		const allStates = await stateRepo.getAll();
 		const stateMap = new Map(allStates.map((s) => [s.pluginId, s]));
 
-		const availablePlugins = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries);
-		const configuredIds = new Set(availablePlugins.map((p) => p.id));
+		const configuredIds = new Set(configuredPlugins.map((p) => p.id));
 
-		const items = availablePlugins.map((plugin) => {
+		const items = configuredPlugins.map((plugin) => {
 			const state = stateMap.get(plugin.id) ?? null;
 			return buildPluginInfo(plugin, state, marketplaceUrl);
 		});
 
-		// Include marketplace-installed plugins that aren't in the configured plugins list
+		// Include runtime-installed plugins (marketplace or registry) that
+		// aren't in the configured plugins list.
 		for (const state of allStates) {
-			if (state.source !== "marketplace") continue;
+			if (state.source !== "marketplace" && state.source !== "registry") continue;
 			if (configuredIds.has(state.pluginId)) continue;
 
 			items.push({
@@ -160,8 +116,10 @@ export async function handlePluginList(
 				version: state.marketplaceVersion ?? state.version,
 				enabled: state.status === "active",
 				status: state.status,
-				source: "marketplace",
+				source: state.source,
 				marketplaceVersion: state.marketplaceVersion ?? undefined,
+				registryPublisherDid: state.registryPublisherDid ?? undefined,
+				registrySlug: state.registrySlug ?? undefined,
 				capabilities: [],
 				hasAdminPages: false,
 				hasDashboardWidgets: false,
@@ -170,7 +128,10 @@ export async function handlePluginList(
 				activatedAt: state.activatedAt?.toISOString() ?? undefined,
 				deactivatedAt: state.deactivatedAt?.toISOString() ?? undefined,
 				description: state.description ?? undefined,
-				iconUrl: marketplaceUrl ? marketplaceIconUrl(marketplaceUrl, state.pluginId) : undefined,
+				iconUrl:
+					state.source === "marketplace" && marketplaceUrl
+						? marketplaceIconUrl(marketplaceUrl, state.pluginId)
+						: undefined,
 			});
 		}
 
@@ -195,14 +156,11 @@ export async function handlePluginList(
 export async function handlePluginGet(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
-	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 	marketplaceUrl?: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
-			(p) => p.id === pluginId,
-		);
+		const plugin = configuredPlugins.find((p) => p.id === pluginId);
 		if (!plugin) {
 			return {
 				success: false,
@@ -232,35 +190,67 @@ export async function handlePluginGet(
 }
 
 /**
+ * Build a minimal `PluginInfo` for a plugin that exists only as a
+ * `_plugin_state` row (marketplace or registry install), with no
+ * matching `configuredPlugins` entry. Runtime-installed plugins don't
+ * have ResolvedPlugin metadata until they're loaded into the sandbox,
+ * so the enable/disable response surfaces the state-row view as a
+ * stable shape the admin UI already understands.
+ */
+function buildStateOnlyPluginInfo(
+	state: NonNullable<Awaited<ReturnType<PluginStateRepository["get"]>>>,
+): PluginInfo {
+	return {
+		id: state.pluginId,
+		name: state.displayName || state.pluginId,
+		version: state.marketplaceVersion ?? state.version,
+		enabled: state.status === "active",
+		status: state.status,
+		source: state.source,
+		marketplaceVersion: state.marketplaceVersion ?? undefined,
+		registryPublisherDid: state.registryPublisherDid ?? undefined,
+		registrySlug: state.registrySlug ?? undefined,
+		capabilities: [],
+		hasAdminPages: false,
+		hasDashboardWidgets: false,
+		hasHooks: false,
+		installedAt: state.installedAt?.toISOString(),
+		activatedAt: state.activatedAt?.toISOString() ?? undefined,
+		deactivatedAt: state.deactivatedAt?.toISOString() ?? undefined,
+		description: state.description ?? undefined,
+	};
+}
+
+/**
  * Enable a plugin
  */
 export async function handlePluginEnable(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
-	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
-			(p) => p.id === pluginId,
-		);
-		if (!plugin) {
-			return {
-				success: false,
-				error: {
-					code: "NOT_FOUND",
-					message: `Plugin not found: ${pluginId}`,
-				},
-			};
+		const stateRepo = new PluginStateRepository(db);
+		const plugin = configuredPlugins.find((p) => p.id === pluginId);
+
+		// Configured plugin: use its version as the source of truth.
+		if (plugin) {
+			const state = await stateRepo.enable(pluginId, plugin.version);
+			return { success: true, data: { item: buildPluginInfo(plugin, state) } };
 		}
 
-		const stateRepo = new PluginStateRepository(db);
-		const state = await stateRepo.enable(pluginId, plugin.version);
-
-		return {
-			success: true,
-			data: { item: buildPluginInfo(plugin, state) },
-		};
+		// Runtime-installed plugin (marketplace or registry): only
+		// addressable through the state row. Fall back to the existing
+		// version recorded there.
+		const existing = await stateRepo.get(pluginId);
+		if (!existing || (existing.source !== "marketplace" && existing.source !== "registry")) {
+			return {
+				success: false,
+				error: { code: "NOT_FOUND", message: `Plugin not found: ${pluginId}` },
+			};
+		}
+		const enabled = await stateRepo.enable(pluginId, existing.version);
+		return { success: true, data: { item: buildStateOnlyPluginInfo(enabled) } };
 	} catch {
 		return {
 			success: false,
@@ -278,30 +268,26 @@ export async function handlePluginEnable(
 export async function handlePluginDisable(
 	db: Kysely<Database>,
 	configuredPlugins: ResolvedPlugin[],
-	sandboxedPluginEntries: SandboxedPluginEntry[] = [],
 	pluginId: string,
 ): Promise<ApiResult<PluginResponse>> {
 	try {
-		const plugin = mergePluginCatalog(configuredPlugins, sandboxedPluginEntries).find(
-			(p) => p.id === pluginId,
-		);
-		if (!plugin) {
-			return {
-				success: false,
-				error: {
-					code: "NOT_FOUND",
-					message: `Plugin not found: ${pluginId}`,
-				},
-			};
+		const stateRepo = new PluginStateRepository(db);
+		const plugin = configuredPlugins.find((p) => p.id === pluginId);
+
+		if (plugin) {
+			const state = await stateRepo.disable(pluginId, plugin.version);
+			return { success: true, data: { item: buildPluginInfo(plugin, state) } };
 		}
 
-		const stateRepo = new PluginStateRepository(db);
-		const state = await stateRepo.disable(pluginId, plugin.version);
-
-		return {
-			success: true,
-			data: { item: buildPluginInfo(plugin, state) },
-		};
+		const existing = await stateRepo.get(pluginId);
+		if (!existing || (existing.source !== "marketplace" && existing.source !== "registry")) {
+			return {
+				success: false,
+				error: { code: "NOT_FOUND", message: `Plugin not found: ${pluginId}` },
+			};
+		}
+		const disabled = await stateRepo.disable(pluginId, existing.version);
+		return { success: true, data: { item: buildStateOnlyPluginInfo(disabled) } };
 	} catch {
 		return {
 			success: false,

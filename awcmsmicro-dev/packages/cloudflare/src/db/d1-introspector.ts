@@ -98,6 +98,7 @@ export class D1Introspector implements DatabaseIntrospector {
 			result.push({
 				name: tableName,
 				isView: tableType === "view",
+				// D1/SQLite has no concept of foreign tables (FDW); always false.
 				isForeign: false,
 				columns: columns.rows.map((col) => ({
 					name: col.name,
@@ -111,13 +112,5 @@ export class D1Introspector implements DatabaseIntrospector {
 		}
 
 		return result;
-	}
-
-	async getMetadata(options?: {
-		withInternalKyselyTables?: boolean;
-	}): Promise<{ tables: TableMetadata[] }> {
-		return {
-			tables: await this.getTables(options),
-		};
 	}
 }

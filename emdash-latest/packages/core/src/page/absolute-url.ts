@@ -44,17 +44,9 @@ const OTHER_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
  * exploitable, plus more pathological shapes like leading newlines that
  * could inject across header boundaries downstream.
  */
+// eslint-disable-next-line eslint(no-control-regex) -- intentional: rejecting control chars is the whole point of this regex
+const WHITESPACE_OR_CONTROL_RE = /[\s\u0000-\u001f\u007f-\u009f]/;
 const TRAILING_SLASH_RE = /\/$/;
-
-function hasWhitespaceOrControl(value: string): boolean {
-	for (const character of value) {
-		if (/\s/.test(character)) return true;
-		const codePoint = character.codePointAt(0);
-		if (codePoint === undefined) continue;
-		if (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)) return true;
-	}
-	return false;
-}
 
 /**
  * `URL.origin` returns the literal string `"null"` (not the `null` value)
@@ -132,7 +124,7 @@ export function absolutizeMediaUrl(
 	// Any whitespace or control character means this isn't a real media URL.
 	// Rejecting up front prevents scheme-regex evasion (`  https://x` would
 	// otherwise fall through to the relative-path join below).
-	if (hasWhitespaceOrControl(url)) return null;
+	if (WHITESPACE_OR_CONTROL_RE.test(url)) return null;
 
 	if (HTTP_URL_RE.test(url)) return url;
 	if (PASSTHROUGH_SCHEME_RE.test(url)) return url;

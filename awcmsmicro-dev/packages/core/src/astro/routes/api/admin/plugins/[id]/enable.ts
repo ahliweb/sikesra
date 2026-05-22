@@ -28,20 +28,19 @@ export const POST: APIRoute = async ({ params, locals }) => {
 		return apiError("INVALID_REQUEST", "Plugin ID required", 400);
 	}
 
-	const sandboxedPluginEntries = emdash.sandboxedPluginEntries ?? [];
-	const sandboxedPlugins = emdash.sandboxedPlugins ?? new Map();
-	const loadedSandboxedPluginEntries = sandboxedPluginEntries.filter((entry) =>
-		sandboxedPlugins.has(`${entry.id}:${entry.version}`),
-	);
-
-	const result = await handlePluginEnable(
-		emdash.db,
-		emdash.configuredPlugins,
-		loadedSandboxedPluginEntries,
-		id,
-	);
+	const result = await handlePluginEnable(emdash.db, emdash.configuredPlugins, id);
 
 	if (!result.success) return unwrapResult(result);
+
+	// If this is a runtime-installed plugin (marketplace or registry),
+	// the sandbox bundle may not be in memory yet -- a sync reloads it
+	// from R2 so the just-enabled plugin can actually run hooks.
+	const source = result.data.item.source;
+	if (source === "registry") {
+		await emdash.syncRegistryPlugins();
+	} else if (source === "marketplace") {
+		await emdash.syncMarketplacePlugins();
+	}
 
 	await emdash.setPluginStatus(id, "active");
 	await setCronTasksEnabled(emdash.db, id, true);
