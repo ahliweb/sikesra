@@ -1,40 +1,20 @@
 # Divergence Log
 
-## 2026-05-22 Parent Structure Adaptation
+This file records deliberate downstream differences from upstream EmDash and from a plain `awcms-micro` maintenance workspace.
 
-### Divergence
+## Active Divergence Categories
 
-The repository was not physically re-rooted into:
+- SIKESRA-specific plugin behavior under `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/`
+- SIKESRA-specific template boundaries under `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/` and `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`
+- SIKESRA-specific docs under `awcmsmicro-dev/docs/awcms-micro/sikesra/`
+- Transitional compatibility shim at `awcmsmicro-dev/packages/plugins/sikesra/`
 
-```txt
-sikesra/
-  emdash-latest/
-  awcmsmicro-dev/
-```
+## Recording Rules
 
-### Reason
+For each non-trivial divergence, record:
 
-This repository is already the active pnpm workspace and test root. Moving the entire tree in one change would create a high-risk repository rewrite with broad path churn.
-
-### Current Behavior
-
-- The repo root acts as the implementation workspace.
-- Canonical prompt paths are scaffolded in-place.
-- The SIKESRA runtime plugin remains at `packages/plugins/sikesra/`.
-- Parent-layout sync scripts run against either `awcmsmicro-dev/` or the current root.
-
-### Risk
-
-- The current layout does not yet satisfy the literal parent/sibling structure from the prompt.
-- Runtime imports still point at the legacy plugin package and demo wiring.
-
-### Rollback
-
-- Remove the parent-architecture docs and scripts.
-- Revert `README.md`, `AGENTS.md`, and `package.json` script additions.
-
-### Tests
-
-- `pnpm lint:quick`
-- `pnpm typecheck`
-- targeted SIKESRA plugin tests where feasible
+1. The affected path.
+2. Why the divergence exists.
+3. Whether the change is temporary or intended long-term.
+4. How to roll it back or upstream it.
+5. What verification was used.

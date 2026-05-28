@@ -1,8 +1,8 @@
 # Repository Structure
 
-## Target Pattern
+## Parent Workspace Layout
 
-The target parent repository shape from `tmp/prompt-refactor` is:
+This repository follows the same parent layout used by `awcms-micro`:
 
 ```txt
 sikesra/
@@ -12,25 +12,35 @@ sikesra/
   scripts/
 ```
 
-## Current In-Place Mapping
+## Directory Roles
 
-This repository currently maps to the `awcmsmicro-dev/` subtree so the existing pnpm workspace remains stable during the refactor.
-
-| Target role | Current path |
+| Path | Role |
 | --- | --- |
-| `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` | `packages/plugins/awcms-micro-sikesra/` canonical primary package |
-| `awcmsmicro-dev/templates/awcms-micro-sikesra/` | `templates/awcms-micro-sikesra/` scaffold |
-| `awcmsmicro-dev/templates/awcms-micro-sikesra-cloudflare/` | `templates/awcms-micro-sikesra-cloudflare/` scaffold |
-| `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/` | `demos/awcms-micro-sikesra-cloudflare/` scaffold |
-| `awcmsmicro-dev/docs/awcms-micro/sikesra/` | `docs/awcms-micro/sikesra/` |
-| `awcmsmicro-dev/e2e/awcms-micro/sikesra/` | `e2e/awcms-micro/sikesra/` scaffold |
-| `awcmsmicro-dev` sync control docs | `docs/*.md` in this repo root |
-| protected path inventory | `scripts/awcmsmicro-dev-protected-paths.txt` |
+| `emdash-latest/` | Clean upstream EmDash reference tree |
+| `awcmsmicro-dev/` | Active downstream implementation workspace |
+| `docs/` | Root governance, sync, and operator documentation |
+| `scripts/` | Root maintenance and validation scripts |
 
-## Intentionally Deferred
+## Approved Downstream Boundaries
 
-- Literal nesting of the entire current workspace under `awcmsmicro-dev/`
-- A checked-in `emdash-latest/` sibling tree inside this repo root
-- Final retirement of the legacy compatibility shim at `packages/plugins/sikesra/`
+| Boundary | Purpose |
+| --- | --- |
+| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/` | Example downstream template |
+| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/` | Example downstream Cloudflare template |
+| `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` | Canonical SIKESRA plugin package |
+| `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/` | Reserved downstream demo boundary |
+| `awcmsmicro-dev/docs/awcms-micro/sikesra/` | Downstream architecture and product docs |
+| `awcmsmicro-dev/e2e/awcms-micro/sikesra/` | Downstream E2E boundary |
 
-These are tracked as known divergences so the workspace remains buildable while the architecture policy is added first.
+## Supporting Control Files
+
+- Protected path inventory: `scripts/awcmsmicro-dev-protected-paths.txt`
+- Boundary policy: `docs/awcms-micro-implementation-boundaries.md`
+- Sync workflow: `docs/synchronization-workflow.md`
+- Divergence tracking: `docs/divergence-log.md`
+
+## Current Notes
+
+- `awcmsmicro-dev/` is the editable downstream tree.
+- `emdash-latest/` is retained as the upstream comparison baseline.
+- The legacy compatibility shim at `awcmsmicro-dev/packages/plugins/sikesra/` still exists and should be treated as transitional.

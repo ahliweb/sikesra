@@ -1,8 +1,8 @@
 # Canonical protected paths for the eventual awcmsmicro-dev tree.
 # When the repository root itself acts as awcmsmicro-dev, these same
 # relative paths are resolved from the current root.
-templates/awcms-micro-sikesra
-templates/awcms-micro-sikesra-cloudflare
+templates/awcms-micro-sikesraTemplate
+templates/awcms-micro-sikesraTemplate-cloudflare
 packages/plugins/awcms-micro-sikesra
 demos/awcms-micro-sikesra-cloudflare
 docs/awcms-micro/sikesra

@@ -1,22 +1,18 @@
 # AWCMSMicro Dev Protected Paths
 
-## Current Protected Paths
-
 The active protected-path list lives in `scripts/awcmsmicro-dev-protected-paths.txt`.
 
-Current entries match the canonical prompt paths directly:
+## Current Protected Set
 
-- `templates/awcms-micro-sikesra`
-- `templates/awcms-micro-sikesra-cloudflare`
-- `packages/plugins/awcms-micro-sikesra`
-- `demos/awcms-micro-sikesra-cloudflare`
-- `docs/awcms-micro/sikesra`
-- `e2e/awcms-micro/sikesra`
+- `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate`
+- `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare`
+- `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra`
+- `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare`
+- `awcmsmicro-dev/docs/awcms-micro/sikesra`
+- `awcmsmicro-dev/e2e/awcms-micro/sikesra`
 
-## Why They Differ From The Prompt
+## Intent
 
-`tmp/prompt-refactor` assumes a parent repository with `awcmsmicro-dev/` as a child directory. This repository is still the implementation workspace itself, so the validation and sync scripts resolve those canonical paths from either `awcmsmicro-dev/` or the current repo root.
+The rebuild process may replace everything else in `awcmsmicro-dev/` when regenerating the downstream workspace from `emdash-latest/`. Only the protected paths are preserved.
 
-## Required Migration Later
-
-When the parent split happens, the same protected-path list can stay in place. Only the legacy compatibility allowances in the validation script should be removed.
+See `docs/awcms-micro-implementation-boundaries.md` for the policy and `docs/synchronization-workflow.md` for the rebuild flow.

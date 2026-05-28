@@ -1,8 +1,21 @@
 # Upstream Sync Status
 
-## 2026-05-22 Update
+## Baseline
 
-- Upstream `emdash-latest` was successfully synchronized from `https://github.com/emdash-cms/emdash.git`.
-- `awcmsmicro-dev` was rebuilt with all protected SIKESRA paths correctly preserved.
-- **Node Environment**: Updated local Node.js to v22.22.3 via `nvm` to support upstream's `pnpm@11` requirement (which depends on `node:sqlite`).
-- **Validation Status**: `pnpm lint:quick` currently fails due to 139 upstream `oxlint` violations related to `no-underscore-dangle` rules. These lint failures originate directly from the `emdash-latest` upstream codebase and block the `validate-after-sync.sh` script from completing its `test` and `build` pipeline natively. This is a known upstream issue and has been documented.
+- Upstream source of truth: `https://github.com/emdash-cms/emdash`
+- Local upstream mirror: `emdash-latest/`
+- Local downstream workspace: `awcmsmicro-dev/`
+
+## Current State
+
+- The repository is arranged as a parent maintenance workspace.
+- Downstream SIKESRA paths are preserved through the protected-path policy.
+- The canonical non-Cloudflare template path is `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/`.
+- The canonical Cloudflare template path is `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`.
+
+## Update Procedure
+
+1. Run `bash scripts/update-emdash-latest.sh`.
+2. Run `bash scripts/update-awcmsmicro-dev.sh`.
+3. Run `bash scripts/validate-after-sync.sh`.
+4. Record any divergence in `docs/divergence-log.md`.
