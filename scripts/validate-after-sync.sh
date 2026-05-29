@@ -10,7 +10,7 @@ fi
 
 bash "$repo_root/scripts/validate-awcmsmicro-boundaries.sh"
 
-pnpm --dir "$implementation_root" install --frozen-lockfile || pnpm --dir "$implementation_root" install
+pnpm --dir "$implementation_root" install --frozen-lockfile
 pnpm --dir "$implementation_root" lint:quick
 pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesra typecheck
 pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesra test

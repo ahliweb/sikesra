@@ -43,10 +43,12 @@ if [[ -f "$repo_root/.env" ]]; then
   set +a
 fi
 
+dry_run_cache_dir="${EMDASH_UPSTREAM_CACHE_DIR:-/tmp/opencode/emdash-upstream-latest}"
+
 if $dry_run; then
   bash "$repo_root/scripts/update-emdash-latest.sh" --dry-run
   echo ""
-  bash "$repo_root/scripts/update-awcmsmicro-dev.sh" --dry-run
+	EMDASH_LATEST_DIR="$dry_run_cache_dir" bash "$repo_root/scripts/update-awcmsmicro-dev.sh" --dry-run
   exit 0
 fi
 

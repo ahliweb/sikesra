@@ -148,14 +148,14 @@ awcmsmicro-dev/templates/my-template/
 
 ## Backup and Recovery
 
-Sync automatically creates backups in `update-backup/sync/`:
+Sync automatically creates backups in `update-backup/awcmsmicro-dev/`:
 
 ```bash
 # List backups
-ls update-backup/sync/
+ls update-backup/awcmsmicro-dev/
 
 # Restore from a specific backup
-cp -a update-backup/sync/20260529-120000/awcmsmicro-dev/packages/plugins/awcms-sikesra/ \
+cp -a update-backup/awcmsmicro-dev/20260529-120000/packages/plugins/awcms-sikesra/ \
        awcmsmicro-dev/packages/plugins/awcms-sikesra/
 ```
 

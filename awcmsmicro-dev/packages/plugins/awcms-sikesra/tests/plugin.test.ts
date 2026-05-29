@@ -847,10 +847,12 @@ describe("awcms sikesra plugin", () => {
 	it("keeps the manifest aligned with the implemented plugin surface", () => {
 		const manifestPath = resolve(import.meta.dirname, "../emdash-plugin.jsonc");
 		const manifest = parseJsoncObject<any>(readFileSync(manifestPath, "utf8"));
+		const manifestPagePaths = manifest.admin.pages.map((page: { path: string }) => page.path);
+		const runtimePagePaths = AWCMS_SIKESRA_ADMIN_PAGES.map((page) => page.path);
 
 		expect(manifest.slug).toBe("awcms-sikesra");
 		expect(manifest.capabilities).toEqual([...AWCMS_SIKESRA_CAPABILITIES]);
-		expect(manifest.admin.pages).toHaveLength(14);
+		expect(manifestPagePaths).toEqual(runtimePagePaths);
 		expect(manifest.admin.widgets[0].id).toBe("governance-status");
 		expect(manifest.admin.widgets[1].id).toBe("access-rights-health");
 		expect(manifest.admin.widgets[2].id).toBe("abac-policy-status");

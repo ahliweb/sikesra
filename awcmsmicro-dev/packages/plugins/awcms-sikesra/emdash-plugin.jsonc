@@ -56,18 +56,20 @@
 		"pages": [
 			{ "path": "/overview", "label": "Overview", "icon": "stack" },
 			{ "path": "/registry", "label": "Registry", "icon": "grid" },
-			{ "path": "/verification", "label": "Verification", "icon": "check" },
 			{ "path": "/documents", "label": "Documents", "icon": "file" },
-			{ "path": "/reports", "label": "Reports", "icon": "chart" },
 			{ "path": "/import", "label": "Import", "icon": "arrow-up-from-bracket" },
+			{ "path": "/verification", "label": "Verification", "icon": "check" },
 			{ "path": "/audit", "label": "Audit", "icon": "list" },
+			{ "path": "/reports", "label": "Reports", "icon": "chart" },
 			{ "path": "/access/permissions", "label": "Permissions", "icon": "lock" },
 			{ "path": "/access/roles", "label": "Roles", "icon": "users" },
 			{ "path": "/access/matrix", "label": "Role Matrix", "icon": "grid" },
 			{ "path": "/access/preview", "label": "Access Preview", "icon": "eye" },
 			{ "path": "/abac/attributes", "label": "ABAC Attributes", "icon": "sliders" },
 			{ "path": "/abac/policies", "label": "ABAC Policies", "icon": "shield" },
-			{ "path": "/abac/preview", "label": "ABAC Preview", "icon": "target" }
+			{ "path": "/abac/preview", "label": "ABAC Preview", "icon": "target" },
+			{ "path": "/regions", "label": "Official Regions", "icon": "globe" },
+			{ "path": "/data-types", "label": "Sikesra Data Types", "icon": "list" }
 		],
 		"widgets": [
 			{ "id": "governance-status", "title": "Governance Status", "size": "half" },
