@@ -1,0 +1,56 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import Base from "../layouts/Base.astro";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+import { getPublicCopy } from "../utils/public-copy";
+
+const [{ entries: posts, cacheHint: postsCacheHint }, { entries: newsItems, cacheHint: newsCacheHint }, { entries: pages, cacheHint: pagesCacheHint }] = await Promise.all([
+	getEmDashCollection("posts", { limit: 100 }),
+	getEmDashCollection("news", { limit: 100 }),
+	getEmDashCollection("pages", { limit: 100 }),
+]);
+
+if (Astro.cache?.enabled) {
+	Astro.cache.set(postsCacheHint);
+	Astro.cache.set(newsCacheHint);
+	Astro.cache.set(pagesCacheHint);
+}
+
+const { siteTitle } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const copy = getPublicCopy(currentLocale);
+
+const counts = [
+	{ label: copy.counts.posts, value: posts.length },
+	{ label: copy.counts.news, value: newsItems.length },
+	{ label: copy.counts.pages, value: pages.length },
+];
+---
+
+<Base title={copy.aggregateTitle} description={copy.aggregateDescription} showFooterWidgets={false}>
+	<section class="card" style="margin-bottom:2rem;">
+		<p class="kicker">{copy.aggregateKicker}</p>
+		<h1 style="font-size:clamp(2.25rem,5vw,3.5rem);margin:0 0 1rem;">{copy.aggregateHeading(siteTitle)}</h1>
+		<p style="color:var(--text-muted);margin-bottom:0;">{copy.aggregateIntro}</p>
+	</section>
+
+	<section class="card" style="margin-bottom:2rem;">
+		<h2 style="margin-top:0;">{copy.summary}</h2>
+		<div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+			{counts.map((item) => (
+				<div style="border:1px solid rgba(15,23,42,0.08);border-radius:1rem;padding:1rem;background:#fff;">
+					<div style="font-size:0.9rem;color:var(--text-muted);">{item.label}</div>
+					<div style="font-size:2rem;font-weight:800;line-height:1.1;">{item.value}</div>
+				</div>
+			))}
+		</div>
+	</section>
+
+	<section class="card">
+		<h2 style="margin-top:0;">{copy.privacyNote}</h2>
+		<p style="color:var(--text-muted);">{copy.privacyNoteDescription}</p>
+		<p style="margin-bottom:0;"><a href="/_emdash/admin">{copy.openAdmin}</a> {copy.openAdminDescription}</p>
+	</section>
+</Base>

@@ -1,0 +1,163 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import { Image } from "emdash/ui";
+import Base from "../layouts/Base.astro";
+import { resolveEntrySlug, toLocalePath } from "../utils/locale-path";
+import { getPublicCopy } from "../utils/public-copy";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+
+function asImage(value: unknown) {
+	return value as any;
+}
+
+const [
+	{ entries: posts, cacheHint: postsCacheHint },
+	{ entries: newsItems, cacheHint: newsCacheHint },
+	{ entries: pages, cacheHint: pagesCacheHint },
+] = await Promise.all([
+	getEmDashCollection("posts", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("news", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("pages", {
+		orderBy: { published_at: "desc" },
+		limit: 6,
+	}),
+]);
+
+if (Astro.cache?.enabled) {
+	Astro.cache.set(postsCacheHint);
+	Astro.cache.set(newsCacheHint);
+	Astro.cache.set(pagesCacheHint);
+}
+
+const { siteTitle, siteTagline } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<Base title={siteTitle} description={siteTagline} showFooterWidgets={false}>
+	<section class="card" style="margin-bottom:2.5rem; text-align: center; padding: 4rem 2rem;">
+		<p style="text-transform:uppercase;letter-spacing:0.15em;font-weight:600;color:var(--accent);margin-bottom:1rem;">{copy.homeKicker}</p>
+		<h1 style="font-size:clamp(2.5rem,6vw,4rem);line-height:1.1;margin:0 auto 1.5rem;max-width:48rem;font-weight:800;">{copy.homeHeading}</h1>
+		<p style="max-width:42rem;margin:0 auto 2.5rem;font-size:1.1rem;color:var(--text-muted);">{copy.homeIntro}</p>
+		<div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+			<a class="btn btn-primary" style="padding: 1rem 1.75rem; font-size: 1.1rem;" href="/_emdash/admin/login?redirect=/_emdash/admin">{copy.openAdmin}</a>
+			<a class="btn btn-secondary" style="padding: 1rem 1.75rem; font-size: 1.1rem;" href="/_emdash/admin/content/posts/new">{copy.createPost}</a>
+		<a class="btn btn-secondary" style="padding: 1rem 1.75rem; font-size: 1.1rem;" href="/_emdash/admin/plugins/awcms-micro-sikesra/overview">{copy.pluginConsole}</a>
+		<a class="btn btn-secondary" style="padding: 1rem 1.75rem; font-size: 1.1rem;" href={toLocalePath("/aggregate", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.publicAggregateLink}</a>
+	</div>
+	</section>
+
+	<section style="display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-bottom:1.5rem;">
+		<div class="card">
+			<p class="kicker">{copy.publicNavigationExample}</p>
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.nestedPrimaryMenu}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.nestedPrimaryMenuDescription}</p>
+		</div>
+		<div class="card">
+			<p class="kicker">{copy.switchModeTitle}</p>
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.lightDarkTheme}</h2>
+			<p style="color:var(--text-muted);margin-bottom:1rem;">{copy.lightDarkThemeDescription}</p>
+			<button class="btn btn-primary" id="page-theme-toggle" type="button" style="padding: 0.9rem 1.25rem;">{copy.switchModeButton}</button>
+		</div>
+	</section>
+
+	<section style="display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-bottom:1.5rem;">
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.cloudflareReady}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.cloudflareReadyDescription}</p>
+		</div>
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.pluginEnabled}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.pluginEnabledDescription}</p>
+		</div>
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.publicAggregateTitle}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.publicAggregateDescription}</p>
+		</div>
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.adminProtected}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.adminProtectedDescription}</p>
+		</div>
+	</section>
+
+	<section style="display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-bottom:3rem;">
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.publishedFromAdmin}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.publishedFromAdminDescription}</p>
+		</div>
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.publicSearchAndNavigation}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.publicSearchAndNavigationDescription}</p>
+		</div>
+		<div class="card">
+			<h2 style="font-size:1.3rem;margin-top:0;">{copy.operationalSurfaces}</h2>
+			<p style="color:var(--text-muted);margin-bottom:0;">{copy.operationalSurfacesDescription}</p>
+		</div>
+	</section>
+
+	<section style="display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));">
+		<div class="card">
+			<h2 style="font-size:1.5rem;margin-top:0;">{copy.recentPosts}</h2>
+			{posts.length === 0 ? <p style="color:var(--text-muted);">{copy.noPostsYet}</p> : (
+				<ul style="padding-left:1.25rem;color:var(--text-muted);">
+					{posts.map((post) => (
+						<li style="margin-bottom:1rem;">
+							<a href={toLocalePath(`/posts/${resolveEntrySlug(post)}`, currentLocale, localeOptions)} data-astro-prefetch="hover" style="display:block;margin-bottom:0.25rem;font-size:1.1rem;font-weight:500;">
+							{post.data.featured_image && <Image image={asImage(post.data.featured_image)} style="border-radius:0.5rem;margin-bottom:0.5rem;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;" />}
+								{post.data.title}
+							</a>
+							{post.data.excerpt && <p style="margin:0;font-size:0.95rem;">{post.data.excerpt}</p>}
+						</li>
+					))}
+				</ul>
+			)}
+			<p style="margin-top:1.5rem;"><a class="btn btn-secondary" href={toLocalePath("/posts", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.browseAllPosts}</a></p>
+		</div>
+
+		<div class="card">
+			<h2 style="font-size:1.5rem;margin-top:0;">{copy.latestNews}</h2>
+			{newsItems.length === 0 ? <p style="color:var(--text-muted);">{copy.noNewsYet}</p> : (
+				<ul style="padding-left:1.25rem;color:var(--text-muted);">
+					{newsItems.map((item) => (
+						<li style="margin-bottom:1rem;">
+							<a href={toLocalePath(`/news/${resolveEntrySlug(item)}`, currentLocale, localeOptions)} data-astro-prefetch="hover" style="display:block;margin-bottom:0.25rem;font-size:1.1rem;font-weight:500;">{item.data.title}</a>
+							{item.data.summary && <p style="margin:0;font-size:0.95rem;">{item.data.summary}</p>}
+						</li>
+					))}
+				</ul>
+			)}
+			<p style="margin-top:1.5rem;"><a class="btn btn-secondary" href={toLocalePath("/news", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.browseAllNews}</a></p>
+		</div>
+
+		<div class="card">
+			<h2 style="font-size:1.5rem;margin-top:0;">{copy.managedPages}</h2>
+			<ul style="padding-left:1.25rem;color:var(--text-muted);">
+				{pages.map((page) => (
+					<li style="margin-bottom:0.75rem;"><a href={toLocalePath(`/${resolveEntrySlug(page)}`, currentLocale, localeOptions)} data-astro-prefetch="hover" style="font-weight:500;">{page.data.title}</a></li>
+				))}
+			</ul>
+			<p style="margin-top:1.5rem;"><a class="btn btn-secondary" href="/_emdash/admin/content/pages">{copy.managePagesInAdmin}</a></p>
+		</div>
+	</section>
+
+	<script is:inline>
+		const pageThemeToggle = document.getElementById("page-theme-toggle");
+		const headerThemeToggle = document.getElementById("theme-toggle");
+
+		if (pageThemeToggle && headerThemeToggle) {
+			pageThemeToggle.addEventListener("click", () => headerThemeToggle.click());
+		}
+	</script>
+</Base>

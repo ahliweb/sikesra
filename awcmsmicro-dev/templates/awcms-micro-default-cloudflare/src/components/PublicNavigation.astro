@@ -1,0 +1,163 @@
+---
+import { getMenu } from "emdash";
+import PublicNavigationItem from "./PublicNavigationItem.astro";
+import { resolvePublicNavigationItems } from "./public-navigation";
+
+interface Props {
+	name?: string;
+}
+
+const { name = "primary" } = Astro.props;
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || "en";
+const menu = await getMenu(name, { locale: currentLocale });
+const navLabel = currentLocale.startsWith("id") ? "Navigasi utama" : "Primary navigation";
+
+if (menu?.items.length) {
+	menu.items = await resolvePublicNavigationItems(menu.items, name, currentLocale, async (menuName, locale) => {
+		const subMenu = await getMenu(menuName, { locale });
+		return subMenu?.items.length ? subMenu.items : undefined;
+	});
+}
+---
+
+{menu?.items.length ? (
+	<nav class="awcms-public-nav" aria-label={navLabel}>
+		<ul class="awcms-public-nav__list">
+			{menu.items.map((item) => (
+				<PublicNavigationItem item={item} currentPath={Astro.url.pathname} currentLocale={currentLocale || menu.locale} level={0} />
+			))}
+		</ul>
+	</nav>
+) : null}
+
+<style is:global>
+	.awcms-public-nav {
+		width: 100%;
+	}
+
+	.awcms-public-nav__list,
+	.awcms-public-nav__submenu {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.awcms-public-nav__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: flex-start;
+	}
+
+	.awcms-public-nav__item {
+		position: relative;
+	}
+
+	.awcms-public-nav__link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.625rem 0.875rem;
+		border-radius: 999px;
+		border: 1px solid transparent;
+		color: inherit;
+		text-decoration: none;
+		line-height: 1.2;
+		transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+	}
+
+	.awcms-public-nav__link:hover,
+	.awcms-public-nav__link:focus-visible,
+	.awcms-public-nav__link[aria-current="page"] {
+		background: var(--surface-border);
+		outline: none;
+	}
+
+	.awcms-public-nav__chevron {
+		font-size: 0.8em;
+		line-height: 1;
+	}
+
+	.awcms-public-nav__submenu {
+		display: none;
+		position: absolute;
+		inset-block-start: calc(100% + 0.5rem);
+		inset-inline-start: 0;
+		min-width: 16rem;
+		padding: 0.5rem;
+		border: 1px solid var(--surface-border);
+		border-radius: 1rem;
+		background: var(--surface-main);
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		z-index: 20;
+	}
+
+	/* Invisible bridge to prevent hover loss when crossing gaps */
+	.awcms-public-nav__submenu::before {
+		content: "";
+		position: absolute;
+		inset-block-start: -1rem;
+		inset-inline-start: -1rem;
+		inset-block-end: -1rem;
+		inset-inline-end: -1rem;
+		z-index: -1;
+	}
+
+	.awcms-public-nav__submenu .awcms-public-nav__submenu {
+		inset-block-start: 0;
+		inset-inline-start: calc(100% + 0.5rem);
+	}
+
+	.awcms-public-nav__item:hover > .awcms-public-nav__submenu,
+	.awcms-public-nav__item:focus-within > .awcms-public-nav__submenu {
+		display: block;
+	}
+
+	.awcms-public-nav__submenu .awcms-public-nav__link {
+		display: flex;
+		width: 100%;
+		justify-content: space-between;
+		border-radius: 0.75rem;
+		padding: 0.55rem 0.75rem;
+	}
+
+	.awcms-public-nav__submenu .awcms-public-nav__item + .awcms-public-nav__item {
+		margin-block-start: 0.25rem;
+	}
+
+	.awcms-public-nav__item.has-children > .awcms-public-nav__link {
+		padding-inline-end: 0.7rem;
+	}
+
+	@media (max-width: 48rem) {
+		.awcms-public-nav__list {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.awcms-public-nav__item {
+			width: 100%;
+		}
+
+		.awcms-public-nav__link {
+			width: 100%;
+			justify-content: space-between;
+		}
+
+		.awcms-public-nav__submenu {
+			position: static;
+			display: block; /* Always show submenus on mobile */
+			min-width: 0;
+			margin-block-start: 0.25rem;
+			padding: 0;
+			padding-inline-start: 1rem;
+			box-shadow: none;
+			background: transparent;
+			border: none;
+		}
+
+		.awcms-public-nav__submenu .awcms-public-nav__submenu {
+			margin-inline-start: 1rem;
+		}
+	}
+</style>

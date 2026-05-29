@@ -1,0 +1,35 @@
+---
+const currentLocale = Astro.currentLocale || "en";
+const isId = currentLocale.startsWith("id");
+const footerMessage = isId ? "Placeholder footer contoh AWCMS-Micro." : "AWCMS-Micro example footer placeholder.";
+const supportMessage = isId ? "Tidak ada modifikasi EmDash core yang diperlukan untuk memakai template ini." : "No EmDash core modifications are required to use this template.";
+---
+
+<footer>
+	<div class="shell">
+		<p>{footerMessage}</p>
+		<p>{supportMessage}</p>
+	</div>
+</footer>
+
+<style>
+	footer {
+		border-top: 1px solid #d1d5db;
+		background: #ffffff;
+	}
+
+	.shell {
+		max-width: 72rem;
+		margin: 0 auto;
+		padding: 1.5rem 1.25rem 2rem;
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		color: #4b5563;
+	}
+
+	p {
+		margin: 0;
+	}
+</style>

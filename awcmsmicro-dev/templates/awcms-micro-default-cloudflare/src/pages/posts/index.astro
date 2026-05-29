@@ -1,0 +1,44 @@
+---
+import { getEmDashCollection, getI18nConfig } from "emdash";
+import { Image } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { resolveEntrySlug, toLocalePath } from "../../utils/locale-path";
+import { getPublicCopy } from "../../utils/public-copy";
+
+function asImage(value: unknown) {
+	return value as any;
+}
+
+const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+	orderBy: { published_at: "desc" },
+});
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<Base title={copy.postsTitle} description={copy.postsDescription} showFooterWidgets={false}>
+	<div class="card">
+		<h1>{copy.postsHeading}</h1>
+		{posts.length === 0 ? <p>{copy.noPostsYet}</p> : (
+			<ul style="padding-left:1.25rem;">
+				{posts.map((post) => (
+					<li style="margin-bottom:1rem;">
+						<a href={toLocalePath(`/posts/${resolveEntrySlug(post)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+							{post.data.featured_image && <Image image={asImage(post.data.featured_image)} />}
+							<strong>{post.data.title}</strong>
+						</a>
+						{post.data.excerpt && <p>{post.data.excerpt}</p>}
+					</li>
+				))}
+			</ul>
+		)}
+	</div>
+</Base>

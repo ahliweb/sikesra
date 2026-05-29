@@ -1,0 +1,90 @@
+---
+import { decodeSlug, getEmDashEntry, getI18nConfig, getSeoMeta, getSiteSettings } from "emdash";
+import BaseLayout from "../../layouts/Base.astro";
+import GalleryCarousel from "../../components/GalleryCarousel.astro";
+import GalleryGrid from "../../components/GalleryGrid.astro";
+import GalleryLightbox from "../../components/GalleryLightbox.astro";
+import { toLocalePath } from "../../utils/locale-path";
+import { resolveAwcmsMicroSiteIdentity } from "../../utils/site-identity";
+
+interface GalleryItem {
+	type?: string;
+	src?: string;
+	alt?: string;
+	caption?: string;
+	poster?: string;
+	mimeType?: string;
+}
+
+function asString(value: unknown, fallback = "") {
+	return typeof value === "string" ? value : fallback;
+}
+
+function asItems(value: unknown): GalleryItem[] {
+	return Array.isArray(value) ? value.filter((item) => typeof item === "object" && item !== null) as GalleryItem[] : [];
+}
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: gallery, cacheHint } = await getEmDashEntry("galleries", slug);
+if (!gallery) return Astro.rewrite("/404");
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+
+const items = asItems(gallery.data.gallery_items);
+const layout = asString(gallery.data.layout_variant, "grid");
+const eventDate = asString(gallery.data.event_date);
+const { siteTitle } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const seo = getSeoMeta(gallery, {
+	siteTitle,
+	siteUrl: Astro.url.origin,
+	path: toLocalePath(`/gallery/${slug}`, currentLocale, localeOptions),
+});
+---
+
+<BaseLayout
+	title={seo.title}
+	pageTitle={seo.ogTitle}
+	description={seo.description || asString(gallery.data.description)}
+	canonical={seo.canonical}
+	image={seo.ogImage}
+	content={{ collection: "galleries", id: asString(gallery.data.id), slug }}
+>
+	<section>
+		<p class="kicker">{asString(gallery.data.gallery_type, "gallery")}</p>
+		<h1 {...gallery.edit.title}>{gallery.data.title}</h1>
+		{gallery.data.description && <p {...gallery.edit.description}>{gallery.data.description}</p>}
+		<div class="gallery-detail-meta">
+			{gallery.data.location && <span>{gallery.data.location}</span>}
+			{eventDate && <span>{new Date(eventDate).toLocaleDateString(currentLocale, { dateStyle: "long" })}</span>}
+			<span>{layout}</span>
+		</div>
+		<GalleryLightbox items={items} />
+		{layout === "carousel" || layout === "slider" ? <GalleryCarousel items={items} /> : <GalleryGrid items={items} layout={layout} />}
+	</section>
+</BaseLayout>
+
+<style>
+	.gallery-detail-meta {
+		display: flex;
+		gap: 0.65rem;
+		flex-wrap: wrap;
+		margin-block: 1rem;
+		color: var(--text-muted);
+	}
+
+	.gallery-detail-meta span {
+		padding: 0.35rem 0.6rem;
+		border: 1px solid var(--surface-border);
+		border-radius: 999px;
+	}
+</style>

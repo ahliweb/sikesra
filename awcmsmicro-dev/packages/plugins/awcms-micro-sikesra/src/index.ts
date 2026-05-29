@@ -1,120 +1,70 @@
-import type { PluginDescriptor } from "emdash";
+import type { PluginDescriptor, ResolvedPlugin } from "emdash";
+import { definePlugin } from "emdash";
 
 import { version } from "../package.json";
-export {
-	completeUpload,
-	generateUploadUrl,
-	getDocumentDownload,
-	getEntityDocuments,
-	replaceDocument,
-	validateUploadInput,
-	verifyDocument,
-} from "./document.js";
-export {
-	createImportBatch,
-	listImportRows,
-	mapAndValidateImportRows,
-	parseCsvFile,
-	promoteImportRows,
-	rollbackImportPromotion,
-	stageImportRows,
-} from "./import.js";
-import { SIKESRA_EXPORT_STORAGE_CONFIG } from "./export-storage.js";
+export { SIKESRA_REFERENCE_FIXTURES } from "./fixtures.js";
 import {
-	SIKESRA_PLUGIN_ID,
-} from "./shared.js";
-export {
-	isPluginEnabledForValidation,
-	parseEnabledPluginList,
-} from "./validation-mode.js";
+	AWCMS_SIKESRA_ADMIN_PAGES,
+	AWCMS_SIKESRA_ADMIN_WIDGETS,
+	AWCMS_SIKESRA_ALLOWED_HOSTS,
+	AWCMS_SIKESRA_CAPABILITIES,
+	AWCMS_SIKESRA_DESCRIPTOR_STORAGE,
+	AWCMS_SIKESRA_FIELD_WIDGETS,
+	AWCMS_SIKESRA_PLUGIN_ID,
+	AWCMS_SIKESRA_PORTABLE_TEXT_BLOCKS,
+	AWCMS_SIKESRA_SETTINGS_SCHEMA,
+	AWCMS_SIKESRA_STORAGE,
+	AWCMS_SIKESRA_MANIFEST,
+	createNativeRoutes,
+	createSharedHooks,
+} from "./runtime.js";
 
-export {
-	SIKESRA_PLUGIN_ID,
-	SIKESRA_ROUTE_NAMES,
-	SIKESRA_PUBLIC_ROUTE,
-	SIKESRA_API_BASE,
-	SIKESRA_ADMIN_BASE,
-} from "./shared.js";
-export * from "./security/index.js";
-export {
-	createExportJob,
-	downloadExportFile,
-	generateExportFile,
-	getExportJob,
-	getReportById,
-	getReports,
-	listAvailableReports,
-	listExportJobs,
-	requiresReasonForReport,
-} from "./export.js";
-export type {
-	SikesraPublicFilters,
-	SikesraPublicMetadata,
-	SikesraPublicSummary,
-} from "./shared.js";
-export type {
-	CompleteUploadInput,
-	DocumentClassification,
-	DocumentDownloadResult,
-	DocumentRecord,
-	DocumentReplacementInput,
-	DocumentStatus,
-	DocumentStorageContext,
-	DocumentSummary,
-	DocumentVerificationInput,
-	GenerateUploadUrlInput,
-	UploadUrlResponse,
-} from "./document.js";
-export type {
-	ImportBatch,
-	ImportBatchCreateInput,
-	ImportBatchStatus,
-	ImportMapping,
-	ImportStagingRow,
-	ImportStorageContext,
-	StageRowsInput,
-	StagingRowStatus,
-} from "./import.js";
-export type {
-	ExportAuditEntry,
-	ExportCreateInput,
-	ExportDownloadResult,
-	ExportField,
-	ExportFormat,
-	ExportJobRecord,
-	ExportJobStatus,
-	ExportJobSummary,
-	ExportStorageContext,
-	ReportMetadata,
-} from "./export.js";
-
-export const SIKESRA_SANDBOX_ENTRYPOINT = "@ahliweb/awcms-micro-sikesra/sandbox";
-
-export const AWCMS_MICRO_SIKESRA_SANDBOX_ENTRYPOINT = SIKESRA_SANDBOX_ENTRYPOINT;
-
-export function bundlePluginDescriptor(): PluginDescriptor {
-	return sikesraPlugin();
+export interface AwcmsMicroExamplePluginOptions {
+	tenantId?: string;
+	siteId?: string;
 }
 
-export function sikesraPlugin(): PluginDescriptor {
+export function awcmsMicroExamplePlugin(
+	options: AwcmsMicroExamplePluginOptions = {},
+): PluginDescriptor<AwcmsMicroExamplePluginOptions> {
 	return {
-		id: SIKESRA_PLUGIN_ID,
+		id: AWCMS_SIKESRA_PLUGIN_ID,
 		version,
-		format: "standard",
-		entrypoint: SIKESRA_SANDBOX_ENTRYPOINT,
-		adminPages: [
-			{ path: "/", label: "Dashboard", icon: "shield" },
-			{ path: "/entities", label: "Registry", icon: "list" },
-			{ path: "/verification", label: "Verifikasi", icon: "check" },
-			{ path: "/audit", label: "Audit", icon: "lock" },
-			{ path: "/settings", label: "Pengaturan", icon: "gear" },
-			{ path: "/operations", label: "Operasional", icon: "gear" },
-		],
-		adminWidgets: [{ id: "overview", title: "SIKESRA", size: "third" }],
-		storage: SIKESRA_EXPORT_STORAGE_CONFIG,
+		entrypoint: "@awcms-micro/plugin-sikesra",
+		adminEntry: "@awcms-micro/plugin-sikesra/admin",
+		options,
+		format: "native",
+		capabilities: [...AWCMS_SIKESRA_CAPABILITIES],
+		allowedHosts: AWCMS_SIKESRA_ALLOWED_HOSTS,
+		// @ts-expect-error EmDash PluginDescriptor currently doesn't support compound index arrays in its types but supports them at runtime
+		storage: AWCMS_SIKESRA_DESCRIPTOR_STORAGE,
+		adminPages: AWCMS_SIKESRA_ADMIN_PAGES,
+		adminWidgets: AWCMS_SIKESRA_ADMIN_WIDGETS,
+		i18n: AWCMS_SIKESRA_MANIFEST.i18n,
 	};
 }
 
-export function awcmsMicroSikesraPlugin(): PluginDescriptor {
-	return sikesraPlugin();
+export function createPlugin(
+	_options: AwcmsMicroExamplePluginOptions = {},
+): ResolvedPlugin {
+	return definePlugin({
+		id: AWCMS_SIKESRA_PLUGIN_ID,
+		version,
+		capabilities: [...AWCMS_SIKESRA_CAPABILITIES],
+		allowedHosts: AWCMS_SIKESRA_ALLOWED_HOSTS,
+		storage: AWCMS_SIKESRA_STORAGE,
+		admin: {
+			entry: "@awcms-micro/plugin-sikesra/admin",
+			settingsSchema: AWCMS_SIKESRA_SETTINGS_SCHEMA,
+			pages: AWCMS_SIKESRA_ADMIN_PAGES,
+			widgets: AWCMS_SIKESRA_ADMIN_WIDGETS,
+			portableTextBlocks: AWCMS_SIKESRA_PORTABLE_TEXT_BLOCKS,
+			fieldWidgets: AWCMS_SIKESRA_FIELD_WIDGETS,
+			i18n: AWCMS_SIKESRA_MANIFEST.i18n,
+		} as any,
+		routes: createNativeRoutes(),
+		hooks: createSharedHooks(),
+	});
 }
+
+export default createPlugin;

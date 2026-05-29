@@ -1,0 +1,139 @@
+---
+import { getI18nConfig, isI18nEnabled, getTranslations } from "emdash";
+
+import { toLocalePath } from "../../utils/locale-path";
+
+interface Props {
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { content } = Astro.props;
+
+const MULTIPLE_SLASHES = /\/+/g;
+
+const i18nConfig = getI18nConfig();
+const enabled = isI18nEnabled();
+
+const locales = i18nConfig?.locales || ["en", "id"];
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = { defaultLocale, locales };
+const switcherLabel = currentLocale.startsWith("id") ? "Pengalih Bahasa" : "Language Switcher";
+
+// Fetch translations if we are on a content page
+let translationsMap = new Map<string, string>();
+if (enabled && content?.collection && content?.id) {
+	try {
+		const { translations } = await getTranslations(content.collection, content.id);
+		for (const t of translations) {
+			if (t.locale && t.slug) {
+				translationsMap.set(t.locale, t.slug);
+			}
+		}
+	} catch (e) {
+		console.error("LanguageSwitcher: failed to fetch translations", e);
+	}
+}
+
+// Build link for a given target locale
+function getLocaleUrl(targetLocale: string) {
+	// 1. If it's a content page
+	if (content?.collection) {
+		const targetSlug = translationsMap.get(targetLocale);
+		if (targetSlug) {
+			const rawPath = content.collection === "pages" ? `/${targetSlug}` : `/${content.collection}/${targetSlug}`;
+			return toLocalePath(rawPath.replace(MULTIPLE_SLASHES, "/"), targetLocale, localeOptions);
+		} else {
+			return toLocalePath("/", targetLocale, localeOptions);
+		}
+	}
+
+	return toLocalePath(Astro.url.pathname.replace(MULTIPLE_SLASHES, "/") || "/", targetLocale, localeOptions);
+}
+
+const localeNames: Record<string, string> = {
+	en: "English",
+	id: "Bahasa Indonesia",
+};
+---
+
+{enabled && (
+	<div class="awcms-lang-switcher" aria-label={switcherLabel}>
+		<ul class="awcms-lang-switcher__list">
+			{locales.map((loc) => {
+				const isActive = loc === currentLocale;
+				return (
+					<li class="awcms-lang-switcher__item">
+						{isActive ? (
+							<span class="awcms-lang-switcher__active" aria-current="true">
+								{loc.toUpperCase()}
+							</span>
+						) : (
+							<a class="awcms-lang-switcher__link" href={getLocaleUrl(loc)} title={localeNames[loc] || loc}>
+								{loc.toUpperCase()}
+							</a>
+						)}
+					</li>
+				);
+			})}
+		</ul>
+	</div>
+)}
+
+<style>
+	.awcms-lang-switcher {
+		display: inline-flex;
+		align-items: center;
+		background: rgba(15, 23, 42, 0.04);
+		border: 1px solid rgba(14, 165, 233, 0.15);
+		padding: 0.25rem;
+		border-radius: 999px;
+	}
+
+	:global(.dark) .awcms-lang-switcher {
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(125, 211, 252, 0.15);
+	}
+
+	.awcms-lang-switcher__list {
+		display: flex;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		gap: 0.25rem;
+	}
+
+	.awcms-lang-switcher__item {
+		display: flex;
+	}
+
+	.awcms-lang-switcher__link,
+	.awcms-lang-switcher__active {
+		font-size: 0.75rem;
+		font-weight: 700;
+		padding: 0.35rem 0.65rem;
+		border-radius: 999px;
+		text-decoration: none;
+		line-height: 1;
+		transition: all 0.2s ease;
+	}
+
+	.awcms-lang-switcher__link {
+		color: var(--text-muted);
+	}
+
+	.awcms-lang-switcher__link:hover {
+		color: var(--text-main);
+		background: rgba(15, 23, 42, 0.06);
+	}
+
+	:global(.dark) .awcms-lang-switcher__link:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.awcms-lang-switcher__active {
+		background: var(--gradient-primary);
+		color: #ffffff;
+		box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+	}
+</style>

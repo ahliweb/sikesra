@@ -1,9 +1,21 @@
 {
-	"extends": "../tsconfig.base.json",
 	"compilerOptions": {
-		"outDir": "./dist",
-		"rootDir": "./src"
+		"target": "ES2024",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2024", "DOM"],
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowJs": false,
+		"noEmit": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"jsx": "react-jsx",
+		"types": ["node", "vitest/globals", "react"]
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "tests/**/*", "package.json"],
 	"exclude": ["node_modules", "dist"]
 }

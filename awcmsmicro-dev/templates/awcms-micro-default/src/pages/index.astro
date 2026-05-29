@@ -1,0 +1,160 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import { Image } from "emdash/ui";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { resolveEntrySlug, toLocalePath } from "../utils/locale-path";
+import { getPublicCopy } from "../utils/public-copy";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+
+function asImage(value: unknown) {
+	return value as any;
+}
+
+const [
+	{ entries: posts, cacheHint: postsCacheHint },
+	{ entries: newsItems, cacheHint: newsCacheHint },
+	{ entries: pages, cacheHint: pagesCacheHint },
+] = await Promise.all([
+	getEmDashCollection("posts", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("news", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("pages", {
+		orderBy: { published_at: "desc" },
+		limit: 6,
+	}),
+]);
+
+if (Astro.cache?.enabled) {
+	Astro.cache.set(postsCacheHint);
+	Astro.cache.set(newsCacheHint);
+	Astro.cache.set(pagesCacheHint);
+}
+
+const { siteTitle, siteTagline } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<BaseLayout title={siteTitle} description={siteTagline} showFooterWidgets={false}>
+	<section>
+		<p class="kicker">{copy.homeKicker}</p>
+		<h1 style="font-size:clamp(2.25rem,5vw,4rem);margin:0 0 1rem;">{copy.homeHeading}</h1>
+		<p>{copy.homeIntro}</p>
+		<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1.25rem;">
+			<a class="button-link primary" href="/_emdash/admin/login?redirect=/_emdash/admin">{copy.openAdmin}</a>
+			<a class="button-link" href="/_emdash/admin/content/posts/new">{copy.createPost}</a>
+			<a class="button-link" href="/_emdash/admin/content/pages/new">{copy.createPage}</a>
+			<a class="button-link" href={toLocalePath("/aggregate", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewPublicAggregate}</a>
+		</div>
+	</section>
+
+	<section>
+		<h2>{copy.nestedMenuTitle}</h2>
+		<div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start;">
+			<div>
+				<p class="kicker">{copy.publicNavigationExample}</p>
+				<p style="margin-bottom:0;">{copy.publicNavigationDescription}</p>
+			</div>
+			<div>
+				<p class="kicker">{copy.switchModeTitle}</p>
+				<p>{copy.switchModeDescription}</p>
+				<button class="button-link primary" id="page-theme-toggle" type="button">{copy.switchModeButton}</button>
+			</div>
+		</div>
+	</section>
+
+	<section>
+		<h2>{copy.howConnectsTitle}</h2>
+		<div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+			<div>
+				<strong>{copy.publishFromEmdash}</strong>
+				<p>{copy.publishFromEmdashDescription}</p>
+			</div>
+			<div>
+				<strong>{copy.keepContentInSync}</strong>
+				<p>{copy.keepContentInSyncDescription}</p>
+			</div>
+			<div>
+				<strong>{copy.extendWithAwcms}</strong>
+				<p>{copy.extendWithAwcmsDescription}</p>
+			</div>
+		</div>
+	</section>
+
+	<section>
+		<h2>{copy.editorWorkflowShortcuts}</h2>
+		<div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+			<div>
+				<strong>{posts.length}</strong>
+				<p style="margin:0.5rem 0;">{copy.publishedPostsVisible}</p>
+				<a href={toLocalePath("/posts", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewPosts}</a>
+			</div>
+			<div>
+				<strong>{newsItems.length}</strong>
+				<p style="margin:0.5rem 0;">{copy.newsWorkflowVisible}</p>
+				<a href={toLocalePath("/news", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewNews}</a>
+			</div>
+			<div>
+				<strong>{pages.length}</strong>
+				<p style="margin:0.5rem 0;">{copy.managedPagesVisible}</p>
+				<a href={toLocalePath("/about", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewAboutPage}</a>
+			</div>
+			<div>
+				<strong>{copy.safeAggregateLabel}</strong>
+				<p style="margin:0.5rem 0;">{copy.safeAggregateDescription}</p>
+				<a href={toLocalePath("/aggregate", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewAggregatePage}</a>
+			</div>
+		</div>
+	</section>
+
+	<section>
+		<h2>{copy.recentPosts}</h2>
+		{posts.length === 0 ? <p>{copy.noPostsCreateOne}</p> : (
+			<ul style="padding-left:1.25rem;">
+				{posts.map((post) => (
+					<li style="margin-bottom:1rem;">
+						<a href={toLocalePath(`/posts/${resolveEntrySlug(post)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+							{post.data.featured_image && <Image image={asImage(post.data.featured_image)} />}
+							<strong>{post.data.title}</strong>
+						</a>
+						{post.data.excerpt && <p>{post.data.excerpt}</p>}
+					</li>
+				))}
+			</ul>
+		)}
+	</section>
+
+	<section>
+		<h2>{copy.latestNews}</h2>
+		{newsItems.length === 0 ? <p>{copy.noNewsYet}</p> : (
+			<ul style="padding-left:1.25rem;">
+				{newsItems.map((item) => (
+					<li style="margin-bottom:1rem;">
+						<a href={toLocalePath(`/news/${resolveEntrySlug(item)}`, currentLocale, localeOptions)} data-astro-prefetch="hover"><strong>{item.data.title}</strong></a>
+						{item.data.summary && <p>{item.data.summary}</p>}
+					</li>
+				))}
+			</ul>
+		)}
+	</section>
+
+	<script is:inline>
+		const pageThemeToggle = document.getElementById("page-theme-toggle");
+		const headerThemeToggle = document.getElementById("theme-toggle");
+
+		if (pageThemeToggle && headerThemeToggle) {
+			pageThemeToggle.addEventListener("click", () => headerThemeToggle.click());
+		}
+	</script>
+</BaseLayout>

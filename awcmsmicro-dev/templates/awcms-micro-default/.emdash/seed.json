@@ -1,0 +1,51 @@
+{
+	"$schema": "https://emdashcms.com/seed.schema.json",
+	"version": "1",
+	"meta": {
+		"name": "AWCMS-Micro Gallery Seed",
+		"description": "Gallery collection seed for the local AWCMS-Micro template.",
+		"author": "AWCMS-Micro"
+	},
+	"collections": [
+		{
+			"slug": "galleries",
+			"label": "Galleries",
+			"labelSingular": "Gallery",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"fields": [
+				{ "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
+				{ "slug": "description", "label": "Description", "type": "text", "searchable": true },
+				{ "slug": "cover_image", "label": "Cover Image", "type": "image" },
+				{ "slug": "gallery_type", "label": "Gallery Type", "type": "select", "required": true, "validation": { "options": ["photo", "video", "mixed"] } },
+				{ "slug": "event_date", "label": "Event Date", "type": "datetime" },
+				{ "slug": "location", "label": "Location", "type": "string", "searchable": true },
+				{ "slug": "layout_variant", "label": "Layout Variant", "type": "select", "required": true, "validation": { "options": ["grid", "masonry", "carousel", "slider"] } },
+				{ "slug": "gallery_items", "label": "Gallery Items", "type": "json", "required": true },
+				{ "slug": "featured", "label": "Featured", "type": "boolean" }
+			]
+		}
+	],
+	"content": {
+		"galleries": [
+			{
+				"id": "community-cleanup-gallery",
+				"slug": "community-cleanup-gallery",
+				"status": "published",
+				"data": {
+					"title": "Community Cleanup Gallery",
+					"description": "A mixed photo and video gallery demonstrating EmDash media fields, JSON gallery items, and public Astro rendering.",
+					"cover_image": { "src": "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1200&q=80", "alt": "Volunteers gathered for a community event" },
+					"gallery_type": "mixed",
+					"event_date": "2026-05-01T09:00:00.000Z",
+					"location": "AWCMS-Micro Community Hall",
+					"layout_variant": "grid",
+					"featured": true,
+					"gallery_items": [
+						{ "type": "image", "src": "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1200&q=80", "mimeType": "image/jpeg", "filename": "community-cleanup-volunteers.jpg", "sizeBytes": 420000, "alt": "Volunteers smiling during cleanup registration", "caption": "Registration and safety briefing before the cleanup.", "provider": "external" },
+						{ "type": "video", "src": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", "mimeType": "video/mp4", "filename": "cleanup-recap.mp4", "sizeBytes": 1120000, "caption": "Short recap video placeholder for Cloudflare Stream or R2-hosted media.", "provider": "external" }
+					]
+				}
+			}
+		]
+	}
+}

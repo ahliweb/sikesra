@@ -1,0 +1,48 @@
+---
+import { decodeSlug, getEmDashEntry, getI18nConfig, getSeoMeta, getSiteSettings } from "emdash";
+import { PortableText } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { toLocalePath } from "../../utils/locale-path";
+import { resolveAwcmsMicroSiteIdentity } from "../../utils/site-identity";
+
+function asString(value: unknown) {
+	return typeof value === "string" ? value : String(value ?? "");
+}
+
+const slug = decodeSlug(Astro.params.slug);
+
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: item, cacheHint } = await getEmDashEntry("news", slug);
+
+if (!item) return Astro.rewrite("/404");
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const { siteTitle } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const seo = getSeoMeta(item, {
+	siteTitle,
+	siteUrl: Astro.url.origin,
+	path: toLocalePath(`/news/${slug}`, currentLocale, localeOptions),
+});
+---
+
+<Base
+	title={seo.title}
+	pageTitle={seo.ogTitle}
+	description={seo.description}
+	canonical={seo.canonical}
+	content={{ collection: "news", id: asString(item.data.id), slug }}
+>
+	<article class="card">
+		<h1 {...item.edit.title}>{item.data.title}</h1>
+		{item.data.summary && <p style="color:#9fb1c7;">{item.data.summary}</p>}
+		<PortableText value={item.data.content} />
+	</article>
+</Base>

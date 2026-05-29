@@ -1,0 +1,72 @@
+---
+import GalleryVideo from "./GalleryVideo.astro";
+import { getGalleryCopy } from "../utils/gallery-copy";
+
+interface GalleryItem {
+	type?: string;
+	src?: string;
+	alt?: string;
+	caption?: string;
+	poster?: string;
+	mimeType?: string;
+}
+
+interface Props {
+	items: GalleryItem[];
+	layout?: string;
+}
+
+const { items, layout = "grid" } = Astro.props;
+const copy = getGalleryCopy(Astro.currentLocale || "en");
+---
+
+<div class:list={["gallery-grid", `gallery-grid--${layout}`]}>
+	{items.map((item) => item.src && (
+		<div class="gallery-grid__item">
+			{item.type === "video" ? (
+				<GalleryVideo src={item.src} caption={item.caption} poster={item.poster} mimeType={item.mimeType} />
+			) : (
+				<figure>
+					<a href={item.src}><img src={item.src} alt={item.alt || item.caption || copy.imageAlt} loading="lazy" /></a>
+					{item.caption && <figcaption>{item.caption}</figcaption>}
+				</figure>
+			)}
+		</div>
+	))}
+</div>
+
+<style>
+	.gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: 1rem;
+	}
+
+	.gallery-grid--masonry {
+		columns: 18rem;
+		display: block;
+	}
+
+	.gallery-grid--masonry .gallery-grid__item {
+		break-inside: avoid;
+		margin-bottom: 1rem;
+	}
+
+	.gallery-grid figure {
+		margin: 0;
+	}
+
+	.gallery-grid img {
+		width: 100%;
+		display: block;
+		border-radius: 1rem;
+		object-fit: cover;
+		aspect-ratio: 4 / 3;
+	}
+
+	.gallery-grid figcaption {
+		margin-top: 0.45rem;
+		color: var(--text-muted);
+		font-size: 0.92rem;
+	}
+</style>

@@ -1,0 +1,36 @@
+---
+import { getEmDashCollection, getI18nConfig } from "emdash";
+import Base from "../../layouts/Base.astro";
+import { resolveEntrySlug, toLocalePath } from "../../utils/locale-path";
+import { getPublicCopy } from "../../utils/public-copy";
+
+const { entries: newsItems, cacheHint } = await getEmDashCollection("news", {
+	orderBy: { published_at: "desc" },
+});
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<Base title={copy.newsTitle} description={copy.newsDescription} showFooterWidgets={false}>
+	<div class="card">
+		<h1>{copy.newsTitle}</h1>
+		{newsItems.length === 0 ? <p>{copy.noNewsYet}</p> : (
+			<ul style="padding-left:1.25rem;">
+				{newsItems.map((item) => (
+					<li style="margin-bottom:1rem;">
+						<a href={toLocalePath(`/news/${resolveEntrySlug(item)}`, currentLocale, localeOptions)} data-astro-prefetch="hover"><strong>{item.data.title}</strong></a>
+						{item.data.summary && <p>{item.data.summary}</p>}
+					</li>
+				))}
+			</ul>
+		)}
+	</div>
+</Base>
