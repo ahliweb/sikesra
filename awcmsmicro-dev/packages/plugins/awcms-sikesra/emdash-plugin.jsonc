@@ -1,0 +1,78 @@
+{
+	"$schema": "https://emdashcms.com/schemas/emdash-plugin.schema.json",
+
+	"slug": "awcms-sikesra",
+	"version": "0.0.1",
+	"license": "LicenseRef-AW-NC-1.0",
+	"publisher": "ahliweb.com",
+	"author": { "name": "AWCMS SIKESRA" },
+	"name": "AWCMS SIKESRA Plugin",
+	"description": "SIKESRA plugin for AWCMS projects with EmDash-compatible admin UI, navigation, and sandbox APIs.",
+	"keywords": ["awcms", "sikesra", "emdash", "plugin"],
+
+	// Keep this trust contract aligned with the real runtime surface before release.
+	"capabilities": ["content:read", "content:write", "media:read", "media:write"],
+	"allowedHosts": [],
+	"storage": {
+		"auditEvents": {
+			"indexes": ["timestamp", "kind", "scope", ["scope", "timestamp"]]
+		},
+		"accessChangeEvents": {
+			"indexes": ["timestamp", "kind", "scope", ["kind", "timestamp"]]
+		},
+		"abacChangeEvents": {
+			"indexes": ["timestamp", "kind", "scope", ["kind", "timestamp"]]
+		},
+		"abacAttributeCatalog": {
+			"indexes": ["key", "targetType", "updatedAt", ["targetType", "updatedAt"]]
+		},
+		"abacPolicyRules": {
+			"indexes": ["id", "effect", "updatedAt", ["effect", "updatedAt"]]
+		},
+		"abacResourceAssignments": {
+			"indexes": ["resourceId", "updatedAt"]
+		},
+		"abacSubjectAssignments": {
+			"indexes": ["subjectId", "updatedAt"]
+		},
+		"contentSnapshots": {
+			"indexes": ["collection", "contentId", "timestamp", ["collection", "timestamp"]]
+		},
+		"permissionCatalog": {
+			"indexes": ["slug", "scope", "updatedAt", ["scope", "updatedAt"]]
+		},
+		"roleCatalog": {
+			"indexes": ["slug", "updatedAt"]
+		},
+		"rolePermissionAssignments": {
+			"indexes": ["roleSlug", "updatedAt"]
+		},
+		"userRoleAssignments": {
+			"indexes": ["userId", "updatedAt"]
+		}
+	},
+
+	"admin": {
+		"pages": [
+			{ "path": "/overview", "label": "Overview", "icon": "stack" },
+			{ "path": "/registry", "label": "Registry", "icon": "grid" },
+			{ "path": "/verification", "label": "Verification", "icon": "check" },
+			{ "path": "/documents", "label": "Documents", "icon": "file" },
+			{ "path": "/reports", "label": "Reports", "icon": "chart" },
+			{ "path": "/import", "label": "Import", "icon": "arrow-up-from-bracket" },
+			{ "path": "/audit", "label": "Audit", "icon": "list" },
+			{ "path": "/access/permissions", "label": "Permissions", "icon": "lock" },
+			{ "path": "/access/roles", "label": "Roles", "icon": "users" },
+			{ "path": "/access/matrix", "label": "Role Matrix", "icon": "grid" },
+			{ "path": "/access/preview", "label": "Access Preview", "icon": "eye" },
+			{ "path": "/abac/attributes", "label": "ABAC Attributes", "icon": "sliders" },
+			{ "path": "/abac/policies", "label": "ABAC Policies", "icon": "shield" },
+			{ "path": "/abac/preview", "label": "ABAC Preview", "icon": "target" }
+		],
+		"widgets": [
+			{ "id": "governance-status", "title": "Governance Status", "size": "half" },
+			{ "id": "access-rights-health", "title": "Access Rights Health", "size": "half" },
+			{ "id": "abac-policy-status", "title": "ABAC Policy Status", "size": "half" }
+		]
+	}
+}

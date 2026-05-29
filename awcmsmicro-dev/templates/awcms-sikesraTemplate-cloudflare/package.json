@@ -1,0 +1,35 @@
+{
+	"name": "@ahliweb/awcms-sikesraTemplate-cloudflare",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"license": "SEE LICENSE IN LICENSE.md",
+	"emdash": {
+		"seed": "seed/seed.json"
+	},
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"deploy": "astro build && wrangler deploy",
+		"validate:cloudflare-env": "bash ./scripts/validate-cloudflare-env.sh",
+		"typecheck": "astro check",
+		"test": "pnpm typecheck"
+	},
+	"dependencies": {
+		"@astrojs/cloudflare": "catalog:",
+		"@astrojs/react": "catalog:",
+		"@ahliweb/awcms-sikesra": "workspace:*",
+		"@awcms-micro/plugin-gallery": "workspace:*",
+		"@emdash-cms/cloudflare": "workspace:*",
+		"astro": "catalog:",
+		"emdash": "workspace:*",
+		"react": "catalog:",
+		"react-dom": "catalog:"
+	},
+	"devDependencies": {
+		"@astrojs/check": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"wrangler": "catalog:"
+	}
+}

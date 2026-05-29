@@ -3,21 +3,18 @@
 # One path per line. Lines starting with # are comments.
 
 # SIKESRA plugin (canonical package)
-awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/
+awcmsmicro-dev/packages/plugins/awcms-sikesra/
 
 # SIKESRA templates (renamed to avoid conflicts)
-awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/
-awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/
+awcmsmicro-dev/templates/awcms-sikesraTemplate/
+awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/
 
 # SIKESRA demo boundary
-awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/
+awcmsmicro-dev/demos/cloudflare/
 
 # SIKESRA docs boundaries
 awcmsmicro-dev/docs/awcms-micro/sikesra/
 awcmsmicro-dev/e2e/awcms-micro/sikesra/
-
-# Transitional compatibility shim (if exists)
-# awcmsmicro-dev/packages/plugins/sikesra/
 
 # Root-level SIKESRA governance docs
 docs/
