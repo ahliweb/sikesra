@@ -15,10 +15,16 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# environment variables
+# environment variables (NEVER commit these)
 .env
+.env.local
 .env.production
+.env.development
+.env.*.local
 .dev.vars
+.dev.vars.local
+*.env
+*.env.local
 
 # database files
 *.db
