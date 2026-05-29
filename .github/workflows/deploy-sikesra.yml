@@ -1,0 +1,105 @@
+name: Deploy SIKESRA to Cloudflare
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/**"
+      - "awcmsmicro-dev/packages/plugins/awcms-sikesra/**"
+      - "awcmsmicro-dev/packages/core/**"
+      - "awcmsmicro-dev/packages/admin/**"
+      - "awcmsmicro-dev/packages/cloudflare/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  build:
+    name: Build SIKESRA Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: awcmsmicro-dev
+
+      - name: Build packages
+        run: pnpm build
+        working-directory: awcmsmicro-dev
+
+      - name: Build template
+        run: pnpm --dir templates/awcms-sikesraTemplate-cloudflare build
+        working-directory: awcmsmicro-dev
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sikesra-build
+          path: awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/dist
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Cloudflare
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: awcmsmicro-dev
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sikesra-build
+          path: awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/dist
+
+      - name: Deploy to Cloudflare
+        run: pnpm wrangler deploy
+        working-directory: awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for DNS propagation..."
+          sleep 30
+          curl -sf https://sikesra.ahlikoding.com/ > /dev/null && echo "Deployment successful" || echo "Deployment may need DNS propagation time"

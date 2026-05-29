@@ -29,7 +29,6 @@
 		{
 			"binding": "SESSION",
 			"id": "29e3fd9bbf2f448fa3b36185b8be299a"
-			"id": "7382419ae0194a10949290c9e69d0840"
 		}
 	],
 	"images": {
@@ -41,11 +40,7 @@
 		}
 	],
 	"vars": {
-		"AWCMS_MICRO_SITE_URL": "https://awcms-micro.ahlikoding.com",
-		"AWCMS_MICRO_STORAGE_PUBLIC_BASE_URL": "https://awcms-micro-s3.ahlikoding.com",
-		"AWCMS_MICRO_GALLERY_MEDIA_STORAGE": "r2",
-		"AWCMS_MICRO_GALLERY_CLOUDFLARE_IMAGES": "optional",
-		"AWCMS_MICRO_GALLERY_CLOUDFLARE_STREAM": "optional"
+		"AWCMS_SIKESRA_SITE_URL": "https://sikesra.ahlikoding.com"
 	},
 	"observability": {
 		"enabled": true

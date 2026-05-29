@@ -19,19 +19,19 @@ import {
 	createSharedHooks,
 } from "./runtime.js";
 
-export interface AwcmsMicroExamplePluginOptions {
+export interface AwcmsSikesraPluginOptions {
 	tenantId?: string;
 	siteId?: string;
 }
 
-export function awcmsMicroExamplePlugin(
-	options: AwcmsMicroExamplePluginOptions = {},
-): PluginDescriptor<AwcmsMicroExamplePluginOptions> {
+export function awcmsSikesraPlugin(
+	options: AwcmsSikesraPluginOptions = {},
+): PluginDescriptor<AwcmsSikesraPluginOptions> {
 	return {
 		id: AWCMS_SIKESRA_PLUGIN_ID,
 		version,
-		entrypoint: "@awcms-micro/plugin-sikesra",
-		adminEntry: "@awcms-micro/plugin-sikesra/admin",
+		entrypoint: "@ahliweb/awcms-sikesra",
+		adminEntry: "@ahliweb/awcms-sikesra/admin",
 		options,
 		format: "native",
 		capabilities: [...AWCMS_SIKESRA_CAPABILITIES],
@@ -45,7 +45,7 @@ export function awcmsMicroExamplePlugin(
 }
 
 export function createPlugin(
-	_options: AwcmsMicroExamplePluginOptions = {},
+	_options: AwcmsSikesraPluginOptions = {},
 ): ResolvedPlugin {
 	return definePlugin({
 		id: AWCMS_SIKESRA_PLUGIN_ID,
@@ -54,7 +54,7 @@ export function createPlugin(
 		allowedHosts: AWCMS_SIKESRA_ALLOWED_HOSTS,
 		storage: AWCMS_SIKESRA_STORAGE,
 		admin: {
-			entry: "@awcms-micro/plugin-sikesra/admin",
+			entry: "@ahliweb/awcms-sikesra/admin",
 			settingsSchema: AWCMS_SIKESRA_SETTINGS_SCHEMA,
 			pages: AWCMS_SIKESRA_ADMIN_PAGES,
 			widgets: AWCMS_SIKESRA_ADMIN_WIDGETS,

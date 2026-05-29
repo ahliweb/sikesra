@@ -1,7 +1,6 @@
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { awcmsSikesraPlugin } from "@ahliweb/awcms-sikesra";
-import { awcmsMicroGalleryPlugin } from "@awcms-micro/plugin-gallery";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
@@ -33,12 +32,6 @@ export default defineConfig({
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [
 				awcmsSikesraPlugin({ tenantId: "t-local-dev" }),
-				awcmsMicroGalleryPlugin({
-					maxImageBytes: 10485760,
-					maxVideoBytes: 262144000,
-					cloudflareImages: true,
-					cloudflareStream: true,
-				}),
 			],
 			sandboxed: [],
 			sandboxRunner: sandbox(),

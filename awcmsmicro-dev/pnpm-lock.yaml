@@ -1816,23 +1816,38 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/plugins/awcms-micro-sikesra:
+  packages/plugins/awcms-sikesra:
     dependencies:
+      '@lingui/react':
+        specifier: 'catalog:'
+        version: 5.9.5(@lingui/babel-plugin-lingui-macro@5.9.5(typescript@6.0.3))(react@19.2.4)
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.4
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.1
+    devDependencies:
+      '@cloudflare/kumo':
+        specifier: 'catalog:'
+        version: 1.16.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.4.1)
+      '@types/node':
+        specifier: 24.10.13
+        version: 24.10.13
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
       emdash:
         specifier: workspace:*
         version: link:../../core
-      kysely:
-        specifier: ^0.27.0
-        version: 0.27.6
-    devDependencies:
-      better-sqlite3:
-        specifier: 'catalog:'
-        version: 12.8.0
       tsdown:
-        specifier: 'catalog:'
-        version: 0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@6.0.0-beta)
+        specifier: ^0.20.3
+        version: 0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
-        specifier: 'catalog:'
+        specifier: ^4.1.5
         version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@24.10.13)(@vitest/browser-playwright@4.1.5)(@vitest/ui@4.1.5)(jsdom@26.1.0)(vite@8.0.11(@types/node@24.10.13)(esbuild@0.27.3)(jiti@2.6.1)(yaml@2.8.2))
 
   packages/plugins/color:
@@ -2102,42 +2117,48 @@ importers:
         specifier: ^2.8.0
         version: 2.8.0(@solana/kit@5.5.1(typescript@6.0.3))(@solana/sysvars@5.5.1(typescript@6.0.3))
 
-  templates/awcms-micro-sikesraTemplate:
+  templates/awcms-sikesraTemplate:
     dependencies:
-      '@ahliweb/awcms-micro-sikesra':
+      '@ahliweb/awcms-sikesra':
         specifier: workspace:*
-        version: link:../../packages/plugins/awcms-micro-sikesra
+        version: link:../../packages/plugins/awcms-sikesra
       '@astrojs/node':
-        specifier: 'catalog:'
+        specifier: ^10.1.1
         version: 10.1.1(astro@6.3.5(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.55.2)(yaml@2.8.2))
       '@astrojs/react':
-        specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(yaml@2.8.2)
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(yaml@2.8.2)
       astro:
         specifier: 'catalog:'
         version: 6.3.5(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.55.2)(yaml@2.8.2)
       better-sqlite3:
-        specifier: 'catalog:'
+        specifier: ^12.8.0
         version: 12.8.0
       emdash:
         specifier: workspace:*
         version: link:../../packages/core
       react:
-        specifier: 'catalog:'
+        specifier: 19.2.4
         version: 19.2.4
       react-dom:
-        specifier: 'catalog:'
+        specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
-        version: 0.9.7(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@6.0.0-beta)
+        version: 0.9.7(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@6.0.3)
+      '@types/node':
+        specifier: 24.10.13
+        version: 24.10.13
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
-  templates/awcms-micro-sikesraTemplate-cloudflare:
+  templates/awcms-sikesraTemplate-cloudflare:
     dependencies:
-      '@ahliweb/awcms-micro-sikesra':
+      '@ahliweb/awcms-sikesra':
         specifier: workspace:*
-        version: link:../../packages/plugins/awcms-micro-sikesra
+        version: link:../../packages/plugins/awcms-sikesra
       '@astrojs/cloudflare':
         specifier: 'catalog:'
         version: 13.5.3(@types/node@24.10.13)(astro@6.3.5(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.55.2)(yaml@2.8.2))(jiti@2.6.1)(lightningcss@1.32.0)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)
@@ -2663,6 +2684,15 @@ packages:
   '@astrojs/react@5.0.0-beta.4':
     resolution: {integrity: sha512-KGJ3nSjKCNDOvfxtQgisfB/REiz4876xeZgHqK/S6tinmXq+GJsS3j/G086LMUt7aYsyE9Zc5Fu4rS5wZDyMgw==}
     engines: {node: ^20.19.1 || >=22.12.0}
+    peerDependencies:
+      '@types/react': ^17.0.50 || ^18.0.21 || ^19.0.0
+      '@types/react-dom': ^17.0.17 || ^18.0.6 || ^19.0.0
+      react: ^17.0.2 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.2 || ^18.0.0 || ^19.0.0
+
+  '@astrojs/react@5.0.5':
+    resolution: {integrity: sha512-5jSFDqWqLdEyp7CEVD66A7AQEEuwLkCGR25NJ4FR5EjziZQqZTGc7hJOFZ97qb98BiU6vElrS70R8iI+HhufGQ==}
+    engines: {node: '>=22.12.0'}
     peerDependencies:
       '@types/react': ^17.0.50 || ^18.0.21 || ^19.0.0
       '@types/react-dom': ^17.0.17 || ^18.0.6 || ^19.0.0
@@ -6418,6 +6448,12 @@ packages:
     peerDependencies:
       vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
 
+  '@vitejs/plugin-react@5.2.0':
+    resolution: {integrity: sha512-YmKkfhOAi3wsB1PhJq5Scj3GXMn3WvtQ/JC0xoopuHoXSdmtdStOpFrYaT1kie2YgFBcIe64ROzMYRjCrYOdYw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+
   '@vitest/browser-playwright@4.1.5':
     resolution: {integrity: sha512-CWy0lBQJq97nionyJJdnaU4961IXTl43a7UCu5nHy51IoKxAt6PVIJLo+76rVl7KOOgcWHNkG4kbJu/pW7knvA==}
     peerDependencies:
@@ -7192,6 +7228,9 @@ packages:
 
   devalue@5.6.3:
     resolution: {integrity: sha512-nc7XjUU/2Lb+SvEFVGcWLiKkzfw8+qHI7zn8WYXKkLMgfGSHbgCEaR6bJpev8Cm6Rmrb19Gfd/tZvGqx9is3wg==}
+
+  devalue@5.8.1:
+    resolution: {integrity: sha512-4CXDYRBGqN+57wVJkuXBYmpAVUSg3L6JAQa/DFqm238G73E1wuyc/JhGQJzN7vUf/CMphYau2zXbfWzDR5aTEw==}
 
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
@@ -8043,10 +8082,6 @@ packages:
     resolution: {integrity: sha512-wUcVvQNtm30OTfuo7Ad5vYJ1qHqPXOCZc+zWchVKNyuvqY3u8OuGw4gmUx1Ypdx2wRVFLHVQC9I7v0pTmF7Nkw==}
     peerDependencies:
       kysely: '*'
-
-  kysely@0.27.6:
-    resolution: {integrity: sha512-FIyV/64EkKhJmjgC0g2hygpBv5RNWVPyNCqSAD7eTCv6eFWNIi4PN1UvdSJGicN/o35bnevgis4Y0UDC0qi8jQ==}
-    engines: {node: '>=14.0.0'}
 
   kysely@0.29.2:
     resolution: {integrity: sha512-s6WVJyEZrbm6jhBpiKHsGHyePMrVQKJ85wZCFCr9W4QHv6WTjWIrdvTmO9hDEA3bNK0xkrE2DqrHsXMLWuZpQg==}
@@ -10986,6 +11021,17 @@ snapshots:
       - prettier
       - prettier-plugin-astro
 
+  '@astrojs/check@0.9.7(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@6.0.3)':
+    dependencies:
+      '@astrojs/language-server': 2.16.3(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@6.0.3)
+      chokidar: 4.0.3
+      kleur: 4.1.5
+      typescript: 6.0.3
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - prettier
+      - prettier-plugin-astro
+
   '@astrojs/cloudflare@13.1.7(@types/node@24.10.13)(astro@6.1.3(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.55.2)(typescript@6.0.3)(yaml@2.8.2))(jiti@2.6.1)(lightningcss@1.32.0)(workerd@1.20260507.1)(wrangler@4.90.0(@cloudflare/workers-types@4.20260305.1))(yaml@2.8.2)':
     dependencies:
       '@astrojs/internal-helpers': 0.8.0
@@ -11090,6 +11136,32 @@ snapshots:
       '@astrojs/yaml2ts': 0.2.2
       '@jridgewell/sourcemap-codec': 1.5.5
       '@volar/kit': 2.4.27(typescript@6.0.0-beta)
+      '@volar/language-core': 2.4.27
+      '@volar/language-server': 2.4.27
+      '@volar/language-service': 2.4.27
+      muggle-string: 0.4.1
+      tinyglobby: 0.2.15
+      volar-service-css: 0.0.68(@volar/language-service@2.4.27)
+      volar-service-emmet: 0.0.68(@volar/language-service@2.4.27)
+      volar-service-html: 0.0.68(@volar/language-service@2.4.27)
+      volar-service-prettier: 0.0.68(@volar/language-service@2.4.27)(prettier@3.8.3)
+      volar-service-typescript: 0.0.68(@volar/language-service@2.4.27)
+      volar-service-typescript-twoslash-queries: 0.0.68(@volar/language-service@2.4.27)
+      volar-service-yaml: 0.0.68(@volar/language-service@2.4.27)
+      vscode-html-languageservice: 5.6.1
+      vscode-uri: 3.1.0
+    optionalDependencies:
+      prettier: 3.8.3
+      prettier-plugin-astro: 0.14.1
+    transitivePeerDependencies:
+      - typescript
+
+  '@astrojs/language-server@2.16.3(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@6.0.3)':
+    dependencies:
+      '@astrojs/compiler': 2.13.0
+      '@astrojs/yaml2ts': 0.2.2
+      '@jridgewell/sourcemap-codec': 1.5.5
+      '@volar/kit': 2.4.27(typescript@6.0.3)
       '@volar/language-core': 2.4.27
       '@volar/language-server': 2.4.27
       '@volar/language-service': 2.4.27
@@ -11292,6 +11364,31 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
       ultrahtml: 1.6.0
       vite: 7.3.1(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2)
+    transitivePeerDependencies:
+      - '@types/node'
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - yaml
+
+  '@astrojs/react@5.0.5(@types/node@24.10.13)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(yaml@2.8.2)':
+    dependencies:
+      '@astrojs/internal-helpers': 0.9.1
+      '@types/react': 19.2.14
+      '@types/react-dom': 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react': 5.2.0(vite@7.3.3(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2))
+      devalue: 5.8.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      ultrahtml: 1.6.0
+      vite: 7.3.3(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -15096,6 +15193,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@vitejs/plugin-react@5.2.0(vite@7.3.3(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2))':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
+      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.29.0)
+      '@rolldown/pluginutils': 1.0.0-rc.3
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.18.0
+      vite: 7.3.3(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2)
+    transitivePeerDependencies:
+      - supports-color
+
   '@vitest/browser-playwright@4.1.5(playwright@1.58.2)(vite@6.4.1(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2))(vitest@4.1.5)':
     dependencies:
       '@vitest/browser': 4.1.5(vite@6.4.1(@types/node@24.10.13)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.2))(vitest@4.1.5)
@@ -15264,6 +15373,15 @@ snapshots:
       '@volar/typescript': 2.4.27
       typesafe-path: 0.2.2
       typescript: 6.0.0-beta
+      vscode-languageserver-textdocument: 1.0.12
+      vscode-uri: 3.1.0
+
+  '@volar/kit@2.4.27(typescript@6.0.3)':
+    dependencies:
+      '@volar/language-service': 2.4.27
+      '@volar/typescript': 2.4.27
+      typesafe-path: 0.2.2
+      typescript: 6.0.3
       vscode-languageserver-textdocument: 1.0.12
       vscode-uri: 3.1.0
 
@@ -16646,6 +16764,8 @@ snapshots:
 
   devalue@5.6.3: {}
 
+  devalue@5.8.1: {}
+
   devlop@1.1.0:
     dependencies:
       dequal: 2.0.3
@@ -17660,8 +17780,6 @@ snapshots:
   kysely-d1@0.4.0(kysely@0.29.2):
     dependencies:
       kysely: 0.29.2
-
-  kysely@0.27.6: {}
 
   kysely@0.29.2: {}
 
@@ -19450,24 +19568,6 @@ snapshots:
 
   reusify@1.0.4: {}
 
-  rolldown-plugin-dts@0.22.2(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(rolldown@1.0.0-rc.3)(typescript@6.0.0-beta):
-    dependencies:
-      '@babel/generator': 8.0.0-rc.1
-      '@babel/helper-validator-identifier': 8.0.0-rc.1
-      '@babel/parser': 8.0.0-rc.1
-      '@babel/types': 8.0.0-rc.1
-      ast-kit: 3.0.0-beta.1
-      birpc: 4.0.0
-      dts-resolver: 2.1.3(oxc-resolver@11.16.4)
-      get-tsconfig: 4.13.6
-      obug: 2.1.1
-      rolldown: 1.0.0-rc.3
-    optionalDependencies:
-      '@typescript/native-preview': 7.0.0-dev.20260421.2
-      typescript: 6.0.0-beta
-    transitivePeerDependencies:
-      - oxc-resolver
-
   rolldown-plugin-dts@0.22.2(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(rolldown@1.0.0-rc.3)(typescript@6.0.3):
     dependencies:
       '@babel/generator': 8.0.0-rc.1
@@ -20055,35 +20155,6 @@ snapshots:
   tsconfck@3.1.6(typescript@6.0.3):
     optionalDependencies:
       typescript: 6.0.3
-
-  tsdown@0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@6.0.0-beta):
-    dependencies:
-      ansis: 4.2.0
-      cac: 6.7.14
-      defu: 6.1.4
-      empathic: 2.0.0
-      hookable: 6.0.1
-      import-without-cache: 0.2.5
-      obug: 2.1.1
-      picomatch: 4.0.4
-      rolldown: 1.0.0-rc.3
-      rolldown-plugin-dts: 0.22.2(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(rolldown@1.0.0-rc.3)(typescript@6.0.0-beta)
-      semver: 7.7.4
-      tinyexec: 1.0.4
-      tinyglobby: 0.2.15
-      tree-kill: 1.2.2
-      unconfig-core: 7.4.2
-      unrun: 0.2.28
-    optionalDependencies:
-      '@arethetypeswrong/core': 0.18.2
-      publint: 0.3.17
-      typescript: 6.0.0-beta
-    transitivePeerDependencies:
-      - '@ts-macro/tsc'
-      - '@typescript/native-preview'
-      - oxc-resolver
-      - synckit
-      - vue-tsc
 
   tsdown@0.20.3(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260421.2)(oxc-resolver@11.16.4)(publint@0.3.17)(typescript@6.0.3):
     dependencies:
