@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "emdash-demo",
+	"name": "sikesra",
 	"main": "./src/worker.ts",
 	"compatibility_date": "2026-01-14",
 	// disable_nodejs_process_v2 needed until unenv fix lands in Pages
@@ -14,18 +14,19 @@
 			"custom_domain": true,
 		},
 	],
-	// D1 Database binding
+	// D1 Database binding - SIKESRA database
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "emdash_db",
+			"database_name": "sikesra",
+			"database_id": "e2902bf9-1648-4a46-8971-e4acadfa09ec",
 		},
 	],
-	// R2 bucket for media storage
+	// R2 bucket for media storage - SIKESRA bucket
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
-			"bucket_name": "emdash-media",
+			"bucket_name": "sikesra",
 		},
 	],
 	// Observability
