@@ -1,116 +1,205 @@
-# AWCMS-Micro SIKESRA Parent Repository
+# AWCMS-Micro SIKESRA
 
-This repository is the parent maintenance workspace for keeping the SIKESRA-flavored AWCMS-Micro implementation aligned with the latest EmDash source.
+Independent SIKESRA implementation based on [AWCMS-Micro](https://github.com/ahliweb/awcms-micro), which itself is built on [EmDash](https://github.com/emdash-cms/emdash).
 
-## Purpose
+## Quick Start
 
-Analyze `https://github.com/emdash-cms/emdash`, then update this repository so the checked-in `awcmsmicro-dev/` implementation stays synchronized with upstream while preserving only approved AWCMS-Micro and SIKESRA boundaries.
+```bash
+# Install dependencies
+pnpm install
 
-This repository follows the same parent-workspace model as `https://github.com/ahliweb/awcms-micro`:
+# Start development server
+pnpm dev
 
-- `emdash-latest/` is the clean upstream reference tree.
-- `awcmsmicro-dev/` is the active downstream implementation workspace.
-- root `docs/` and `scripts/` govern synchronization, boundaries, and operations.
+# Sync from upstream (safe, preserves SIKESRA changes)
+pnpm sync:upstream
 
-AWCMS-Micro-specific product development in this workspace stays limited to plugin, template, demo, docs, and test boundaries. New core CMS behavior must not be introduced through EmDash forks unless the divergence is explicitly recorded.
+# Preview sync without applying
+pnpm sync:dry-run
+```
 
-## Versioning Model
+## Architecture
 
-This workspace keeps separate maintenance surfaces:
+This repository is an **independent downstream fork** of `awcms-micro` with:
 
-- root maintenance metadata and governance docs
-- plugin packages under `awcmsmicro-dev/packages/plugins/`
-- template packages under `awcmsmicro-dev/templates/`
+- **Safe upstream sync** via `scripts/sync-from-awcms-micro.sh`
+- **Protected paths** that preserve SIKESRA-specific code during sync
+- **Unique naming** for plugins and templates to avoid conflicts
 
-Keep root maintenance changes separate from plugin or template release notes.
+### Directory Structure
 
-## Root Structure
+```
+sikesra/
+├── awcmsmicro-dev/          # Downstream implementation workspace
+│   ├── packages/plugins/
+│   │   ├── awcms-micro-sikesra/    # SIKESRA plugin (protected)
+│   │   └── sikesra/                # Compatibility shim (protected)
+│   ├── templates/
+│   │   ├── awcms-micro-sikesraTemplate/           # Default template (protected)
+│   │   └── awcms-micro-sikesraTemplate-cloudflare/ # Cloudflare template (protected)
+│   ├── demos/
+│   │   └── awcms-micro-sikesra-cloudflare/        # Demo boundary (protected)
+│   └── docs/
+│       └── awcms-micro/sikesra/                   # SIKESRA docs (protected)
+├── emdash-latest/           # Clean EmDash upstream reference
+├── docs/                    # Root governance docs (protected)
+├── scripts/                 # Sync and validation scripts (protected)
+└── update-backup/           # Automatic sync backups
+```
 
-- `emdash-latest/`: latest synchronized snapshot of upstream EmDash
-- `awcmsmicro-dev/`: active AWCMS-Micro implementation workspace derived from `emdash-latest/`
-- `docs/`: root technical documentation for structure, sync workflow, and implementation rules
-- `scripts/`: maintenance scripts for refreshing `emdash-latest/`, rebuilding `awcmsmicro-dev/`, and validating downstream boundaries
+## Upstream Sync Workflow
 
-## Repository Rules
+### How It Works
 
-- Keep `emdash-latest/` as the clean upstream reference tree.
-- Rebuild `awcmsmicro-dev/` from `emdash-latest/` before downstream implementation work.
-- Keep SIKESRA behavior inside approved plugin and template boundaries.
-- Keep root documentation synchronized with the actual folder layout and workflow.
-- Prefer small, atomic maintenance changes over broad unreviewed rewrites.
+```
+emdash-cms/emdash ──sync──▶ ahliweb/awcms-micro ──sync──▶ ahliweb/sikesra
+     (EmDash)              (AWCMS-Micro base)        (SIKESRA custom)
+```
 
-## Official Language
+1. `awcms-micro` syncs from `emdash-cms/emdash`
+2. This repo syncs from `awcms-micro` while preserving SIKESRA paths
 
-English (US) is the canonical language for root governance documentation, repository workflow instructions, and maintenance scripts, following the upstream `awcms-micro` convention.
+### Sync Commands
 
-## Core Documentation
+```bash
+# Preview changes (safe, no modifications)
+pnpm sync:dry-run
 
-- `docs/README.md`
-- `docs/repository-structure.md`
-- `docs/synchronization-workflow.md`
-- `docs/implementation-instructions.md`
-- `docs/awcms-micro-implementation-boundaries.md`
-- `docs/repository-assessment.md`
-- `docs/decision-records.md`
-- `docs/operator-workflow.md`
-- `docs/awcms-micro-prd.md`
-- `docs/awcms-micro-versioning.md`
-- `docs/awcms-micro-root-versioning.md`
-- `docs/awcms-micro-versioning-rollout-summary.md`
-- `docs/awcms-micro-licensing.md`
-- `docs/awcms-micro-d1-mirror-sync.md`
-- `docs/upstream-sync/README.md`
-- `docs/upstream-sync/ISSUE_CLASSIFICATION_DOWNSTREAM_VS_UPSTREAM.md`
-- `docs/upstream-sync/UPSTREAM_PR_PLAN_ADMIN_SIDEBAR_ORDERING.md`
-- `docs/deployment/cloudflare.md`
-- `docs/security/security-baseline.md`
+# Sync with backup and validation (recommended)
+pnpm sync:upstream
 
-## Maintenance Scripts
+# Force sync without backup (use with caution)
+pnpm sync:force
 
-- `bash scripts/update-emdash-latest.sh`
-- `bash scripts/update-awcmsmicro-dev.sh`
-- `bash scripts/validate-awcmsmicro-boundaries.sh`
-- `bash scripts/validate-after-sync.sh`
-- `bash scripts/sync-and-validate.sh`
+# Validate protected paths after sync
+pnpm validate:boundaries
+```
 
-## AWCMS-Micro Example Additions
+### Manual Sync
 
-- Example template: `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/`
-- Example Cloudflare template: `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`
-- Example plugin: `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/`
-- Reserved Cloudflare demo boundary: `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/`
-- Reserved docs boundary: `awcmsmicro-dev/docs/awcms-micro/sikesra/`
-- Reserved E2E boundary: `awcmsmicro-dev/e2e/awcms-micro/sikesra/`
-- Approved implementation boundaries: `docs/awcms-micro-implementation-boundaries.md`
-- Protected implementation boundary list: `scripts/awcmsmicro-dev-protected-paths.txt`
-- Upstream sync tracking: `docs/upstream-sync/`
-- Deployment guidance: `docs/deployment/`
-- Security baselines: `docs/security/`
+```bash
+# Full sync with all options
+bash scripts/sync-from-awcms-micro.sh --validate
 
-## SIKESRA Runtime
+# Dry run to see what would change
+bash scripts/sync-from-awcms-micro.sh --dry-run
 
-- Public page: `/sikesra`
-- Admin UI: `/_emdash/admin/plugins/sikesra/*`
-- Admin API: `/_emdash/api/plugins/sikesra/v1/*`
-- Compatibility shim: `awcmsmicro-dev/packages/plugins/sikesra/`
-- Canonical plugin package path: `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/`
+# Skip backup (faster, but no rollback)
+bash scripts/sync-from-awcms-micro.sh --no-backup
+```
 
-## Standard Workflow
+## Protected Paths
 
-1. Refresh `emdash-latest/` from upstream EmDash.
-2. Rebuild `awcmsmicro-dev/` from `emdash-latest/`.
-3. Validate boundaries and downstream health.
-4. Implement SIKESRA-specific changes only inside approved boundaries.
-5. Update root docs whenever structure or workflow changes.
+The following paths are **never overwritten** during upstream sync:
 
-## Existing SIKESRA Product Docs
+| Path | Purpose |
+| --- | --- |
+| `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` | SIKESRA plugin |
+| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/` | Default template |
+| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/` | Cloudflare template |
+| `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/` | Demo boundary |
+| `awcmsmicro-dev/docs/awcms-micro/sikesra/` | SIKESRA docs |
+| `awcmsmicro-dev/e2e/awcms-micro/sikesra/` | E2E tests |
+| `awcmsmicro-dev/packages/plugins/sikesra/` | Compatibility shim |
+| `docs/` | Root governance |
+| `scripts/` | Sync scripts |
 
-- [docs/sikesra/README.md](docs/sikesra/README.md)
-- [docs/sikesra/01_product_requirements.md](docs/sikesra/01_product_requirements.md)
-- [docs/sikesra/02_architecture.md](docs/sikesra/02_architecture.md)
-- [docs/sikesra/03_data_model.md](docs/sikesra/03_data_model.md)
-- [docs/sikesra/06_security_rbac_abac.md](docs/sikesra/06_security_rbac_abac.md)
+Full list: `scripts/awcms-micro-protected-paths.txt`
+
+## Naming Convention
+
+To avoid conflicts with upstream:
+
+| Upstream Name | This Repo Name |
+| --- | --- |
+| `awcms-micro-default` | `awcms-micro-sikesraTemplate` |
+| `awcms-micro-default-cloudflare` | `awcms-micro-sikesraTemplate-cloudflare` |
+| `@ahliweb/awcms-micro-sikesra` | `@ahliweb/awcms-micro-sikesra` (unique) |
+
+**Rule:** Always use `sikesra` or `sikesraTemplate` suffix for new plugins/templates.
+
+## Environment Setup
+
+```bash
+# Copy example env
+cp .env.example .env
+
+# Edit with your tokens (optional)
+# GITHUB_TOKEN - for authenticated GitHub API access
+# CLOUDFLARE_API_TOKEN - for D1/R2 operations
+```
+
+See `.env.example` for available options.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor workflow and [docs/README.md](docs/README.md) for parent-repository governance docs.
+### Working on SIKESRA Features
+
+1. Make changes in protected paths only
+2. Run `pnpm validate:boundaries` before committing
+3. Test with `pnpm test`
+
+### Adding New Protected Paths
+
+Edit `scripts/awcms-micro-protected-paths.txt` and add the path:
+
+```
+# New plugin
+awcmsmicro-dev/packages/plugins/my-new-plugin/
+
+# New template
+awcmsmicro-dev/templates/my-template/
+```
+
+## Backup and Recovery
+
+Sync automatically creates backups in `update-backup/sync/`:
+
+```bash
+# List backups
+ls update-backup/sync/
+
+# Restore from a specific backup
+cp -a update-backup/sync/20260529-120000/awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/ \
+       awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/
+```
+
+## Troubleshooting
+
+### Sync Conflicts
+
+If sync has conflicts:
+
+1. Review conflicted files: `git diff`
+2. Resolve manually, then `git add <file>`
+3. Protected paths are auto-restored
+4. Commit when ready: `git commit`
+
+### Missing Protected Paths
+
+```bash
+# Check what's missing
+pnpm validate:boundaries
+
+# Restore from latest backup
+ls update-backup/sync/
+```
+
+### Reset to Upstream
+
+```bash
+# WARNING: This removes all SIKESRA changes
+git reset --hard awcms-micro/main
+```
+
+## Related Repositories
+
+- [emdash-cms/emdash](https://github.com/emdash-cms/emdash) - Core CMS
+- [ahliweb/awcms-micro](https://github.com/ahliweb/awcms-micro) - AWCMS-Micro base
+- [ahliweb/sikesra](https://github.com/ahliweb/sikesra) - This repository
+
+## License
+
+MIT (root) + package-specific licenses for plugins/templates.
+
+See individual package `LICENSE` files for details.

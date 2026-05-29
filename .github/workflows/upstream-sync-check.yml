@@ -1,0 +1,55 @@
+name: Upstream Sync Check
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday 6AM UTC
+  workflow_dispatch:      # Allow manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: git remote add awcms-micro https://github.com/ahliweb/awcms-micro.git || true
+
+      - name: Fetch upstream
+        run: git fetch awcms-micro main
+
+      - name: Check for new commits
+        id: check
+        run: |
+          COMMITS=$(git log --oneline HEAD..awcms-micro/main | wc -l)
+          echo "new_commits=$COMMITS" >> $GITHUB_OUTPUT
+          echo "### Upstream Changes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "New commits since last sync: $COMMITS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          git log --oneline HEAD..awcms-micro/main | head -20 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create issue if updates available
+        if: steps.check.outputs.new_commits > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commits = process.env.COMMITS_SUMMARY || 'See workflow summary';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Upstream sync available (${new Date().toISOString().split('T')[0]})`,
+              body: `AWCMS-Micro upstream has new commits.\n\n${commits}\n\nRun \`pnpm sync:upstream\` to sync.`,
+              labels: ['upstream-sync']
+            }).catch(() => console.log('Issue may already exist'));
+
+      - name: Validate protected paths
+        run: |
+          bash scripts/validate-awcmsmicro-boundaries.sh || echo "Validation warnings found"

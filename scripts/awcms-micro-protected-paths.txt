@@ -1,0 +1,26 @@
+# Protected paths for SIKESRA-specific implementation.
+# These paths are preserved during upstream sync from awcms-micro.
+# One path per line. Lines starting with # are comments.
+
+# SIKESRA plugin (canonical package)
+awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/
+
+# SIKESRA templates (renamed to avoid conflicts)
+awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/
+awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/
+
+# SIKESRA demo boundary
+awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/
+
+# SIKESRA docs boundaries
+awcmsmicro-dev/docs/awcms-micro/sikesra/
+awcmsmicro-dev/e2e/awcms-micro/sikesra/
+
+# Transitional compatibility shim (if exists)
+# awcmsmicro-dev/packages/plugins/sikesra/
+
+# Root-level SIKESRA governance docs
+docs/
+scripts/sync-from-awcms-micro.sh
+scripts/awcms-micro-protected-paths.txt
+scripts/validate-awcmsmicro-boundaries.sh
