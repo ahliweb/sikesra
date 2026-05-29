@@ -25,16 +25,16 @@ sikesra/
 
 | Boundary | Purpose |
 | --- | --- |
-| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/` | Example downstream template |
-| `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/` | Example downstream Cloudflare template |
-| `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` | Canonical SIKESRA plugin package |
-| `awcmsmicro-dev/demos/awcms-micro-sikesra-cloudflare/` | Reserved downstream demo boundary |
+| `awcmsmicro-dev/templates/awcms-sikesraTemplate/` | Example downstream template |
+| `awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/` | Example downstream Cloudflare template |
+| `awcmsmicro-dev/packages/plugins/awcms-sikesra/` | Canonical SIKESRA plugin package |
+| `awcmsmicro-dev/demos/cloudflare/` | Reserved downstream demo boundary |
 | `awcmsmicro-dev/docs/awcms-micro/sikesra/` | Downstream architecture and product docs |
 | `awcmsmicro-dev/e2e/awcms-micro/sikesra/` | Downstream E2E boundary |
 
 ## Supporting Control Files
 
-- Protected path inventory: `scripts/awcmsmicro-dev-protected-paths.txt`
+- Protected path inventory: `scripts/awcms-micro-protected-paths.txt`
 - Boundary policy: `docs/awcms-micro-implementation-boundaries.md`
 - Sync workflow: `docs/synchronization-workflow.md`
 - Divergence tracking: `docs/divergence-log.md`
@@ -43,4 +43,4 @@ sikesra/
 
 - `awcmsmicro-dev/` is the editable downstream tree.
 - `emdash-latest/` is retained as the upstream comparison baseline.
-- The legacy compatibility shim at `awcmsmicro-dev/packages/plugins/sikesra/` still exists and should be treated as transitional.
+- The active downstream package and template names use the `awcms-sikesra` / `awcms-sikesraTemplate` suffixes.

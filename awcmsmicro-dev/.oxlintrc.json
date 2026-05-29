@@ -8,7 +8,6 @@
 		"perf": "warn"
 	},
 	"rules": {
-		"no-underscore-dangle": "off",
 		"no-await-in-loop": "off",
 		"no-unused-vars": [
 			"warn",
@@ -23,8 +22,17 @@
 		"typescript/no-unsafe-type-assertion": "warn",
 		"typescript/unbound-method": "off",
 		"typescript/no-unnecessary-boolean-literal-compare": "off",
+		// Noisy/stylistic rules added in newer oxlint. Disabled while we triage them
+		// (see https://github.com/emdash-cms/emdash/issues — track follow-ups before
+		// re-enabling).
+		"no-underscore-dangle": "off",
+		"typescript/consistent-return": "off",
+		"typescript/no-unnecessary-type-conversion": "off",
+		"typescript/no-unnecessary-type-parameters": "off",
+		// The rule degrades to an unactionable error on configs without
+		// strictNullChecks (the test plugins under packages/plugins/*-test/).
+		"typescript/no-useless-default-assignment": "off",
 		"import/no-named-as-default": "off",
-		"import/default": "off",
 		"import/no-unassigned-import": [
 			"warn",
 			{
@@ -47,7 +55,7 @@
 		"e18e/prefer-date-now": "error",
 		"e18e/prefer-regex-test": "error",
 		"e18e/prefer-array-some": "error",
-		"e18e/prefer-static-regex": "off"
+		"e18e/prefer-static-regex": "error"
 	},
 	"overrides": [
 		{
@@ -117,6 +125,7 @@
 		"skills/**/scaffold/**",
 		".agents/skills/**/scaffold/**",
 		".claude/skills/**/scaffold/**",
-		"scripts/query-dumps/**"
+		"scripts/query-dumps/**",
+		".flue/**"
 	]
 }

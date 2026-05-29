@@ -9,6 +9,11 @@
     "sync:dry-run": "bash scripts/sync-from-awcms-micro.sh --dry-run",
     "sync:force": "bash scripts/sync-from-awcms-micro.sh --no-backup --validate",
     "validate:boundaries": "bash scripts/validate-awcmsmicro-boundaries.sh",
+    "awcmsmicro:update-emdash-latest": "bash scripts/update-emdash-latest.sh",
+    "awcmsmicro:update-awcmsmicro-dev": "bash scripts/update-awcmsmicro-dev.sh",
+    "awcmsmicro:validate-boundaries": "bash scripts/validate-awcmsmicro-boundaries.sh",
+    "awcmsmicro:validate-after-sync": "bash scripts/validate-after-sync.sh",
+    "awcmsmicro:sync-and-validate": "bash scripts/sync-and-validate.sh",
     "dev": "pnpm --dir awcmsmicro-dev dev",
     "build": "pnpm --dir awcmsmicro-dev build",
     "test": "pnpm --dir awcmsmicro-dev test"

@@ -20,7 +20,7 @@ pnpm sync:dry-run
 
 ## Architecture
 
-This repository is an **independent downstream fork** of `awcms-micro` with:
+This repository is an **independent downstream maintenance workspace** with:
 
 - **Safe upstream sync** via `scripts/sync-from-awcms-micro.sh`
 - **Protected paths** that preserve SIKESRA-specific code during sync
@@ -51,12 +51,13 @@ sikesra/
 ### How It Works
 
 ```
-emdash-cms/emdash ──sync──▶ ahliweb/awcms-micro ──sync──▶ ahliweb/sikesra
-     (EmDash)              (AWCMS-Micro base)        (SIKESRA custom)
+emdash-cms/emdash ──sync──▶ emdash-latest/ ──sync──▶ awcmsmicro-dev/
+     (EmDash)              (clean mirror)         (SIKESRA custom)
 ```
 
-1. `awcms-micro` syncs from `emdash-cms/emdash`
-2. This repo syncs from `awcms-micro` while preserving SIKESRA paths
+1. `scripts/update-emdash-latest.sh` refreshes `emdash-latest/` from `emdash-cms/emdash`
+2. `scripts/update-awcmsmicro-dev.sh` rebuilds `awcmsmicro-dev/` from `emdash-latest/`
+3. Protected SIKESRA paths are preserved during the rebuild
 
 ### Sync Commands
 

@@ -1,2 +1,2 @@
-export { AwcmsPluginHeaderMenu as default } from "@awcms-micro/plugin-sikesra/navigation";
-export * from "@awcms-micro/plugin-sikesra/navigation";
+export { AwcmsPluginHeaderMenu as default } from "@ahliweb/awcms-sikesra/navigation";
+export * from "@ahliweb/awcms-sikesra/navigation";

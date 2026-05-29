@@ -10,8 +10,8 @@
 
 - The repository is arranged as a parent maintenance workspace.
 - Downstream SIKESRA paths are preserved through the protected-path policy.
-- The canonical non-Cloudflare template path is `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/`.
-- The canonical Cloudflare template path is `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`.
+- The canonical non-Cloudflare template path is `awcmsmicro-dev/templates/awcms-sikesraTemplate/`.
+- The canonical Cloudflare template path is `awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/`.
 
 ## Update Procedure
 

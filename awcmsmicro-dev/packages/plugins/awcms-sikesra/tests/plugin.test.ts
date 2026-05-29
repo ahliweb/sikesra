@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { awcmsMicroExamplePlugin } from "../src/index.js";
+import { awcmsSikesraPlugin } from "../src/index.js";
 import {
 	AWCMS_SIKESRA_DASHBOARD_MODULE_CARDS,
 	AWCMS_SIKESRA_PLUGIN_HEADER_MENU,
@@ -176,12 +176,12 @@ function createMockContext() {
 	};
 }
 
-describe("awcms micro example plugin", () => {
+describe("awcms sikesra plugin", () => {
 	it("builds a descriptor without touching EmDash core", () => {
-		const descriptor = awcmsMicroExamplePlugin();
+		const descriptor = awcmsSikesraPlugin();
 
 		expect(descriptor.id).toBe("awcms-sikesra");
-		expect(descriptor.adminEntry).toBe("@awcms-micro/plugin-sikesra/admin");
+		expect(descriptor.adminEntry).toBe("@ahliweb/awcms-sikesra/admin");
 		expect(descriptor.capabilities).toEqual([...AWCMS_SIKESRA_CAPABILITIES]);
 		expect(descriptor.storage).toEqual(AWCMS_SIKESRA_DESCRIPTOR_STORAGE);
 		expect(AWCMS_SIKESRA_STORAGE.accessChangeEvents.indexes).toEqual(["timestamp", "kind", "scope", ["scope", "timestamp"]]);

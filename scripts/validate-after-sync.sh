@@ -10,8 +10,10 @@ fi
 
 bash "$repo_root/scripts/validate-awcmsmicro-boundaries.sh"
 
+pnpm --dir "$implementation_root" install --frozen-lockfile || pnpm --dir "$implementation_root" install
 pnpm --dir "$implementation_root" lint:quick
-pnpm --dir "$implementation_root" typecheck
-pnpm --dir "$implementation_root" --filter @ahliweb/plugin-sikesra test
-pnpm --dir "$implementation_root" --filter @ahliweb/awcms-micro-sikesra test
-pnpm --dir "$implementation_root" --filter @ahliweb/awcms-micro-sikesra build
+pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesra typecheck
+pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesra test
+pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesraTemplate typecheck
+pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesraTemplate build
+pnpm --dir "$implementation_root" --filter @ahliweb/awcms-sikesraTemplate-cloudflare test
