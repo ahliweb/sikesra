@@ -22,7 +22,7 @@ It follows the same governance split used by `awcms-micro`:
 - `awcms-micro-root-versioning.md`
 - `awcms-micro-versioning-rollout-summary.md`
 - `awcms-micro-licensing.md`
-- `awcms-micro-d1-mirror-sync.md`
+- `awcms-micro-d1-mirror-sync.md` (upstream reference — not active in this repo)
 - `upstream-sync/README.md`
 - `deployment/cloudflare.md`
 - `security/security-baseline.md`
