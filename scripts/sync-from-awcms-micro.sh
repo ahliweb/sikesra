@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sync-from-awcms-micro.sh
 #
-# Synchronize this repository from the EmDash upstream while preserving
+# Synchronize this repository from the awcms-micro upstream while preserving
 # SIKESRA-specific plugin, template, docs, and demo boundaries.
 #
 # Usage:
@@ -21,6 +21,7 @@ repo_root=$(cd -- "$script_dir/.." && pwd)
 dry_run=false
 no_backup=false
 do_validate=false
+awcms_cache_dir="${AWCSM_UPSTREAM_CACHE_DIR:-/tmp/opencode/awcms-micro-latest}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -43,23 +44,31 @@ if [[ -f "$repo_root/.env" ]]; then
   set +a
 fi
 
-dry_run_cache_dir="${EMDASH_UPSTREAM_CACHE_DIR:-/tmp/opencode/emdash-upstream-latest}"
+refresh_awcms_cache() {
+	mkdir -p "$(dirname -- "$awcms_cache_dir")"
+	if [[ -d "$awcms_cache_dir/.git" ]]; then
+		git -C "$awcms_cache_dir" fetch --depth 1 origin "$AWCSM_UPSTREAM_REF"
+		git -C "$awcms_cache_dir" checkout --detach FETCH_HEAD
+		git -C "$awcms_cache_dir" clean -fdx
+	else
+		rm -rf "$awcms_cache_dir"
+		git clone --depth 1 --branch "$AWCSM_UPSTREAM_REF" --single-branch "$AWCSM_UPSTREAM_URL" "$awcms_cache_dir"
+	fi
+}
+
+refresh_awcms_cache
 
 if $dry_run; then
-  bash "$repo_root/scripts/update-emdash-latest.sh" --dry-run
-  echo ""
-	EMDASH_LATEST_DIR="$dry_run_cache_dir" bash "$repo_root/scripts/update-awcmsmicro-dev.sh" --dry-run
+	AWCSM_UPSTREAM_CACHE_DIR="$awcms_cache_dir" bash "$repo_root/scripts/update-awcmsmicro-dev.sh" --dry-run
   exit 0
 fi
-
-bash "$repo_root/scripts/update-emdash-latest.sh"
 
 update_awcms_args=()
 if $no_backup; then
 	update_awcms_args+=(--no-backup)
 fi
 
-bash "$repo_root/scripts/update-awcmsmicro-dev.sh" "${update_awcms_args[@]}"
+AWCSM_UPSTREAM_CACHE_DIR="$awcms_cache_dir" bash "$repo_root/scripts/update-awcmsmicro-dev.sh" "${update_awcms_args[@]}"
 
 if $do_validate; then
 	bash "$repo_root/scripts/validate-after-sync.sh"

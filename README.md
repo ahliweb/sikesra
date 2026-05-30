@@ -55,7 +55,7 @@ awcms-micro ──sync──▶ awcmsmicro-dev/
    (upstream)        (SIKESRA custom)
 ```
 
-1. `scripts/update-awcmsmicro-dev.sh` rebuilds `awcmsmicro-dev/` from `ahliweb/awcms-micro`
+1. `scripts/sync-from-awcms-micro.sh` refreshes an `awcms-micro` cache and rebuilds `awcmsmicro-dev/`
 2. `emdash-latest/` stays checked in as the local EmDash comparison baseline; no separate `emdash/` checkout is required
 3. Protected SIKESRA paths are preserved during the rebuild
 

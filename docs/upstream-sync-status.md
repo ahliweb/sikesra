@@ -15,6 +15,6 @@
 
 ## Update Procedure
 
-1. Run `bash scripts/update-awcmsmicro-dev.sh`.
+1. Run `bash scripts/sync-from-awcms-micro.sh`.
 2. Run `bash scripts/validate-after-sync.sh`.
 3. Record any divergence in `docs/divergence-log.md`.

@@ -10,7 +10,6 @@
     "sync:force": "bash scripts/sync-from-awcms-micro.sh --no-backup --validate",
     "d1:backup:sikesra": "bash scripts/backup-sikesra-d1.sh",
     "validate:boundaries": "bash scripts/validate-awcmsmicro-boundaries.sh",
-    "awcmsmicro:update-emdash-latest": "bash scripts/update-emdash-latest.sh",
     "awcmsmicro:update-awcmsmicro-dev": "bash scripts/update-awcmsmicro-dev.sh",
     "awcmsmicro:validate-boundaries": "bash scripts/validate-awcmsmicro-boundaries.sh",
     "awcmsmicro:validate-after-sync": "bash scripts/validate-after-sync.sh",

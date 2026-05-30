@@ -15,7 +15,7 @@ Keep EmDash upstream-compatible while isolating SIKESRA behavior to approved dow
 
 ## Sync Workflow
 
-1. Rebuild `awcmsmicro-dev/` with `scripts/update-awcmsmicro-dev.sh`.
+1. Rebuild `awcmsmicro-dev/` with `scripts/sync-from-awcms-micro.sh`.
 2. Run `scripts/validate-after-sync.sh`.
 3. Record any downstream-only divergence in `docs/divergence-log.md`.
 4. Update `docs/upstream-sync-status.md` with the latest sync outcome.
