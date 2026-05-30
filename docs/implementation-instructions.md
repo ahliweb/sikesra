@@ -2,7 +2,7 @@
 
 ## Goal
 
-Keep EmDash upstream-compatible while isolating SIKESRA behavior to approved downstream plugin, template, docs, test, seed, and deployment boundaries.
+Keep EmDash upstream-compatible while isolating SIKESRA behavior to approved downstream plugin, template, docs, test, seed, and deployment boundaries. Use `emdash-latest/` only as the local EmDash comparison baseline.
 
 ## Required Working Rules
 
@@ -15,8 +15,7 @@ Keep EmDash upstream-compatible while isolating SIKESRA behavior to approved dow
 
 ## Sync Workflow
 
-1. Refresh `emdash-latest/` with `scripts/update-emdash-latest.sh`.
-2. Rebuild `awcmsmicro-dev/` with `scripts/update-awcmsmicro-dev.sh`.
-3. Run `scripts/validate-after-sync.sh`.
-4. Record any downstream-only divergence in `docs/divergence-log.md`.
-5. Update `docs/upstream-sync-status.md` with the latest sync outcome.
+1. Rebuild `awcmsmicro-dev/` with `scripts/update-awcmsmicro-dev.sh`.
+2. Run `scripts/validate-after-sync.sh`.
+3. Record any downstream-only divergence in `docs/divergence-log.md`.
+4. Update `docs/upstream-sync-status.md` with the latest sync outcome.

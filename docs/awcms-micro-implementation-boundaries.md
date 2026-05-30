@@ -19,4 +19,4 @@ The root `docs/` and `scripts/` directories may change when needed to support pa
 
 - Do not introduce new shared core layers outside `awcmsmicro-dev/`.
 - Do not treat this parent repository as a runtime product shell.
-- Do not place SIKESRA-specific product logic in `emdash-latest/`.
+- Do not create a separate `emdash/` checkout or place SIKESRA-specific product logic in `emdash-latest/`.

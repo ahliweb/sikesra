@@ -5,7 +5,7 @@ This directory contains the root maintenance documentation for the parent-worksp
 It follows the same governance split used by `awcms-micro`:
 
 - root `docs/` explains repository structure, synchronization, boundaries, and operator workflow
-- `emdash-latest/` remains the upstream reference tree
+- `emdash-latest/` remains the checked-in EmDash reference tree; no separate `emdash/` checkout is required
 - `awcmsmicro-dev/` remains the active downstream implementation tree
 
 ## Canonical Documents

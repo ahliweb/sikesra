@@ -2,7 +2,7 @@
 
 ## Repository-Level Rules
 
-- keep `emdash-latest/` clean and reviewable
+- keep `emdash-latest/` clean and reviewable; do not carry a separate `emdash/` checkout
 - isolate downstream behavior to approved boundaries
 - record unavoidable divergence
 - review protected-path changes before and after sync

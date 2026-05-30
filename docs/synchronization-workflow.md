@@ -1,11 +1,11 @@
 # Synchronization Workflow
 
-This repository syncs from [ahliweb/awcms-micro](https://github.com/ahliweb/awcms-micro) while preserving SIKESRA-specific implementation.
+This repository syncs from [ahliweb/awcms-micro](https://github.com/ahliweb/awcms-micro) while preserving SIKESRA-specific implementation. `emdash-latest/` is kept only as the local EmDash comparison baseline.
 
 ## Sync Chain
 
 ```
-emdash-cms/emdash ──▶ ahliweb/awcms-micro ──▶ ahliweb/sikesra
+ahliweb/awcms-micro ──▶ ahliweb/sikesra
 ```
 
 ## Commands
@@ -36,7 +36,7 @@ Uses `git merge -s subtree` to pull `awcms-micro` content into this repository. 
 ## When to Sync
 
 - After `awcms-micro` releases a new version
-- After EmDash security updates
+- After relevant `awcms-micro` security updates
 - Before starting major SIKESRA features
 
 ## Conflict Resolution

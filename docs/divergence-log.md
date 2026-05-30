@@ -1,6 +1,6 @@
 # Divergence Log
 
-This file records deliberate downstream differences from upstream EmDash and from a plain `awcms-micro` maintenance workspace.
+This file records deliberate downstream differences from the checked-in EmDash baseline and from a plain `awcms-micro` maintenance workspace.
 
 ## Active Divergence Categories
 

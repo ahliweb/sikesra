@@ -8,7 +8,7 @@ This file provides guidance to agentic coding tools when working with code in th
 
 This is a monorepo using pnpm workspaces.
 
-For the AWCMS-Micro SIKESRA refactor tracked in `tmp/prompt-refactor`, this repo currently acts as the in-place `awcmsmicro-dev/` implementation workspace. The eventual parent split with sibling `emdash-latest/` and `awcmsmicro-dev/` trees is documented under `docs/`, but has not been performed literally inside this git root.
+For the AWCMS-Micro SIKESRA refactor tracked in `tmp/prompt-refactor`, this repo currently acts as the in-place `awcmsmicro-dev/` implementation workspace. The eventual parent split with sibling `emdash-latest/` and `awcmsmicro-dev/` trees is documented under `docs/`, but this git root does not carry a separate `emdash/` checkout.
 
 `CLAUDE.md` is a symlink to `AGENTS.md`. `.opencode/skills` and `.claude/skills` are symlinks to `skills/`. Don't try to sync between them.
 

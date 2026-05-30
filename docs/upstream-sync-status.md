@@ -2,8 +2,8 @@
 
 ## Baseline
 
-- Upstream source of truth: `https://github.com/emdash-cms/emdash`
-- Local upstream mirror: `emdash-latest/`
+- Upstream source of truth: `https://github.com/ahliweb/awcms-micro`
+- Local EmDash baseline: `emdash-latest/`
 - Local downstream workspace: `awcmsmicro-dev/`
 
 ## Current State
@@ -15,7 +15,6 @@
 
 ## Update Procedure
 
-1. Run `bash scripts/update-emdash-latest.sh`.
-2. Run `bash scripts/update-awcmsmicro-dev.sh`.
-3. Run `bash scripts/validate-after-sync.sh`.
-4. Record any divergence in `docs/divergence-log.md`.
+1. Run `bash scripts/update-awcmsmicro-dev.sh`.
+2. Run `bash scripts/validate-after-sync.sh`.
+3. Record any divergence in `docs/divergence-log.md`.

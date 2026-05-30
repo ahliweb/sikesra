@@ -2,7 +2,7 @@
 
 ## Parent Workspace Layout
 
-This repository follows the same parent layout used by `awcms-micro`:
+This repository follows the same parent layout used by `awcms-micro`, but keeps only the checked-in `emdash-latest/` baseline instead of a separate `emdash/` checkout:
 
 ```txt
 sikesra/
@@ -16,7 +16,7 @@ sikesra/
 
 | Path | Role |
 | --- | --- |
-| `emdash-latest/` | Clean upstream EmDash reference tree |
+| `emdash-latest/` | Clean EmDash baseline/reference tree |
 | `awcmsmicro-dev/` | Active downstream implementation workspace |
 | `docs/` | Root governance, sync, and operator documentation |
 | `scripts/` | Root maintenance and validation scripts |
@@ -42,5 +42,5 @@ sikesra/
 ## Current Notes
 
 - `awcmsmicro-dev/` is the editable downstream tree.
-- `emdash-latest/` is retained as the upstream comparison baseline.
+- `emdash-latest/` is retained as the local EmDash comparison baseline.
 - The active downstream package and template names use the `awcms-sikesra` / `awcms-sikesraTemplate` suffixes.

@@ -1,6 +1,6 @@
 # AWCMS SIKESRA
 
-Independent SIKESRA implementation based on [AWCMS-Micro](https://github.com/ahliweb/awcms-micro), which itself is built on [EmDash](https://github.com/emdash-cms/emdash).
+Independent SIKESRA implementation based on [AWCMS-Micro](https://github.com/ahliweb/awcms-micro), with the checked-in EmDash baseline already available in `emdash-latest/`.
 
 ## Quick Start
 
@@ -40,7 +40,7 @@ sikesra/
 │   │   └── cloudflare/                     # Demo boundary
 │   └── docs/
 │       └── awcms-micro/sikesra/            # SIKESRA docs (protected)
-├── emdash-latest/           # Clean EmDash upstream reference
+├── emdash-latest/           # Clean EmDash baseline/reference
 ├── docs/                    # Root governance docs (protected)
 ├── scripts/                 # Sync and validation scripts (protected)
 └── update-backup/           # Automatic sync backups
@@ -51,12 +51,12 @@ sikesra/
 ### How It Works
 
 ```
-emdash-cms/emdash ──sync──▶ emdash-latest/ ──sync──▶ awcmsmicro-dev/
-     (EmDash)              (clean mirror)         (SIKESRA custom)
+awcms-micro ──sync──▶ awcmsmicro-dev/
+   (upstream)        (SIKESRA custom)
 ```
 
-1. `scripts/update-emdash-latest.sh` refreshes `emdash-latest/` from `emdash-cms/emdash`
-2. `scripts/update-awcmsmicro-dev.sh` rebuilds `awcmsmicro-dev/` from `emdash-latest/`
+1. `scripts/update-awcmsmicro-dev.sh` rebuilds `awcmsmicro-dev/` from `ahliweb/awcms-micro`
+2. `emdash-latest/` stays checked in as the local EmDash comparison baseline; no separate `emdash/` checkout is required
 3. Protected SIKESRA paths are preserved during the rebuild
 
 ### Sync Commands
@@ -151,6 +151,12 @@ awcmsmicro-dev/templates/my-template/
 Sync automatically creates backups in `update-backup/awcmsmicro-dev/`:
 
 ```bash
+pnpm d1:backup:sikesra
+```
+
+The D1 backup script exports the remote `sikesra` database, appends FTS restore commands, writes a checksum, and validates the dump in a temporary SQLite database.
+
+```bash
 # List backups
 ls update-backup/awcmsmicro-dev/
 
@@ -161,7 +167,6 @@ cp -a update-backup/awcmsmicro-dev/20260529-120000/packages/plugins/awcms-sikesr
 
 ## Related Repositories
 
-- [emdash-cms/emdash](https://github.com/emdash-cms/emdash) - Core CMS
 - [ahliweb/awcms-micro](https://github.com/ahliweb/awcms-micro) - AWCMS-Micro base
 - [ahliweb/sikesra](https://github.com/ahliweb/sikesra) - This repository
 
