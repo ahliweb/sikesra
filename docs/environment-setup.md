@@ -28,7 +28,7 @@ No variables required for local development with SQLite.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `GITHUB_TOKEN` | Authenticated API access | [GitHub Settings](https://github.com/settings/tokens) |
-| `AWCSM_UPSTREAM_URL` | Upstream repo URL | `https://github.com/ahliweb/awcms-micro.git` |
+| `AWCMS_UPSTREAM_URL` | Upstream repo URL | `https://github.com/ahliweb/awcms-micro.git` |
 
 ## Cloudflare Token Permissions
 

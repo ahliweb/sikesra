@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 parent_root="${AWCMS_PARENT_ROOT:-$repo_root}"
-source_dir="${AWCSM_UPSTREAM_CACHE_DIR:-${EMDASH_LATEST_DIR:-$parent_root/emdash-latest}}"
+source_dir="${AWCMS_UPSTREAM_CACHE_DIR:-${EMDASH_LATEST_DIR:-$parent_root/emdash-latest}}"
 target_dir="${AWCMSMICRO_DEV_DIR:-$parent_root/awcmsmicro-dev}"
 protected_list="${AWCMSMICRO_PROTECTED_PATHS:-$parent_root/scripts/awcms-micro-protected-paths.txt}"
 dry_run=false
