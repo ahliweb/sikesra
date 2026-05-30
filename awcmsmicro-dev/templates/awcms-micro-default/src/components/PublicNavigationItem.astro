@@ -1,0 +1,49 @@
+---
+import type { MenuItem } from "emdash";
+
+import { getI18nConfig } from "emdash";
+
+import { isLocalizablePath, toLocalePath } from "../utils/locale-path";
+
+interface Props {
+	item: MenuItem;
+	currentPath: string;
+	currentLocale: string;
+	level: number;
+}
+
+const { item, currentPath, currentLocale, level } = Astro.props;
+const i18nConfig = getI18nConfig();
+const localeOptions = {
+	defaultLocale: i18nConfig?.defaultLocale || "en",
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const localizedUrl = toLocalePath(item.url, currentLocale, localeOptions);
+const hasChildren = item.children.length > 0;
+const isActive = currentPath === localizedUrl || (localizedUrl !== "/" && currentPath.startsWith(`${localizedUrl}/`));
+const submenuId = `public-submenu-${item.id}`;
+const shouldPrefetch = !item.target && isLocalizablePath(localizedUrl);
+---
+
+<li class:list={["awcms-public-nav__item", `level-${level}`, item.cssClasses, { "has-children": hasChildren, "is-active": isActive }]}>
+	<a
+		class="awcms-public-nav__link"
+		href={localizedUrl}
+		target={item.target}
+		title={item.titleAttr}
+		data-astro-prefetch={shouldPrefetch ? "hover" : undefined}
+		aria-current={isActive ? "page" : undefined}
+		aria-haspopup={hasChildren ? "true" : undefined}
+		aria-expanded={hasChildren ? "false" : undefined}
+		aria-controls={hasChildren ? submenuId : undefined}
+	>
+		<span>{item.label}</span>
+		{hasChildren && <span class="awcms-public-nav__chevron" aria-hidden="true">⌄</span>}
+	</a>
+
+	{hasChildren && (
+		<ul id={submenuId} class="awcms-public-nav__submenu" data-level={level + 1}>
+			{item.children.map((child) => <Astro.self item={child} currentPath={currentPath} currentLocale={currentLocale} level={level + 1} />)}
+		</ul>
+	)}
+</li>

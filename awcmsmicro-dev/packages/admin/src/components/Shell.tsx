@@ -13,6 +13,7 @@ export interface ShellProps {
 		plugins: Record<
 			string,
 			{
+				name?: string;
 				package?: string;
 				adminPages?: Array<{ path: string; label?: string; icon?: string }>;
 			}

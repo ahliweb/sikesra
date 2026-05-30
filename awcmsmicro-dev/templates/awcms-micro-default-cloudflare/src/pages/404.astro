@@ -1,0 +1,23 @@
+---
+import { getI18nConfig } from "emdash";
+import Base from "../layouts/Base.astro";
+import { toLocalePath } from "../utils/locale-path";
+import { getPublicCopy } from "../utils/public-copy";
+
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<Base title={copy.notFoundTitle} description={copy.notFoundDescription} showFooterWidgets={false}>
+	<div class="card">
+		<h1>{copy.notFoundTitle}</h1>
+		<p>{copy.notFoundMessage}</p>
+		<p><a href={toLocalePath("/", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.returnHome}</a></p>
+	</div>
+</Base>

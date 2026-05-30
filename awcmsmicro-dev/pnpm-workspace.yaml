@@ -42,6 +42,20 @@ overrides:
   "@astrojs/telemetry": "3.3.0"
   # 1.3.0 is deprecated (CWE-502); pin the patched line.
   "@ungap/structured-clone": "^1.3.1"
+  # Patch Dependabot alert: brace-expansion large-range DoS.
+  "brace-expansion": "5.0.6"
+  # Patch Dependabot alert: qs comma-array null/undefined DoS.
+  "qs": "6.15.2"
+  # Patch Dependabot alert: ws uninitialized memory disclosure.
+  "ws": "8.20.1"
+  # Patch Dependabot alert: devalue sparse-array DoS.
+  "devalue": "5.8.1"
+  # Patch Dependabot alert: dompurify forbidden-tag bypass.
+  "dompurify": "3.4.0"
+  # Patch Dependabot alert: simple-git RCE.
+  "simple-git": "3.36.0"
+  # Patch Dependabot alert: path-to-regexp ReDoS.
+  "path-to-regexp": "8.4.0"
 
 enablePrePostScripts: true
 
@@ -62,7 +76,7 @@ catalog:
   "@astrojs/check": ^0.9.7
   "@astrojs/cloudflare": ^13.5.3
   "@astrojs/node": ^10.1.1
-  "@astrojs/react": ^5.0.0
+  "@astrojs/react": ^5.0.6
   "@atcute/atproto": ^3.1.11
   "@atcute/car": ^6.0.0
   "@atcute/cbor": ^2.3.3

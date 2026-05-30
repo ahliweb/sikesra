@@ -1,0 +1,126 @@
+---
+import { getPublicCopy } from "../utils/public-copy";
+import { getI18nConfig } from "emdash";
+
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const copy = getPublicCopy(currentLocale);
+---
+
+<section class="cta-section">
+	<div class="cta-gradient-overlay"></div>
+	<div class="cta-container">
+		<h2 class="cta-title">{copy.ctaTitle}</h2>
+		<p class="cta-subtitle">{copy.ctaSubtitle}</p>
+		<div class="cta-buttons">
+			<a class="btn btn-primary" href="/_emdash/admin/login?redirect=/_emdash/admin">
+				{copy.ctaPrimary}
+			</a>
+			<a class="btn btn-secondary" href="https://github.com/ahliweb/awcms-micro" target="_blank" rel="noopener noreferrer">
+				{copy.ctaSecondary}
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+			</a>
+		</div>
+	</div>
+</section>
+
+<style>
+	.cta-section {
+		position: relative;
+		padding: 5.5rem 2rem;
+		text-align: center;
+		background: linear-gradient(135deg, #070a13 0%, #030712 100%);
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		color: #ffffff;
+		border-radius: 2rem;
+		overflow: hidden;
+		box-shadow: var(--shadow-xl);
+		margin-bottom: 2rem;
+	}
+
+	.cta-gradient-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(circle at top right, rgba(217, 70, 239, 0.15) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 100%);
+		pointer-events: none;
+	}
+
+	.cta-container {
+		position: relative;
+		z-index: 1;
+		max-width: 42rem;
+		margin: 0 auto;
+	}
+
+	.cta-title {
+		font-size: clamp(2rem, 4vw, 2.75rem);
+		font-weight: 800;
+		color: #ffffff;
+		margin: 0 0 1rem;
+		letter-spacing: -0.03em;
+		background: linear-gradient(135deg, #ffffff 40%, #c084fc 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		line-height: 1.2;
+	}
+
+	.cta-subtitle {
+		font-size: 1.125rem;
+		color: rgba(243, 244, 246, 0.8);
+		margin: 0 0 2.5rem;
+		line-height: 1.6;
+		max-width: 32rem;
+		margin-inline: auto;
+	}
+
+	.cta-buttons {
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.875rem 2.25rem;
+		border-radius: 999px;
+		font-weight: 700;
+		font-size: 1rem;
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.btn-primary {
+		background: var(--gradient-primary);
+		color: #ffffff;
+		border: none;
+		box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+	}
+
+	.btn-primary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+		color: #ffffff;
+	}
+
+	.btn-secondary {
+		background: rgba(255, 255, 255, 0.05);
+		color: #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.btn-secondary:hover {
+		background: rgba(255, 255, 255, 0.1);
+		transform: translateY(-2px);
+		border-color: rgba(255, 255, 255, 0.3);
+	}
+</style>

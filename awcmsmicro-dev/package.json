@@ -16,6 +16,7 @@
 		"test:e2e:ui": "playwright test --ui",
 		"build": "pnpm run --filter {./packages/**} build",
 		"postbuild": "node scripts/relink-bins-if-needed.mjs",
+		"d1:mirror:status": "node scripts/d1-mirror-status.mjs",
 		"format": "oxfmt --ignore-path .gitignore && prettier --write .",
 		"format:check": "oxfmt --ignore-path .gitignore --check && prettier --check .",
 		"format:astro": "prettier --write .",

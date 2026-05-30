@@ -1,0 +1,8 @@
+{
+	"extends": "astro/tsconfigs/base",
+	"compilerOptions": {
+		"typeRoots": ["../../node_modules/@types"],
+		"types": ["node"]
+	},
+	"include": ["src", ".astro/types.d.ts"]
+}

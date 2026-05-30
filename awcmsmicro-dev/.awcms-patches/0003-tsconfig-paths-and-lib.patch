@@ -1,0 +1,15 @@
+diff --git a/tsconfig.json b/tsconfig.json
+index 86f19b0..0cfea26 100644
+--- a/tsconfig.json
++++ b/tsconfig.json
+@@ -20,6 +20,9 @@
+ 		"module": "preserve",
+ 		"noEmit": true,
+ 		/* If your code doesn't run in the DOM: */
+-		"lib": ["es2023", "esnext.typedarrays"]
++		"lib": ["ES2023", "ESNext"],
++		"paths": {
++			"astro/*": ["./templates/awcms-micro-default/node_modules/astro/*"]
++		}
+ 	}
+ }

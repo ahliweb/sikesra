@@ -1,0 +1,443 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import { Image } from "emdash/ui";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { resolveEntrySlug, toLocalePath } from "../utils/locale-path";
+import { getPublicCopy } from "../utils/public-copy";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+
+// Import new homepage components
+import HomeHero from "../components/HomeHero.astro";
+import FeatureGrid from "../components/FeatureGrid.astro";
+import UseCaseShowcase from "../components/UseCaseShowcase.astro";
+import HomeCTA from "../components/HomeCTA.astro";
+
+function asImage(value: unknown) {
+	return value as any;
+}
+
+const [
+	{ entries: posts, cacheHint: postsCacheHint },
+	{ entries: newsItems, cacheHint: newsCacheHint },
+	{ entries: pages, cacheHint: pagesCacheHint },
+	{ entries: galleries, cacheHint: galleriesCacheHint },
+] = await Promise.all([
+	getEmDashCollection("posts", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("news", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+	getEmDashCollection("pages", {
+		orderBy: { published_at: "desc" },
+		limit: 6,
+	}),
+	getEmDashCollection("galleries", {
+		orderBy: { published_at: "desc" },
+		limit: 3,
+	}),
+]);
+
+if (Astro.cache?.enabled) {
+	Astro.cache.set(postsCacheHint);
+	Astro.cache.set(newsCacheHint);
+	Astro.cache.set(pagesCacheHint);
+	Astro.cache.set(galleriesCacheHint);
+}
+
+const { siteTitle, siteTagline } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+
+const spotlightPageSlugs = ["about", "public-site-guide", "publishing-workflow"];
+const featuredPages = spotlightPageSlugs
+	.map((slug) => pages.find((page) => resolveEntrySlug(page) === slug))
+	.filter((page): page is (typeof pages)[number] => Boolean(page));
+const gallerySpotlight = galleries.find((gallery) => gallery.data.featured === true) ?? galleries[0];
+const publicCounts = [
+	{ label: copy.counts.posts, value: posts.length },
+	{ label: copy.counts.news, value: newsItems.length },
+	{ label: copy.counts.pages, value: pages.length },
+	{ label: copy.counts.galleries, value: galleries.length },
+];
+---
+
+<BaseLayout title={siteTitle} description={siteTagline} showFooterWidgets={false}>
+	<!-- Hero Section -->
+	<HomeHero />
+
+	<!-- Features Grid Section -->
+	<div id="features">
+		<FeatureGrid />
+	</div>
+
+	<section class="public-counts">
+		{publicCounts.map((item) => (
+			<div class="public-counts__card">
+				<span class="public-counts__label">{item.label}</span>
+				<strong class="public-counts__value">{item.value}</strong>
+			</div>
+		))}
+	</section>
+
+	<!-- Use Cases Showcase Section -->
+	<UseCaseShowcase />
+
+	<!-- Editor shortcuts and content spotlights -->
+	<section class="admin-spotlights">
+		<div class="spotlight-card spotlight-card--actions">
+			<p class="spotlight-kicker">{copy.editorWorkflowShortcuts}</p>
+			<h2 class="spotlight-title">{copy.howConnectsTitle}</h2>
+			<p class="spotlight-copy">{copy.homeIntro}</p>
+			<div class="spotlight-actions">
+				<a class="btn btn-primary" href="/_emdash/admin/content/posts/new">{copy.createPost}</a>
+				<a class="btn btn-secondary" href="/_emdash/admin/content/pages/new">{copy.createPage}</a>
+				<a class="btn btn-secondary" href="/docs" data-astro-prefetch="hover">{copy.viewDocs}</a>
+				<a class="btn btn-secondary" href={toLocalePath("/aggregate", currentLocale, localeOptions)} data-astro-prefetch="hover">{copy.viewPublicAggregate}</a>
+			</div>
+		</div>
+
+		<div class="spotlight-card">
+			<p class="spotlight-kicker">{copy.featuredPagesTitle}</p>
+			<h2 class="spotlight-title">{copy.publicPagesTitle}</h2>
+			<p class="spotlight-copy">{copy.publicPagesDescription}</p>
+			<div class="spotlight-list">
+				{featuredPages.length === 0 ? <p class="no-content-msg">{copy.noPostsCreateOne}</p> : (
+					featuredPages.map((page) => (
+						<a class="spotlight-list-item" href={toLocalePath(`/${resolveEntrySlug(page)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+							<span class="spotlight-list-item__title">{page.data.title}</span>
+							<span class="spotlight-list-item__meta">/{resolveEntrySlug(page)}</span>
+						</a>
+					))
+				)}
+			</div>
+			<a class="spotlight-admin-link" href="/_emdash/admin/content/pages">{copy.managePagesInAdmin}</a>
+		</div>
+
+		<div class="spotlight-card">
+			<p class="spotlight-kicker">{copy.featuredGalleryTitle}</p>
+			<h2 class="spotlight-title">{copy.featuredGalleryTitle}</h2>
+			<p class="spotlight-copy">{copy.featuredGalleryDescription}</p>
+			{gallerySpotlight ? (
+				<a class="spotlight-gallery" href={toLocalePath(`/gallery/${resolveEntrySlug(gallerySpotlight)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+					{gallerySpotlight.data.cover_image && <Image image={asImage(gallerySpotlight.data.cover_image)} class="spotlight-gallery__image" />}
+					<div class="spotlight-gallery__body">
+						<strong>{gallerySpotlight.data.title}</strong>
+						<p>{gallerySpotlight.data.description}</p>
+						<span>{gallerySpotlight.data.location || resolveEntrySlug(gallerySpotlight)}</span>
+					</div>
+				</a>
+			) : <p class="no-content-msg">{copy.noPostsCreateOne}</p>}
+		</div>
+	</section>
+
+	<!-- Recent Content Grid (Posts & News) -->
+	<div class="recent-content-grid">
+		<section class="content-column">
+			<h2 class="content-column-title">{copy.recentPosts}</h2>
+			{posts.length === 0 ? <p class="no-content-msg">{copy.noPostsCreateOne}</p> : (
+				<div class="content-cards">
+					{posts.map((post) => (
+						<div class="content-card">
+							<a class="content-card-link" href={toLocalePath(`/posts/${resolveEntrySlug(post)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+								{post.data.featured_image && <Image image={asImage(post.data.featured_image)} class="content-card-img" />}
+								<h3 class="content-card-title">{post.data.title}</h3>
+							</a>
+							{post.data.excerpt && <p class="content-card-desc">{post.data.excerpt}</p>}
+						</div>
+					))}
+				</div>
+			)}
+		</section>
+
+		<section class="content-column">
+			<h2 class="content-column-title">{copy.latestNews}</h2>
+			{newsItems.length === 0 ? <p class="no-content-msg">{copy.noNewsYet}</p> : (
+				<div class="content-cards">
+					{newsItems.map((item) => (
+						<div class="content-card">
+							<a class="content-card-link" href={toLocalePath(`/news/${resolveEntrySlug(item)}`, currentLocale, localeOptions)} data-astro-prefetch="hover">
+								<h3 class="content-card-title">{item.data.title}</h3>
+							</a>
+							{item.data.summary && <p class="content-card-desc">{item.data.summary}</p>}
+						</div>
+					))}
+				</div>
+			)}
+		</section>
+	</div>
+
+	<!-- Call to Action Banner -->
+	<HomeCTA />
+</BaseLayout>
+
+<style>
+	.admin-spotlights {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
+		margin-bottom: 2.5rem;
+	}
+
+	.spotlight-card {
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: 1.5rem;
+		padding: 1.5rem;
+		box-shadow: var(--shadow-md);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+	}
+
+	.spotlight-card--actions {
+		grid-column: span 1;
+	}
+
+	.public-counts {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		gap: 1rem;
+		margin: 0 0 2.5rem;
+	}
+
+	.public-counts__card {
+		padding: 1rem 1.2rem;
+		border-radius: 1rem;
+		border: 1px solid var(--surface-border);
+		background: var(--surface-main);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.public-counts__label {
+		display: block;
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		margin-bottom: 0.4rem;
+	}
+
+	.public-counts__value {
+		font-size: 2rem;
+		line-height: 1;
+		font-weight: 800;
+		color: var(--text-main);
+	}
+
+	.spotlight-kicker {
+		margin: 0 0 0.6rem;
+		font-size: 0.8rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--accent);
+	}
+
+	.spotlight-title {
+		font-size: 1.4rem;
+		font-weight: 800;
+		margin: 0 0 0.75rem;
+		line-height: 1.2;
+	}
+
+	.spotlight-copy {
+		margin: 0 0 1.25rem;
+		color: var(--text-muted);
+		line-height: 1.6;
+	}
+
+	.spotlight-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.spotlight-list {
+		display: grid;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.spotlight-list-item {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.9rem 1rem;
+		border-radius: 1rem;
+		border: 1px solid var(--surface-border);
+		background: var(--surface-main);
+		text-decoration: none;
+		color: var(--text-main);
+		transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+	}
+
+	.spotlight-list-item:hover {
+		transform: translateY(-2px);
+		border-color: rgba(99, 102, 241, 0.3);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.spotlight-list-item__title {
+		font-weight: 700;
+	}
+
+	.spotlight-list-item__meta {
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		flex-shrink: 0;
+	}
+
+	.spotlight-admin-link {
+		display: inline-flex;
+		margin-top: 0.25rem;
+		font-weight: 700;
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.spotlight-gallery {
+		display: grid;
+		gap: 1rem;
+		text-decoration: none;
+		color: var(--text-main);
+	}
+
+	.spotlight-gallery__image {
+		width: 100%;
+		border-radius: 1rem;
+		display: block;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+	}
+
+	.spotlight-gallery__body {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.spotlight-gallery__body p {
+		margin: 0;
+		color: var(--text-muted);
+		line-height: 1.55;
+	}
+
+	.spotlight-gallery__body span {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	@media (min-width: 1024px) {
+		.spotlight-card--actions {
+			grid-column: span 2;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.spotlight-list-item {
+			flex-direction: column;
+		}
+	}
+
+	.recent-content-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		margin-bottom: 4rem;
+	}
+
+	@media (max-width: 768px) {
+		.recent-content-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+	}
+
+	.content-column {
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: 1.5rem;
+		padding: 2.25rem 2rem;
+		box-shadow: var(--shadow-md);
+		margin-block-end: 0;
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+	}
+
+	.content-column-title {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: var(--text-main);
+		margin: 0 0 1.5rem;
+		border-bottom: 1px solid var(--surface-border);
+		padding-bottom: 0.75rem;
+		letter-spacing: -0.01em;
+	}
+
+	.content-cards {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.content-card {
+		background: var(--surface-main);
+		border: 1px solid var(--surface-border);
+		border-radius: 1rem;
+		padding: 1.25rem;
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.content-card:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-md);
+		border-color: rgba(99, 102, 241, 0.3);
+	}
+
+	.content-card-link {
+		color: var(--text-main);
+		text-decoration: none;
+		display: block;
+	}
+
+	.content-card-link:hover {
+		color: var(--accent);
+		text-shadow: none;
+	}
+
+	.content-card-title {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin: 0 0 0.5rem;
+		line-height: 1.3;
+	}
+
+	.content-card-desc {
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.content-card-img {
+		width: 100%;
+		height: auto;
+		border-radius: 0.5rem;
+		margin-bottom: 0.75rem;
+		display: block;
+	}
+
+	.no-content-msg {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+</style>

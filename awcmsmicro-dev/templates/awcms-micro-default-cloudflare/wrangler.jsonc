@@ -1,0 +1,52 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "awcms-micro",
+	"main": "./src/worker.ts",
+	"compatibility_date": "2026-05-14",
+	"compatibility_flags": ["nodejs_compat"],
+	"placement": { "mode": "smart" },
+	"routes": [
+		{
+			"pattern": "awcms-micro.ahlikoding.com/*",
+			"zone_name": "ahlikoding.com",
+			"custom_domain": false,
+		},
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "awcms-micro-d1",
+			"database_id": "90a77136-8ad0-4247-bd48-7f728c2c0a0c",
+		},
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "awcms-micro-media",
+		},
+	],
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "7382419ae0194a10949290c9e69d0840",
+		},
+	],
+	"images": {
+		"binding": "IMAGES",
+	},
+	"worker_loaders": [
+		{
+			"binding": "LOADER",
+		},
+	],
+	"vars": {
+		"AWCMS_MICRO_SITE_URL": "https://awcms-micro.ahlikoding.com",
+		"AWCMS_MICRO_STORAGE_PUBLIC_BASE_URL": "https://awcms-micro-s3.ahlikoding.com",
+		"AWCMS_MICRO_GALLERY_MEDIA_STORAGE": "r2",
+		"AWCMS_MICRO_GALLERY_CLOUDFLARE_IMAGES": "optional",
+		"AWCMS_MICRO_GALLERY_CLOUDFLARE_STREAM": "optional",
+	},
+	"observability": {
+		"enabled": true,
+	},
+}

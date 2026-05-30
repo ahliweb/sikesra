@@ -1,0 +1,109 @@
+---
+import { getSiteSettings, getI18nConfig } from "emdash";
+import Base from "../layouts/Base.astro";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+
+// Fetch SIKESRA public aggregates
+const url = new URL("/_emdash/api/plugins/awcms-micro-sikesra/public/status", Astro.url.origin);
+interface SikesraPublicCategory {
+	code: string;
+	label: string;
+	total: number;
+	verified: number;
+	suppressed: boolean;
+}
+
+interface SikesraData {
+	status: string;
+	governanceMode: string;
+	publicAggregate: {
+		categories: SikesraPublicCategory[];
+		caveat: string;
+	};
+}
+
+let sikesraData: SikesraData = {
+	status: "healthy",
+	governanceMode: "review",
+	publicAggregate: {
+		categories: [],
+		caveat: "No data available."
+	}
+};
+
+try {
+	const res = await fetch(url);
+	if (res.ok) {
+		sikesraData = await res.json();
+	}
+} catch (err) {
+	console.error("Failed to fetch SIKESRA status:", err);
+}
+
+resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+
+const isId = currentLocale.startsWith("id");
+const copy = {
+	title: isId ? "Rekapitulasi SIKESRA" : "SIKESRA Recapitulation",
+	description: isId ? "Halaman rekapitulasi data publik aman SIKESRA." : "Public aggregate safety page for SIKESRA.",
+	heading: isId ? "Rekapitulasi SIKESRA" : "SIKESRA Public Recapitulation",
+	kicker: isId ? "TATA KELOLA & DATA SOSIAL" : "SOCIAL & GOVERNANCE DATA",
+	intro: isId ? "Berikut adalah ringkasan data agregat aman dari sistem informasi kesejahteraan rakyat (SIKESRA)." : "Here is the public-safe aggregate summary of the welfare information system (SIKESRA).",
+	statusLabel: isId ? "Status Sistem" : "System Status",
+	govModeLabel: isId ? "Mode Tata Kelola" : "Governance Mode",
+	suppressedText: isId ? "Disupresi (Jumlah terlalu rendah untuk keamanan privasi)" : "Suppressed (Count too low for privacy safety)",
+	totalLabel: isId ? "Total Entitas" : "Total Entities",
+	verifiedLabel: isId ? "Terverifikasi" : "Verified",
+	privacyNotice: isId ? "Catatan Keamanan Data Publik" : "Public Data Security Notice",
+	privacyNoticeDesc: isId ? "SIKESRA menerapkan aturan penyembunyian sel kecil (small-cell suppression). Kategori dengan jumlah entitas kurang dari batas minimum (3 entitas) akan disembunyikan total dan rinciannya secara otomatis demi melindungi identitas privasi penerima manfaat." : "SIKESRA enforces small-cell suppression rules. Categories with total entity counts below the safety threshold (3 entities) are automatically hidden in aggregate count to protect beneficiary identities.",
+};
+---
+
+<Base title={copy.title} description={copy.description} showFooterWidgets={false}>
+	<section class="card" style="margin-bottom:2rem;">
+		<p class="kicker">{copy.kicker}</p>
+		<h1 style="font-size:clamp(2.25rem,5vw,3.5rem);margin:0 0 1rem;">{copy.heading}</h1>
+		<p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:1.1rem;">{copy.intro}</p>
+		<div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.9rem;border-top:1px solid rgba(15,23,42,0.08);padding-top:1rem;">
+			<div>
+				<strong>{copy.statusLabel}:</strong> <span style="text-transform:uppercase;color:var(--accent);font-weight:600;">{sikesraData.status}</span>
+			</div>
+			<div>
+				<strong>{copy.govModeLabel}:</strong> <span style="text-transform:capitalize;color:var(--accent);font-weight:600;">{sikesraData.governanceMode}</span>
+			</div>
+		</div>
+	</section>
+
+	<section class="card" style="margin-bottom:2rem;">
+		<div style="display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+			{sikesraData.publicAggregate?.categories?.map((cat) => (
+				<div style="border:1px solid rgba(15,23,42,0.08);border-radius:1rem;padding:1.5rem;background:#fff;display:flex;flex-direction:column;justify-content:between;">
+					<h3 style="margin:0 0 0.5rem;font-size:1.25rem;font-weight:700;">{cat.label}</h3>
+					{cat.suppressed ? (
+						<p style="color:var(--text-muted);font-size:0.87rem;font-style:italic;margin:auto 0 0;">{copy.suppressedText}</p>
+					) : (
+						<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:auto;">
+							<div>
+								<span style="font-size:0.85rem;color:var(--text-muted);display:block;">{copy.totalLabel}</span>
+								<strong style="font-size:2rem;font-weight:800;color:var(--primary);">{cat.total}</strong>
+							</div>
+							<div>
+								<span style="font-size:0.85rem;color:var(--text-muted);display:block;">{copy.verifiedLabel}</span>
+								<strong style="font-size:2rem;font-weight:800;color:var(--accent);">{cat.verified}</strong>
+							</div>
+						</div>
+					)}
+				</div>
+			))}
+		</div>
+	</section>
+
+	<section class="card">
+		<h2 style="margin-top:0;">{copy.privacyNotice}</h2>
+		<p style="color:var(--text-muted);line-height:1.6;margin-bottom:1rem;">{copy.privacyNoticeDesc}</p>
+		<p style="color:var(--text-muted);font-size:0.9rem;font-style:italic;margin-bottom:0;">{sikesraData.publicAggregate?.caveat}</p>
+	</section>
+</Base>

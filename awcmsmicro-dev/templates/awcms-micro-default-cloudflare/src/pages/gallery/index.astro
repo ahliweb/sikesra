@@ -1,0 +1,187 @@
+---
+import { getEmDashCollection, getI18nConfig } from "emdash";
+import BaseLayout from "../../layouts/Base.astro";
+import GalleryCard from "../../components/GalleryCard.astro";
+import GalleryFilters from "../../components/GalleryFilters.astro";
+import { resolveEntrySlug, toLocalePath } from "../../utils/locale-path";
+import { getGalleryCopy } from "../../utils/gallery-copy";
+
+function asString(value: unknown, fallback = "") {
+	return typeof value === "string" ? value : fallback;
+}
+
+const activeType = Astro.url.searchParams.get("type") ?? "all";
+const search = Astro.url.searchParams.get("search")?.trim() ?? "";
+const page = parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const pageSize = 6;
+
+const { entries: galleries, cacheHint } = await getEmDashCollection("galleries", {
+	orderBy: { published_at: "desc" },
+});
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+let visibleGalleries = activeType === "all" ? galleries : galleries.filter((gallery) => gallery.data.gallery_type === activeType);
+
+if (search) {
+	visibleGalleries = visibleGalleries.filter((gallery) => {
+		const title = asString(gallery.data.title).toLowerCase();
+		const description = asString(gallery.data.description).toLowerCase();
+		const location = asString(gallery.data.location).toLowerCase();
+		const query = search.toLowerCase();
+		return title.includes(query) || description.includes(query) || location.includes(query);
+	});
+}
+
+const totalItems = visibleGalleries.length;
+const totalPages = Math.ceil(totalItems / pageSize);
+const currentPage = Math.max(1, Math.min(page, totalPages));
+const startIndex = (currentPage - 1) * pageSize;
+const paginatedGalleries = visibleGalleries.slice(startIndex, startIndex + pageSize);
+
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getGalleryCopy(currentLocale);
+---
+
+<BaseLayout title={copy.pageTitle} description={copy.pageDescription} showFooterWidgets={false}>
+	<section>
+		<p class="kicker">{copy.pageKicker}</p>
+		<h1>{copy.pageHeading}</h1>
+		<p>{copy.pageIntro}</p>
+
+		<div class="gallery-controls">
+			<form method="GET" class="search-form">
+				{activeType !== "all" && <input type="hidden" name="type" value={activeType} />}
+				<input type="search" name="search" value={search} placeholder={currentLocale === "id" ? "Cari galeri..." : "Search galleries..."} class="search-input" />
+				<button type="submit" class="search-button">{currentLocale === "id" ? "Cari" : "Search"}</button>
+			</form>
+			<GalleryFilters activeType={activeType} />
+		</div>
+
+		{paginatedGalleries.length === 0 ? <p>{copy.noGalleries || (currentLocale === "id" ? "Belum ada galeri." : "No galleries found.")}</p> : (
+			<>
+				<div class="gallery-index-grid">
+					{paginatedGalleries.map((gallery) => (
+						<GalleryCard
+							href={toLocalePath(`/gallery/${resolveEntrySlug(gallery)}`, currentLocale, localeOptions)}
+							title={asString(gallery.data.title, gallery.id)}
+							description={asString(gallery.data.description)}
+							cover={gallery.data.cover_image as any}
+							type={asString(gallery.data.gallery_type)}
+							location={asString(gallery.data.location)}
+							date={asString(gallery.data.event_date)}
+							featured={gallery.data.featured === true}
+						/>
+					))}
+				</div>
+
+				{totalPages > 1 && (
+					<div class="pagination">
+						{currentPage > 1 && (
+							<a href={`?page=${currentPage - 1}${search ? `&search=${encodeURIComponent(search)}` : ""}${activeType !== "all" ? `&type=${activeType}` : ""}`} class="pagination-btn">
+								&larr; {currentLocale === "id" ? "Sebelumnya" : "Previous"}
+							</a>
+						)}
+						<span class="pagination-info">
+							{currentLocale === "id" ? `Halaman ${currentPage} dari ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+						</span>
+						{currentPage < totalPages && (
+							<a href={`?page=${currentPage + 1}${search ? `&search=${encodeURIComponent(search)}` : ""}${activeType !== "all" ? `&type=${activeType}` : ""}`} class="pagination-btn">
+								{currentLocale === "id" ? "Berikutnya" : "Next"} &rarr;
+							</a>
+						)}
+					</div>
+				)}
+			</>
+		)}
+	</section>
+</BaseLayout>
+
+<style>
+	.gallery-controls {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	@media (min-width: 768px) {
+		.gallery-controls {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+		}
+	}
+
+	.search-form {
+		display: flex;
+		gap: 0.5rem;
+		width: 100%;
+		max-width: 400px;
+	}
+
+	.search-input {
+		flex: 1;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--surface-border);
+		border-radius: 0.5rem;
+		background: var(--surface-card);
+		color: var(--text-main);
+	}
+
+	.search-button {
+		padding: 0.5rem 1rem;
+		background: var(--accent);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		font-weight: 500;
+	}
+
+	.search-button:hover {
+		opacity: 0.9;
+	}
+
+	.gallery-index-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+		gap: 1.5rem;
+		margin-bottom: 2rem;
+	}
+
+	.pagination {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 3rem;
+	}
+
+	.pagination-btn {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--surface-border);
+		border-radius: 0.5rem;
+		color: var(--text-main);
+		text-decoration: none;
+		background: var(--surface-card);
+		font-size: 0.9rem;
+		transition: all 0.2s ease;
+	}
+
+	.pagination-btn:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.pagination-info {
+		font-size: 0.9rem;
+		color: var(--text-muted);
+	}
+</style>

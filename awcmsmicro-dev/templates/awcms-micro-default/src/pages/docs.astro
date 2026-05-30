@@ -1,0 +1,592 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+import { getDocsCopy } from "@awcms-micro/plugin-docs";
+import { resolveEntrySlug, toLocalePath } from "../utils/locale-path";
+
+const { entries: pages, cacheHint } = await getEmDashCollection("pages", {
+	orderBy: { published_at: "desc" },
+	limit: 6,
+});
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const { siteTitle } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const copy = getDocsCopy(currentLocale);
+
+const publicPageSlugs = ["about", "public-site-guide", "publishing-workflow", "docs-roadmap"];
+const publicPages = publicPageSlugs
+	.map((slug) => pages.find((page) => resolveEntrySlug(page) === slug))
+	.filter((page): page is (typeof pages)[number] => Boolean(page));
+
+// Map each reference document to an icon
+const refIcons: Record<string, string> = {
+	"README.md": "📖",
+	"AGENTS.md": "🤖",
+	"docs/implementation-instructions.md": "🛠️",
+	"docs/synchronization-workflow.md": "🔄",
+	"docs/awcms-micro-implementation-boundaries.md": "🛡️",
+	"docs/operator-workflow.md": "⚙️",
+};
+
+// Map section titles to icons
+const sectionIcons = ["🏗️", "🔁", "🔒"];
+---
+
+<BaseLayout title={`${copy.title} | ${siteTitle}`} description={copy.intro}>
+	<!-- Hero -->
+	<section class="docs-hero">
+		<div class="docs-hero__badge">{copy.kicker}</div>
+		<h1 class="docs-hero__title">{copy.title}</h1>
+		<p class="docs-hero__intro">{copy.intro}</p>
+		<div class="docs-hero__actions">
+			<a class="button-link primary" href="/_emdash/admin/plugins/awcms-micro-docs/" id="docs-open-page">
+				<span class="btn-icon">📄</span>
+				{copy.openDocsAdmin}
+			</a>
+			<a class="button-link" href="/_emdash/admin" data-astro-prefetch="hover" id="docs-open-admin">
+				<span class="btn-icon">⚡</span>
+				{copy.openAdmin}
+			</a>
+		</div>
+		<!-- Decorative orbs -->
+		<div class="hero-orb hero-orb--1" aria-hidden="true"></div>
+		<div class="hero-orb hero-orb--2" aria-hidden="true"></div>
+	</section>
+
+	<!-- Reference Documents Grid -->
+	<section class="docs-refs">
+		<h2 class="docs-section-title">
+			<span class="docs-section-icon">📚</span>
+			{copy.referencesTitle}
+		</h2>
+		<div class="docs-refs__grid">
+			{copy.references.map((reference) => (
+				<article class="ref-card">
+					<div class="ref-card__icon">{refIcons[reference.title] ?? "📄"}</div>
+					<div class="ref-card__body">
+						<strong class="ref-card__title">{reference.title}</strong>
+						<p class="ref-card__desc">{reference.description}</p>
+					</div>
+				</article>
+			))}
+		</div>
+	</section>
+
+	<!-- PRD / Roadmap Section -->
+	<section class="docs-prd">
+		<h2 class="docs-section-title">
+			<span class="docs-section-icon">🗺️</span>
+			{copy.prTitle}
+		</h2>
+		<p class="docs-prd__intro">{copy.prIntro}</p>
+		<ul class="docs-prd__bullets">
+			{copy.prBullets.map((bullet) => (
+				<li class="docs-prd__bullet">
+					<span class="bullet-check" aria-hidden="true">✓</span>
+					{bullet}
+				</li>
+			))}
+		</ul>
+
+		<div class="docs-prd__backlog">
+			<h3 class="docs-prd__backlog-title">{copy.prBacklogTitle}</h3>
+			<div class="docs-prd__chips">
+				{copy.prBacklog.map((item) => (
+					<span class="chip">{item}</span>
+				))}
+			</div>
+		</div>
+	</section>
+
+	<section class="docs-public-pages">
+		<h2 class="docs-section-title">
+			<span class="docs-section-icon">🧩</span>
+			{copy.publicPagesTitle}
+		</h2>
+		<p class="docs-public-pages__intro">{copy.publicPagesDescription}</p>
+		<div class="docs-public-pages__grid">
+			{publicPages.map((page) => (
+				<article class="docs-public-pages__card">
+					<div>
+						<h3 class="docs-public-pages__title">{page.data.title}</h3>
+						<p class="docs-public-pages__meta">/{resolveEntrySlug(page)}</p>
+					</div>
+					<div class="docs-public-pages__actions">
+						<a class="docs-public-pages__link" href={toLocalePath(`/${resolveEntrySlug(page)}`, currentLocale, { defaultLocale, locales: i18nConfig?.locales || ["en", "id"] })} data-astro-prefetch="hover">
+							{copy.openPage}
+						</a>
+						<a class="docs-public-pages__link docs-public-pages__link--secondary" href="/_emdash/admin/content/pages">
+							{copy.managePagesInAdmin}
+						</a>
+					</div>
+				</article>
+			))}
+		</div>
+	</section>
+
+	<!-- Implementation Sections (timeline layout) -->
+	<div class="docs-timeline">
+		{copy.sections.map((section, idx) => (
+			<section class="timeline-item">
+				<div class="timeline-item__marker" aria-hidden="true">
+					<span class="timeline-item__icon">{sectionIcons[idx] ?? "📌"}</span>
+					<div class="timeline-item__line"></div>
+				</div>
+				<div class="timeline-item__content">
+					<h2 class="timeline-item__title">{section.title}</h2>
+					<p class="timeline-item__intro">{section.intro}</p>
+					<ul class="timeline-item__bullets">
+						{section.bullets.map((bullet) => (
+							<li class="timeline-bullet">
+								<code class="timeline-bullet__code">{bullet}</code>
+							</li>
+						))}
+					</ul>
+				</div>
+			</section>
+		))}
+	</div>
+</BaseLayout>
+
+<style>
+	/* ─── Hero ──────────────────────────────────────────────────────── */
+	.docs-hero {
+		position: relative;
+		overflow: hidden;
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-lg);
+		padding: 4rem 3rem 3.5rem;
+		margin-block-end: 2rem;
+		box-shadow: var(--shadow-xl);
+		text-align: center;
+	}
+
+	.hero-orb {
+		position: absolute;
+		border-radius: 50%;
+		filter: blur(60px);
+		pointer-events: none;
+	}
+	.hero-orb--1 {
+		width: 320px;
+		height: 320px;
+		background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
+		top: -80px;
+		right: -80px;
+	}
+	.hero-orb--2 {
+		width: 240px;
+		height: 240px;
+		background: radial-gradient(circle, rgba(217, 70, 239, 0.14), transparent 70%);
+		bottom: -60px;
+		left: -60px;
+	}
+
+	.docs-hero__badge {
+		display: inline-block;
+		padding: 0.3rem 1rem;
+		border-radius: 999px;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(217, 70, 239, 0.12));
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		color: var(--accent);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		margin-bottom: 1.25rem;
+	}
+
+	.docs-hero__title {
+		font-size: clamp(2rem, 4.5vw, 3.5rem);
+		font-weight: 800;
+		margin: 0 0 1rem;
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+	}
+
+	.docs-hero__intro {
+		font-size: 1.1rem;
+		color: var(--text-muted);
+		max-width: 52rem;
+		margin: 0 auto 2rem;
+		line-height: 1.7;
+	}
+
+	.docs-hero__actions {
+		display: flex;
+		gap: 0.875rem;
+		flex-wrap: wrap;
+		justify-content: center;
+		position: relative;
+		z-index: 1;
+	}
+
+	.btn-icon {
+		margin-right: 0.35rem;
+	}
+
+	/* ─── Shared section title ───────────────────────────────────────── */
+	.docs-section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 1.5rem;
+		font-weight: 800;
+		margin: 0 0 1.75rem;
+		letter-spacing: -0.01em;
+	}
+
+	.docs-section-icon {
+		font-size: 1.4rem;
+		line-height: 1;
+	}
+
+	/* ─── Reference Cards ────────────────────────────────────────────── */
+	.docs-refs {
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-lg);
+		padding: 2.5rem;
+		margin-block-end: 2rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.docs-refs__grid {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	}
+
+	.ref-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		background: var(--surface-main);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-md);
+		padding: 1.25rem 1.5rem;
+		transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+		cursor: default;
+	}
+
+	.ref-card:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-md);
+		border-color: rgba(99, 102, 241, 0.35);
+	}
+
+	.ref-card__icon {
+		font-size: 1.75rem;
+		line-height: 1;
+		flex-shrink: 0;
+		margin-top: 0.1rem;
+	}
+
+	.ref-card__body {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.ref-card__title {
+		display: block;
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 0.35rem;
+		font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+		word-break: break-all;
+	}
+
+	.ref-card__desc {
+		font-size: 0.875rem;
+		color: var(--text-muted);
+		margin: 0;
+		line-height: 1.55;
+	}
+
+	/* ─── PRD Section ────────────────────────────────────────────────── */
+	.docs-prd {
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-lg);
+		padding: 2.5rem;
+		margin-block-end: 2rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.docs-prd__intro {
+		color: var(--text-muted);
+		margin: 0 0 1.5rem;
+		font-size: 1rem;
+		line-height: 1.7;
+		max-width: 60rem;
+	}
+
+	.docs-prd__bullets {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.docs-prd__bullet {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		font-size: 0.95rem;
+		color: var(--text-main);
+		line-height: 1.6;
+	}
+
+	.bullet-check {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.4rem;
+		height: 1.4rem;
+		border-radius: 50%;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(217, 70, 239, 0.15));
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		color: var(--accent);
+		font-size: 0.7rem;
+		font-weight: 800;
+		flex-shrink: 0;
+		margin-top: 0.15rem;
+	}
+
+	.docs-prd__backlog {
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--surface-border);
+	}
+
+	.docs-public-pages {
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-lg);
+		padding: 2.5rem;
+		margin-block-end: 2rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.docs-public-pages__intro {
+		color: var(--text-muted);
+		margin: 0 0 1.5rem;
+		line-height: 1.7;
+	}
+
+	.docs-public-pages__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+	}
+
+	.docs-public-pages__card {
+		background: var(--surface-main);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-md);
+		padding: 1.25rem;
+		display: grid;
+		gap: 1rem;
+	}
+
+	.docs-public-pages__title {
+		font-size: 1rem;
+		font-weight: 700;
+		margin: 0 0 0.35rem;
+	}
+
+	.docs-public-pages__meta {
+		margin: 0;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	.docs-public-pages__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.docs-public-pages__link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.6rem 0.9rem;
+		border-radius: 999px;
+		background: var(--accent);
+		color: white;
+		text-decoration: none;
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+
+	.docs-public-pages__link--secondary {
+		background: transparent;
+		color: var(--text-main);
+		border: 1px solid var(--surface-border);
+	}
+
+	.docs-prd__backlog-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		margin: 0 0 1rem;
+	}
+
+	.docs-prd__chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.chip {
+		display: inline-block;
+		padding: 0.3rem 0.875rem;
+		border-radius: 999px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.1));
+		border: 1px solid rgba(99, 102, 241, 0.2);
+		color: var(--accent);
+		transition: all 0.2s ease;
+	}
+
+	.chip:hover {
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(217, 70, 239, 0.2));
+		border-color: rgba(99, 102, 241, 0.4);
+		transform: translateY(-1px);
+	}
+
+	/* ─── Timeline Sections ──────────────────────────────────────────── */
+	.docs-timeline {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.timeline-item {
+		display: grid;
+		grid-template-columns: 3.5rem 1fr;
+		gap: 0 1.5rem;
+		background: var(--gradient-surface);
+		border: 1px solid var(--surface-border);
+		border-radius: var(--radius-lg);
+		padding: 2rem 2.5rem 2rem 1.5rem;
+		margin-block-end: 2rem;
+		box-shadow: var(--shadow-md);
+		transition: box-shadow 0.3s ease, border-color 0.3s ease;
+	}
+
+	.timeline-item:hover {
+		box-shadow: var(--shadow-lg);
+		border-color: rgba(99, 102, 241, 0.25);
+	}
+
+	.timeline-item__marker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding-top: 0.25rem;
+	}
+
+	.timeline-item__icon {
+		font-size: 1.75rem;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+
+	.timeline-item__line {
+		width: 2px;
+		flex: 1;
+		background: linear-gradient(to bottom, rgba(99, 102, 241, 0.25), transparent);
+		border-radius: 1px;
+		min-height: 1rem;
+	}
+
+	.timeline-item__content {
+		min-width: 0;
+	}
+
+	.timeline-item__title {
+		font-size: 1.35rem;
+		font-weight: 800;
+		margin: 0 0 0.5rem;
+		letter-spacing: -0.01em;
+		color: var(--text-main);
+	}
+
+	.timeline-item__intro {
+		color: var(--text-muted);
+		font-size: 0.95rem;
+		margin: 0 0 1.25rem;
+		line-height: 1.65;
+	}
+
+	.timeline-item__bullets {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.timeline-bullet {
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.timeline-bullet__code {
+		display: inline-block;
+		padding: 0.3rem 0.7rem;
+		background: rgba(99, 102, 241, 0.06);
+		border: 1px solid rgba(99, 102, 241, 0.12);
+		border-radius: 0.4rem;
+		font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+		font-size: 0.82rem;
+		color: var(--text-main);
+		line-height: 1.55;
+		word-break: break-word;
+	}
+
+	/* ─── Responsive ─────────────────────────────────────────────────── */
+	@media (max-width: 640px) {
+		.docs-hero {
+			padding: 2.5rem 1.5rem 2.5rem;
+		}
+
+		.docs-hero__title {
+			font-size: clamp(1.6rem, 6vw, 2.4rem);
+		}
+
+		.docs-refs,
+		.docs-prd,
+		.timeline-item {
+			padding: 1.5rem;
+		}
+
+		.timeline-item {
+			grid-template-columns: 2.5rem 1fr;
+			gap: 0 1rem;
+		}
+
+		.docs-refs__grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

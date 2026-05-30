@@ -1,0 +1,87 @@
+---
+import { getEmDashCollection, getI18nConfig, getSiteSettings } from "emdash";
+import Base from "../layouts/Base.astro";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+import { getDocsCopy } from "@awcms-micro/plugin-docs";
+import { resolveEntrySlug, toLocalePath } from "../utils/locale-path";
+
+const { entries: pages, cacheHint } = await getEmDashCollection("pages", {
+	orderBy: { published_at: "desc" },
+	limit: 6,
+});
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const { siteTitle } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const copy = getDocsCopy(currentLocale);
+
+const publicPageSlugs = ["about", "public-site-guide", "publishing-workflow", "docs-roadmap"];
+const publicPages = publicPageSlugs
+	.map((slug) => pages.find((page) => resolveEntrySlug(page) === slug))
+	.filter((page): page is (typeof pages)[number] => Boolean(page));
+---
+
+<Base title={`${copy.title} | ${siteTitle}`} description={copy.intro} showFooterWidgets={false}>
+	<section class="card" style="margin-bottom:2rem;">
+		<p class="kicker">{copy.kicker}</p>
+		<h1 style="font-size:clamp(2.25rem,5vw,4rem);margin:0 0 1rem;">{copy.title}</h1>
+		<p style="max-width:56rem;">{copy.intro}</p>
+		<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1.25rem;">
+			<a class="btn btn-primary" href="/_emdash/admin/plugins/awcms-micro-docs/">{copy.openDocsAdmin}</a>
+			<a class="btn btn-secondary" href="/_emdash/admin" data-astro-prefetch="hover">{copy.openAdmin}</a>
+		</div>
+	</section>
+
+	<section style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:1.5rem;">
+		{copy.references.map((reference) => (
+			<article class="card">
+				<strong>{reference.title}</strong>
+				<p style="margin-bottom:0;">{reference.description}</p>
+			</article>
+		))}
+	</section>
+
+	<section class="card" style="margin-bottom:1rem;">
+		<h2 style="margin-top:0;">{copy.prTitle}</h2>
+		<p>{copy.prIntro}</p>
+		<ul style="padding-left:1.25rem;">
+			{copy.prBullets.map((bullet) => <li>{bullet}</li>)}
+		</ul>
+		<h3>{copy.prBacklogTitle}</h3>
+		<ul style="padding-left:1.25rem;">
+			{copy.prBacklog.map((item) => <li>{item}</li>)}
+		</ul>
+	</section>
+
+	<section class="card" style="margin-bottom:1rem;">
+		<h2 style="margin-top:0;">{copy.publicPagesTitle}</h2>
+		<p>{copy.publicPagesDescription}</p>
+		<div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+			{publicPages.map((page) => (
+				<article style="border:1px solid var(--surface-border);border-radius:1rem;padding:1rem;background:var(--surface-main);display:grid;gap:0.75rem;">
+					<div>
+						<strong>{page.data.title}</strong>
+						<p style="margin:0;color:var(--text-muted);font-size:0.9rem;">/{resolveEntrySlug(page)}</p>
+					</div>
+					<div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+						<a class="btn btn-primary" href={toLocalePath(`/${resolveEntrySlug(page)}`, currentLocale, { defaultLocale, locales: i18nConfig?.locales || ["en", "id"] })} data-astro-prefetch="hover">{copy.openPage}</a>
+						<a class="btn btn-secondary" href="/_emdash/admin/content/pages">{copy.managePagesInAdmin}</a>
+					</div>
+				</article>
+			))}
+		</div>
+	</section>
+
+	{copy.sections.map((section) => (
+		<section class="card" style="margin-bottom:1rem;">
+			<h2 style="margin-top:0;">{section.title}</h2>
+			<p>{section.intro}</p>
+			<ul style="padding-left:1.25rem;">
+				{section.bullets.map((bullet) => <li>{bullet}</li>)}
+			</ul>
+		</section>
+	))}
+</Base>

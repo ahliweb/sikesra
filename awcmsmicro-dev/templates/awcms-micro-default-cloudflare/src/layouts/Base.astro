@@ -1,0 +1,417 @@
+---
+import { getI18nConfig, getSiteSettings } from "emdash";
+import { createPublicPageContext } from "emdash/page";
+import { EmDashBodyEnd, EmDashBodyStart, EmDashHead, WidgetArea } from "emdash/ui";
+import LiveSearch from "emdash/ui/search";
+import PublicNavigation from "../components/PublicNavigation.astro";
+import LanguageSwitcher from "../components/public/LanguageSwitcher.astro";
+import { toLocalePath } from "../utils/locale-path";
+import { getPublicCopy } from "../utils/public-copy";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+
+interface Props {
+	title: string;
+	pageTitle?: string | null;
+	description?: string | null;
+	image?: string | null;
+	canonical?: string | null;
+	content?: { collection: string; id: string; slug?: string | null };
+	showFooterWidgets?: boolean;
+}
+
+const { title, pageTitle, description, image, canonical, content, showFooterWidgets = true } = Astro.props;
+const { siteTitle, siteTagline, siteLogo } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+const utilityNavLabel = currentLocale.startsWith("id") ? "Navigasi utilitas" : "Utility navigation";
+const mobileMenuLabel = currentLocale.startsWith("id") ? "Buka menu" : "Toggle Menu";
+const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
+const pageDescription = description ?? siteTagline;
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: content?.collection === "news" ? "news" : "website",
+	title: fullTitle,
+	pageTitle: pageTitle ?? title,
+	description: pageDescription,
+	canonical,
+	image,
+	content,
+	siteName: siteTitle,
+});
+---
+
+<!doctype html>
+<html lang={currentLocale}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{fullTitle}</title>
+		{pageDescription && <meta name="description" content={pageDescription} />}
+		{canonical && <link rel="canonical" href={canonical} />}
+		<EmDashHead page={pageCtx} />
+		<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+		<style>
+			:root {
+				color-scheme: light;
+				font-family: 'Inter', system-ui, sans-serif;
+				--bg-main: #ffffff;
+				--surface-main: #f8fafc;
+				--surface-border: rgba(14, 165, 233, 0.15);
+				--text-main: #0f172a;
+				--text-muted: #475569;
+				--accent: #0ea5e9;
+				--accent-hover: #0284c7;
+				--gradient-primary: linear-gradient(135deg, #0ea5e9, #6366f1);
+				--gradient-surface: linear-gradient(180deg, #ffffff, #f1f5f9);
+
+				/* EmDash LiveSearch Variables */
+				--emdash-search-bg: var(--surface-main);
+				--emdash-search-text: var(--text-main);
+				--emdash-search-muted: var(--text-muted);
+				--emdash-search-border: var(--surface-border);
+				--emdash-search-border-focus: var(--accent);
+				--emdash-search-hover: var(--surface-border);
+				--emdash-search-highlight: var(--accent);
+			}
+
+			:root.dark {
+				color-scheme: dark;
+				--bg-main: #0a0e17;
+				--surface-main: rgba(15, 23, 42, 0.6);
+				--surface-border: rgba(125, 211, 252, 0.1);
+				--text-main: #f8fafc;
+				--text-muted: #94a3b8;
+				--accent: #38bdf8;
+				--accent-hover: #7dd3fc;
+				--gradient-surface: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4));
+			}
+
+			body {
+				margin: 0;
+				background: var(--bg-main);
+				background-image: 
+					radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+					radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 40%);
+				color: var(--text-main);
+				line-height: 1.6;
+			}
+
+			h1, h2, h3, h4, .brand {
+				font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+			}
+
+			a {
+				color: var(--accent);
+				text-decoration: none;
+				transition: color 0.2s ease, text-shadow 0.2s ease;
+			}
+
+			a:hover {
+				color: var(--accent-hover);
+				text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+			}
+
+			.header,
+			.main,
+			.footer {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding-inline: 1.5rem;
+			}
+
+			.header {
+				padding-top: 1.5rem;
+				padding-bottom: 1.5rem;
+				border-bottom: 1px solid var(--surface-border);
+				background: var(--bg-main);
+				backdrop-filter: blur(12px);
+				position: sticky;
+				top: 0;
+				z-index: 50;
+			}
+
+			input, button, .widget-search__input {
+				background: var(--surface-main);
+				color: var(--text-main);
+				border: 1px solid var(--surface-border);
+				border-radius: 0.5rem;
+				padding: 0.5rem 0.75rem;
+			}
+
+			.widget-recent-posts__link, .awcms-public-nav__link {
+				color: var(--text-main);
+			}
+
+			.awcms-public-nav__link:hover {
+				color: var(--accent-hover);
+			}
+
+			.nav {
+				display: flex;
+				gap: 1.5rem;
+				align-items: center;
+				justify-content: space-between;
+				flex-wrap: wrap;
+			}
+
+			.utility-links {
+				display: flex;
+				gap: 1rem;
+				flex-wrap: wrap;
+				align-items: center;
+				margin-left: auto;
+			}
+
+			.utility-links a {
+				color: var(--text-muted);
+				font-weight: 500;
+			}
+
+			.utility-links a:hover {
+				color: var(--text-main);
+				text-shadow: none;
+			}
+
+			.nav-brand-container {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.mobile-menu-toggle {
+				display: none;
+				background: none;
+				border: none;
+				color: var(--text-main);
+				padding: 0.5rem;
+				cursor: pointer;
+			}
+
+			.header-search {
+				margin-top: 1rem;
+				max-width: 28rem;
+			}
+
+			.header-actions {
+				margin-top: 1rem;
+				display: flex;
+				gap: 0.75rem;
+				flex-wrap: wrap;
+			}
+
+			@media (max-width: 48rem) {
+				.primary-nav-shell {
+					flex-direction: column;
+					align-items: flex-start;
+					width: 100%;
+					gap: 1rem;
+				}
+				
+				.utility-links {
+					margin-left: 0;
+					width: 100%;
+					padding-top: 1rem;
+					border-top: 1px solid var(--surface-border);
+					justify-content: flex-start;
+				}
+
+				.nav-brand-container {
+					width: 100%;
+				}
+
+				.mobile-menu-toggle {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+				}
+
+				/* Hide elements when menu is collapsed on mobile */
+				.header:not(.is-open) .primary-nav-shell,
+				.header:not(.is-open) .header-search,
+				.header:not(.is-open) .header-actions {
+					display: none !important;
+				}
+			}
+
+			.brand {
+				font-weight: 800;
+				font-size: 1.5rem;
+				letter-spacing: -0.02em;
+				color: var(--text-main);
+				background: var(--gradient-primary);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
+
+			.main {
+				padding-block: 3rem 6rem;
+			}
+
+			.footer {
+				padding-block: 4rem;
+				color: var(--text-muted);
+				border-top: 1px solid var(--surface-border);
+			}
+
+			.card {
+				background: var(--gradient-surface);
+				border: 1px solid var(--surface-border);
+				border-radius: 1.25rem;
+				padding: 1.5rem;
+				backdrop-filter: blur(8px);
+				transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+			}
+
+			.card:hover {
+				transform: translateY(-4px);
+				border-color: rgba(56, 189, 248, 0.3);
+				box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.1);
+			}
+
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0.75rem 1.25rem;
+				border-radius: 0.75rem;
+				font-weight: 600;
+				font-size: 0.95rem;
+				transition: all 0.2s ease;
+				text-decoration: none;
+				border: 1px solid transparent;
+			}
+
+			.btn-primary {
+				background: var(--gradient-primary);
+				color: #fff !important;
+				box-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
+			}
+
+			.btn-primary:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+				color: #fff !important;
+				text-shadow: none;
+			}
+
+			.btn-secondary {
+				background: rgba(30, 41, 59, 0.5);
+				color: var(--text-main) !important;
+				border: 1px solid var(--surface-border);
+				backdrop-filter: blur(8px);
+			}
+
+			.btn-secondary:hover {
+				background: rgba(30, 41, 59, 0.8);
+				border-color: rgba(56, 189, 248, 0.3);
+				transform: translateY(-2px);
+				color: var(--text-main) !important;
+				text-shadow: none;
+			}
+		</style>
+		<script is:inline>
+			(function() {
+				const savedTheme = localStorage.getItem('awcms-theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+					document.documentElement.classList.add('dark');
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+		<header class="header" id="main-header">
+				<nav class="nav" aria-label={utilityNavLabel}>
+					<div class="nav-brand-container">
+						<a class="brand" href={toLocalePath("/", currentLocale, localeOptions)} data-astro-prefetch="hover">
+							{siteLogo ? <img src={siteLogo.url} alt={siteLogo.alt || siteTitle} style="height:44px;width:auto;display:block;" /> : siteTitle}
+						</a>
+						<button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label={mobileMenuLabel} aria-expanded="false">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="3" y1="12" x2="21" y2="12"></line>
+								<line x1="3" y1="6" x2="21" y2="6"></line>
+								<line x1="3" y1="18" x2="21" y2="18"></line>
+							</svg>
+						</button>
+					</div>
+					<div class="primary-nav-shell">
+						<PublicNavigation name="primary" />
+						<div class="utility-links">
+							<LanguageSwitcher content={content} />
+							<a href="/_emdash/admin/login?redirect=/_emdash/admin">{copy.adminLink}</a>
+							<a href="/_emdash/api/plugins/awcms-micro-sikesra/public/status">{copy.pluginStatus}</a>
+							<button id="theme-toggle" aria-label={copy.toggleTheme} style="padding: 0.4rem; font-size: 1.2rem; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+								<span class="dark-icon" style="display:none;" title={copy.switchToLightMode}>🌙</span>
+								<span class="light-icon" style="display:none;" title={copy.switchToDarkMode}>☀️</span>
+							</button>
+						</div>
+					</div>
+				</nav>
+				<div class="header-search">
+					<LiveSearch placeholder={copy.searchPlaceholder} collections={["posts", "pages", "news"]} />
+				</div>
+			<div class="header-actions">
+				<a class="btn btn-primary" href="/_emdash/admin/content/posts/new">{copy.createPost}</a>
+				<a class="btn btn-secondary" href="/_emdash/admin/content/pages/new">{copy.createPage}</a>
+				<a class="btn btn-secondary" href="/_emdash/admin/plugins/awcms-micro-sikesra/overview">{copy.pluginOverview}</a>
+			</div>
+		</header>
+
+		<main class="main">
+			<slot />
+		</main>
+
+		<footer class="footer">
+			<div class="card">
+				<p style="margin-top:0;">{siteTagline}</p>
+				{showFooterWidgets && <WidgetArea name="sidebar" />}
+			</div>
+		</footer>
+
+		<EmDashBodyEnd page={pageCtx} />
+		<script is:inline>
+			const themeToggle = document.getElementById('theme-toggle');
+			if (themeToggle) {
+				const darkIcon = themeToggle.querySelector('.dark-icon');
+				const lightIcon = themeToggle.querySelector('.light-icon');
+
+				function updateIcons() {
+					if (document.documentElement.classList.contains('dark')) {
+						darkIcon.style.display = 'block';
+						lightIcon.style.display = 'none';
+					} else {
+						lightIcon.style.display = 'block';
+						darkIcon.style.display = 'none';
+					}
+				}
+
+				updateIcons();
+
+				themeToggle.addEventListener('click', () => {
+					document.documentElement.classList.toggle('dark');
+					const isDark = document.documentElement.classList.contains('dark');
+					localStorage.setItem('awcms-theme', isDark ? 'dark' : 'light');
+					updateIcons();
+				});
+			}
+
+			const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+			const mainHeader = document.getElementById('main-header');
+			if (mobileMenuToggle && mainHeader) {
+				mobileMenuToggle.addEventListener('click', () => {
+					mainHeader.classList.toggle('is-open');
+					const isOpen = mainHeader.classList.contains('is-open');
+					mobileMenuToggle.setAttribute('aria-expanded', isOpen);
+				});
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,74 @@
+{
+	"name": "@awcms-micro/plugin-sikesra",
+	"version": "0.1.1",
+	"description": "AWCMS-Micro SIKESRA plugin for EmDash-compatible projects",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./admin": {
+			"types": "./dist/admin.d.ts",
+			"import": "./dist/admin.js",
+			"default": "./dist/admin.js"
+		},
+		"./navigation": {
+			"types": "./dist/navigation.d.ts",
+			"import": "./dist/navigation.js",
+			"default": "./dist/navigation.js"
+		},
+		"./sandbox": {
+			"types": "./dist/sandbox.d.ts",
+			"import": "./dist/sandbox.js",
+			"default": "./dist/sandbox.js"
+		}
+	},
+	"files": [
+		"dist",
+		"emdash-plugin.jsonc",
+		"docs",
+		"README.md"
+	],
+	"keywords": [
+		"awcms-micro",
+		"emdash",
+		"plugin",
+		"example",
+		"tenant-ready"
+	],
+	"license": "SEE LICENSE IN LICENSE.md",
+	"peerDependencies": {
+		"@cloudflare/kumo": "catalog:",
+		"emdash": "workspace:*",
+		"react": "^18.0.0 || ^19.0.0"
+	},
+	"dependencies": {
+		"@lingui/react": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@cloudflare/kumo": "catalog:",
+		"@types/node": "24.10.13",
+		"@types/react": "^19.2.14",
+		"emdash": "workspace:*",
+		"tsdown": "^0.20.3",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.5"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"prepare": "node --run build",
+		"prepublishOnly": "node --run build",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}

@@ -1,0 +1,280 @@
+---
+import { getI18nConfig, getSiteSettings } from "emdash";
+import { createPublicPageContext } from "emdash/page";
+import { EmDashBodyEnd, EmDashBodyStart, EmDashHead } from "emdash/ui";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+
+interface Props {
+	title: string;
+	pageTitle?: string | null;
+	description?: string | null;
+	image?: string | null;
+	canonical?: string | null;
+	content?: { collection: string; id: string; slug?: string | null };
+	showFooterWidgets?: boolean;
+}
+
+const { title, pageTitle, description, image, canonical, content, showFooterWidgets = true } = Astro.props;
+const { siteTitle, siteTagline } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
+const pageDescription = description ?? siteTagline;
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: content?.collection === "news" ? "news" : "website",
+	title: fullTitle,
+	pageTitle: pageTitle ?? title,
+	description: pageDescription,
+	canonical,
+	image,
+	content,
+	siteName: siteTitle,
+});
+---
+
+<!doctype html>
+<html lang={currentLocale}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{fullTitle}</title>
+		{pageDescription && <meta name="description" content={pageDescription} />}
+		{canonical && <link rel="canonical" href={canonical} />}
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+		<EmDashHead page={pageCtx} />
+		<style>
+			:root {
+				color-scheme: light;
+				font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+				--bg-main: #f8fafc;
+				--surface-main: #ffffff;
+				--surface-border: rgba(99, 102, 241, 0.15);
+				--text-main: #0f172a;
+				--text-muted: #475569;
+				--accent: #6366f1;
+				--accent-hover: #4f46e5;
+				--gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #d946ef 100%);
+				--gradient-surface: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(241,245,249,0.5));
+
+				/* Richer Design tokens */
+				--shadow-sm: 0 2px 8px rgba(99, 102, 241, 0.04);
+				--shadow-md: 0 8px 24px rgba(99, 102, 241, 0.06);
+				--shadow-lg: 0 16px 32px rgba(99, 102, 241, 0.08);
+				--shadow-xl: 0 24px 48px rgba(99, 102, 241, 0.12);
+				--radius-lg: 1.5rem;
+				--radius-md: 1rem;
+				--radius-sm: 0.5rem;
+			}
+
+			:root.dark {
+				color-scheme: dark;
+				--bg-main: #030712;
+				--surface-main: rgba(17, 24, 39, 0.4);
+				--surface-border: rgba(99, 102, 241, 0.15);
+				--text-main: #f3f4f6;
+				--text-muted: #9ca3af;
+				--accent: #a855f7;
+				--accent-hover: #c084fc;
+				--gradient-surface: linear-gradient(180deg, rgba(17, 24, 39, 0.6), rgba(3, 7, 18, 0.4));
+			}
+
+			body {
+				margin: 0;
+				position: relative;
+				background: var(--bg-main);
+				background-image:
+					radial-gradient(circle at 10% 20%, rgba(217, 70, 239, 0.08), transparent 35%),
+					radial-gradient(circle at 90% 10%, rgba(99, 102, 241, 0.08), transparent 35%),
+					radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.06), transparent 40%);
+				background-attachment: fixed;
+				color: var(--text-main);
+				line-height: 1.6;
+				transition: background-color 0.3s ease, color 0.3s ease;
+			}
+
+			body::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-image: 
+					linear-gradient(rgba(99, 102, 241, 0.02) 1px, transparent 1px),
+					linear-gradient(90deg, rgba(99, 102, 241, 0.02) 1px, transparent 1px);
+				background-size: 40px 40px;
+				pointer-events: none;
+				z-index: -1;
+			}
+
+			a {
+				color: var(--accent);
+				text-decoration: none;
+				transition: color 0.2s ease, text-shadow 0.2s ease;
+			}
+
+			a:hover {
+				color: var(--accent-hover);
+				text-decoration: none;
+				text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+			}
+
+			.main {
+				max-width: 72rem;
+				margin: 0 auto;
+				padding-inline: 1.25rem;
+				padding-block: 3rem 5rem;
+			}
+
+			input, button, .widget-search__input, .emdash-live-search-input {
+				background: var(--surface-main);
+				color: var(--text-main);
+				border: 1px solid var(--surface-border);
+				border-radius: 0.5rem;
+				padding: 0.5rem 0.75rem;
+			}
+
+			.emdash-live-search-results {
+				background: var(--surface-main) !important;
+				border: 1px solid var(--surface-border) !important;
+			}
+
+			.emdash-live-search-result:hover {
+				background: var(--surface-border) !important;
+			}
+
+			.emdash-live-search-result-title {
+				color: var(--text-main) !important;
+			}
+
+			.emdash-live-search-result-snippet {
+				color: var(--text-muted) !important;
+			}
+
+			.widget-recent-posts__link, .awcms-public-nav__link {
+				color: var(--text-main);
+			}
+
+			.awcms-public-nav__link:hover {
+				color: var(--accent-hover);
+			}
+
+			section {
+				background: var(--gradient-surface);
+				border: 1px solid var(--surface-border);
+				border-radius: 1.5rem;
+				padding: 2.5rem;
+				margin-block-end: 2rem;
+				box-shadow: var(--shadow-md);
+				transition: all 0.3s ease;
+			}
+
+			h1, h2, h3, h4 {
+				line-height: 1.2;
+				font-weight: 800;
+				letter-spacing: -0.01em;
+			}
+
+			p, li {
+				line-height: 1.7;
+			}
+
+			.kicker {
+				margin: 0 0 0.65rem;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				font-size: 0.8rem;
+				color: var(--accent);
+				font-weight: 700;
+			}
+
+			.button-link {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0.72rem 1.5rem;
+				border-radius: 999px;
+				font-weight: 700;
+				border: 1px solid var(--surface-border);
+				background: var(--surface-main);
+				color: var(--text-main);
+				transition: all 0.2s ease;
+				text-decoration: none;
+			}
+
+			.button-link:hover {
+				transform: translateY(-1px);
+				border-color: var(--accent);
+			}
+
+			.button-link.primary {
+				background: var(--gradient-primary);
+				border-color: transparent;
+				color: #f8fafc;
+			}
+			
+			.button-link.primary:hover {
+				box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+			}
+		</style>
+		<script is:inline>
+			(function() {
+				const savedTheme = localStorage.getItem('awcms-theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+					document.documentElement.classList.add('dark');
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+		
+		<slot name="header">
+			<SiteHeader content={content} />
+		</slot>
+
+		<main class="main">
+			<slot />
+		</main>
+
+		<slot name="footer">
+			<SiteFooter showWidgets={showFooterWidgets} />
+		</slot>
+
+		<EmDashBodyEnd page={pageCtx} />
+		<script is:inline>
+			const themeToggle = document.getElementById('theme-toggle');
+			if (themeToggle) {
+				const darkIcon = themeToggle.querySelector('.dark-icon');
+				const lightIcon = themeToggle.querySelector('.light-icon');
+
+				function updateIcons() {
+					if (document.documentElement.classList.contains('dark')) {
+						darkIcon.style.display = 'block';
+						lightIcon.style.display = 'none';
+					} else {
+						lightIcon.style.display = 'block';
+						darkIcon.style.display = 'none';
+					}
+				}
+
+				updateIcons();
+
+				themeToggle.addEventListener('click', () => {
+					document.documentElement.classList.toggle('dark');
+					const isDark = document.documentElement.classList.contains('dark');
+					localStorage.setItem('awcms-theme', isDark ? 'dark' : 'light');
+					updateIcons();
+				});
+			}
+		</script>
+	</body>
+</html>

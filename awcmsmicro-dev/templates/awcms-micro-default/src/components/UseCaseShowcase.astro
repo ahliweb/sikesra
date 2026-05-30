@@ -1,0 +1,294 @@
+---
+import { getPublicCopy } from "../utils/public-copy";
+import { getI18nConfig } from "emdash";
+
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const copy = getPublicCopy(currentLocale);
+
+const useCases = [
+	{
+		heading: copy.useCaseCmsHeading,
+		text: copy.useCaseCmsText,
+		type: "cms",
+		mock: `{
+  "collection": "pages",
+  "slug": "about-us",
+  "data": {
+    "title": "About Our Platform",
+    "status": "published",
+    "template": "default"
+  }
+}`
+	},
+	{
+		heading: copy.useCaseShopHeading,
+		text: copy.useCaseShopText,
+		type: "ecommerce",
+		mock: `{
+  "product_id": "prod_9281",
+  "name": "IoT Sensor Hub",
+  "price_usd": 49.99,
+  "stock_kv": "sikesra_store_928"
+}`
+	},
+	{
+		heading: copy.useCaseAppHeading,
+		text: copy.useCaseAppText,
+		type: "portal",
+		mock: `// middleware/auth.ts
+export async function onRequest({ request, next }) {
+  const session = await getSession(request);
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  return next();
+}`
+	},
+	{
+		heading: copy.useCaseAdminHeading,
+		text: copy.useCaseAdminText,
+		type: "admin",
+		mock: `// awcmsmicro-dev/packages/plugins/admin.config
+export default {
+  sidebar: {
+    group: "Sikesra Governance",
+    position: "top",
+    collapsible: true
+  }
+}`
+	},
+	{
+		heading: copy.useCaseMobileHeading,
+		text: copy.useCaseMobileText,
+		type: "mobile",
+		mock: `GET /api/v1/sikesra/records
+Host: awcms-micro.ahlikoding.com
+Authorization: Bearer sikesra_tok_1...
+
+[200 OK] response_time: 0.8ms`
+	},
+	{
+		heading: copy.useCaseAiHeading,
+		text: copy.useCaseAiText,
+		type: "ai",
+		mock: `// functions/ai-trigger.js
+onCollectionChange("analysis", async (event) => {
+  const summary = await openai.summarize(event.newDoc);
+  await db.update("analysis", event.id, { summary });
+});`
+	}
+];
+
+const REGEX_AMP = /&/g;
+const REGEX_LT = /</g;
+const REGEX_GT = />/g;
+const REGEX_STR = /("(?:[^"\\]|\\.)*")/g;
+const REGEX_KEY = /(<span class="tok-str">"[^"]+"<\/span>)(?=\s*:)/g;
+const REGEX_KW = /\b(export|async|function|const|let|var|return|await|if|default|import|from)\b/g;
+const REGEX_FN = /\b(Response|getSession|onCollectionChange|openai|db|update|summarize|onRequest)\b/g;
+const REGEX_STATUS = /(\[200 OK\])/g;
+const REGEX_STAT = /(response_time:\s*\d+\.?\d*ms)/g;
+const REGEX_COMMENT = /(\/\/.*)/g;
+
+function highlight(code: string) {
+	let html = code
+		.replace(REGEX_AMP, "&amp;")
+		.replace(REGEX_LT, "&lt;")
+		.replace(REGEX_GT, "&gt;");
+
+	// 1. Highlight strings first
+	html = html.replace(REGEX_STR, '<span class="tok-str">$1</span>');
+
+	// 2. Highlight JSON keys
+	html = html.replace(REGEX_KEY, '<span class="tok-key">$1</span>');
+
+	// 3. Keywords
+	html = html.replace(REGEX_KW, '<span class="tok-kw">$1</span>');
+
+	// 4. Functions & objects
+	html = html.replace(REGEX_FN, '<span class="tok-fn">$1</span>');
+
+	// 5. HTTP Response status & stats
+	html = html.replace(REGEX_STATUS, '<span class="tok-status">$1</span>');
+	html = html.replace(REGEX_STAT, '<span class="tok-stat">$1</span>');
+
+	// 6. Comments
+	html = html.replace(REGEX_COMMENT, '<span class="tok-comment">$1</span>');
+
+	return html;
+}
+---
+
+<section class="usecases-section">
+	<div class="usecases-header">
+		<h2 class="usecases-title">{copy.useCasesTitle}</h2>
+		<p class="usecases-subtitle">{copy.useCasesSubtitle}</p>
+	</div>
+	
+	<div class="usecases-list">
+		{useCases.map((uc, index) => (
+			<div class={`usecase-item ${index % 2 === 1 ? 'reverse' : ''}`}>
+				<div class="usecase-content">
+					<h3 class="usecase-heading">{uc.heading}</h3>
+					<p class="usecase-text">{uc.text}</p>
+				</div>
+				<div class="usecase-visual">
+					<div class="window-mock">
+						<div class="window-header">
+							<span class="dot red"></span>
+							<span class="dot yellow"></span>
+							<span class="dot green"></span>
+							<span class="window-title">{uc.type.toUpperCase()} MODEL</span>
+						</div>
+						<pre class="window-code"><code set:html={highlight(uc.mock)}></code></pre>
+					</div>
+				</div>
+			</div>
+		))}
+	</div>
+</section>
+
+<style>
+	.usecases-section {
+		padding: 4rem 0;
+		margin-bottom: 2rem;
+	}
+
+	.usecases-header {
+		text-align: center;
+		max-width: 36rem;
+		margin: 0 auto 4rem;
+	}
+
+	.usecases-title {
+		font-size: clamp(2rem, 4vw, 2.75rem);
+		font-weight: 800;
+		color: var(--text-main);
+		margin: 0 0 1rem;
+		letter-spacing: -0.01em;
+	}
+
+	.usecases-subtitle {
+		font-size: 1.125rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.usecases-list {
+		display: flex;
+		flex-direction: column;
+		gap: 5rem;
+	}
+
+	.usecase-item {
+		display: flex;
+		align-items: center;
+		gap: 3.5rem;
+	}
+
+	.usecase-item.reverse {
+		flex-direction: row-reverse;
+	}
+
+	.usecase-content {
+		flex: 1;
+	}
+
+	.usecase-heading {
+		font-size: 1.75rem;
+		font-weight: 800;
+		color: var(--text-main);
+		margin: 0 0 1.25rem;
+		letter-spacing: -0.01em;
+	}
+
+	.usecase-text {
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.usecase-visual {
+		flex: 1;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-width: 280px;
+	}
+
+	.window-mock {
+		width: 100%;
+		max-width: 28rem;
+		background: #0b0f19;
+		border: 1px solid rgba(255,255,255,0.08);
+		border-radius: 1rem;
+		overflow: hidden;
+		box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+	}
+
+	:root.dark .window-mock {
+		background: #070a13;
+		border-color: rgba(14, 165, 233, 0.15);
+	}
+
+	.window-header {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.75rem 1rem;
+		background: rgba(255,255,255,0.02);
+		border-bottom: 1px solid rgba(255,255,255,0.05);
+	}
+
+	.dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.dot.red { background: #ff5f56; }
+	.dot.yellow { background: #ffbd2e; }
+	.dot.green { background: #27c93f; }
+
+	.window-title {
+		margin-left: auto;
+		font-size: 0.65rem;
+		font-weight: 700;
+		color: rgba(255,255,255,0.3);
+		letter-spacing: 0.1em;
+	}
+
+	.window-code {
+		margin: 0;
+		padding: 1.5rem;
+		overflow-x: auto;
+		color: #e2e8f0;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-size: 0.85rem;
+		line-height: 1.6;
+		text-align: left;
+	}
+
+	.tok-str { color: #34d399; }
+	.tok-key { color: #38bdf8; }
+	.tok-comment { color: #64748b; font-style: italic; }
+	.tok-kw { color: #f43f5e; font-weight: 700; }
+	.tok-fn { color: #fbbf24; }
+	.tok-status { color: #34d399; font-weight: 700; }
+	.tok-stat { color: #c084fc; }
+
+	@media (max-width: 768px) {
+		.usecase-item, .usecase-item.reverse {
+			flex-direction: column;
+			gap: 2rem;
+		}
+		
+		.usecase-visual {
+			width: 100%;
+		}
+	}
+</style>

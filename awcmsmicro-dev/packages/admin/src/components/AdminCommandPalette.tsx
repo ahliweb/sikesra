@@ -30,12 +30,16 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 import { apiFetch, type AdminManifest } from "../lib/api/client.js";
 import { useCurrentUser } from "../lib/api/current-user";
+import { usePluginAdmins } from "../lib/plugin-context";
+import { buildSidebarPluginGroups } from "./Sidebar.js";
 
 /** Subset of manifest fields used by the palette (matches `Shell` props shape). */
 type CommandPaletteManifest = {
 	collections: Record<string, { label: string; labelSingular?: string }>;
 	plugins: AdminManifest["plugins"];
 };
+
+type CommandPalettePluginAdmins = Record<string, { pages?: Record<string, unknown> }>;
 
 // Role levels (matching @emdash-cms/auth)
 const ROLE_ADMIN = 50;
@@ -124,7 +128,11 @@ async function searchContent(query: string): Promise<SearchResponse> {
 	return body.data;
 }
 
-function buildNavItems(manifest: CommandPaletteManifest, userRole: number): NavItem[] {
+export function buildNavItems(
+	manifest: CommandPaletteManifest,
+	userRole: number,
+	pluginAdmins: CommandPalettePluginAdmins = {},
+): NavItem[] {
 	const items: NavItem[] = [
 		{
 			id: "dashboard",
@@ -134,6 +142,26 @@ function buildNavItems(manifest: CommandPaletteManifest, userRole: number): NavI
 			keywords: ["home", "overview"],
 		},
 	];
+
+	// Add plugin pages immediately after Dashboard, ordered by plugin name.
+	for (const group of buildSidebarPluginGroups(
+		{
+			collections: manifest.collections,
+			plugins: manifest.plugins,
+			taxonomies: [],
+		},
+		pluginAdmins,
+	)) {
+		for (const page of group.items) {
+			items.push({
+				id: `plugin-${group.id}-${page.to}`,
+				title: page.label,
+				to: page.to,
+				icon: page.icon,
+				keywords: ["plugin", group.label.toLowerCase()],
+			});
+		}
+	}
 
 	// Add collection links
 	for (const [name, config] of Object.entries(manifest.collections)) {
@@ -248,29 +276,6 @@ function buildNavItems(manifest: CommandPaletteManifest, userRole: number): NavI
 		},
 	);
 
-	// Add plugin pages
-	for (const [pluginId, config] of Object.entries(manifest.plugins)) {
-		if (config.enabled === false) continue;
-		if (config.adminPages && config.adminPages.length > 0) {
-			for (const page of config.adminPages) {
-				const label =
-					page.label ||
-					pluginId
-						.split("-")
-						.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-						.join(" ");
-
-				items.push({
-					id: `plugin-${pluginId}-${page.path}`,
-					title: label,
-					to: `/plugins/${pluginId}${page.path}`,
-					icon: PuzzlePiece,
-					keywords: ["plugin", pluginId],
-				});
-			}
-		}
-	}
-
 	// Filter by role
 	return items.filter((item) => !item.minRole || userRole >= item.minRole);
 }
@@ -295,6 +300,7 @@ export function AdminCommandPalette({ manifest }: AdminCommandPaletteProps) {
 	const [open, setOpen] = React.useState(false);
 	const [query, setQuery] = React.useState("");
 	const navigate = useNavigate();
+	const pluginAdmins = usePluginAdmins();
 
 	// Debounce the search query to avoid flickering on every keystroke
 	const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
@@ -316,7 +322,10 @@ export function AdminCommandPalette({ manifest }: AdminCommandPaletteProps) {
 	const isPendingSearch = isWaitingForDebounce || isSearching;
 
 	// Build navigation items
-	const allNavItems = React.useMemo(() => buildNavItems(manifest, userRole), [manifest, userRole]);
+	const allNavItems = React.useMemo(
+		() => buildNavItems(manifest, userRole, pluginAdmins),
+		[manifest, userRole, pluginAdmins],
+	);
 
 	// Filter nav items based on query
 	const filteredNavItems = React.useMemo(

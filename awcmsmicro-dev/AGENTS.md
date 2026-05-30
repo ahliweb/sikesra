@@ -18,6 +18,8 @@ For human-facing contributor info (setup, repo layout, PR policy, changesets, i1
 
 Run `pnpm lint:json | jq '.diagnostics | length'` before starting and confirm it's clean -- if it's failing after your edits, your changes caused it.
 
+Check `docs/operator-workflow.md` for `continuation` vs `fresh-clone` update mode guidance before sync work, especially when fresh-clone bootstrap values must be captured locally.
+
 During work:
 
 - `pnpm lint:quick` after every edit (sub-second)

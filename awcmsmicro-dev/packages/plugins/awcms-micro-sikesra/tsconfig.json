@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"target": "ES2024",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["es2024", "dom"],
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowJs": false,
+		"noEmit": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"jsx": "react-jsx",
+		"types": ["node", "vitest/globals", "react"]
+	},
+	"include": ["src/**/*", "tests/**/*", "package.json"],
+	"exclude": ["node_modules", "dist"]
+}

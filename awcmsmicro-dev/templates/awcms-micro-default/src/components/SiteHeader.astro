@@ -1,0 +1,292 @@
+---
+import { getSiteSettings, getI18nConfig } from "emdash";
+import { resolveAwcmsMicroSiteIdentity } from "../utils/site-identity";
+import { getPublicCopy } from "../utils/public-copy";
+import { toLocalePath } from "../utils/locale-path";
+import PublicNavigation from "./PublicNavigation.astro";
+import LanguageSwitcher from "./public/LanguageSwitcher.astro";
+import LiveSearch from "emdash/ui/search";
+
+interface Props {
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { content } = Astro.props;
+const { siteTitle, siteLogo } = resolveAwcmsMicroSiteIdentity(await getSiteSettings());
+const i18nConfig = getI18nConfig();
+const defaultLocale = i18nConfig?.defaultLocale || "en";
+const currentLocale = Astro.locals.awcmsLocale || Astro.currentLocale || defaultLocale;
+const localeOptions = {
+	defaultLocale,
+	locales: i18nConfig?.locales || ["en", "id"],
+};
+const copy = getPublicCopy(currentLocale);
+---
+
+<header class="site-header-nav">
+	<div class="nav-container">
+		<a class="nav-brand" href={toLocalePath("/", currentLocale, localeOptions)} data-astro-prefetch="hover">
+			{siteLogo ? <img src={siteLogo.url} alt={siteLogo.alt || siteTitle} class="brand-logo" /> : <span class="brand-text">{siteTitle}</span>}
+		</a>
+
+		<input type="checkbox" id="menu-toggle" class="menu-toggle-checkbox" />
+		<label for="menu-toggle" class="menu-toggle-label" aria-label="Toggle menu">
+			<span class="hamburger-bar"></span>
+			<span class="hamburger-bar"></span>
+			<span class="hamburger-bar"></span>
+		</label>
+
+		<div class="nav-menu">
+			<div class="nav-center">
+				<PublicNavigation name="primary" />
+			</div>
+			
+			<div class="nav-right">
+				<div class="header-search">
+					<LiveSearch placeholder={copy.searchPlaceholder} collections={["posts", "pages", "news"]} />
+				</div>
+				<div class="nav-actions">
+					<LanguageSwitcher content={content} />
+					<a href="/_emdash/admin/login?redirect=/_emdash/admin" class="admin-login-btn">{copy.adminLink}</a>
+					<button id="theme-toggle" aria-label={copy.toggleTheme} class="theme-toggle-btn">
+						<span class="dark-icon" style="display:none;" title={copy.switchToLightMode}>🌙</span>
+						<span class="light-icon" style="display:none;" title={copy.switchToDarkMode}>☀️</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</header>
+
+<style is:global>
+	/* Make sure live search input in header looks modern */
+	.site-header-nav .emdash-live-search {
+		position: relative;
+		width: 100%;
+		max-width: 240px;
+	}
+	.site-header-nav .emdash-live-search-input {
+		width: 100%;
+		font-size: 0.875rem;
+		padding: 0.5rem 1.25rem 0.5rem 2.25rem;
+		border-radius: 999px;
+		background: rgba(99, 102, 241, 0.05);
+		border: 1px solid var(--surface-border);
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		color: var(--text-main);
+	}
+	.site-header-nav .emdash-live-search-input:focus {
+		background: var(--surface-main);
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		outline: none;
+	}
+	.site-header-nav .emdash-live-search-results {
+		top: calc(100% + 8px) !important;
+		border-radius: 1.25rem !important;
+		border: 1px solid var(--surface-border) !important;
+		box-shadow: var(--shadow-lg) !important;
+		background: var(--surface-main) !important;
+		backdrop-filter: blur(16px);
+	}
+</style>
+
+<style>
+	.site-header-nav {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: rgba(248, 250, 252, 0.75);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border-bottom: 1px solid var(--surface-border);
+		transition: all 0.3s ease;
+	}
+
+	:root.dark .site-header-nav {
+		background: rgba(3, 7, 18, 0.75);
+	}
+
+	.nav-container {
+		max-width: 72rem;
+		margin: 0 auto;
+		padding: 0.85rem 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		position: relative;
+	}
+
+	.nav-brand {
+		display: flex;
+		align-items: center;
+		text-decoration: none;
+		flex-shrink: 0;
+	}
+
+	.brand-logo {
+		height: 36px;
+		width: auto;
+		display: block;
+	}
+
+	.brand-text {
+		font-weight: 800;
+		font-size: 1.35rem;
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		letter-spacing: -0.02em;
+	}
+
+	.menu-toggle-checkbox {
+		display: none;
+	}
+
+	.menu-toggle-label {
+		display: none;
+		flex-direction: column;
+		justify-content: space-between;
+		width: 22px;
+		height: 16px;
+		cursor: pointer;
+		z-index: 110;
+	}
+
+	.hamburger-bar {
+		width: 100%;
+		height: 2px;
+		background-color: var(--text-main);
+		border-radius: 2px;
+		transition: all 0.3s ease;
+	}
+
+	.nav-menu {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-grow: 1;
+		margin-left: 2.5rem;
+	}
+
+	.nav-center {
+		display: flex;
+		align-items: center;
+	}
+
+	.nav-right {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		margin-left: auto;
+	}
+
+	.header-search {
+		display: flex;
+		align-items: center;
+	}
+
+	.nav-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.admin-login-btn {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text-main);
+		background: rgba(99, 102, 241, 0.08);
+		border: 1px solid var(--surface-border);
+		padding: 0.45rem 1.15rem;
+		border-radius: 999px;
+		transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+		text-decoration: none;
+	}
+
+	.admin-login-btn:hover {
+		background: var(--gradient-primary);
+		color: #ffffff;
+		border-color: transparent;
+		box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+		transform: translateY(-1px);
+	}
+
+	.theme-toggle-btn {
+		padding: 0.5rem;
+		font-size: 1.15rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: background-color 0.2s ease;
+		color: var(--text-main);
+	}
+
+	.theme-toggle-btn:hover {
+		background: rgba(99, 102, 241, 0.1);
+	}
+
+	@media (max-width: 991px) {
+		.menu-toggle-label {
+			display: flex;
+		}
+
+		.nav-menu {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: var(--bg-main);
+			border-bottom: 1px solid var(--surface-border);
+			padding: 1.5rem 1.25rem;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 1.5rem;
+			margin-left: 0;
+			display: none;
+			box-shadow: var(--shadow-lg);
+			backdrop-filter: blur(16px);
+		}
+
+		.menu-toggle-checkbox:checked ~ .nav-menu {
+			display: flex;
+		}
+
+		.menu-toggle-checkbox:checked ~ .menu-toggle-label .hamburger-bar:nth-child(1) {
+			transform: translateY(7px) rotate(45deg);
+		}
+
+		.menu-toggle-checkbox:checked ~ .menu-toggle-label .hamburger-bar:nth-child(2) {
+			opacity: 0;
+		}
+
+		.menu-toggle-checkbox:checked ~ .menu-toggle-label .hamburger-bar:nth-child(3) {
+			transform: translateY(-7px) rotate(-45deg);
+		}
+
+		.nav-right {
+			flex-direction: column;
+			align-items: stretch;
+			width: 100%;
+			margin-left: 0;
+			gap: 1rem;
+		}
+
+		.header-search {
+			width: 100%;
+		}
+		
+		.site-header-nav .emdash-live-search {
+			max-width: none;
+		}
+
+		.nav-actions {
+			justify-content: space-between;
+			width: 100%;
+		}
+	}
+</style>

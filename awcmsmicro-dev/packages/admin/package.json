@@ -68,7 +68,7 @@
     "@tiptap/starter-kit": "catalog:",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dompurify": "^3.3.2",
+		"dompurify": "^3.4.0",
     "marked": "^17.0.3",
     "react-hotkeys-hook": "^5.2.4",
     "tailwind-merge": "^3.3.0"

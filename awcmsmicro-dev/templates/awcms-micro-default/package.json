@@ -1,0 +1,39 @@
+{
+	"name": "@awcms-micro/template-default-example",
+	"version": "0.0.2",
+	"private": true,
+	"type": "module",
+	"license": "SEE LICENSE IN LICENSE.md",
+	"emdash": {
+		"seed": "seed/seed.json"
+	},
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"start": "node ./dist/server/entry.mjs",
+		"typecheck": "astro check"
+	},
+	"dependencies": {
+		"@awcms-micro/plugin-docs": "workspace:*",
+		"@awcms-micro/plugin-sikesra": "workspace:*",
+		"@awcms-micro/plugin-gallery": "workspace:*",
+		"@astrojs/node": "^10.1.1",
+		"@astrojs/react": "^5.0.5",
+		"astro": "catalog:",
+		"better-sqlite3": "^12.8.0",
+		"emdash": "workspace:*",
+		"react": "19.2.4",
+		"react-dom": "19.2.4"
+	},
+	"devDependencies": {
+		"@astrojs/check": "catalog:",
+		"@types/node": "24.10.13",
+		"typescript": "^6.0.3"
+	},
+	"peerDependencies": {},
+	"optionalDependencies": {},
+	"engines": {
+		"node": ">=22"
+	}
+}

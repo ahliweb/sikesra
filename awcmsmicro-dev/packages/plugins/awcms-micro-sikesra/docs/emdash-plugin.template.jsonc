@@ -1,0 +1,36 @@
+{
+	"$schema": "https://emdashcms.com/schemas/emdash-plugin.schema.json",
+
+	"slug": "replace-with-final-slug",
+	"version": "0.1.0",
+	"license": "LicenseRef-AW-NC-1.0",
+	"publisher": "did:plc:replace-me-or-use-your.handle.example", // Required before any internal or public publish. DID preferred; handle is also accepted.
+
+	"author": { "name": "Your Team Or Publisher Name" },
+	"name": "Your Plugin Display Name",
+	"description": "Short publish-facing summary of what the plugin does.",
+	"keywords": ["emdash", "plugin", "internal"],
+
+	// Optional but recommended once the final home is known.
+	"repo": {
+		"url": "https://github.com/your-org/your-plugin-repo",
+		"directory": ".",
+	},
+	"security": {
+		"url": "https://github.com/your-org/your-plugin-repo/security",
+	},
+
+	// Keep this trust contract minimal and accurate.
+	"capabilities": [],
+	"allowedHosts": [],
+	"storage": {
+		"audit": {
+			"indexes": ["timestamp", "action", ["resource", "timestamp"]],
+		},
+	},
+
+	// Match this to the real admin UI surface the plugin exposes.
+	"admin": {
+		"pages": [{ "path": "/overview", "label": "Overview", "icon": "stack" }],
+	},
+}

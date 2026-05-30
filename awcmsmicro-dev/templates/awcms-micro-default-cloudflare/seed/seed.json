@@ -1,0 +1,693 @@
+{
+	"$schema": "https://emdashcms.com/seed.schema.json",
+	"version": "1",
+	"meta": {
+		"name": "AWCMS-Micro Cloudflare",
+		"description": "Cloudflare-ready AWCMS-Micro website template with public content, protected admin access, and plugin-ready governance surfaces.",
+		"author": "AWCMS-Micro"
+	},
+	"settings": {
+		"title": "AWCMS-Micro",
+		"tagline": "A Cloudflare-ready EmDash implementation for public publishing, governance, and admin operations."
+	},
+	"collections": [
+		{
+			"slug": "posts",
+			"label": "Posts",
+			"labelSingular": "Post",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{ "slug": "featured_image", "label": "Featured Image", "type": "image" },
+				{ "slug": "content", "label": "Content", "type": "portableText", "searchable": true },
+				{ "slug": "excerpt", "label": "Excerpt", "type": "text" }
+			]
+		},
+		{
+			"slug": "news",
+			"label": "News",
+			"labelSingular": "News Item",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{ "slug": "summary", "label": "Summary", "type": "text", "searchable": true },
+				{ "slug": "content", "label": "Content", "type": "portableText", "searchable": true }
+			]
+		},
+		{
+			"slug": "pages",
+			"label": "Pages",
+			"labelSingular": "Page",
+			"supports": ["drafts", "revisions", "search"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{ "slug": "content", "label": "Content", "type": "portableText", "searchable": true }
+			]
+		},
+		{
+			"slug": "galleries",
+			"label": "Galleries",
+			"labelSingular": "Gallery",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{ "slug": "description", "label": "Description", "type": "text", "searchable": true },
+				{ "slug": "cover_image", "label": "Cover Image", "type": "image" },
+				{
+					"slug": "gallery_type",
+					"label": "Gallery Type",
+					"type": "select",
+					"required": true,
+					"validation": { "options": ["photo", "video", "mixed"] }
+				},
+				{ "slug": "event_date", "label": "Event Date", "type": "datetime" },
+				{ "slug": "location", "label": "Location", "type": "string", "searchable": true },
+				{
+					"slug": "layout_variant",
+					"label": "Layout Variant",
+					"type": "select",
+					"required": true,
+					"validation": { "options": ["grid", "masonry", "carousel", "slider"] }
+				},
+				{ "slug": "gallery_items", "label": "Gallery Items", "type": "json", "required": true },
+				{ "slug": "featured", "label": "Featured", "type": "boolean" }
+			]
+		}
+	],
+	"taxonomies": [
+		{
+			"name": "category",
+			"label": "Categories",
+			"labelSingular": "Category",
+			"hierarchical": true,
+			"collections": ["posts"],
+			"terms": [
+				{ "slug": "platform", "label": "Platform" },
+				{ "slug": "governance", "label": "Governance" }
+			]
+		},
+		{
+			"name": "tag",
+			"label": "Tags",
+			"labelSingular": "Tag",
+			"hierarchical": false,
+			"collections": ["posts"],
+			"terms": [
+				{ "slug": "awcms-micro", "label": "AWCMS-Micro" },
+				{ "slug": "cloudflare", "label": "Cloudflare" }
+			]
+		}
+	],
+	"menus": [
+		{
+			"id": "menu:primary:en",
+			"name": "primary",
+			"label": "Primary Navigation",
+			"items": [
+				{ "type": "custom", "label": "Home", "url": "/" },
+				{
+					"type": "custom",
+					"label": "Public Data",
+					"url": "/aggregate",
+					"children": [
+						{ "type": "custom", "label": "Aggregate", "url": "/aggregate" },
+						{ "type": "custom", "label": "Posts", "url": "/posts" },
+						{ "type": "custom", "label": "News", "url": "/news" },
+						{ "type": "custom", "label": "Gallery", "url": "/gallery" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Profile",
+					"url": "/about",
+					"children": [
+						{ "type": "custom", "label": "About", "url": "/about" },
+						{ "type": "custom", "label": "Guidance", "url": "/about#guidance" },
+						{ "type": "custom", "label": "Public Site Guide", "url": "/public-site-guide" },
+						{ "type": "custom", "label": "Publishing Workflow", "url": "/publishing-workflow" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Services",
+					"url": "/news",
+					"children": [
+						{ "type": "custom", "label": "Announcements", "url": "/news" },
+						{ "type": "custom", "label": "Help Center", "url": "/about#help" },
+						{ "type": "custom", "label": "Docs Roadmap", "url": "/docs-roadmap" }
+					]
+				},
+				{ "type": "custom", "label": "Contact", "url": "/about#contact" }
+			]
+		},
+		{
+			"id": "menu:primary:id",
+			"name": "primary",
+			"label": "Navigasi Utama",
+			"locale": "id",
+			"translationOf": "menu:primary:en",
+			"items": [
+				{ "type": "custom", "label": "Beranda", "url": "/" },
+				{
+					"type": "custom",
+					"label": "Data Publik",
+					"url": "/aggregate",
+					"children": [
+						{ "type": "custom", "label": "Agregat", "url": "/aggregate" },
+						{ "type": "custom", "label": "Pos", "url": "/posts" },
+						{ "type": "custom", "label": "Berita", "url": "/news" },
+						{ "type": "custom", "label": "Galeri", "url": "/gallery" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Profil",
+					"url": "/about",
+					"children": [
+						{ "type": "custom", "label": "Tentang", "url": "/about" },
+						{ "type": "custom", "label": "Panduan", "url": "/about#guidance" },
+						{ "type": "custom", "label": "Panduan Situs Publik", "url": "/public-site-guide" },
+						{ "type": "custom", "label": "Alur Kerja Publikasi", "url": "/publishing-workflow" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Layanan",
+					"url": "/news",
+					"children": [
+						{ "type": "custom", "label": "Pengumuman", "url": "/news" },
+						{ "type": "custom", "label": "Pusat Bantuan", "url": "/about#help" },
+						{ "type": "custom", "label": "Peta Jalan Docs", "url": "/docs-roadmap" }
+					]
+				},
+				{ "type": "custom", "label": "Kontak", "url": "/about#contact" }
+			]
+		},
+		{
+			"id": "menu:homepage-demo:en",
+			"name": "homepage-demo",
+			"label": "Homepage Demo Navigation",
+			"items": [
+				{
+					"type": "custom",
+					"label": "Public demo",
+					"url": "/aggregate",
+					"children": [
+						{ "type": "custom", "label": "Aggregate demo", "url": "/aggregate" },
+						{ "type": "custom", "label": "Posts index demo", "url": "/posts" },
+						{ "type": "custom", "label": "News index demo", "url": "/news" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Site demo",
+					"url": "/about",
+					"children": [
+						{ "type": "custom", "label": "About AWCMS-Micro", "url": "/about" },
+						{ "type": "custom", "label": "Guidance notes", "url": "/about#guidance" }
+					]
+				}
+			]
+		},
+		{
+			"id": "menu:homepage-demo:id",
+			"name": "homepage-demo",
+			"label": "Navigasi Demo Beranda",
+			"locale": "id",
+			"translationOf": "menu:homepage-demo:en",
+			"items": [
+				{
+					"type": "custom",
+					"label": "Demo publik",
+					"url": "/aggregate",
+					"children": [
+						{ "type": "custom", "label": "Demo agregat", "url": "/aggregate" },
+						{ "type": "custom", "label": "Demo indeks pos", "url": "/posts" },
+						{ "type": "custom", "label": "Demo indeks berita", "url": "/news" }
+					]
+				},
+				{
+					"type": "custom",
+					"label": "Demo situs",
+					"url": "/about",
+					"children": [
+						{ "type": "custom", "label": "Tentang AWCMS-Micro", "url": "/about" },
+						{ "type": "custom", "label": "Catatan panduan", "url": "/about#guidance" }
+					]
+				}
+			]
+		}
+	],
+	"widgetAreas": [
+		{
+			"name": "sidebar",
+			"label": "Sidebar",
+			"description": "Sidebar widget area",
+			"widgets": [
+				{ "type": "component", "componentId": "core:search", "title": "Search" },
+				{
+					"type": "component",
+					"componentId": "core:recent-posts",
+					"title": "Recent Posts",
+					"settings": { "count": 5 }
+				}
+			]
+		}
+	],
+	"bylines": [
+		{
+			"id": "byline-awcms-editorial",
+			"slug": "awcms-micro-editorial",
+			"displayName": "AWCMS-Micro Editorial"
+		},
+		{
+			"id": "byline-awcms-editorial-id",
+			"translationOf": "byline-awcms-editorial",
+			"locale": "id",
+			"slug": "awcms-micro-editorial",
+			"displayName": "Editorial AWCMS-Micro"
+		}
+	],
+	"content": {
+		"pages": [
+			{
+				"id": "about",
+				"slug": "about",
+				"status": "published",
+				"data": {
+					"title": "About AWCMS-Micro",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "AWCMS-Micro combines a public Astro website, protected EmDash admin operations, and Cloudflare deployment primitives without forking or patching EmDash core.",
+									"_key": "p1"
+								}
+							],
+							"_key": "b1"
+						}
+					]
+				},
+				"bylines": [
+					{
+						"byline": "byline-awcms-editorial"
+					}
+				]
+			},
+			{
+				"id": "about-id",
+				"translationOf": "about",
+				"locale": "id",
+				"slug": "about",
+				"status": "published",
+				"data": {
+					"title": "Tentang AWCMS-Micro",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "AWCMS-Micro menggabungkan situs Astro publik, operasi admin EmDash yang terlindungi, dan primitive deployment Cloudflare tanpa melakukan fork atau patch pada core EmDash.",
+									"_key": "p1-id"
+								}
+							],
+							"_key": "b1-id"
+						}
+					]
+				}
+			},
+			{
+				"id": "public-site-guide",
+				"slug": "public-site-guide",
+				"status": "published",
+				"data": {
+					"title": "Public Site Guide",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Use this page as the editable landing guide for visitors. Editors can update the copy from Pages, then promote it into the navigation or homepage spotlights.",
+									"_key": "public-guide-1"
+								}
+							],
+							"_key": "public-guide-0"
+						}
+					]
+				}
+			},
+			{
+				"id": "public-site-guide-id",
+				"translationOf": "public-site-guide",
+				"locale": "id",
+				"slug": "public-site-guide",
+				"status": "published",
+				"data": {
+					"title": "Panduan Situs Publik",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Gunakan halaman ini sebagai panduan landing yang bisa diedit untuk pengunjung. Editor dapat memperbarui copy dari Pages lalu mempromosikannya ke navigasi atau sorotan beranda.",
+									"_key": "public-guide-1-id"
+								}
+							],
+							"_key": "public-guide-0-id"
+						}
+					]
+				}
+			},
+			{
+				"id": "publishing-workflow",
+				"slug": "publishing-workflow",
+				"status": "published",
+				"data": {
+					"title": "Publishing Workflow",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "This page captures the editorial flow for posts, news, pages, and galleries. Keep it current so admins can use it as a quick reference while publishing.",
+									"_key": "workflow-1"
+								}
+							],
+							"_key": "workflow-0"
+						}
+					]
+				}
+			},
+			{
+				"id": "publishing-workflow-id",
+				"translationOf": "publishing-workflow",
+				"locale": "id",
+				"slug": "publishing-workflow",
+				"status": "published",
+				"data": {
+					"title": "Alur Kerja Publikasi",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Halaman ini merangkum alur editorial untuk pos, berita, halaman, dan galeri. Jaga tetap mutakhir agar admin dapat menjadikannya referensi cepat saat publikasi.",
+									"_key": "workflow-1-id"
+								}
+							],
+							"_key": "workflow-0-id"
+						}
+					]
+				}
+			},
+			{
+				"id": "docs-roadmap",
+				"slug": "docs-roadmap",
+				"status": "published",
+				"data": {
+					"title": "Docs Roadmap",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Use this page to track documentation priorities, release notes, and public reference links that the docs page can surface.",
+									"_key": "roadmap-1"
+								}
+							],
+							"_key": "roadmap-0"
+						}
+					]
+				}
+			},
+			{
+				"id": "docs-roadmap-id",
+				"translationOf": "docs-roadmap",
+				"locale": "id",
+				"slug": "docs-roadmap",
+				"status": "published",
+				"data": {
+					"title": "Peta Jalan Docs",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Gunakan halaman ini untuk melacak prioritas dokumentasi, catatan rilis, dan tautan referensi publik yang bisa ditampilkan halaman docs.",
+									"_key": "roadmap-1-id"
+								}
+							],
+							"_key": "roadmap-0-id"
+						}
+					]
+				},
+				"bylines": [
+					{
+						"byline": "byline-awcms-editorial"
+					}
+				]
+			}
+		],
+		"posts": [
+			{
+				"id": "cloudflare-ready-awcms-micro",
+				"slug": "cloudflare-ready-awcms-micro",
+				"status": "published",
+				"data": {
+					"title": "Operating AWCMS-Micro on Cloudflare",
+					"excerpt": "How AWCMS-Micro uses EmDash, D1, R2, and Astro to keep publishing and admin operations on one deployment path.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "This post explains the intended AWCMS-Micro production model: public pages render from EmDash-managed content, while editors authenticate into the standard admin route to create, publish, and govern that content.",
+									"_key": "p2"
+								}
+							],
+							"_key": "b2"
+						}
+					]
+				},
+				"bylines": [
+					{
+						"byline": "byline-awcms-editorial"
+					}
+				],
+				"taxonomies": {
+					"category": ["platform"],
+					"tag": ["awcms-micro", "cloudflare"]
+				}
+			},
+			{
+				"id": "cloudflare-ready-awcms-micro-id",
+				"translationOf": "cloudflare-ready-awcms-micro",
+				"locale": "id",
+				"slug": "cloudflare-ready-awcms-micro",
+				"status": "published",
+				"data": {
+					"title": "Menjalankan AWCMS-Micro di Cloudflare",
+					"excerpt": "Bagaimana AWCMS-Micro menggunakan EmDash, D1, R2, dan Astro untuk menjaga publishing dan operasi admin dalam satu jalur deployment.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Pos ini menjelaskan model produksi AWCMS-Micro yang dituju: halaman publik dirender dari konten yang dikelola EmDash, sementara editor masuk ke route admin standar untuk membuat, mempublikasikan, dan mengelola konten tersebut.",
+									"_key": "p2-id"
+								}
+							],
+							"_key": "b2-id"
+						}
+					]
+				},
+				"bylines": [
+					{
+						"byline": "byline-awcms-editorial"
+					}
+				],
+				"taxonomies": {
+					"category": ["platform"],
+					"tag": ["awcms-micro", "cloudflare"]
+				}
+			}
+		],
+		"news": [
+			{
+				"id": "plugin-surface-ready",
+				"slug": "plugin-surface-ready",
+				"status": "published",
+				"data": {
+					"title": "Governance Plugin Surface Ready",
+					"summary": "The AWCMS-Micro example plugin is connected through the standard EmDash plugin path for audit, access-rights, and ABAC demonstrations.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "This news collection demonstrates how AWCMS-Micro can expose operational updates publicly while keeping the management workflow inside the protected EmDash admin interface.",
+									"_key": "n1"
+								}
+							],
+							"_key": "nb1"
+						}
+					]
+				}
+			},
+			{
+				"id": "plugin-surface-ready-id",
+				"translationOf": "plugin-surface-ready",
+				"locale": "id",
+				"slug": "plugin-surface-ready",
+				"status": "published",
+				"data": {
+					"title": "Surface Plugin Tata Kelola Siap",
+					"summary": "Plugin contoh AWCMS-Micro terhubung melalui jalur plugin EmDash standar untuk demonstrasi audit, hak akses, dan ABAC.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Koleksi berita ini mendemonstrasikan bagaimana AWCMS-Micro dapat mengekspos pembaruan operasional secara publik sambil menjaga alur kerja pengelolaan tetap berada di dalam antarmuka admin EmDash yang terlindungi.",
+									"_key": "n1-id"
+								}
+							],
+							"_key": "nb1-id"
+						}
+					]
+				}
+			}
+		],
+		"galleries": [
+			{
+				"id": "cloudflare-media-gallery",
+				"slug": "cloudflare-media-gallery",
+				"status": "published",
+				"data": {
+					"title": "Cloudflare Media Gallery",
+					"description": "A Cloudflare-ready mixed gallery that can use EmDash media, R2 objects, Cloudflare Images, or Cloudflare Stream URLs without exposing private keys.",
+					"cover_image": {
+						"src": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+						"alt": "Team reviewing media assets on laptops"
+					},
+					"gallery_type": "mixed",
+					"event_date": "2026-05-10T10:30:00.000Z",
+					"location": "Cloudflare Production Template",
+					"layout_variant": "carousel",
+					"featured": true,
+					"gallery_items": [
+						{
+							"type": "image",
+							"src": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+							"mimeType": "image/jpeg",
+							"filename": "cloudflare-gallery-dashboard.jpg",
+							"sizeBytes": 480000,
+							"alt": "Team reviewing gallery deployment assets",
+							"caption": "Media remains public-only while private R2 credentials stay in Cloudflare bindings.",
+							"provider": "external"
+						},
+						{
+							"type": "video",
+							"src": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+							"mimeType": "video/mp4",
+							"filename": "cloudflare-stream-placeholder.mp4",
+							"sizeBytes": 1120000,
+							"caption": "Video item compatible with a future Cloudflare Stream playback URL.",
+							"provider": "external"
+						}
+					]
+				}
+			},
+			{
+				"id": "cloudflare-media-gallery-id",
+				"translationOf": "cloudflare-media-gallery",
+				"locale": "id",
+				"slug": "cloudflare-media-gallery",
+				"status": "published",
+				"data": {
+					"title": "Galeri Media Cloudflare",
+					"description": "Galeri campuran siap Cloudflare yang dapat menggunakan media EmDash, objek R2, Cloudflare Images, atau URL Cloudflare Stream tanpa mengekspos kunci privat.",
+					"cover_image": {
+						"src": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+						"alt": "Tim meninjau aset media di laptop"
+					},
+					"gallery_type": "mixed",
+					"event_date": "2026-05-10T10:30:00.000Z",
+					"location": "Template Produksi Cloudflare",
+					"layout_variant": "carousel",
+					"featured": true,
+					"gallery_items": [
+						{
+							"type": "image",
+							"src": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+							"mimeType": "image/jpeg",
+							"filename": "cloudflare-gallery-dashboard.jpg",
+							"sizeBytes": 480000,
+							"alt": "Tim meninjau aset deployment galeri",
+							"caption": "Media tetap publik saja sementara kredensial R2 privat disimpan dalam binding Cloudflare.",
+							"provider": "external"
+						},
+						{
+							"type": "video",
+							"src": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+							"mimeType": "video/mp4",
+							"filename": "cloudflare-stream-placeholder.mp4",
+							"sizeBytes": 1120000,
+							"caption": "Item video yang kompatibel dengan URL pemutaran Cloudflare Stream di masa depan.",
+							"provider": "external"
+						}
+					]
+				}
+			}
+		]
+	}
+}

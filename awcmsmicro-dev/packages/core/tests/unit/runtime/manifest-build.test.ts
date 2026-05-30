@@ -20,11 +20,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { EmDashConfig } from "../../../src/astro/integration/runtime.js";
 import type { Database } from "../../../src/database/types.js";
 import { EmDashRuntime } from "../../../src/emdash-runtime.js";
+import { definePlugin } from "../../../src/plugins/define-plugin.js";
 import { createHookPipeline } from "../../../src/plugins/hooks.js";
 import { SchemaRegistry } from "../../../src/schema/registry.js";
 import { setupTestDatabase, teardownTestDatabase } from "../../utils/test-db.js";
 
-function buildRuntime(db: Kysely<Database>): EmDashRuntime {
+function buildRuntime(db: Kysely<Database>, configuredPlugins = []): EmDashRuntime {
 	const config: EmDashConfig = {};
 	const pipelineFactoryOptions = { db } as const;
 	const hooks = createHookPipeline([], pipelineFactoryOptions);
@@ -45,7 +46,7 @@ function buildRuntime(db: Kysely<Database>): EmDashRuntime {
 	return new EmDashRuntime({
 		db,
 		storage: null,
-		configuredPlugins: [],
+		configuredPlugins,
 		sandboxedPlugins: new Map(),
 		sandboxedPluginEntries: [],
 		hooks,
@@ -106,6 +107,26 @@ describe("EmDashRuntime.getManifest()", () => {
 		const updatedB = await runtimeB.getManifest();
 		expect(Object.keys(updatedA.collections).toSorted()).toEqual(["pages", "posts"]);
 		expect(Object.keys(updatedB.collections).toSorted()).toEqual(["pages", "posts"]);
+	});
+
+	it("preserves plugin admin pages in the manifest for sidebar links", async () => {
+		const docsPlugin = definePlugin({
+			id: "awcms-micro-docs",
+			version: "0.0.1",
+			capabilities: [],
+			allowedHosts: [],
+			admin: {
+				pages: [{ path: "/", label: "Docs", icon: "book" }],
+			},
+		});
+
+		const runtime = buildRuntime(db, [docsPlugin]);
+		const manifest = await runtime.getManifest();
+
+		expect(manifest.plugins["awcms-micro-docs"]?.adminPages).toEqual([
+			{ path: "/", label: "Docs", icon: "book" },
+		]);
+		expect(manifest.plugins["awcms-micro-docs"]?.adminMode).toBe("blocks");
 	});
 
 	it("includes field definitions built via the two-query JOIN (one collection)", async () => {

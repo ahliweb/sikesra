@@ -1,0 +1,55 @@
+{
+	"name": "@awcms-micro/plugin-gallery",
+	"version": "0.0.4",
+	"description": "AWCMS-Micro gallery plugin for EmDash-compatible photo and video collections",
+	"type": "module",
+	"main": "dist/index.mjs",
+	"types": "dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs",
+			"default": "./dist/index.mjs"
+		},
+		"./sandbox": {
+			"types": "./dist/sandbox.d.mts",
+			"import": "./dist/sandbox.mjs",
+			"default": "./dist/sandbox.mjs"
+		}
+	},
+	"files": [
+		"dist",
+		"emdash-plugin.jsonc",
+		"docs",
+		"README.md"
+	],
+	"keywords": [
+		"awcms-micro",
+		"emdash",
+		"gallery",
+		"media",
+		"cloudflare"
+	],
+	"license": "SEE LICENSE IN LICENSE.md",
+	"peerDependencies": {
+		"emdash": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "24.10.13",
+		"emdash": "workspace:*",
+		"tsdown": "^0.20.3",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.5"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"prepare": "node --run build",
+		"prepublishOnly": "node --run build",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}
