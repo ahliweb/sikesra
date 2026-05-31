@@ -53,6 +53,7 @@ If using backup/mirror workflows:
 
 | Variable | Purpose |
 | --- | --- |
+| `D1_DATABASE_NAME` | Target D1 database name used by `scripts/backup-sikesra-d1.sh` |
 | `GITLAB_PAT` | GitLab Personal Access Token |
 | `GITLAB_MIRROR_URL` | GitLab mirror repository URL |
 

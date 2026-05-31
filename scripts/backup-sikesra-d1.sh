@@ -4,8 +4,15 @@ set -euo pipefail
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$script_dir/.." && pwd)
 config_file="$repo_root/awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/wrangler.jsonc"
-db_name="sikesra"
 env_file="$repo_root/.env"
+if [[ -f "$env_file" ]]; then
+	# shellcheck disable=SC1090
+	set -a
+	. "$env_file"
+	set +a
+fi
+
+db_name="${D1_DATABASE_NAME:-sikesra}"
 output_root="${EMDASH_BACKUP_ROOT:-/tmp/opencode/sikesra-backups}"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 output_dir="$output_root/$timestamp"
