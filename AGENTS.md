@@ -1,33 +1,77 @@
 This file provides guidance to agentic coding tools when working with code in this repository.
 
-## Project Status
+## Project: SIKESRA
 
-**Beta, post pre-release.** EmDash is published to npm and in active use, with i18n, RTL, and the plugin system shipped. We're no longer in the scorched-earth pre-release phase -- real users depend on current behavior, so backwards compatibility now matters (see Rules below). All development happens inside this monorepo using `workspace:*` links. See [CONTRIBUTING.md](CONTRIBUTING.md) for the human-readable contributor guide (setup, repo layout, "build your own site" workflow).
+**SIKESRA** (Sistem Informasi Kesejahteraan Sosial dan Keagamaan) is a social and religious registry system for Kabupaten Kotawaringin Barat, implemented as a native EmDash plugin (`@ahliweb/awcms-sikesra`) on top of AWCMS-Micro.
+
+**Plugin status**: Active development, MVP Sprint 0–4.
+
+**Before working on SIKESRA features**, read:
+
+1. `docs/prd/01.AI_IMPLEMENTATION_PROMPT.md` — hard rules and invariants
+2. Load the relevant skill from `skills/sikesra-*/SKILL.md`
+3. Check issue Context Capsule (#376 on GitHub)
 
 ## Repository Structure
 
-This is a monorepo using pnpm workspaces.
-
-For the AWCMS-Micro SIKESRA refactor tracked in `tmp/prompt-refactor`, this repo currently acts as the in-place `awcmsmicro-dev/` implementation workspace. The eventual parent split with sibling `emdash-latest/` and `awcmsmicro-dev/` trees is documented under `docs/`, but this git root does not carry a separate `emdash/` checkout.
+This is a parent-workspace layout with `emdash-latest/` as reference baseline and `awcmsmicro-dev/` as the active downstream workspace.
 
 `emdash-latest/` is only a checked-in comparison baseline. Do not add a second EmDash checkout back into the workspace.
 
 `CLAUDE.md` is a symlink to `AGENTS.md`. `.opencode/skills` and `.claude/skills` are symlinks to `skills/`. Don't try to sync between them.
 
-- **Root**: Workspace configuration and shared tooling
-- **packages/core**: Main `emdash` package -- Astro integration, runtime, schema, API routes, CLI
-- **packages/admin**: `@emdash-cms/admin` -- React admin UI shipped as a single mounted app under `/_emdash/admin/*`
-- **packages/auth**: `@emdash-cms/auth` -- RBAC primitives (`Permissions`, `hasPermission`, `canActOnOwn`), passkey + magic link, RoleLevel ladder
-- **packages/auth-atproto**: `@emdash-cms/auth-atproto` -- ATProto / Bluesky OAuth login
-- **packages/blocks**: `@emdash-cms/blocks` -- shared Portable Text block defs and renderers
-- **packages/cloudflare**: `@emdash-cms/cloudflare` -- D1/R2/Workers integration helpers
-- **packages/marketplace**: `@emdash-cms/marketplace` -- plugin/theme marketplace client
-- **packages/x402**: `@emdash-cms/x402` -- HTTP 402 payment middleware
-- **packages/create-emdash**: `create-emdash` -- scaffolding CLI for new sites
-- **packages/gutenberg-to-portable-text**: WordPress import helper
-- **demos/**: Demo applications and examples (`demos/simple/` is the primary dev target)
-- **templates/**: Starter templates (blog, marketing, portfolio, starter, blank) -- contributors copy these into `demos/` to build their own sites
-- **docs/**: Public documentation site (Starlight)
+### Root Level
+
+- **`awcmsmicro-dev/`**: Active downstream implementation workspace
+  - **`packages/plugins/awcms-sikesra/`**: SIKESRA plugin (protected, primary work target)
+  - **`templates/awcms-sikesraTemplate/`**: Default Astro template (protected)
+  - **`templates/awcms-sikesraTemplate-cloudflare/`**: Cloudflare template (protected)
+  - **`demos/cloudflare/`**: Demo boundary
+- **`emdash-latest/`**: EmDash reference baseline (read-only comparison)
+- **`docs/prd/`**: SIKESRA Product Requirement Documents
+- **`docs/*.md`**: Repository governance documents
+- **`skills/`**: AI execution skills (symlinked from `.claude/skills` and `.opencode/skills`)
+  - `skills/sikesra-plugin-execution/SKILL.md` — plugin scaffold + hooks
+  - `skills/sikesra-data-d1/SKILL.md` — D1 migrations + storage
+  - `skills/sikesra-api-rbac/SKILL.md` — API routes + RBAC/ABAC
+  - `skills/sikesra-ui-admin/SKILL.md` — admin UI + Kumo + i18n
+- **`scripts/`**: Sync and validation scripts (protected)
+
+### AWCMS-Micro Plugin Package Structure
+
+Plugin lives at `awcmsmicro-dev/packages/plugins/awcms-sikesra/`:
+
+- **`src/index.ts`**: Plugin descriptor + `createPlugin()` export
+- **`src/runtime.ts`**: Storage config, routes, hooks, manifest (core file)
+- **`src/admin.tsx`**: Admin UI (React + Kumo + Lingui)
+- **`src/navigation.ts`**: Navigation module manifest + EmDash adapter
+- **`src/permissions.ts`**: `AWCMS_SIKESRA_PERMISSIONS` constants
+- **`src/audit.ts`**: `createAuditRecord()` helper
+- **`src/fixtures.ts`**: Reference fixtures + TypeScript types
+- **`src/sandbox.ts`**: Sandboxed server-side entry
+
+### SIKESRA Key Invariants
+
+```text
+Plugin npm   : @ahliweb/awcms-sikesra
+Plugin ID    : awcms-micro-sikesra
+Plugin dir   : awcmsmicro-dev/packages/plugins/awcms-sikesra/
+D1 prefix    : sikesra_*
+KV prefix    : sikesra:*
+R2 prefix    : sikesra/
+API prefix   : /_emdash/api/plugins/awcms-sikesra/
+```
+
+Verification stages (ordered):
+
+```text
+draft → submitted_village → verified_village →
+submitted_district → verified_district →
+submitted_sopd → verified_sopd →
+submitted_regency → active_verified
+```
+
+User levels (ascending): `desa_kelurahan < kecamatan < sopd < kabupaten < admin_sikesra`
 
 # Rules
 
