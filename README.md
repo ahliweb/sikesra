@@ -87,23 +87,25 @@ sikesra/
 
 ## Plugin Architecture
 
+> **Plugin ID nyata**: `awcms-sikesra` (bukan `awcms-micro-sikesra`). Storage memakai `PluginStorageConfig` collections (`ctx.storage.<collectionName>`), bukan tabel SQL. Lihat `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 untuk daftar lengkap penyimpangan yang ditemukan lewat audit kode Juni 2026.
+
 ```text
-@ahliweb/awcms-sikesra (native EmDash plugin)
+@ahliweb/awcms-sikesra (native EmDash plugin, ID: awcms-sikesra)
 │
-├── src/index.ts      Plugin descriptor + createPlugin()
-├── src/runtime.ts    Storage, routes, hooks, manifest
-├── src/admin.tsx     Admin UI (React + Kumo + Lingui)
-├── src/navigation.ts Navigation models + emdash adapter
-├── src/permissions.ts AWCMS_SIKESRA_PERMISSIONS
-├── src/audit.ts      createAuditRecord() helper
-├── src/fixtures.ts   Reference fixtures + TypeScript types
-└── src/sandbox.ts    Sandboxed server entry
+├── src/index.ts       Plugin descriptor + createPlugin()
+├── src/runtime.ts     Sumber kebenaran: storage collections, 39 route, hooks, manifest
+├── src/admin.tsx      Admin UI (React + Kumo + Lingui), 16 halaman + 3 widget
+├── src/admin-copy.ts  String/copy lokal en+id, dipakai admin.tsx
+├── src/navigation.ts  Navigation models + emdash adapter
+├── src/permissions.ts Hanya dipakai test, TIDAK dipakai runtime.ts
+├── src/audit.ts       Dead code — jangan diimpor
+├── src/fixtures.ts    Reference fixtures + TypeScript types
+└── src/sandbox.ts     Sandboxed server entry
 ```
 
-**API prefix**: `/_emdash/api/plugins/awcms-sikesra/`  
-**D1 prefix**: `sikesra_*`  
-**KV prefix**: `sikesra:*`  
-**R2 prefix**: `sikesra/`  
+**API prefix**: `/_emdash/api/plugins/awcms-sikesra/`
+**Storage**: collections (lihat `docs/prd/04.DATABASE_SCHEMA.md`), bukan tabel SQL
+**KV keys**: `custom:regions`, `custom:data-types` (override tanpa validasi shape)
 
 ---
 
@@ -125,23 +127,14 @@ Baca `docs/prd/01.AI_IMPLEMENTATION_PROMPT.md` untuk hard rules dan invariants.
 
 ## GitHub Issues
 
-Issues MVP tersedia di <https://github.com/ahliweb/sikesra/issues>:
+> Audit kode Juni 2026 menemukan bahwa fitur registry/verifikasi/dokumen/ABAC/akses/audit **sudah terimplementasi** (39 route, 16 halaman admin) — backlog "MVP dari nol" sebelumnya (#377-390) sudah ditutup. Backlog aktif sekarang adalah **hardening** (otorisasi server-side yang belum ada, konsistensi tipe internal, test coverage), lihat `docs/prd/02.IMPLEMENTATION_BACKLOG.md`.
 
-- **#376** — Context Capsule (pinned) — baca ini sebelum mulai
-- **#377** — [EPIC-01-001] Plugin scaffold + D1 migrations (Sprint 0)
-- **#378** — [EPIC-01-002] Navigation manifest + admin shell (Sprint 0)
-- **#379** — [EPIC-01-003] Health check endpoint (Sprint 0)
-- **#380** — [EPIC-00-UX-01] App shell + sidebar (Sprint 1)
-- **#381** — [EPIC-00-UX-02] Shared component kit (Sprint 1)
-- **#382** — [EPIC-07-001] Settings API + UI (Sprint 1)
-- **#383** — [EPIC-02-001] Registry CRUD API (Sprint 2)
-- **#384** — [EPIC-02-002] Registry list UI + form wizard (Sprint 2)
-- **#385** — [EPIC-03-001] Verification queue + verify action API (Sprint 3)
-- **#386** — [EPIC-03-002] Verification UI (Sprint 3)
-- **#387** — [EPIC-04-001] Documents upload + download (Sprint 2)
-- **#388** — [EPIC-05-001] ABAC engine + preview (Sprint 4)
-- **#389** — [EPIC-06-001] Audit log UI + public status (Sprint 4)
-- **#390** — [EPIC-06-002] Reports dashboard (Sprint 4)
+Issues hardening tersedia di <https://github.com/ahliweb/sikesra/issues>:
+
+- **#376** — Context Capsule (pinned, sudah diperbarui) — baca ini sebelum mulai
+- **#391-394** — EPIC-H1: Otorisasi Server-Side Nyata (identitas, permission check, ABAC gate, validasi shape)
+- **#395-398** — EPIC-H2: Konsistensi Tipe dan Nama Internal
+- **#399-402** — EPIC-H3: Test Coverage untuk Fitur yang Sudah Ada
 
 ---
 
@@ -204,10 +197,13 @@ cd awcmsmicro-dev && wrangler deploy
 | ------- | ---- |
 | PRD Utama | `docs/prd/PRODUCT_REQUIREMENT_DOCUMENT.md` |
 | AI Implementation Guide | `docs/prd/01.AI_IMPLEMENTATION_PROMPT.md` |
-| Plugin Architecture | `docs/prd/03.PLUGIN_ARCHITECTURE.md` |
-| Database Schema | `docs/prd/04.DATABASE_SCHEMA.md` |
-| API Contract | `docs/prd/05.API_CONTRACT.md` |
+| Backlog Hardening (EPIC-H1/H2/H3) | `docs/prd/02.IMPLEMENTATION_BACKLOG.md` |
+| Plugin Architecture (+ §8 penyimpangan kode) | `docs/prd/03.PLUGIN_ARCHITECTURE.md` |
+| Storage Collections | `docs/prd/04.DATABASE_SCHEMA.md` |
+| API Contract (39 route nyata) | `docs/prd/05.API_CONTRACT.md` |
+| Security Checklist (§0 temuan kritis) | `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` |
 | Sprint Plan | `docs/prd/09.SPRINT_EXECUTION_PLAN.md` |
+| Master Document Index | `docs/prd/20.MASTER_DOCUMENT_INDEX.md` |
 | Issue Index | `docs/prd/25.AI_READY_ISSUE_PLAYBOOK.md` |
 | Repository SOP | `docs/prd/07.REPOSITORY_EXECUTION_SOP.md` |
 

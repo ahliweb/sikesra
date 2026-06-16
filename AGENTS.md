@@ -4,13 +4,14 @@ This file provides guidance to agentic coding tools when working with code in th
 
 **SIKESRA** (Sistem Informasi Kesejahteraan Sosial dan Keagamaan) is a social and religious registry system for Kabupaten Kotawaringin Barat, implemented as a native EmDash plugin (`@ahliweb/awcms-sikesra`) on top of AWCMS-Micro.
 
-**Plugin status**: Active development, MVP Sprint 0–4.
+**Plugin status**: Feature-complete reference implementation (39 routes, 16 admin pages) with a confirmed critical gap — no server-side authorization on mutating routes. Active work is hardening (EPIC-H1/H2/H3), not greenfield feature development. See `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 and `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` §0 for the audit findings behind this.
 
 **Before working on SIKESRA features**, read:
 
-1. `docs/prd/01.AI_IMPLEMENTATION_PROMPT.md` — hard rules and invariants
-2. Load the relevant skill from `skills/sikesra-*/SKILL.md`
-3. Check issue Context Capsule (#376 on GitHub)
+1. `docs/prd/01.AI_IMPLEMENTATION_PROMPT.md` — hard rules and invariants (including HR-07, the authorization gap)
+2. `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 — list of confirmed discrepancies between earlier docs and the real code
+3. Load the relevant skill from `skills/sikesra-*/SKILL.md`
+4. Check issue Context Capsule (#376 on GitHub, updated June 2026)
 
 ## Repository Structure
 
@@ -45,22 +46,22 @@ Plugin lives at `awcmsmicro-dev/packages/plugins/awcms-sikesra/`:
 - **`src/runtime.ts`**: Storage config, routes, hooks, manifest (core file)
 - **`src/admin.tsx`**: Admin UI (React + Kumo + Lingui)
 - **`src/navigation.ts`**: Navigation module manifest + EmDash adapter
-- **`src/permissions.ts`**: `AWCMS_SIKESRA_PERMISSIONS` constants
-- **`src/audit.ts`**: `createAuditRecord()` helper
-- **`src/fixtures.ts`**: Reference fixtures + TypeScript types
+- **`src/permissions.ts`**: `AWCMS_SIKESRA_PERMISSIONS` constants — only used by tests, NOT by `runtime.ts`/`admin.tsx`; strings don't match the manifest (see `02.IMPLEMENTATION_BACKLOG.md` H2-02)
+- **`src/audit.ts`**: dead code, defines its own unused `createAuditRecord()` — the real one is in `runtime.ts`
+- **`src/fixtures.ts`**: Reference fixtures + TypeScript types (only partially matches what `runtime.ts` actually stores — see `04.DATABASE_SCHEMA.md` §2.2)
 - **`src/sandbox.ts`**: Sandboxed server-side entry
 
-### SIKESRA Key Invariants
+### SIKESRA Key Invariants (Verified Against Code, June 2026)
 
 ```text
 Plugin npm   : @ahliweb/awcms-sikesra
-Plugin ID    : awcms-micro-sikesra
+Plugin ID    : awcms-sikesra   (NOT awcms-micro-sikesra)
 Plugin dir   : awcmsmicro-dev/packages/plugins/awcms-sikesra/
-D1 prefix    : sikesra_*
-KV prefix    : sikesra:*
-R2 prefix    : sikesra/
+Storage      : ctx.storage.<collectionName> — PluginStorageConfig collections, NOT SQL tables
 API prefix   : /_emdash/api/plugins/awcms-sikesra/
 ```
+
+**Critical**: no route in this plugin currently checks permission or verified identity before mutating data. See `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` §0.
 
 Verification stages (ordered):
 

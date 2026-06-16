@@ -3,13 +3,15 @@
 ## SIKESRA — Sistem Informasi Kesejahteraan Sosial dan Keagamaan
 
 **Instansi**: Pemerintah Kabupaten Kotawaringin Barat  
-**Status Dokumen**: PRD v1.0 — Draft Siap Implementasi  
+**Status Dokumen**: PRD v1.1 — Disesuaikan dengan hasil audit kode (Juni 2026)  
 **Tanggal**: Juni 2026  
 **Pemilik Proses Bisnis**: Dinas Sosial / Kemenag / BPBD Kab. Kotawaringin Barat  
 **Pemilik Teknis**: Tim Pengembang Sistem Informasi Daerah  
-**Platform Teknis**: AWCMS-Micro (Cloudflare Workers / D1 / R2 / KV)  
-**Pola Pengembangan**: Modular Plugin Ecosystem — Plugin `@ahliweb/awcms-sikesra`  
+**Platform Teknis**: AWCMS-Micro (Cloudflare Workers / D1 via storage collections / KV)  
+**Pola Pengembangan**: Modular Plugin Ecosystem — Plugin `@ahliweb/awcms-sikesra` (plugin ID nyata: `awcms-sikesra`)  
 **Klasifikasi**: Internal Pemerintahan / Perencanaan Produk  
+
+> **Catatan status implementasi (v1.1)**: Audit kode langsung (Juni 2026) menemukan bahwa fitur registry, verifikasi, dokumen, ABAC, kontrol akses, dan audit **sudah terimplementasi** di plugin (39 route, 16 halaman admin) — bukan backlog kosong. Namun plugin ini dibangun di atas scaffold contoh AWCMS-Micro dan **belum memiliki otorisasi server-side nyata** (lihat `10.SECURITY_AND_PRIVACY_CHECKLIST.md` § 0). Bagian timeline/sprint di dokumen ini (§ 16) ditulis dengan asumsi awal "MVP belum dikerjakan" — bagian itu sudah digantikan oleh backlog hardening di `02.IMPLEMENTATION_BACKLOG.md`. Baca dokumen tersebut untuk rencana kerja yang akurat.
 
 ---
 
@@ -517,39 +519,42 @@ awcms:sikesra:verification:read / verify
 
 ---
 
-## 14. FASE IMPLEMENTASI
+## 14. FASE IMPLEMENTASI (Historis — Lihat Catatan)
 
-### Sprint 0 — Foundation (2 minggu)
-- Plugin scaffold + D1 migrations
-- Auth integration
+> **Catatan v1.1**: Rencana sprint di bawah ditulis dengan asumsi awal "MVP belum dikerjakan". Audit kode Juni 2026 menemukan seluruh item Sprint 0-4 di bawah **sudah ada implementasinya** di kode (39 route, 16 halaman admin) — dipertahankan di sini sebagai catatan historis ruang lingkup fungsional, bukan rencana kerja aktif. Rencana kerja aktif sekarang adalah backlog hardening di `02.IMPLEMENTATION_BACKLOG.md` (EPIC-H1/H2/H3), karena gap nyata adalah otorisasi server-side dan konsistensi tipe, bukan fitur yang belum dibuat.
+
+### Sprint 0 — Foundation (sudah ada di kode)
+
+- Plugin scaffold + storage collections
 - Navigation wiring
 - Basic admin shell
 
-### Sprint 1 — UI/UX Foundation (2 minggu)
+### Sprint 1 — UI/UX Foundation (sudah ada di kode)
+
 - Shared component kit (Kumo-based)
 - App shell + sidebar
 - Design tokens
 - i18n scaffold (en + id)
-- Accessibility baseline
 
-### Sprint 2 — Registry Core (2 minggu)
-- CRUD entitas registry
+### Sprint 2 — Registry Core (sudah ada di kode, dokumen metadata-only)
+
+- CRUD entitas registry (`registry/save`, `registry/list`)
 - Form wizard (tipe → wilayah → detail)
-- RegionSelector component
 - Filter + paginasi
-- Dokumen pendukung (upload + list)
+- Dokumen pendukung (metadata only — **tidak ada upload file nyata ke R2**, lihat `16.RISK_REGISTER_AND_MITIGATION_PLAN.md` RT-04)
 
-### Sprint 3 — Verifikasi Workflow (2 minggu)
-- Verification queue (per level user)
-- Approve / needs_review / reject flow
-- Verification history per entitas
-- VerificationStepper component
+### Sprint 3 — Verifikasi Workflow (sudah ada di kode, otorisasi belum nyata)
 
-### Sprint 4 — Keamanan & Dashboard (2 minggu)
-- ABAC engine implementation
-- RBAC catalog UI
-- ABAC preview
-- Dashboard publik (aggregate)
+- Verification queue (`verification/list`)
+- Approve / needs_review / reject flow (`verification/advance`, `verification/reject`)
+- Level verifier dicek, tapi sumber identitasnya **bisa dipalsukan klien** — lihat `10.SECURITY_AND_PRIVACY_CHECKLIST.md` § 0
+
+### Sprint 4 — Keamanan & Dashboard (UI dan model data ada, enforcement belum)
+
+- ABAC engine (logika evaluasi ada — `evaluateAbacDecision()` — tapi tidak menggerbang mutasi nyata)
+- RBAC catalog UI (`access/permissions`, `access/roles`, `access/matrix`)
+- ABAC preview (simulasi read-only)
+- Dashboard publik aggregate (`public/status` — **ini satu-satunya kontrol privasi yang sudah berfungsi nyata**)
 - Audit log UI + retention
 
 ---

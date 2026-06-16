@@ -2,6 +2,8 @@
 
 Use this skill when implementing admin UI components, pages, or interactions for the SIKESRA plugin.
 
+> **Note (Juni 2026)**: 16 admin pages already exist in `src/admin.tsx` (4553 lines) — check there before assuming a component needs to be built from scratch. The Kumo/Lingui/Tailwind component patterns below remain valid guidance; only §9 (API Fetch Pattern) was corrected — this plugin's routes are named entries (`registry/save`), not REST paths with HTTP methods. See `docs/prd/05.API_CONTRACT.md` for the real route list and `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 for known discrepancies elsewhere in the codebase.
+
 ---
 
 ## 1. Quick Rules (Wajib Diikuti)
@@ -302,39 +304,33 @@ function VerificationStepper({ currentStage }: { currentStage: string }) {
 }
 ```
 
-## 9. API Fetch Pattern
+## 9. API Fetch Pattern (Corrected — Named Routes, Not REST Paths)
+
+This plugin's routes are named entries (`registry/list`, `registry/save`, ...), not REST paths with HTTP methods — see `docs/prd/05.API_CONTRACT.md` for the full list of 39. Before writing a new fetch call, check how `admin.tsx` already calls the plugin's routes today (search for the route name as a string literal) rather than assuming a `/registry/:id`-style REST shape:
 
 ```typescript
-// GET request
-async function fetchRegistry(params: Record<string, string>) {
-  const url = new URL("/_emdash/api/plugins/awcms-sikesra/registry", location.origin)
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-
-  const res = await apiFetch(url.toString())
+// Pattern to verify against admin.tsx's existing calls — adapt to what's
+// actually there rather than inventing REST paths like
+// "/_emdash/api/plugins/awcms-sikesra/registry/:id"
+async function callRoute<T>(routeName: string, input?: unknown): Promise<T> {
+  const res = await apiFetch(`/_emdash/api/plugins/awcms-sikesra/${routeName}`, {
+    method: "POST", // confirm against admin.tsx — native plugin routes may not follow GET/POST REST semantics
+    headers: { "Content-Type": "application/json", "X-EmDash-Request": "1" },
+    body: input ? JSON.stringify(input) : undefined,
+  });
   if (!res.ok) {
-    const data = await res.json() as { error: { message: string } }
-    throw new Error(data.error.message)
+    const data = (await res.json()) as { error?: { message: string } };
+    throw new Error(data.error?.message ?? "Request failed");
   }
-  return res.json() as Promise<{ data: { items: RegistryEntity[]; nextCursor?: string } }>
+  return res.json() as Promise<T>;
 }
 
-// POST request (state-changing — perlu X-EmDash-Request: 1)
-async function createEntity(body: CreateEntityInput) {
-  const res = await apiFetch("/_emdash/api/plugins/awcms-sikesra/registry", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-EmDash-Request": "1",  // WAJIB untuk POST/PUT/DELETE
-    },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const data = await res.json() as { error: { message: string } }
-    throw new Error(data.error.message)
-  }
-  return res.json() as Promise<{ data: RegistryEntity }>
-}
+// Usage — route name matches docs/prd/05.API_CONTRACT.md exactly
+await callRoute("registry/list");
+await callRoute("registry/save", entityInput);
 ```
+
+Don't assume a `{ data, meta }` envelope shape without checking the actual response in `admin.tsx`'s existing fetch calls first.
 
 ## 10. Cek Kumo Components
 

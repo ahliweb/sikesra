@@ -1,227 +1,156 @@
 # Skill: sikesra-data-d1
 
-Use this skill when working on D1 migrations, database schema, or plugin storage for SIKESRA.
+Use this skill when working on storage collections, KV, or data shape for SIKESRA.
 
----
+> **Rewritten Juni 2026 after direct code audit.** The previous version of this skill described raw SQL tables (`CREATE TABLE sikesra_*`) that do not exist. The plugin persists data via `PluginStorageConfig` collections (backed by D1 under the hood, but the plugin never writes SQL directly). See `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 for the full list of discrepancies.
 
-## 1. D1 Naming Rules
-
-```
-Tables  : sikesra_* (ALL plugin tables must use this prefix)
-KV keys : sikesra:* (colon separator)
-R2 keys : sikesra/* (slash separator)
-```
-
-## 2. Migration Pattern (Idempoten)
-
-Semua migration di install hook harus idempoten — aman dijalankan berkali-kali:
+## 1. Storage Model: Collections, Not Tables
 
 ```typescript
-// src/runtime.ts — install hook
-
-const CREATE_TABLES_SQL = `
-CREATE TABLE IF NOT EXISTS sikesra_registry_entities (
-  id TEXT PRIMARY KEY,
-  code TEXT UNIQUE NOT NULL,
-  label TEXT NOT NULL,
-  entity_type TEXT NOT NULL,
-  sensitivity TEXT NOT NULL DEFAULT 'internal',
-  province_code TEXT NOT NULL,
-  regency_code TEXT NOT NULL,
-  district_code TEXT NOT NULL,
-  village_code TEXT NOT NULL,
-  verification_stage TEXT NOT NULL DEFAULT 'draft',
-  input_level TEXT NOT NULL DEFAULT 'desa_kelurahan',
-  public_summary TEXT,
-  extra_data TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_sre_code ON sikesra_registry_entities(code);
-CREATE INDEX IF NOT EXISTS idx_sre_entity_type ON sikesra_registry_entities(entity_type);
-CREATE INDEX IF NOT EXISTS idx_sre_stage ON sikesra_registry_entities(verification_stage);
-CREATE INDEX IF NOT EXISTS idx_sre_village ON sikesra_registry_entities(village_code);
-CREATE INDEX IF NOT EXISTS idx_sre_district ON sikesra_registry_entities(district_code);
-`
-
-const SEED_PERMISSIONS_SQL = `
-INSERT OR IGNORE INTO sikesra_permission_catalog (slug, label, description) VALUES
-  ('awcms:sikesra:dashboard:read', 'Baca Dashboard', 'Lihat overview'),
-  ('awcms:sikesra:registry:read', 'Baca Registri', 'Lihat entitas registri'),
-  ('awcms:sikesra:registry:write', 'Kelola Registri', 'Buat dan ubah entitas'),
-  ('awcms:sikesra:verification:read', 'Baca Verifikasi', 'Lihat antrian verifikasi'),
-  ('awcms:sikesra:verification:verify', 'Lakukan Verifikasi', 'Approve/reject entitas')
-  -- ... dst
-`
-
-async function installPlugin(ctx: PluginContext) {
-  // Run each SQL statement
-  await ctx.db.exec(CREATE_TABLES_SQL)
-  await ctx.db.exec(SEED_PERMISSIONS_SQL)
-  await ctx.db.exec(SEED_ROLES_SQL)
-
-  // Audit setelah install
-  await ctx.storage.auditEvents.create(createAuditRecord({
-    kind: "plugin.installed",
-    scope: "sikesra:lifecycle",
-    actor: "system",
-    summary: "Plugin SIKESRA installed",
-    metadata: {}
-  }))
-}
+// src/runtime.ts — AWCMS_SIKESRA_STORAGE (the real, complete list)
+export const AWCMS_SIKESRA_STORAGE = {
+  auditEvents: { indexes: ["timestamp", "kind", "scope", ["scope", "timestamp"]] },
+  accessChangeEvents: { indexes: ["timestamp", "kind", "scope", ["scope", "timestamp"]] },
+  abacChangeEvents: { indexes: ["timestamp", "kind", "scope", ["scope", "timestamp"]] },
+  registryEntities: { indexes: ["code", "entityType", "sensitivity", ["entityType", "sensitivity"]] },
+  abacAttributeCatalog: { indexes: ["key", "targetType", "updatedAt", ["targetType", "updatedAt"]] },
+  abacPolicyRules: { indexes: ["id", "effect", "updatedAt", ["effect", "updatedAt"]] },
+  supportingDocuments: { indexes: ["registryEntityId", "documentType", "sensitivity", ["registryEntityId", "sensitivity"]] },
+  verificationStageState: { indexes: ["registryEntityId", "stage", "updatedAt", ["registryEntityId", "updatedAt"]] },
+  abacResourceAssignments: { indexes: ["resourceId", "updatedAt"] },
+  abacSubjectAssignments: { indexes: ["subjectId", "updatedAt"] },
+  contentSnapshots: { indexes: ["collection", "contentId", "timestamp", ["collection", "timestamp"], ["contentId", "timestamp"]] },
+  settingsState: { indexes: ["key", "updatedAt"] },
+  pluginState: { indexes: ["key", "updatedAt"] },
+  permissionCatalog: { indexes: ["slug", "scope", "updatedAt", ["scope", "updatedAt"]] },
+  roleCatalog: { indexes: ["slug", "updatedAt"] },
+  rolePermissionAssignments: { indexes: ["roleSlug", "updatedAt"] },
+  userRoleAssignments: { indexes: ["userId", "updatedAt"] },
+  verificationEvents: { indexes: ["registryEntityId", "stage", "createdAt", ["registryEntityId", "createdAt"]] },
+} satisfies PluginStorageConfig;
 ```
 
-## 3. Full Table List (11 tabel)
+No `CREATE TABLE`, no `sikesra_*` prefix, no Kysely `sql` tagged templates anywhere in this plugin. Access is always `ctx.storage.<collectionName>.get/put/delete/exists/getMany/putMany/deleteMany/query/count`.
 
-| Tabel | Isi |
-|-------|-----|
-| `sikesra_registry_entities` | Entitas sosial-keagamaan |
-| `sikesra_verification_events` | Riwayat verifikasi per entitas |
-| `sikesra_supporting_documents` | Metadata dokumen pendukung |
-| `sikesra_audit_events` | Semua audit events |
-| `sikesra_permission_catalog` | Daftar permissions |
-| `sikesra_role_catalog` | Daftar roles |
-| `sikesra_role_permission_assignments` | Mapping role → permission |
-| `sikesra_user_role_assignments` | Mapping user → role + region_scope |
-| `sikesra_abac_attribute_catalog` | Atribut ABAC |
-| `sikesra_abac_policy_rules` | Policy rules ABAC |
-| `sikesra_abac_subject_assignments` | Subject attributes |
-| `sikesra_abac_resource_assignments` | Resource attributes |
+**Region tree and entity-type catalog are NOT collections** — they're static in-code arrays (`DEFAULT_REGION_TREE`, `DEFAULT_DATA_TYPES`) with an optional unvalidated KV override (`custom:regions`, `custom:data-types`). See §5.
 
-## 4. Enum Values
+## 2. Adding a New Collection
 
 ```typescript
-// verification_stage (urutan wajib diikuti)
-const VERIFICATION_STAGES = [
-  "draft",
-  "submitted_village",
-  "verified_village",
-  "submitted_district",
-  "verified_district",
-  "submitted_sopd",
-  "verified_sopd",
-  "submitted_regency",
-  "active_verified",
-] as const
+// 1. Add to AWCMS_SIKESRA_STORAGE with the indexes you need
+export const AWCMS_SIKESRA_STORAGE = {
+  // ...existing entries...
+  myNewCollection: { indexes: ["someField", "updatedAt"] },
+} satisfies PluginStorageConfig;
 
-// sensitivity
-const SENSITIVITY_LEVELS = ["public_safe", "internal", "restricted", "highly_restricted"] as const
+// 2. Define the data shape (prefer adding to src/fixtures.ts if it's a
+//    domain entity, or a local interface in runtime.ts if it's
+//    infrastructure like audit/access/abac — follow the existing split,
+//    see docs/prd/04.DATABASE_SCHEMA.md §2)
 
-// user/input/verifier level
-const USER_LEVELS = ["desa_kelurahan", "kecamatan", "sopd", "kabupaten", "admin_sikesra"] as const
-
-// entity_type
-const ENTITY_TYPES = [
-  "rumah_ibadah", "lembaga_keagamaan", "pendidikan_keagamaan",
-  "lks", "guru_agama", "anak_yatim", "disabilitas", "lansia_terlantar"
-] as const
+// 3. Access it
+await ctx.storage.myNewCollection.put(id, data);
+const items = await ctx.storage.myNewCollection.query({ limit: 50 });
 ```
 
-## 5. Index Discipline
+No migration file to create, no `runner.ts` registration — this is specific to the SIKESRA plugin's framework (different from EmDash core's `_emdash_*` table migrations described in root `AGENTS.md`).
 
-Setiap kolom yang dipakai di WHERE atau ORDER BY harus punya index:
+## 3. Real Collection-to-Type Mapping
 
-```sql
--- Single column index
-CREATE INDEX IF NOT EXISTS idx_sre_village ON sikesra_registry_entities(village_code);
+| Collection | Type Actually Used | Source |
+| --- | --- | --- |
+| `registryEntities` | `SikesraReferenceRegistryEntity` | `src/fixtures.ts` |
+| `supportingDocuments` | `SikesraReferenceSupportingDocument` | `src/fixtures.ts` |
+| `verificationEvents` | `SikesraReferenceVerificationEvent` | `src/fixtures.ts` |
+| `permissionCatalog` | `AccessPermission` (different from `fixtures.ts`'s lighter type) | `src/runtime.ts` |
+| `roleCatalog` | `AccessRole` (different from `fixtures.ts`) | `src/runtime.ts` |
+| `abacAttributeCatalog` | `AbacAttributeDefinition` (no `fixtures.ts` equivalent) | `src/runtime.ts` |
+| `abacPolicyRules` | `AbacPolicyRule` (different from `fixtures.ts`'s `SikesraReferenceAbacPolicy`) | `src/runtime.ts` |
+| `auditEvents` | `ExampleAuditEvent` (no `fixtures.ts` equivalent — name is a scaffold leftover) | `src/runtime.ts` |
 
--- Composite index
-CREATE INDEX IF NOT EXISTS idx_sre_type_sensitivity ON sikesra_registry_entities(entity_type, sensitivity);
+Don't assume a type from `fixtures.ts` matches what a route handler actually reads/writes — check `docs/prd/04.DATABASE_SCHEMA.md` §2 first.
 
--- Partial index (jika ada kondisi)
-CREATE INDEX IF NOT EXISTS idx_sve_pending ON sikesra_verification_events(registry_entity_id)
-  WHERE result = 'pending';
-```
-
-Naming: `idx_{table_short}_{column}` atau `idx_{table_short}_{purpose}`
-
-## 6. KV Pattern
+## 4. Enum Values (Verified)
 
 ```typescript
-// Read settings dari KV
-const settings = await ctx.kv.get<SikesraSettings>("sikesra:settings")
-const effectiveSettings = settings ?? DEFAULT_SETTINGS
-
-// Write settings ke KV
-await ctx.kv.put("sikesra:settings", JSON.stringify(newSettings))
-
-// Cache dengan TTL (1 jam)
-await ctx.kv.put("sikesra:public-status-cache", JSON.stringify(aggregate), { expirationTtl: 3600 })
-
-// Read cached data
-const cached = await ctx.kv.get<PublicAggregate>("sikesra:public-status-cache")
-```
-
-## 7. R2 Pattern
-
-```typescript
-// Upload
-const r2Key = `sikesra/documents/${entityId}/${documentId}/${filename}`
-await ctx.storage.r2.put(r2Key, fileBuffer, {
-  httpMetadata: { contentType: mimeType }
-})
-
-// Signed download URL (5 menit)
-const signedUrl = await ctx.storage.r2.createSignedUrl(r2Key, { expiresIn: 300 })
-return Response.redirect(signedUrl)
-
-// Delete
-await ctx.storage.r2.delete(r2Key)
-```
-
-## 8. Avoid SQL Injection
-
-```typescript
-// ❌ SALAH — string interpolation
-const rows = await ctx.db.exec(`SELECT * FROM sikesra_${tableName}`)
-
-// ✅ BENAR — gunakan Kysely dengan validated identifier
-import { validateIdentifier } from "#database/validate.js"
-validateIdentifier(tableName)  // throws jika tidak valid
-const rows = await ctx.db.selectFrom(sql.ref(`sikesra_${tableName}`) as any).execute()
-
-// ✅ BENAR — gunakan parameter untuk values
-const rows = await ctx.db
-  .selectFrom("sikesra_registry_entities")
-  .where("village_code", "=", villageCode)  // parameterized
-  .execute()
-```
-
-## 9. Verifikasi Stage Transition Logic
-
-```typescript
-const STAGE_ORDER = [
-  "draft",
-  "submitted_village", "verified_village",
+// verificationStage (9 values, fixed order)
+const VERIFICATION_STAGE_FLOW = [
+  "draft", "submitted_village", "verified_village",
   "submitted_district", "verified_district",
   "submitted_sopd", "verified_sopd",
-  "submitted_regency",
-  "active_verified",
-]
+  "submitted_regency", "active_verified",
+] as const;
 
-function getPreviousStage(stage: string): string | null {
-  const idx = STAGE_ORDER.indexOf(stage)
-  return idx > 0 ? STAGE_ORDER[idx - 1]! : null
+// sensitivity
+const SENSITIVITY_LEVELS = ["public_safe", "internal", "restricted", "highly_restricted"] as const;
+
+// VerificationUserLevel (alias SikesraUserLevel — used on entity/event)
+const USER_LEVELS = ["desa_kelurahan", "kecamatan", "sopd", "kabupaten", "admin_sikesra"] as const;
+
+// VerificationLevel (DIFFERENT union — used for stage→verifier bucketing, NOT the same as above)
+const VERIFICATION_LEVEL_BUCKETS = ["desa_kelurahan", "kecamatan", "sopd", "kabupaten_admin", "tampil"] as const;
+
+// entityType (8 parent types, each with subTypes — see DEFAULT_DATA_TYPES)
+const ENTITY_TYPES = [
+  "rumah_ibadah", "lembaga_keagamaan", "pendidikan_keagamaan",
+  "lks", "guru_agama", "anak_yatim", "disabilitas", "lansia_terlantar",
+] as const;
+```
+
+`VerificationLevel` and `VerificationUserLevel` are two different, only partially overlapping unions — see `docs/prd/02.IMPLEMENTATION_BACKLOG.md` H2-01 before writing code that assumes they're interchangeable. Level `"tampil"` (= stage `active_verified`) currently allows zero verifiers (`getAllowedVerifierLevels("tampil")` returns `[]`).
+
+## 5. Region and Entity-Type Pattern: Static + Unvalidated KV Override
+
+```typescript
+// Real pattern used by regions/get and data-types/get
+const tree = (await ctx.kv.get<AdministrativeProvince[]>("custom:regions")) ?? DEFAULT_REGION_TREE;
+
+// Real pattern used by regions/save — NO VALIDATION (this is a known gap, H1-04)
+await ctx.kv.put("custom:regions", JSON.stringify(input));
+```
+
+If your task is H1-04 (validate shape), add Zod validation here. If your task is unrelated, don't copy the unvalidated write pattern into new code.
+
+## 6. KV Pattern (Settings)
+
+```typescript
+// Settings collection is settingsState, but cross-cutting settings also use KV in places — check runtime.ts before assuming which
+const settings = await getSettings(ctx); // wraps storage read + DEFAULT_SETTINGS fallback
+await persistSettings(ctx, nextSettings);
+```
+
+Settings shape is `ExampleSettings` (6 fields exactly): `publicStatusLabel`, `auditRetentionDays`, `governanceMode`, `metadataCanonicalBase`, `smallCellThreshold`, `sikesraPublicEnabled`. See `docs/prd/04.DATABASE_SCHEMA.md` §3.
+
+## 7. No R2 Usage Found
+
+A full grep of `src/runtime.ts` for R2/media/signed-URL patterns returned zero matches. `documents/save` stores metadata only — there is no file upload to R2 in this plugin today. Don't assume document upload works end-to-end; verify before building on top of it.
+
+## 8. Avoid SQL Injection (General Rule, Not Specific to This Plugin)
+
+This plugin doesn't write SQL directly, so this is mostly inherited guidance from root `AGENTS.md` for any EmDash-core-adjacent code you might touch:
+
+```typescript
+// If you ever touch EmDash core query code: never interpolate into sql.raw()
+// Use sql`...${value}...` for values, sql.ref() for identifiers.
+```
+
+## 9. Verification Stage Transition Logic (Real)
+
+```typescript
+function getNextVerificationStage(stage: VerificationStage): VerificationStage | null {
+  const index = VERIFICATION_STAGE_FLOW.indexOf(stage);
+  return index >= 0 && index < VERIFICATION_STAGE_FLOW.length - 1 ? VERIFICATION_STAGE_FLOW[index + 1] : null;
 }
 
-function getNextStage(stage: string): string | null {
-  const idx = STAGE_ORDER.indexOf(stage)
-  return idx < STAGE_ORDER.length - 1 ? STAGE_ORDER[idx + 1]! : null
-}
-
-// Level yang boleh approve stage ini
-const STAGE_VERIFIER_LEVEL: Record<string, SikesraUserLevel[]> = {
-  "draft": ["desa_kelurahan"],
-  "submitted_village": ["desa_kelurahan", "kecamatan"],
-  "verified_village": ["kecamatan"],
-  "submitted_district": ["kecamatan"],
-  "verified_district": ["sopd", "kecamatan"],
-  "submitted_sopd": ["sopd"],
-  "verified_sopd": ["kabupaten", "sopd"],
-  "submitted_regency": ["kabupaten", "admin_sikesra"],
+function getAllowedVerifierLevels(level: VerificationLevel): VerificationUserLevel[] {
+  if (level === "desa_kelurahan") return ["desa_kelurahan"];
+  if (level === "kecamatan") return ["kecamatan"];
+  if (level === "sopd") return ["sopd"];
+  if (level === "kabupaten_admin") return ["kabupaten", "admin_sikesra"];
+  return []; // level "tampil" — no verifiers allowed
 }
 ```
 
-## 10. Full Schema Reference
+## 10. Full Reference
 
-Lihat `docs/prd/04.DATABASE_SCHEMA.md` untuk full DDL + seed data SQL yang lengkap.
+See `docs/prd/04.DATABASE_SCHEMA.md` for the complete collection list, field shapes, and enum values.

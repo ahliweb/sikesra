@@ -2,7 +2,28 @@
 
 ## Active Decisions
 
-### PRD Documentation Suite (Juni 2026)
+### PRD Documentation Suite Code Audit and Correction (Juni 2026)
+
+**Decision:** Rewrite the entire `docs/prd/` suite (25 documents + main PRD), all 4 `skills/sikesra-*` files, and root `README.md`/`AGENTS.md` after a direct code audit of `src/runtime.ts` found the original PRD Documentation Suite (see entry below) described an architecture that didn't match the real plugin.
+
+**Rationale:**
+
+- Plugin ID was documented as `awcms-micro-sikesra`; the real `AWCMS_SIKESRA_PLUGIN_ID` in code is `awcms-sikesra`.
+- Storage was documented as raw SQL tables (`CREATE TABLE sikesra_*`); the real plugin persists data via `PluginStorageConfig` collections (`ctx.storage.<collectionName>`), never writing SQL.
+- Implementation status was documented as "MVP not yet built, Sprint 0-4 backlog"; the real plugin already has 39 routes and 16 admin pages implemented (closed issues #155-167, May 2026) — it's a feature-complete reference implementation, not a greenfield project.
+- The real critical gap is different from what was assumed: no route in the plugin checks permission or verified identity before mutating data, and the ABAC evaluation engine (`evaluateAbacDecision()`) is only ever called from preview/demo routes, never from a real mutation path.
+- Backlog was reframed from "EPIC-00..07 build from scratch" to "EPIC-H1/H2/H3 hardening" (server-side authorization, internal type consistency, test coverage) to reflect the real gap.
+
+**Artifacts:**
+
+- All 25 `docs/prd/*.md` + `docs/prd/PRODUCT_REQUIREMENT_DOCUMENT.md` — rewritten or corrected
+- `skills/sikesra-plugin-execution/SKILL.md`, `skills/sikesra-data-d1/SKILL.md`, `skills/sikesra-api-rbac/SKILL.md`, `skills/sikesra-ui-admin/SKILL.md` — rewritten
+- GitHub issues #377-390 (old "build from scratch" backlog) closed with explanatory comments; issues #391-402 (EPIC-H1/H2/H3 hardening) created; pinned capsule issue #376 updated
+- `README.md`, `AGENTS.md` — plugin ID and status corrected
+
+**Date:** 2026-06-16
+
+### PRD Documentation Suite (Juni 2026, superseded by audit above)
 
 **Decision:** Create a full PRD suite in `docs/prd/` following the satusehatkobar documentation pattern.
 

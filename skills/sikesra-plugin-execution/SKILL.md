@@ -2,158 +2,133 @@
 
 Use this skill when working on SIKESRA plugin scaffold, hooks, lifecycle, navigation, or runtime wiring.
 
----
+> **Rewritten Juni 2026 after direct code audit.** Previous version of this skill described patterns (`ctx.locals.user`, `checkPermission()`, plugin ID `awcms-micro-sikesra`) that do not exist in the real codebase. See `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8 for the full list of discrepancies found.
 
-## 1. Plugin Identity
+## 1. Plugin Identity (Verified Against Code)
 
-```
-npm name : @ahliweb/awcms-sikesra
-plugin ID: awcms-micro-sikesra
+```text
+npm name : @ahliweb/awcms-sikesra (version 0.1.1)
+plugin ID: awcms-sikesra   ← NOT awcms-micro-sikesra
 dir      : awcmsmicro-dev/packages/plugins/awcms-sikesra/
-format   : native (EmDash trusted plugin)
+format   : native (EmDash trusted plugin), built on top of an AWCMS-Micro
+           example/reference plugin scaffold — see §6 below.
 ```
 
-## 2. File Responsibilities
+## 2. File Responsibilities (Verified)
 
-| File | Tanggung Jawab |
-|------|---------------|
-| `src/index.ts` | Plugin descriptor (`awcmsSikesraPlugin`) + `createPlugin()` |
-| `src/runtime.ts` | Storage config, routes, hooks, manifest — ini file utama |
-| `src/admin.tsx` | Admin UI (React + Kumo) |
-| `src/navigation.ts` | Navigation module manifest + emdash adapter |
-| `src/permissions.ts` | `AWCMS_SIKESRA_PERMISSIONS` const |
-| `src/audit.ts` | `createAuditRecord()` helper |
-| `src/fixtures.ts` | Reference fixtures + TypeScript types |
-| `src/sandbox.ts` | Sandboxed server-side entry |
+| File | Real Responsibility |
+| --- | --- |
+| `src/index.ts` | `awcmsSikesraPlugin()` (descriptor) + `createPlugin()` (the one actually used in production) |
+| `src/runtime.ts` | **The single source of truth** — storage config, ~39 routes, hooks, manifest, region/data-type defaults (2870 lines) |
+| `src/admin.tsx` | Admin UI, 16 pages + 3 widgets (React + Kumo) |
+| `src/admin-copy.ts` | Localized copy strings (en+id), imported by `admin.tsx` — NOT a backup file |
+| `src/navigation.ts` | Barrel re-export of `./navigation/*` |
+| `src/permissions.ts` | `AWCMS_SIKESRA_PERMISSIONS` — **only used in tests**, NOT imported by `runtime.ts` or `admin.tsx`. Don't treat it as authoritative. |
+| `src/audit.ts` | **Dead code.** Defines its own `createAuditRecord()`/`ExampleAuditEvent`, imported by nothing. The real implementation lives in `runtime.ts` (~line 1535). |
+| `src/fixtures.ts` | Types + reference data. Only `SikesraReferenceRegistryEntity`/`SikesraReferenceSupportingDocument`/`SikesraReferenceVerificationEvent` are used as the actual collection types — ABAC/permission/role types here differ from what `runtime.ts` really uses. |
+| `src/sandbox.ts` | Sandboxed entry |
 
-## 3. How to Add a Route
+## 3. How to Add a Route (Real Pattern)
 
-Routes live in `createNativeRoutes()` in `src/runtime.ts`:
+Routes live in `sharedRouteEntries` in `src/runtime.ts`, exposed via `createNativeRoutes()`/`createSandboxRoutes()`. There is no per-route `path`/`method` REST shape — routes are named entries in a record:
 
 ```typescript
-export function createNativeRoutes(): NativePluginRoute[] {
-  return [
-    {
-      path: "/_emdash/api/plugins/awcms-sikesra/my-endpoint",
-      method: "GET",
-      handler: async (request: Request, ctx: PluginContext): Promise<Response> => {
-        // 1. Auth check
-        const user = (ctx.locals as { user?: unknown }).user as User | undefined
-        if (!user) return new Response(null, { status: 401 })
+// Pattern used by existing routes in runtime.ts
+const myRoute: RouteHandler = async (routeCtx, ctx) => {
+  // 1. Business logic + storage (collections, NOT SQL)
+  const items = await ctx.storage.registryEntities.query({ limit: 50 });
 
-        // 2. Permission check
-        const hasPermission = checkPermission(user, AWCMS_SIKESRA_PERMISSIONS.dashboardRead)
-        if (!hasPermission) return new Response(null, { status: 403 })
+  // 2. Audit (always, for mutations)
+  await appendAuditEvent(
+    ctx,
+    createAuditRecord({ kind: "my.action", scope: "sikesra:my-scope", actor: "...", summary: "..." }),
+  );
 
-        // 3. Business logic + storage
-        const data = await ctx.storage.auditEvents.findMany({ limit: 10 })
+  return { data: items };
+};
 
-        // 4. Return envelope
-        return Response.json({
-          data: { items: data },
-          meta: { requestId: crypto.randomUUID(), timestamp: new Date().toISOString() }
-        })
-      }
-    }
-  ]
-}
+// Registered in sharedRouteEntries:
+const sharedRouteEntries: Record<string, RouteEntry> = {
+  "my/route": { public: false, handler: myRoute },
+  // ...
+};
 ```
 
-## 4. How to Add a Hook
+**Critical gap to know before adding a mutating route**: none of the existing `*/save` routes check permission or verified identity before writing (see `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` §0). Don't copy that pattern uncritically into new code — if your task is in EPIC-H1 (hardening), add the check; if it's an unrelated task, flag the gap in your PR description rather than silently inheriting it.
 
-Hooks live in `createSharedHooks()` in `src/runtime.ts`:
+## 4. How to Add a Hook (Real Pattern)
+
+Hooks live in `sharedHooks` / `createSharedHooks()` in `src/runtime.ts`:
 
 ```typescript
-export function createSharedHooks() {
-  return {
-    install: async (ctx: PluginContext) => {
-      // Run migrations, seed data
-    },
-    activate: async (ctx: PluginContext) => {
-      // Validate storage is ready
-    },
-    deactivate: async (ctx: PluginContext) => {
-      // Cleanup
-    },
-    uninstall: async (ctx: PluginContext) => {
-      // Drop tables (with confirmation)
-    },
-    "content:afterCreate": async (ctx: PluginContext, payload: unknown) => {
-      // React to content creation
-    },
-    "cron:daily": async (ctx: PluginContext) => {
-      // Audit retention cleanup
-    },
-  }
-}
+const sharedHooks: SandboxedPlugin["hooks"] = {
+  "plugin:install": async (_event, ctx) => {
+    await ensureAccessCatalogSeeded(ctx);
+    await ensureAbacCatalogSeeded(ctx);
+    await appendAuditEvent(ctx, createAuditRecord({ kind: "plugin.install", scope: "lifecycle", actor: "system", summary: "..." }));
+  },
+  "plugin:activate": async (_event, ctx) => { /* re-seed, schedule cron */ },
+  "plugin:deactivate": async (_event, ctx) => { /* cancel cron */ },
+  "plugin:uninstall": async (event, ctx) => { /* respects event.deleteData */ },
+  "content:beforeSave": async (event, ctx) => { /* snapshot + audit, ALL EmDash collections, not just SIKESRA */ },
+  cron: async (event, ctx) => { if (event.name !== "governance-summary") return; /* ... */ },
+  "page:metadata": async (event, ctx) => { /* inject meta tags */ },
+};
 ```
 
-## 5. Navigation Manifest Pattern
+There is no `install`/`activate`/`deactivate`/`uninstall` without the `plugin:` prefix, and no `content:afterCreate` — the real hook names are `content:beforeSave`/`content:afterSave`/`content:beforeDelete`/`content:afterDelete`/`content:afterPublish`/`content:afterUnpublish`.
+
+## 5. Navigation Manifest Pattern (Real)
 
 ```typescript
 // src/runtime.ts
 export const AWCMS_SIKESRA_MANIFEST: AwcmsModuleManifest = {
-  id: "awcms-micro-sikesra",
-  version: pkg.version,
-  label: { en: "SIKESRA", id: "SIKESRA" },
-  pages: [
-    {
-      id: "overview",
-      path: "/overview",
-      label: { en: "Overview", id: "Ikhtisar" },
-      permission: "awcms:sikesra:dashboard:read",
-    },
-    // ... 8 more pages
-  ],
-  i18n: { locales: ["en", "id"], defaultLocale: "en" },
-}
+  id: "awcms-sikesra",   // NOT awcms-micro-sikesra
+  // ... 16 pages registered here: overview, registry, documents, import,
+  // verification, audit, reports, access/permissions, access/roles,
+  // access/matrix, access/preview, abac/attributes, abac/policies,
+  // abac/preview, regions, data-types
+};
 
-export const AWCMS_SIKESRA_ADMIN_PAGES = adaptToEmdashPages(AWCMS_SIKESRA_MANIFEST)
+export const AWCMS_SIKESRA_ADMIN_PAGES = adaptToEmdashPages(AWCMS_SIKESRA_MANIFEST);
 ```
 
-## 6. Storage Access Pattern
+Permission strings referenced in the manifest are inline string literals, not imported from `src/permissions.ts` (which is unsynced — see `docs/prd/02.IMPLEMENTATION_BACKLOG.md` H2-02).
 
-Plugin storage is accessed via `ctx.storage.*` (not raw SQL in route handlers):
+## 6. Why This Plugin Looks "Generic" in Places
+
+Hook log messages literally say `"Installed the AWCMS-Micro example plugin"`. `package.json` keywords include `"example"`, `"tenant-ready"`. This plugin started from AWCMS-Micro's example/reference plugin scaffold, with SIKESRA domain content (8 entity types, 9 verification stages, region tree) layered on top. Don't assume every internal name (`ExampleAuditEvent`, `ExampleSettings`) is SIKESRA-specific — some are scaffold leftovers (tracked as `docs/prd/02.IMPLEMENTATION_BACKLOG.md` H2-04).
+
+## 7. Storage Access Pattern
 
 ```typescript
 // Read
-const events = await ctx.storage.auditEvents.findMany({ limit: 50 })
-const entity = await ctx.storage.registryEntities.findOne({ id: "ulid" })
+const items = await ctx.storage.registryEntities.query({ limit: 50 });
+const one = await ctx.storage.registryEntities.get(id);
 
 // Write
-await ctx.storage.auditEvents.create({ id: "ulid", kind: "...", ... })
-await ctx.storage.registryEntities.update({ id: "ulid" }, { label: "New Label" })
+await ctx.storage.registryEntities.put(id, entityData);
 
 // Delete
-await ctx.storage.registryEntities.delete({ id: "ulid" })
+await ctx.storage.registryEntities.delete(id);
 ```
 
-## 7. Build & Test Commands
+No `findMany`/`findOne`/`create`/`update` methods — the real `StorageCollection<T>` interface is `get/put/delete/exists/getMany/putMany/deleteMany/query/count`. See `docs/prd/04.DATABASE_SCHEMA.md`.
+
+## 8. Build & Test Commands
 
 ```bash
-# Build plugin
 pnpm --filter @ahliweb/awcms-sikesra build
-
-# Type check
 pnpm --filter @ahliweb/awcms-sikesra typecheck
-
-# Tests
 pnpm --filter @ahliweb/awcms-sikesra test
-
-# Lint (run after every edit)
 pnpm --silent lint:quick
-
-# Format before commit
 pnpm format
 ```
 
-## 8. Changeset
-
-Setiap perubahan behavior plugin perlu changeset:
+## 9. Changeset
 
 ```bash
 pnpm changeset --empty
-# Edit .changeset/*.md:
 ```
 
 ```markdown
@@ -161,26 +136,25 @@ pnpm changeset --empty
 "@ahliweb/awcms-sikesra": patch
 ---
 
-Adds health check endpoint.
+Adds server-side permission check to registry/save.
 ```
 
-## 9. Protected Paths
+## 10. Protected Paths
 
-Jangan modifikasi file di luar plugin dir kecuali diminta eksplisit:
-
-```
-# PROTECTED — jangan ubah kecuali diminta
+```text
 awcmsmicro-dev/packages/core/      ← core AWCMS-Micro
-awcmsmicro-dev/packages/plugins/   ← plugin lain
-docs/                              ← governance docs
-scripts/                           ← sync scripts
-emdash-latest/                     ← reference only, jangan edit
+awcmsmicro-dev/packages/plugins/   ← other plugins
+docs/                               ← governance docs
+scripts/                            ← sync scripts
+emdash-latest/                      ← reference only, do not edit
 ```
 
-## 10. Common Gotchas
+## 11. Common Gotchas
 
-- Import internal harus pakai `.js` extension: `import { ... } from "./audit.js"`
-- `import type` untuk type-only imports (verbatimModuleSyntax)
-- Plugin ID di manifest: `awcms-micro-sikesra` (bukan `@ahliweb/awcms-sikesra`)
-- Jangan gunakan `process.env` — gunakan `import.meta.env`
-- Semua plugin storage di namespace `sikesra_*`, jangan campur dengan core tables
+- Internal imports need `.js` extension: `import { ... } from "./fixtures.js"`
+- `import type` for type-only imports (`verbatimModuleSyntax`)
+- Plugin ID in manifest/descriptor: `awcms-sikesra` (NOT `awcms-micro-sikesra`)
+- Never import from `src/audit.ts` — it's dead code; use `createAuditRecord()`/`appendAuditEvent()` from `runtime.ts`
+- Don't treat `src/permissions.ts` as the source of truth for permission strings — check the manifest in `runtime.ts` first
+- Storage field names are `camelCase` (`entityType`, `villageCode`), not `snake_case`
+- There is no server-side authorization on mutating routes today — read `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` §0 before assuming otherwise
