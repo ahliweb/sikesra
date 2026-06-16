@@ -9,7 +9,7 @@ Use this when the plugin is published from a subdirectory inside a larger intern
 ```jsonc
 {
 	"$schema": "https://emdashcms.com/schemas/emdash-plugin.schema.json",
-	"slug": "awcms-micro-sikesra",
+	"slug": "awcms-sikesra",
 	"version": "0.3.0",
 	"license": "LicenseRef-AW-NC-1.0",
 	"publisher": "did:plc:yourinternalpublisherdid",
@@ -19,7 +19,7 @@ Use this when the plugin is published from a subdirectory inside a larger intern
 	"keywords": ["awcms-micro", "emdash", "plugin", "internal"],
 	"repo": {
 		"url": "https://github.com/your-org/your-monorepo",
-		"directory": "packages/plugins/awcms-micro-sikesra"
+		"directory": "packages/plugins/awcms-sikesra"
 	},
 	"security": {
 		"url": "https://github.com/your-org/your-monorepo/security"
@@ -44,7 +44,7 @@ Use this when the plugin has been moved into its own repository and published in
 ```jsonc
 {
 	"$schema": "https://emdashcms.com/schemas/emdash-plugin.schema.json",
-	"slug": "awcms-micro-sikesra",
+	"slug": "awcms-sikesra",
 	"version": "1.0.0",
 	"license": "LicenseRef-AW-NC-1.0",
 	"publisher": "plugins.example.com",
@@ -53,11 +53,11 @@ Use this when the plugin has been moved into its own repository and published in
 	"description": "Standalone EmDash-compatible plugin distributed internally as the AWCMS-Micro reference example.",
 	"keywords": ["awcms-micro", "emdash", "plugin", "tenant-ready"],
 	"repo": {
-		"url": "https://github.com/your-org/awcms-micro-sikesra-plugin",
+		"url": "https://github.com/your-org/awcms-sikesra-plugin",
 		"directory": "."
 	},
 	"security": {
-		"url": "https://security.example.com/products/awcms-micro-sikesra-plugin"
+		"url": "https://security.example.com/products/awcms-sikesra-plugin"
 	},
 	"capabilities": [],
 	"allowedHosts": [],

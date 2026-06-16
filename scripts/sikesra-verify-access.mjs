@@ -1,12 +1,22 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(scriptDir, "..");
+const wranglerConfigPath = resolve(
+	repoRoot,
+	"awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/wrangler.jsonc",
+);
 
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "";
 const apiToken = process.env.CLOUDFLARE_API_TOKEN || "";
 const workerName = process.env.CLOUDFLARE_WORKER_NAME || "sikesra";
-const hostname = process.env.SIKESRA_HOSTNAME || "sikesrakobar.ahlikoding.com";
+// Default corrected (Juni 2026) to match production wrangler.jsonc route
+// (awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/wrangler.jsonc)
+const hostname = process.env.SIKESRA_HOSTNAME || "sikesra.ahlikoding.com";
 const baseUrl = process.env.SIKESRA_BASE_URL || `https://${hostname}`;
 const workerBaseUrl = process.env.SIKESRA_WORKER_BASE_URL || process.env.CLOUDFLARE_WORKER_URL || "";
 const requiredSecret = process.env.SIKESRA_REQUIRED_SECRET || "CF_ACCESS_AUDIENCE";
@@ -40,12 +50,15 @@ async function cfJson(path) {
 }
 
 function listWorkerSecrets() {
-	const wranglerBin = resolve(process.cwd(), "node_modules", ".bin", "wrangler");
+	// Corrected (Juni 2026): "infra/sikesra/" never existed in this repo layout.
+	// The real Cloudflare deployment config lives in the SIKESRA Cloudflare
+	// template — see docs/prd/03.PLUGIN_ARCHITECTURE.md §8a.
+	const wranglerBin = resolve(repoRoot, "awcmsmicro-dev", "node_modules", ".bin", "wrangler");
 	const output = execFileSync(
 		wranglerBin,
-		["secret", "list", "--config", "infra/sikesra/wrangler.jsonc"],
+		["secret", "list", "--config", wranglerConfigPath],
 		{
-			cwd: process.cwd(),
+			cwd: resolve(repoRoot, "awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare"),
 			env: process.env,
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],

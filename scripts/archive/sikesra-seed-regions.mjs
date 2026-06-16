@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+// ============================================================================
+// ARCHIVED (Juni 2026): Script ini merujuk arsitektur SIKESRA Generasi 1 yang
+// ditinggalkan 22 Mei 2026 (commit b1bb0b15). Path/tabel yang dirujuk TIDAK ADA
+// di repo saat ini. JANGAN dijalankan tanpa membaca scripts/archive/README.md
+// dan docs/prd/03.PLUGIN_ARCHITECTURE.md §8a terlebih dahulu.
+// ============================================================================
+
 /**
  * Fix official region codes to use 10-digit Kemendagri format (no dots)
  * and seed local regions for the target deployment area.

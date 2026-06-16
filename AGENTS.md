@@ -74,6 +74,8 @@ submitted_regency → active_verified
 
 User levels (ascending): `desa_kelurahan < kecamatan < sopd < kabupaten < admin_sikesra`
 
+**Repository history — three SIKESRA naming generations.** This repo's git history contains three different SIKESRA architectures/naming schemes. Generation 1 (root-level `packages/plugins/sikesra/` + `infra/sikesra/`, SQL tables `awcms_sikesra_*`) was abandoned 2026-05-22 when the repo was restructured (commit `b1bb0b15`) — its history is not an ancestor of current HEAD. Generation 2 (a planned rename to `awcms-micro-sikesra` for plugin/template/demo dirs) was never fully executed. Generation 3 (`awcms-sikesra`) is the only one actually deployed (`.github/workflows/deploy-sikesra.yml`, `wrangler.jsonc`). Leftover artifacts: `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` (unreferenced duplicate plugin dir, cleanup tracked as issue #404 / backlog H2-05), `scripts/archive/` (5 archived Generation-1 scripts, do not run), `awcmsmicro-dev/docs/awcms-micro/sikesra/*` (Generation-2 docs, marked ARCHIVED). Full history: `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8a.
+
 # Rules
 
 **Backwards compatibility matters now.** We're out of pre-release, but pre-1.0. Real installs depend on current behavior, schemas, and API shapes. Breaking changes are allowed in minors, but need an explicit decision, a bump on the affected package, and a changeset that calls the break out clearly. Prefer additive changes: new fields, new routes, new options with sensible defaults. If an old API is obsolete, mark the replacement as preferred and keep the old path working unless there's a reason it can't. Database migrations are forward-only -- never write one that leaves existing content inaccessible. When in doubt, open a Discussion before coding.

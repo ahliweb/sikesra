@@ -110,9 +110,9 @@ const ENTITY_TYPE_COLORS = {
 
 ## Status Verifikasi
 
-- [ ] TypeScript typecheck lulus (`pnpm --filter @awcms-micro/plugin-sikesra typecheck`)
-- [ ] Build berhasil (`pnpm --filter @awcms-micro/plugin-sikesra build`)  
-- [ ] Tests lulus (`pnpm --filter @awcms-micro/plugin-sikesra test`)
+- [ ] TypeScript typecheck lulus (`pnpm --filter @ahliweb/awcms-sikesra typecheck`)
+- [ ] Build berhasil (`pnpm --filter @ahliweb/awcms-sikesra build`)  
+- [ ] Tests lulus (`pnpm --filter @ahliweb/awcms-sikesra test`)
 - [ ] Visual review: Overview page
 - [ ] Visual review: Registry page (wizard)
 - [ ] Visual review: Verification page

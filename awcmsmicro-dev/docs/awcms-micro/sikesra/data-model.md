@@ -1,4 +1,6 @@
-# Data Model
+# Data Model (ARCHIVED — see `README.md` in this directory)
+
+> Superseded by `docs/prd/04.DATABASE_SCHEMA.md`. References `awcms_sikesra_*` SQL tables and `docs/sikesra/03_data_model.md`, neither of which exist in the current plugin (which uses `PluginStorageConfig` collections, not SQL tables) — kept only as historical record.
 
 ## Main Ownership
 

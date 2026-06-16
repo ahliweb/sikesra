@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+// ============================================================================
+// ARCHIVED (Juni 2026): Script ini merujuk arsitektur SIKESRA Generasi 1 yang
+// ditinggalkan 22 Mei 2026 (commit b1bb0b15). Path/tabel yang dirujuk TIDAK ADA
+// di repo saat ini. JANGAN dijalankan tanpa membaca scripts/archive/README.md
+// dan docs/prd/03.PLUGIN_ARCHITECTURE.md §8a terlebih dahulu.
+// ============================================================================
+
 const baseUrl = process.env.SIKESRA_BASE_URL || "http://127.0.0.1:4321";
 const defaultPages = ["/", "/entities", "/verification"];
 const pages = parsePages();

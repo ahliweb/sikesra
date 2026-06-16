@@ -14,6 +14,8 @@ format   : native (EmDash trusted plugin), built on top of an AWCMS-Micro
            example/reference plugin scaffold — see §6 below.
 ```
 
+**Watch out for a confusing sibling directory**: `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` (package `@awcms-micro/plugin-sikesra`) is a leftover duplicate from before the rename to `awcms-sikesra`. It's still git-tracked but not referenced by any workspace/template/CI config — never edit it by mistake when you meant `awcms-sikesra`. See `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8a for the full three-generation naming history, and `docs/prd/02.IMPLEMENTATION_BACKLOG.md` H2-05 for its cleanup status.
+
 ## 2. File Responsibilities (Verified)
 
 | File | Real Responsibility |

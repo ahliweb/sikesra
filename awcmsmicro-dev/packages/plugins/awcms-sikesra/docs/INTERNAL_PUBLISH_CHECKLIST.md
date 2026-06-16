@@ -1,6 +1,6 @@
 # Internal Publish Checklist
 
-Use this checklist before publishing `@awcms-micro/plugin-sikesra` to an internal registry or distributing it as a reusable package.
+Use this checklist before publishing `@ahliweb/awcms-sikesra` to an internal registry or distributing it as a reusable package.
 
 Default flow: edit the existing `emdash-plugin.jsonc` in place.
 If you need a clean starting point, copy `docs/emdash-plugin.template.jsonc` to `emdash-plugin.jsonc` first and then apply this checklist.

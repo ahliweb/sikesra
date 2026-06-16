@@ -84,10 +84,12 @@
 - Makes SIKESRA ownership clear in package names
 - Prevents accidental overwrites during sync
 
-**Examples:**
+**Examples (superseded, see note below):**
 - `awcms-micro-sikesraTemplate` (not `awcms-micro-default`)
 - `awcms-micro-sikesra` plugin package
 - `@ahliweb/awcms-micro-sikesra` npm scope
+
+> **Superseded (June 2026):** the actual rename that landed dropped the `-micro` segment entirely — real paths are `awcms-sikesraTemplate`, `awcms-sikesra` (plugin dir/ID), `@ahliweb/awcms-sikesra` (npm). The examples above are kept verbatim as a historical record of this decision's original wording; do not use them as current naming guidance. See `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8a.
 
 **Date:** 2026-05-29
 

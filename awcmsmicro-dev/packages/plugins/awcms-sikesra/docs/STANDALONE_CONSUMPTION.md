@@ -1,6 +1,6 @@
 # Standalone Consumption
 
-This guide shows how to consume `@awcms-micro/plugin-sikesra` from a standalone EmDash project without modifying EmDash core.
+This guide shows how to consume `@ahliweb/awcms-sikesra` from a standalone EmDash project without modifying EmDash core.
 
 ## Supported Integration Model
 
@@ -8,7 +8,7 @@ This example plugin is a native in-process plugin.
 
 - Use it in `plugins: []` inside `emdash({...})`.
 - Do not treat it as a sandboxed plugin.
-- Import the named factory `awcmsMicroExamplePlugin()` from `@awcms-micro/plugin-sikesra`.
+- Import the named factory `awcmsSikesraPlugin()` from `@ahliweb/awcms-sikesra`.
 
 ## Option A: Local Workspace Package
 
@@ -30,7 +30,7 @@ your-workspace/
 
 1. Copy this plugin folder into `packages/awcms-micro-plugin-sikesra/`.
 2. Run `pnpm install` from the workspace root.
-3. Run `pnpm --filter @awcms-micro/plugin-sikesra build`.
+3. Run `pnpm --filter @ahliweb/awcms-sikesra build`.
 
 ### Add the dependency to the site
 
@@ -39,7 +39,7 @@ In the site's `package.json`:
 ```json
 {
 	"dependencies": {
-		"@awcms-micro/plugin-sikesra": "workspace:*"
+		"@ahliweb/awcms-sikesra": "workspace:*"
 	}
 }
 ```
@@ -60,7 +60,7 @@ In the site's `package.json`, reference the built plugin by local path:
 ```json
 {
 	"dependencies": {
-		"@awcms-micro/plugin-sikesra": "file:../awcms-micro-plugin-sikesra"
+		"@ahliweb/awcms-sikesra": "file:../awcms-sikesra"
 	}
 }
 ```
@@ -78,7 +78,7 @@ import { defineConfig } from "astro/config";
 import emdash, { local } from "emdash/astro";
 import { sqlite } from "emdash/db";
 
-import { awcmsMicroExamplePlugin } from "@awcms-micro/plugin-sikesra";
+import { awcmsSikesraPlugin } from "@ahliweb/awcms-sikesra";
 
 export default defineConfig({
 	output: "server",
@@ -91,7 +91,7 @@ export default defineConfig({
 				directory: "./uploads",
 				baseUrl: "/_emdash/api/media/file",
 			}),
-			plugins: [awcmsMicroExamplePlugin()],
+			plugins: [awcmsSikesraPlugin()],
 		}),
 	],
 });
@@ -127,7 +127,7 @@ The plugin declares an admin page at `/overview` and a route at `dashboard/summa
 
 ## Troubleshooting
 
-- If the site cannot resolve `@awcms-micro/plugin-sikesra`, re-check whether you used `workspace:*` or `file:` consistently with your repository layout.
+- If the site cannot resolve `@ahliweb/awcms-sikesra`, re-check whether you used `workspace:*` or `file:` consistently with your repository layout.
 - If the plugin package changed but the site still sees stale output, rebuild the plugin with `pnpm build` and reinstall if needed.
 - If you copied the plugin into a pnpm workspace, run installs from the workspace root, not only inside the package folder.
 - If you are adapting the example for real use, review `emdash-plugin.jsonc` and `docs/INTERNAL_PUBLISH_CHECKLIST.md` before distributing it further.

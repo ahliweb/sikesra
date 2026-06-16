@@ -1,4 +1,6 @@
-# Security RBAC ABAC
+# Security RBAC ABAC (ARCHIVED — see `README.md` in this directory)
+
+> Superseded by `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md`. References `packages/plugins/sikesra/src/security/*.ts`, files that don't exist in the current plugin — kept only as historical record. The real plugin has **no dedicated security module at all** today; see `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md` §0 for the actual (critical) state of authorization.
 
 ## RBAC
 

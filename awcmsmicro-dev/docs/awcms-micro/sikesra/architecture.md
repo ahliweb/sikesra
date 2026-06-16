@@ -1,4 +1,6 @@
-# Architecture
+# Architecture (ARCHIVED — see `README.md` in this directory)
+
+> Superseded by `docs/prd/03.PLUGIN_ARCHITECTURE.md`. The content below describes a `packages/plugins/sikesra/` path and a pending rename that never happened — kept only as historical record.
 
 ## Runtime Shape
 

@@ -1,4 +1,6 @@
-# UAT
+# UAT (ARCHIVED — see `README.md` in this directory)
+
+> Superseded by `docs/prd/06.UAT_AND_DEPLOYMENT_CHECKLIST.md`. References `packages/plugins/sikesra/tests/`, a path that doesn't exist — kept only as historical record.
 
 ## Minimum Acceptance Areas
 

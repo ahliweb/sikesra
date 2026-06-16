@@ -1,8 +1,10 @@
 # AWCMS-Micro SIKESRA Technical PRD
 
+> **Note (Juni 2026):** package/plugin identifiers below were corrected to match the real published package — see `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8a in the repository root for the full naming history. For the complete, code-verified product/technical reference (storage model, 39 routes, security gap, etc.), see `docs/prd/` in the repository root — this file remains a useful overview of intent but `docs/prd/` is canonical.
+
 ## 1. Overview
 
-This document describes the technical implementation requirements for `@awcms-micro/plugin-sikesra`.
+This document describes the technical implementation requirements for `@ahliweb/awcms-sikesra`.
 
 The plugin is an EmDash-compatible access, audit, governance, navigation, and ABAC example package. It must remain plugin-owned and must not move responsibilities into EmDash core.
 
@@ -14,8 +16,8 @@ The plugin is an EmDash-compatible access, audit, governance, navigation, and AB
 
 ### Product Shape
 
-- package: `@awcms-micro/plugin-sikesra`
-- plugin id: `awcms-micro-sikesra`
+- package: `@ahliweb/awcms-sikesra`
+- plugin id: `awcms-sikesra`
 - package version: current package version in `package.json`
 - localization: `en` default, `id` supported
 - UI system: Kumo components for admin surfaces

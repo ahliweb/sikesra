@@ -62,11 +62,11 @@ Use this when the code is in Git, but security reporting is routed through a cen
 
 ```jsonc
 "repo": {
-	"url": "https://github.com/your-org/awcms-micro-sikesra-plugin",
+	"url": "https://github.com/your-org/awcms-sikesra-plugin",
 	"directory": "."
 },
 "security": {
-	"url": "https://security.example.com/products/awcms-micro-sikesra-plugin"
+	"url": "https://security.example.com/products/awcms-sikesra-plugin"
 }
 ```
 

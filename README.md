@@ -133,7 +133,7 @@ Issues hardening tersedia di <https://github.com/ahliweb/sikesra/issues>:
 
 - **#376** — Context Capsule (pinned, sudah diperbarui) — baca ini sebelum mulai
 - **#391-394** — EPIC-H1: Otorisasi Server-Side Nyata (identitas, permission check, ABAC gate, validasi shape)
-- **#395-398** — EPIC-H2: Konsistensi Tipe dan Nama Internal
+- **#395-398, #404** — EPIC-H2: Konsistensi Tipe dan Nama Internal (termasuk H2-05: bersihkan artefak Generasi 1/2)
 - **#399-402** — EPIC-H3: Test Coverage untuk Fitur yang Sudah Ada
 
 ---
@@ -173,6 +173,24 @@ Path berikut **tidak pernah ditimpa** saat sync upstream:
 
 ---
 
+## Repository History — Tiga Generasi Penamaan SIKESRA
+
+Riwayat git repo ini menyimpan tiga generasi arsitektur/penamaan SIKESRA yang berbeda — penting dipahami agar tidak salah membaca dokumen/path lama sebagai instruksi yang masih berlaku. Detail lengkap di `docs/prd/03.PLUGIN_ARCHITECTURE.md` §8a.
+
+| Generasi | Penamaan | Status |
+| --- | --- | --- |
+| 1 (awal) | `packages/plugins/sikesra/` + `infra/sikesra/`, tabel SQL `awcms_sikesra_*` | Ditinggalkan 22 Mei 2026 saat restrukturisasi repo; riwayatnya bukan ancestor HEAD saat ini |
+| 2 (rencana) | `awcms-micro-sikesra` untuk plugin/template/demo | Tidak pernah selesai dieksekusi; dokumen terkait sudah diberi notice ARCHIVED |
+| 3 (nyata, aktif) | `awcms-sikesra` | Satu-satunya yang dipakai `.github/workflows/deploy-sikesra.yml` dan `wrangler.jsonc` produksi |
+
+Sisa artefak Generasi 1/2 yang masih ada di repo (dengan penanganannya):
+
+- `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` — duplikat plugin lama, tidak direferensikan apa pun, menunggu keputusan hapus (issue #404 / backlog H2-05)
+- `scripts/archive/` — 5 script Generasi 1 yang diarsipkan dengan README penjelasan (jangan dijalankan)
+- `awcmsmicro-dev/docs/awcms-micro/sikesra/*` — dokumen Generasi 2, sudah diberi notice ARCHIVED, menunjuk ke `docs/prd/` sebagai acuan
+
+---
+
 ## Cloudflare Configuration
 
 | Service | Name | ID |
@@ -206,6 +224,22 @@ cd awcmsmicro-dev && wrangler deploy
 | Master Document Index | `docs/prd/20.MASTER_DOCUMENT_INDEX.md` |
 | Issue Index | `docs/prd/25.AI_READY_ISSUE_PLAYBOOK.md` |
 | Repository SOP | `docs/prd/07.REPOSITORY_EXECUTION_SOP.md` |
+
+---
+
+## Rekomendasi Proses Berikutnya (Hardening, Bukan Fitur Baru)
+
+Lihat `docs/prd/02.IMPLEMENTATION_BACKLOG.md` untuk rincian lengkap. Ringkasan urutan kerja:
+
+1. **EPIC-H1 (#391-394) — prioritas tertinggi.** Tutup gap otorisasi server-side sebelum data warga sungguhan (kategori sensitif: anak yatim, disabilitas, lansia terlantar) masuk ke sistem ini. Kerjakan H1-01 (identitas terverifikasi) lebih dulu — item H1 lain bergantung padanya.
+2. **EPIC-H2 (#395-398, #404) dan EPIC-H3 (#399-402) — bisa paralel dengan H1.** Tidak bergantung pada hardening otorisasi; cocok dikerjakan kontributor lain secara bersamaan.
+3. **Setelah H1/H2/H3 selesai** — baru pertimbangkan fitur baru dari `docs/prd/13.FUTURE_ROADMAP_AND_PHASE2_BACKLOG.md` (integrasi data wilayah resmi, notifikasi, ekspor laporan).
+
+**Pertimbangan kemudahan pengembangan/pemeliharaan ke depan**:
+
+- Jangan menambah collection/route baru sebelum H1 selesai — setiap penambahan baru di atas fondasi tanpa otorisasi memperbesar permukaan masalah.
+- Setelah H2-01 (rekonsiliasi level verifikasi) selesai, refactor lanjutan ke kode verifikasi jadi lebih aman dilakukan AI agent junior karena tidak ada lagi dua union type yang membingungkan.
+- Keputusan soal `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/` (hapus/pertahankan, lihat issue #404) sebaiknya diselesaikan lebih dulu sebelum integrasi besar berikutnya, agar tidak ada kebingungan dua plugin saat onboarding kontributor baru.
 
 ---
 

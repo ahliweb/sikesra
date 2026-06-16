@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+// ============================================================================
+// ARCHIVED (Juni 2026): Script ini merujuk arsitektur SIKESRA Generasi 1 yang
+// ditinggalkan 22 Mei 2026 (commit b1bb0b15). Path/tabel yang dirujuk TIDAK ADA
+// di repo saat ini. JANGAN dijalankan tanpa membaca scripts/archive/README.md
+// dan docs/prd/03.PLUGIN_ARCHITECTURE.md §8a terlebih dahulu.
+// ============================================================================
+
 import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
