@@ -38,7 +38,7 @@ jobs:
 
       - name: Create issue if updates available
         if: steps.check.outputs.new_commits > 0
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const commits = process.env.COMMITS_SUMMARY || 'See workflow summary';
