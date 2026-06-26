@@ -2,17 +2,19 @@
 
 ## Scope
 
-This package demonstrates how AWCMS-Micro can add a trusted example plugin without changing EmDash core or modifying built-in plugin packages.
+This package is the checked-in SIKESRA reference plugin for AWCMS-Micro. It keeps downstream registry, verification, governance, access, and ABAC behavior plugin-owned without modifying EmDash core or built-in plugin packages.
 
 ## Highlights
 
-- tenant-ready naming examples in storage path guidance
+- native trusted-plugin wiring for SIKESRA
 - namespaced permissions under `awcms:sikesra:*`
-- isolated route and admin examples
-- simple audit logging helper
+- isolated route and admin surfaces
+- plugin-owned audit logging helpers in `src/runtime.ts`
 - EmDash registry manifest in `emdash-plugin.jsonc`
 - deterministic SIKESRA reference fixtures for registry, verification, and public-safe aggregate modeling
 - SIKESRA-grade admin references for registry, verification, documents, and reports
+- canonical implementation details live in repository-root `docs/prd/`
+- route previews for access/ABAC remain demonstrative; mutating routes still need server-side authorization hardening
 
 ## Safe Enablement
 
@@ -20,9 +22,9 @@ Add the plugin from project-level configuration only. Do not hardcode it into Em
 
 Use `docs/STANDALONE_CONSUMPTION.md` for a standalone site integration flow.
 
-This example package now uses published dependency versions and a local build step so it can be copied into a standalone repository or local package workspace without rewriting monorepo-only specifiers.
+This package uses published dependency versions and a local build step so it can be copied into a standalone repository or local package workspace without rewriting monorepo-only specifiers.
 
-Replace the example publisher value in `emdash-plugin.jsonc` with the real atproto DID or handle before any internal or registry publish.
+Replace the publisher value in `emdash-plugin.jsonc` with the real atproto DID or handle before any internal or registry publish.
 Set `repository` and `homepage` in `package.json` to match the real published source location, including monorepo subdirectory metadata when applicable.
 Add `repo` and `security` to `emdash-plugin.jsonc` only after you know the final standalone repository and security contact URLs.
 

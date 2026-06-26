@@ -14,8 +14,8 @@ Use this when the plugin is published from a subdirectory inside a larger intern
 	"license": "LicenseRef-AW-NC-1.0",
 	"publisher": "did:plc:yourinternalpublisherdid",
 	"author": { "name": "Platform Team" },
-	"name": "AWCMS-Micro Example Plugin",
-	"description": "Internal EmDash-compatible plugin used as the reference implementation for AWCMS-Micro packaging and registry metadata.",
+	"name": "AWCMS SIKESRA Plugin",
+	"description": "Internal EmDash-compatible SIKESRA plugin used as the reference implementation for downstream packaging and registry metadata.",
 	"keywords": ["awcms-micro", "emdash", "plugin", "internal"],
 	"repo": {
 		"url": "https://github.com/your-org/your-monorepo",
@@ -49,8 +49,8 @@ Use this when the plugin has been moved into its own repository and published in
 	"license": "LicenseRef-AW-NC-1.0",
 	"publisher": "plugins.example.com",
 	"author": { "name": "AWCMS Platform Team" },
-	"name": "AWCMS-Micro Example Plugin",
-	"description": "Standalone EmDash-compatible plugin distributed internally as the AWCMS-Micro reference example.",
+	"name": "AWCMS SIKESRA Plugin",
+	"description": "Standalone EmDash-compatible SIKESRA plugin distributed internally as the downstream reference implementation.",
 	"keywords": ["awcms-micro", "emdash", "plugin", "tenant-ready"],
 	"repo": {
 		"url": "https://github.com/your-org/awcms-sikesra-plugin",

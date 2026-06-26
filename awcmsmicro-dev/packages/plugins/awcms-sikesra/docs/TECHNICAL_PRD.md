@@ -4,13 +4,13 @@
 
 ## 1. Overview
 
-This document describes the technical implementation requirements for `@ahliweb/awcms-sikesra`.
+This document describes the technical implementation shape of `@ahliweb/awcms-sikesra`.
 
-The plugin is an EmDash-compatible access, audit, governance, navigation, and ABAC example package. It must remain plugin-owned and must not move responsibilities into EmDash core.
+The canonical, code-verified reference is the repository-root `docs/prd/` suite. This file is a package-local overview for consumers who need the plugin surface quickly without reading the full PRD set.
 
 ### Purpose
 
-- demonstrate a native plugin with admin UI, server routes, storage, and hooks
+- provide a native SIKESRA plugin with admin UI, server routes, storage, and hooks
 - provide a reusable reference for plugin-owned navigation and governance workflows
 - keep security-sensitive behavior explicit, auditable, and localized
 
@@ -18,9 +18,11 @@ The plugin is an EmDash-compatible access, audit, governance, navigation, and AB
 
 - package: `@ahliweb/awcms-sikesra`
 - plugin id: `awcms-sikesra`
-- package version: current package version in `package.json`
+- package version: `0.1.1` in `package.json`
 - localization: `en` default, `id` supported
 - UI system: Kumo components for admin surfaces
+- status: 39 routes, 16 admin pages, 3 widgets, 1 field widget
+- known gap: mutating routes still lack verified-identity and permission enforcement server-side
 
 ```mermaid
 flowchart LR
@@ -42,7 +44,7 @@ flowchart LR
 - expose a native plugin entry and a resolved plugin entry
 - provide grouped admin navigation placed above default EmDash menus
 - provide admin pages, widgets, and field widgets
-- provide access-rights management, ABAC management, and audit management workflows
+- provide registry, verification, document, access-rights, ABAC, and audit workflows
 - provide a public-safe status route
 - keep policy and preview logic inside plugin-owned routes
 - support install, activate, deactivate, and uninstall lifecycle hooks
@@ -62,24 +64,26 @@ flowchart LR
 - no EmDash core auth fork
 - no secret values in tracked source or docs
 - no unchecked public route exposure beyond the explicit public-safe status endpoint
+- no assumption that preview routes already enforce real authorization on mutating flows
 
 ## 3. Core Features
 
 ### Navigation and Admin Modules
 
-- dashboard summary
-- registry and documents views
+- overview dashboard summary
+- registry, documents, and import views
 - verification flow
-- audit log view
+- audit log and reports views
 - access control pages
 - ABAC pages
-- report views
+- official regions and data-type management views
 
 ### Route Groups
 
 - public-safe status route
-- overview and summary routes
-- settings routes
+- registry, document, import, and overview routes
+- verification routes
+- settings, regions, and data-type routes
 - audit routes
 - access-rights routes
 - ABAC routes
@@ -130,10 +134,10 @@ flowchart LR
 
 - `src/index.ts`: plugin descriptor and resolved plugin entry
 - `src/admin.tsx`: native admin surface
-- `src/runtime.ts`: storage, routes, hooks, and manifest definitions
+- `src/runtime.ts`: source of truth for storage, routes, hooks, manifest, region tree, data types, audit helpers, and seed catalogs
 - `src/navigation.ts`: navigation models and adapters
-- `src/permissions.ts`: permission helpers and catalog
-- `src/audit.ts`: audit recording helpers
+- `src/permissions.ts`: test-only permission constants; not consumed by `runtime.ts`
+- `src/audit.ts`: legacy dead code; the active audit helpers live in `src/runtime.ts`
 - `src/sandbox.ts`: sandbox-compatible server-side entry
 
 ### Data Flow
@@ -167,11 +171,17 @@ The plugin uses plugin-owned storage namespaces rather than EmDash core schema c
 - `auditEvents`
 - `accessChangeEvents`
 - `abacChangeEvents`
+- `registryEntities`
+- `supportingDocuments`
+- `verificationStageState`
+- `verificationEvents`
 - `abacAttributeCatalog`
 - `abacPolicyRules`
 - `abacResourceAssignments`
 - `abacSubjectAssignments`
 - `contentSnapshots`
+- `settingsState`
+- `pluginState`
 - `permissionCatalog`
 - `roleCatalog`
 - `rolePermissionAssignments`
@@ -212,6 +222,7 @@ erDiagram
 - preview logic must not silently enforce global permissions
 - audit writes must accompany sensitive changes
 - public-safe routes must not leak private state
+- hardening work must treat `registry/save`, `documents/save`, `import/promote`, `verification/advance`, and `verification/reject` as currently under-protected
 
 ### Integration Constraints
 

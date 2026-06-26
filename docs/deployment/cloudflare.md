@@ -28,7 +28,7 @@ This repository uses the **`sikesra`** D1 database as its primary data store.
 - R2 binding: `MEDIA` → `sikesra`
 - Worker Loader: `LOADER` (for plugin sandboxing)
 
-### Cloudflare Template (`awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`)
+### Cloudflare Template (`awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/`)
 
 - Worker name: `sikesra`
 - D1 binding: `DB` → `sikesra`
@@ -43,7 +43,7 @@ cd awcmsmicro-dev/demos/cloudflare
 npx wrangler deploy
 
 # Deploy template worker
-cd awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare
+cd awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare
 npx wrangler deploy
 
 # Run migrations
@@ -77,7 +77,7 @@ npx wrangler r2 bucket info sikesra
 
 ## Downstream Cloudflare Surfaces
 
-- `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`
+- `awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/`
 - `awcmsmicro-dev/demos/cloudflare/`
 
 ## Guidance

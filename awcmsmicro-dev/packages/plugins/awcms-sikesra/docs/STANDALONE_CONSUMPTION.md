@@ -4,7 +4,7 @@ This guide shows how to consume `@ahliweb/awcms-sikesra` from a standalone EmDas
 
 ## Supported Integration Model
 
-This example plugin is a native in-process plugin.
+This plugin is a native in-process plugin.
 
 - Use it in `plugins: []` inside `emdash({...})`.
 - Do not treat it as a sandboxed plugin.
@@ -23,12 +23,12 @@ your-workspace/
   apps/
     site/
   packages/
-	awcms-micro-plugin-sikesra/
+	awcms-sikesra/
 ```
 
 ### Add the plugin package
 
-1. Copy this plugin folder into `packages/awcms-micro-plugin-sikesra/`.
+1. Copy this plugin folder into `packages/awcms-sikesra/`.
 2. Run `pnpm install` from the workspace root.
 3. Run `pnpm --filter @ahliweb/awcms-sikesra build`.
 
@@ -130,4 +130,4 @@ The plugin declares an admin page at `/overview` and a route at `dashboard/summa
 - If the site cannot resolve `@ahliweb/awcms-sikesra`, re-check whether you used `workspace:*` or `file:` consistently with your repository layout.
 - If the plugin package changed but the site still sees stale output, rebuild the plugin with `pnpm build` and reinstall if needed.
 - If you copied the plugin into a pnpm workspace, run installs from the workspace root, not only inside the package folder.
-- If you are adapting the example for real use, review `emdash-plugin.jsonc` and `docs/INTERNAL_PUBLISH_CHECKLIST.md` before distributing it further.
+- If you are adapting the plugin for real use, review `emdash-plugin.jsonc` and `docs/INTERNAL_PUBLISH_CHECKLIST.md` before distributing it further.

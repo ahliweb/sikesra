@@ -58,7 +58,7 @@ Use this when source and advisory workflow live on your own Git service.
 
 Use this when the code is in Git, but security reporting is routed through a central internal portal.
 
-## AWCMS-Micro Example Plugin Naming Pattern
+## AWCMS SIKESRA Naming Pattern
 
 ```jsonc
 "repo": {
@@ -70,4 +70,4 @@ Use this when the code is in Git, but security reporting is routed through a cen
 }
 ```
 
-Use this when you want your published metadata to follow the AWCMS-Micro example plugin naming pattern directly.
+Use this when you want your published metadata to follow the checked-in SIKESRA package naming directly.

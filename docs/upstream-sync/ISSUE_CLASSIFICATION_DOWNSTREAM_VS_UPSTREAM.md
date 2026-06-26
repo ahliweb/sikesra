@@ -4,7 +4,8 @@ Classify work as upstream when it belongs to EmDash generally and does not depen
 
 Classify work as downstream when it belongs only to:
 
-- `awcmsmicro-dev/packages/plugins/awcms-micro-sikesra/`
-- `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate/`
-- `awcmsmicro-dev/templates/awcms-micro-sikesraTemplate-cloudflare/`
-- related downstream docs, demos, and E2E boundaries
+- `awcmsmicro-dev/packages/plugins/awcms-sikesra/`
+- `awcmsmicro-dev/templates/awcms-sikesraTemplate/`
+- `awcmsmicro-dev/templates/awcms-sikesraTemplate-cloudflare/`
+- `awcmsmicro-dev/demos/cloudflare/` when the behavior is SIKESRA-specific
+- related downstream docs and deployment boundaries

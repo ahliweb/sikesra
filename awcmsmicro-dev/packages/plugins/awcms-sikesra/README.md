@@ -1,42 +1,50 @@
-# AWCMS-Micro Example Plugin
+# AWCMS SIKESRA Plugin
 
-This package is an AWCMS-Micro example plugin that demonstrates an EmDash-compatible Access & Audit Demo plugin without modifying EmDash core.
+This package is the native SIKESRA plugin for AWCMS-Micro and EmDash-compatible projects. It is the feature-complete reference implementation for the SIKESRA registry, verification, governance, access-catalog, and ABAC admin surface.
 
 ## Purpose
 
-- keep AWCMS-Micro-specific governance, navigation, access, audit, and ABAC examples inside an isolated plugin boundary
-- demonstrate how downstream behavior can be added without forking EmDash core
-- provide a reusable example package that templates and standalone EmDash sites can consume through normal plugin registration
+- keep SIKESRA-specific governance, navigation, verification, access, audit, and ABAC behavior inside an isolated plugin boundary
+- provide a reusable downstream package that templates and standalone EmDash sites can consume through normal plugin registration
+- preserve the current plugin-owned storage and route contract without modifying EmDash core
 
 ## What It Demonstrates
 
 - plugin descriptor factory and plugin identity/versioning
 - EmDash registry manifest scaffolding in `emdash-plugin.jsonc`
 - capabilities, allowed hosts, storage declarations, and KV conventions
-- protected routes plus a public-safe status route
+- 39 plugin routes, including one public-safe route at `public/status`
 - lifecycle hooks: install, activate, deactivate, uninstall
 - content hooks: before/after save, before/after delete, after publish, after unpublish
 - media hooks: before upload, after upload
 - cron hook scheduling and state recording
 - page metadata contribution
-- admin pages, dashboard widget, settings schema, and field widget contribution
-- SIKESRA-grade reference admin screens for registry, verification, documents, and public aggregate reports
+- 16 admin pages, 3 dashboard widgets, and 1 field widget contribution
+- admin screens for registry, verification, documents, official regions, data types, audit, reports, access control, and ABAC preview
 - admin UI styling uses Kumo semantic tokens so dark mode and light mode remain readable; do not hardcode light-only card or text colors in new plugin components
 - Portable Text block contribution
-- audit logging and content snapshot examples
-- access-rights catalog example with role matrix and effective access preview
-- ABAC policy management example with attribute catalogs, policy simulation, and a protected demo route
-- SIKESRA-inspired registry fixtures for reference data modeling and public-safe aggregate examples
+- audit logging and content snapshots
+- access-rights catalog with role matrix and effective-access preview routes
+- ABAC policy management with attribute catalogs, policy simulation, and a protected demo route
+- SIKESRA reference fixtures for registry entities, documents, and verification events
 - a sandbox-compatible server-side entry in `src/sandbox.ts`
+
+## Current Status
+
+- Package name: `@ahliweb/awcms-sikesra`
+- Plugin ID: `awcms-sikesra`
+- Storage model: plugin-owned `ctx.storage.<collectionName>` collections plus KV overrides for regions/data types
+- Canonical product/architecture docs: repository-root `docs/prd/`
+- Critical hardening gap: mutating routes still lack verified-identity and permission enforcement server-side; see `docs/prd/10.SECURITY_AND_PRIVACY_CHECKLIST.md`
 
 ## Permission Namespace
 
-The example uses the `awcms:sikesra:<resource>:<action>` namespace.
+The plugin uses the `awcms:sikesra:<resource>:<action>` namespace.
 
 ## Boundary Rule
 
 - keep plugin-owned behavior in this package
-- do not move these example capabilities into EmDash core packages
+- do not move these SIKESRA capabilities into EmDash core packages
 - let templates consume the plugin through normal `plugins: []` registration rather than duplicating plugin logic in template code
 
 ## Native And Sandbox Boundaries
@@ -89,6 +97,11 @@ The access-rights catalog in this plugin is demonstrative.
 - It manages plugin-owned catalog data, role assignments, and preview logic.
 - It does not rewrite or replace EmDash core authorization internals.
 - Effective access preview is enforced only inside the plugin's own route/demo surface.
+
+Current reality:
+
+- `access/preview`, `abac/preview`, and `abac/enforce-demo` are demonstrative/read-only surfaces for decision simulation.
+- The real hardening work is to add verified-identity and permission checks to mutating routes such as `registry/save`, `documents/save`, `import/promote`, `verification/advance`, and `verification/reject`.
 
 This keeps the example explicit, isolated, and compatible with upstream EmDash.
 
