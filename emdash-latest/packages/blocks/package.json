@@ -29,7 +29,7 @@
     "@cloudflare/kumo": "catalog:",
     "@phosphor-icons/react": "catalog:",
     "clsx": "^2.1.1",
-    "echarts": "^6.0.0",
+    "echarts": "^6.1.0",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
